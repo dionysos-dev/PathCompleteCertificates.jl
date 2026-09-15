@@ -96,10 +96,7 @@ axes — you would write `QuadraticStabilityCertificate`,
 
 ## 4. Conventions
 
-**The authority is the [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/),
-not Dionysos house style.** Dionysos prescribes `get_<noun>` accessors; that is internal to
-Dionysos and not the wider Julia convention. This package follows Julia. If the two ever meet,
-Dionysos re-exports under whatever names it likes.
+**The authority is the [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/).**
 
 - **Modules and types** CamelCase; **functions** snake_case; **constants** `UPPER_CASE`;
   **non-public** names `_`-prefixed.
