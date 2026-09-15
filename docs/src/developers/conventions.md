@@ -78,12 +78,8 @@ function that induces it.
 - **One word per concept.** It is `alphabet`, never `modes` or `labels`.
 - **Node functions are callable**: `V(x)`, not `piece_value(V, x)`.
 
-!!! note "This is Julia style, not Dionysos house style"
-    Dionysos.jl prescribes `get_<noun>` / `get_<noun>_by_<key>` accessors. That convention is
-    internal to Dionysos and is not the wider Julia one. This package follows the
-    [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/). If the two ever need
-    to meet, Dionysos re-exports under whatever names it likes — a thin alias layer is cheap, and it
-    is the right place to absorb the difference.
+The reference throughout is the
+[Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/).
 
 ## 3. Interfaces and types
 

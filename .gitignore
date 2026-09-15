@@ -17,8 +17,8 @@ docs/src/generated
 
 # --- Large binaries and experiment output -------------------------------
 # A blob committed once lives in the history of every clone forever, even if a
-# later commit deletes it. That is how Dionysos.jl reached a 1 GB clone. The
-# blob-size-guard workflow rejects the rest in CI.
+# later commit deletes it -- the usual way a research repository ends up with a
+# gigabyte-scale clone. The blob-size-guard workflow rejects the rest in CI.
 *.jld
 *.jld2
 *.bson

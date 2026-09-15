@@ -3,10 +3,12 @@ name: Blob size guard
 # Rejects pull requests that introduce a file larger than LIMIT_MB.
 #
 # Why this exists from the first commit: a blob committed once lives in the
-# history of every clone forever, even if a later commit deletes it. That is how
-# Dionysos.jl grew to a 1 GB clone -- solver results (*.jld2) and benchmark plot
-# dumps pushed to feature branches. `.gitignore` covers the known extensions;
-# this catches the rest at the only moment the mistake is still free to fix.
+# history of every clone forever, even if a later commit deletes it. Solver
+# results (*.jld2) and benchmark plot dumps pushed to a feature branch are the
+# usual way a research repository ends up with a gigabyte-scale clone, and the
+# cleanup afterwards is far more expensive than the rejection here.
+# `.gitignore` covers the known extensions; this catches the rest at the only
+# moment the mistake is still free to fix.
 #
 # It inspects every blob introduced by the PR's commits, not just the files
 # present at its head, because a file added in one commit and deleted in the next

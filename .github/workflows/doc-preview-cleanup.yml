@@ -2,13 +2,14 @@ name: Doc Preview Cleanup
 
 # Documenter deploys a preview of the docs to `gh-pages` under `previews/PR<n>`
 # for every pull request (`push_preview = true` in `docs/make.jl`). Nothing
-# removes them by default, so previews accumulate forever — in Dionysos.jl they
-# reached 262 stale directories and 6.3 GiB, which was most of what a clone
-# transferred. This deletes a preview once its PR closes, and collapses
-# `gh-pages` to a single commit so the deleted content stops shipping in the pack.
+# removes them by default, so previews accumulate forever — hundreds of stale
+# directories and several gigabytes, which then dominate what a `git clone`
+# transfers. This deletes a preview once its PR closes, and collapses `gh-pages`
+# to a single commit so the deleted content stops shipping in the pack.
 #
-# Present from the first commit on purpose: retrofitting it cost Dionysos.jl a
-# 1.08 GiB -> 89 MB cleanup that need never have happened.
+# Present from the first commit on purpose: retrofitting it means rewriting
+# `gh-pages` history on a live repository, which is a great deal more work than
+# having the workflow from the start.
 on:
   pull_request:
     types: [closed]
