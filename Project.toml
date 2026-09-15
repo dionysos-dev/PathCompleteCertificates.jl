@@ -3,9 +3,10 @@ uuid = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
 version = "0.1.0-DEV"
 authors = ["Léa Ninite <lea.ninite@uclouvain.be>", "Julien Calbert <julien.calbert@uclouvain.be>", "Raphaël M. Jungers <raphael.jungers@uclouvain.be>"]
 
+# Deliberately empty until something uses them: Aqua's stale-dependency check
+# fails on a declared dependency the package never loads, and an empty module
+# loads nothing. Add each dep in the commit that first imports it.
 [deps]
-JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 
 [compat]
-JuliaFormatter = "2.14.0"
 julia = "1.10"
