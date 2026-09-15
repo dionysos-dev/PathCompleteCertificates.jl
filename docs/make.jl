@@ -16,7 +16,11 @@ makedocs(;
         canonical = "https://dionysos-dev.github.io/PathCompleteCertificates.jl",
         prettyurls = get(ENV, "CI", "false") == "true",
     ),
-    pages = ["Home" => "index.md"],
+    pages = [
+        "Home" => "index.md",
+        "Developer Docs" =>
+            ["developers/setup.md", "developers/conventions.md", "developers/git.md"],
+    ],
     # The tool paper has six pages including references, so it cannot explain the
     # package — these docs have to. `checkdocs = :all` makes that enforceable:
     # every exported symbol needs a docstring or the build fails.
