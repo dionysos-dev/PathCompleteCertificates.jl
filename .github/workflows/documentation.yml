@@ -1,0 +1,35 @@
+name: Documentation
+on:
+  push:
+    branches: [master]
+    tags: '*'
+  pull_request:
+    types: [opened, synchronize, reopened]
+# Two docs runs racing (back-to-back pushes) fight over the gh-pages push and the
+# loser fails with "fetch first" — cancel the superseded run instead.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: '1'
+      # Without it every build re-resolves and re-precompiles the whole docs
+      # environment, which dominates the job.
+      - uses: julia-actions/cache@v3
+      - name: Install dependencies
+        shell: julia --project=docs/ {0}
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path=pwd()))
+          Pkg.instantiate()
+      - name: Build and deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+          GKSwstype: "100"
+        run: julia --project=docs/ docs/make.jl

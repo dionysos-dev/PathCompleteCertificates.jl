@@ -1,0 +1,35 @@
+# A library must not pin its own resolution.
+Manifest.toml
+/Manifest.toml
+docs/Manifest.toml
+test/Manifest.toml
+
+# The one exception: the repeatability package pins deliberately, because
+# reproducing a result on someone else's machine is its entire purpose.
+!repeatability/Manifest.toml
+
+docs/build
+docs/src/generated
+
+*.mem
+.DS_Store
+.vscode/settings.json
+
+# --- Large binaries and experiment output -------------------------------
+# A blob committed once lives in the history of every clone forever, even if a
+# later commit deletes it. That is how Dionysos.jl reached a 1 GB clone. The
+# blob-size-guard workflow rejects the rest in CI.
+*.jld
+*.jld2
+*.bson
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.bundle
+outputs/
+bench/results/
+
+# Claude Code: track shared commands, ignore personal/local config
+.claude/*
+!.claude/commands/
