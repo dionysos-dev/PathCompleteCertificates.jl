@@ -86,8 +86,9 @@ page explains why, and what goes wrong when the structure is ignored.
 
 ## References
 
-- Ahmadi, Jungers, Parrilo, Roozbehani — *Joint spectral radius and path-complete graph
-  Lyapunov functions*, SIAM J. Control Optim., 2014
+- Ahmadi, Jungers, Parrilo, Roozbehani — [*Joint Spectral Radius and Path-Complete Graph Lyapunov
+  Functions*](https://doi.org/10.1137/110855272), SIAM J. Control Optim. 52(1), 687–717, 2014
+  ([arXiv](https://arxiv.org/abs/1111.3427))
 - Philippe, Athanasopoulos, Angeli, Jungers — [*On Path-Complete Lyapunov Functions: Geometry
   and Comparison*](https://arxiv.org/abs/1712.00381)
 - Debauche, Della Rossa, Jungers — [*Comparison of Path-Complete Lyapunov Functions via
