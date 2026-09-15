@@ -4,8 +4,8 @@ version = "0.1.0-DEV"
 authors = ["Léa Ninite <lea.ninite@uclouvain.be>", "Julien Calbert <julien.calbert@uclouvain.be>", "Raphaël M. Jungers <raphael.jungers@uclouvain.be>"]
 
 [deps]
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 
 [compat]
-Aqua = "0.8.16"
+JuliaFormatter = "2.14.0"
 julia = "1.10"
