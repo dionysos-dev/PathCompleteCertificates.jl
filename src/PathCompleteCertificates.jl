@@ -18,8 +18,6 @@ combination costs nothing. See `CLAUDE.md` for the full contract.
 """
 module PathCompleteCertificates
 
-# Intentionally empty. Each subsystem arrives with its own tests, its own
-# docstrings and the dependency it needs added to Project.toml in the same
-# commit.
+include("graph.jl")
 
 end # module
