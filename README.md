@@ -1,5 +1,25 @@
 # PathCompleteCertificates.jl
 
+| **Documentation** | **Build Status** |
+|:-----------------:|:----------------:|
+| [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] [![Codecov][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] |
+
+[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
+[docs-latest-url]: https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev
+
+[build-img]: https://github.com/dionysos-dev/PathCompleteCertificates.jl/actions/workflows/ci.yml/badge.svg?branch=master
+[build-url]: https://github.com/dionysos-dev/PathCompleteCertificates.jl/actions?query=workflow%3ACI
+[codecov-img]: https://codecov.io/github/dionysos-dev/PathCompleteCertificates.jl/coverage.svg
+[codecov-url]: https://app.codecov.io/github/dionysos-dev/PathCompleteCertificates.jl
+[aqua-img]: https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
+
+<!-- Deliberately absent until they would mean something:
+     * a `docs-stable` badge -- there is no released version, so the URL 404s;
+     * PkgEval -- the report only exists once the package is in the General
+       registry, so the badge renders empty until then.
+     Add both at registration (plan P7), not before. -->
+
 Certificates for switched systems built on **path-complete graphs**.
 
 > **Status: under construction.** The scaffolding is in place; the graph layer is next.
