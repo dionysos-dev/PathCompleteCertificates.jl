@@ -103,7 +103,3 @@ page explains why, and what goes wrong when the structure is ignored.
 
 This project has received funding from the European Research Council (ERC) under the European
 Union's Horizon 2020 research and innovation programme under grant agreement No 864017 — L2C.
-
-## License
-
-MIT
