@@ -54,9 +54,9 @@ julia --project -e 'using Pkg; Pkg.test()'
 ```
 
 !!! warning "The fast subset can report green on a broken change"
-    Anything whose only coverage lives in a `:slow` suite is invisible to `--fast`. This is not
-    hypothetical: exactly this gap let a regression through in Dionysos.jl. Run the full gate
-    before opening a pull request.
+    Anything whose only coverage lives in a `:slow` suite is invisible to `--fast` — and the
+    synthesis tests, which are where most regressions will surface, are exactly those. Run the
+    full gate before opening a pull request.
 
 New test files go in the `TEST_FILES` list in `test/runtests.jl`, with `:slow` if they belong there.
 
@@ -66,10 +66,9 @@ New test files go in the `TEST_FILES` list in `test/runtests.jl`, with `:slow` i
 julia -e 'using JuliaFormatter; format(".")'
 ```
 
-CI fails on any diff. The rules are in `.JuliaFormatter.toml`, identical to Dionysos.jl's on
-purpose: the two repositories are edited by the same people, and a divergence in style costs more
-than any individual setting gains. Most consequential: `always_use_return = true`, so every function
-ends with an explicit `return`.
+CI fails on any diff. The rules are in `.JuliaFormatter.toml`; the settings themselves matter less
+than having them fixed, so the style stops being something anyone argues about. Most consequential:
+`always_use_return = true`, so every function ends with an explicit `return`.
 
 ## Build the documentation
 
@@ -96,6 +95,6 @@ Do not commit the `docs/Project.toml` changes that `Pkg.develop` produces.
 | `doc-preview-cleanup.yml` | Deletes a pull request's docs preview when it closes |
 
 The last two exist from the first commit rather than as an afterthought. A blob committed once
-lives in the history of every clone forever, even if a later commit deletes it — that is how
-Dionysos.jl reached a 1 GB clone, and undoing it cost a cleanup down to 89 MB that need never have
-happened.
+lives in the history of every clone forever, even if a later commit deletes it, and stale docs
+previews accumulate in `gh-pages` until they dominate what a clone transfers. Both are cheap to
+prevent and expensive to undo — undoing them means rewriting history on a live repository.
