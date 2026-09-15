@@ -1,3 +1,7 @@
+import PathCompleteCertificates as PCC
+
+include("test_graph.jl")
+
 # Test driver.
 #
 # Fast dev loop: `Pkg.test(; test_args = ["--fast"])` skips suites tagged `:slow` — the
