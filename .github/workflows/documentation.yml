@@ -12,6 +12,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    # Stable check name, for the same reason as ci-ok. Not a *required* check
+    # until DOCUMENTER_KEY exists: without it the preview deployment fails on
+    # every pull request, which would block all of them.
+    name: docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

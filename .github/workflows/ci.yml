@@ -46,3 +46,24 @@ jobs:
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  ci-ok:
+    # One stable check name for the branch ruleset to require.
+    #
+    # A matrix job reports one check per combination -- here `Julia 1.10 -
+    # ubuntu-latest - x64` and `Julia 1 - ubuntu-latest - x64`. Naming those as
+    # required checks is a trap: the strings change the moment the matrix does
+    # (a new Julia release, dropping 1.10), and a required check that no longer
+    # matches any job either blocks every PR forever or silently stops being
+    # enforced. Depend on the matrix instead and require only this.
+    name: ci-ok
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every test job succeeded
+        if: needs.test.result != 'success'
+        run: |
+          echo "::error::test matrix result: ${{ needs.test.result }}"
+          exit 1
+      - run: echo "All test jobs passed."
