@@ -3,10 +3,9 @@ uuid = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
 version = "0.1.0-DEV"
 authors = ["Léa Ninite <lea.ninite@uclouvain.be>", "Julien Calbert <julien.calbert@uclouvain.be>", "Raphaël M. Jungers <raphael.jungers@uclouvain.be>"]
 
-# Deliberately empty until something uses them: Aqua's stale-dependency check
-# fails on a declared dependency the package never loads, and an empty module
-# loads nothing. Add each dep in the commit that first imports it.
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 
 [compat]
+Aqua = "0.8.16"
 julia = "1.10"
