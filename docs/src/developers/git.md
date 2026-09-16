@@ -46,7 +46,7 @@ branch does.
 | `REV`  | revert |
 
 **Module** is the touched subsystem, inferred from the paths: `graphs`, `lifts`, `templates`,
-`objectives`, `synthesis`, `verification`, `sets`, or `test` / `docs` / `bench` / `repeatability`.
+`objectives`, `synthesis`, `verification`, `sets`, or `test` / `docs` / `examples`.
 Repository configuration, CI and tooling are `meta`.
 
 Examples:
@@ -71,7 +71,7 @@ every test still passes. Port the tests first, untouched, then rename the code a
 - **Large files.** `blob-size-guard` rejects anything over 5 MB in a pull request, and `.gitignore`
   covers the usual offenders (`*.jld2`, `*.bson`, video). A blob committed once lives in the history
   of every clone forever, even if a later commit deletes it.
-- **`Manifest.toml`**, except under `repeatability/`.
+- **`Manifest.toml`**.
 - **`plan.md`.** The working plan is deliberately untracked: it carries candid assessments of
   neighbouring projects and of how to approach their maintainers, which has no business in a public
   repository. What belongs to everyone goes in `docs/` or `CLAUDE.md`.
