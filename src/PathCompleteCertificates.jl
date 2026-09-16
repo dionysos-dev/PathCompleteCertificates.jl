@@ -14,10 +14,11 @@ rather than one type hierarchy:
     safety).
 
 Adding an objective is one method, adding a template is two, and their
-combination costs nothing. See `CLAUDE.md` for the full contract.
+combination costs nothing.
 """
 module PathCompleteCertificates
 
 include("graph.jl")
+include("systems.jl")
 
 end # module
