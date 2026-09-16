@@ -19,5 +19,6 @@ combination costs nothing. See `CLAUDE.md` for the full contract.
 module PathCompleteCertificates
 
 include("graph.jl")
+include("systems.jl")
 
 end # module

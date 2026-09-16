@@ -1,7 +1,3 @@
-import PathCompleteCertificates as PCC
-
-include("test_graph.jl")
-
 # Test driver.
 #
 # Fast dev loop: `Pkg.test(; test_args = ["--fast"])` skips suites tagged `:slow` — the
@@ -11,7 +7,10 @@ include("test_graph.jl")
 const FAST_TESTS = "--fast" in ARGS
 
 # (path, tags...). Tag a suite `:slow` to exclude it from `--fast`.
-const TEST_FILES = [("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
+const TEST_FILES = [
+    ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
+    ("./test_graph.jl",),
+    ("./systems.jl",),
 ]
 
 const _timings = Tuple{String, Float64}[]
