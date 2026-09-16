@@ -20,5 +20,8 @@ module PathCompleteCertificates
 
 include("graph.jl")
 include("systems.jl")
+include("problems/abstract.jl")
+include("template.jl")
+include("problems/stability.jl")
 
 end # module

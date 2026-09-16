@@ -11,6 +11,7 @@ const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
     ("./graph.jl",),
     ("./systems.jl",),
+    ("./stability.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]
