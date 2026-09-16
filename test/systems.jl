@@ -67,6 +67,22 @@ end
     @test sort([HS.event(s.automaton, t) for t in HS.transitions(s.automaton)]) == [1, 2]
 end
 
+@testset "the alias covers every system with an input" begin
+    g = HS.GraphAutomaton(2)
+    HS.add_transition!(g, 1, 1, 1)
+    HS.add_transition!(g, 1, 2, 2)
+    HS.add_transition!(g, 2, 1, 1)
+
+    # It is a test of shape, and the shape must not depend on whether the
+    # switching happens to be restricted -- the automaton parameter is open.
+    @test PCC.switched_system(A, B) isa PCC.SwitchedLinearControlSystem
+    @test PCC.switched_system(A, B; automaton = g) isa PCC.SwitchedLinearControlSystem
+
+    # No input, no match, constrained or not.
+    @test !(PCC.switched_system(A) isa PCC.SwitchedLinearControlSystem)
+    @test !(PCC.switched_system(A; automaton = g) isa PCC.SwitchedLinearControlSystem)
+end
+
 @testset "constrained switching" begin
     # Mode 2 may not follow mode 2 -- an automaton the default cannot express.
     g = HS.GraphAutomaton(2)
