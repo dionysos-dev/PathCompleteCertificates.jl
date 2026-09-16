@@ -1,7 +1,3 @@
-# `discreteswitchedsystem` builds only input-free systems, so `x⁺ = Aᵢx + Bᵢu`
-# has no constructor. This file adds one, and stays narrow -- a single reset-map
-# type -- so that one call always returns one parametrisation.
-
 import HybridSystems
 import MathematicalSystems
 
@@ -35,11 +31,6 @@ as a `HybridSystems.HybridSystem`.
 are admissible; the default admits every sequence.
 
 Switching is autonomous — the *mode* is not ours to choose, the *input* is.
-
-!!! warning
-    `automaton` says which words the plant can produce. It is not a path-complete
-    graph, which is a property of a certificate. Both are labelled automata over
-    the same alphabet, and swapping them fails silently.
 
 The matrices sit on the transitions, keyed by mode, and the modes themselves
 carry no dynamics — use [`mode_matrices`](@ref) rather than `system.modes`.
