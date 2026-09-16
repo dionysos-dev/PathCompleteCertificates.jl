@@ -53,13 +53,9 @@ describe(
     PCC.switched_system(A, B; automaton = constraint),
 )
 
-# Note the asymmetry above: the constrained system *has* an input, yet does not
-# match `SwitchedLinearControlSystem`. The alias fixes the automaton to
-# `OneStateAutomaton`, so it names the unconstrained parametrisation only.
-#
-# Use `has_input` to ask whether there is an input; use the alias to dispatch on
-# the unconstrained shape. Conflating them is how a constrained system quietly
-# takes the wrong method.
+# The alias tracks the input and nothing else: constraining the switching does
+# not change whether a system matches it. That is deliberate -- an earlier
+# version pinned the automaton and silently excluded every constrained system.
 
 # --- reading the dynamics back --------------------------------------------
 # The matrices live on the transitions, keyed by mode, and the modes themselves
