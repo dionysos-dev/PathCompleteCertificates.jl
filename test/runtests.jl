@@ -9,7 +9,7 @@ const FAST_TESTS = "--fast" in ARGS
 # (path, tags...). Tag a suite `:slow` to exclude it from `--fast`.
 const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
-    ("./test_graph.jl",),
+    ("./graph.jl",),
     ("./systems.jl",),
 ]
 
