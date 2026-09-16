@@ -79,18 +79,20 @@ axes — you would write `QuadraticStabilityCertificate`,
 
 ## 3. Repository map
 
+What exists today — the package is young, so this is short:
+
 | Path | What it is |
 | :--- | :--- |
-| `src/graphs/` | `LabelledDigraph`, path-completeness and determinism predicates, De Bruijn families, the subset construction, conic partitions |
-| `src/lifts/` | Lifts, preorders, the LP comparison criterion, iterative refinement. **Not** under `graphs/` — see §5 |
-| `src/templates/` | Axis 1 — quadratic, polyhedral, min-max |
-| `src/objectives/` | Axis 2 — stability, optimal control, safety |
-| `src/synthesis/` | The single driver, the alternating driver, result types |
-| `src/verification/` | `refute` (sampling) and `certify` (optimization) |
-| `test/` | Mirrors `src/`. Entry point `test/runtests.jl` |
-| `docs/` | Carries what the six-page tool paper cannot |
-| `bench/` | The refinement loop is performance-critical; measure it here |
-| `repeatability/` | The HSCC Repeatability Evaluation Package. The one place a `Manifest.toml` is tracked |
+| `src/graph.jl` | The labelled digraph and the path-completeness predicates |
+| `src/systems.jl` | Switched linear systems, with and without a control input |
+| `ext/` | Optional interop, one extension per weak dependency |
+| `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
+| `examples/` | Runnable scripts, run with `--project=test` |
+| `docs/` | The manual and these developer docs |
+
+Coming, per the two axes of §2: `templates/` (what the node functions are),
+`objectives/` (what the edge inequality says), and the synthesis driver over them.
+Add a directory when there is something to put in it, not before.
 
 ---
 

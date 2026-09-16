@@ -12,8 +12,7 @@ julia --project=test -e 'using Pkg; Pkg.instantiate()'
 ```
 
 `Manifest.toml` is deliberately untracked — a library must not pin its own resolution, so each
-clone resolves for itself. The single exception is `repeatability/`, where a pinned manifest is the
-entire point.
+clone resolves for itself.
 
 ## Run the tests
 
@@ -23,19 +22,11 @@ entire point.
 runnable standalone:
 
 ```
-julia --project=test test/graphs/predicates.jl
+julia --project=test test/systems.jl
 ```
 
-Each file opens with
-
-```julia
-import PathCompleteCertificates
-include(joinpath(dirname(dirname(pathof(PathCompleteCertificates))), "test", "testsetup.jl"))
-```
-
-which brings in `Test`, the `PCC` alias and the shared fixtures. Add file-specific imports after
-that include. If a file is *not* standalone-runnable, that is a bug in the file — fix it by adding
-the missing import.
+Each file declares its own imports and fixtures. If one is *not* standalone-runnable, that is a bug
+in the file — fix it by adding the missing import.
 
 **2. The fast subset.**
 

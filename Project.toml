@@ -3,10 +3,11 @@ uuid = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
 version = "0.1.0-DEV"
 authors = ["Léa Ninite <lea.ninite@uclouvain.be>", "Julien Calbert <julien.calbert@uclouvain.be>", "Raphaël M. Jungers <raphael.jungers@uclouvain.be>"]
 
-# Deliberately empty until something uses them: Aqua's stale-dependency check
-# fails on a declared dependency the package never loads, and an empty module
-# loads nothing. Add each dep in the commit that first imports it.
 [deps]
+HybridSystems = "2207ec0c-686c-5054-b4d2-543502888820"
+MathematicalSystems = "d14a8603-c872-5ed3-9ece-53e0e82e39da"
 
 [compat]
+HybridSystems = "0.4"
+MathematicalSystems = "0.14"
 julia = "1.10"

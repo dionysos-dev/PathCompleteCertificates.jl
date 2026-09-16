@@ -4,9 +4,6 @@ Manifest.toml
 docs/Manifest.toml
 test/Manifest.toml
 
-# The one exception: the repeatability package pins deliberately, because
-# reproducing a result on someone else's machine is its entire purpose.
-!repeatability/Manifest.toml
 
 docs/build
 docs/src/generated
@@ -34,8 +31,3 @@ bench/results/
 .claude/*
 !.claude/commands/
 
-# The working plan. Deliberately untracked: it carries candid assessments of
-# neighbouring projects and of how to approach their maintainers, which has no
-# business in a repository that will be made public. What belongs to everyone
-# goes in docs/ or CLAUDE.md instead.
-/plan.md
