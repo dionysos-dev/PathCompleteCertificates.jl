@@ -2,6 +2,7 @@
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Clarabel = "61c947e1-3e6d-4ee4-985a-eec8c727bd6e"
 HybridSystems = "2207ec0c-686c-5054-b4d2-543502888820"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathematicalSystems = "d14a8603-c872-5ed3-9ece-53e0e82e39da"
 PathCompleteCertificates = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
