@@ -3,13 +3,13 @@ module TestStability
 
 using Test
 import PathCompleteCertificates as PCC
-import SCS
+import Clarabel
 
 const GRAPH = PCC.Graph(2, [(1, 2, 1), (2, 1, 1)])
 const A = [[0.5 0.0; 0.0 0.25]]
 const SYSTEM = PCC.switched_system(A)
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
-const OPTIMIZER = SCS.Optimizer
+const OPTIMIZER = Clarabel.Optimizer
 
 @testset "quadratic stability" begin
     @test PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
