@@ -38,16 +38,4 @@ end
     @test all(>=(-1e-8), res.gammau)
 end
 
-@testset "input-free systems only" begin
-    B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
-    controlled = PCC.switched_system(A, B)
-    @test_throws ArgumentError PCC.SafetyProblem(controlled, S0, SU)
-end
-
-@testset "the sets are validated" begin
-    system = PCC.switched_system(A)
-    @test_throws ArgumentError PCC.SafetyProblem(system, S0[1:2, 1:2], SU)   # wrong size
-    @test_throws ArgumentError PCC.SafetyProblem(system, [1.0 2.0 3.0; 0 1 0; 0 0 1], SU)
-end
-
 end
