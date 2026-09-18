@@ -95,7 +95,7 @@ page explains why, and what goes wrong when the structure is ignored.
   Template-Dependent Lifts*](https://arxiv.org/abs/2110.13474)
 - Jongeneel, Jungers — [*Ordering and refining path-complete Lyapunov functions through
   composition lifts*](https://arxiv.org/abs/2503.18189)
-- Ninite, Banse, Jungers — [*A Path-Complete Approach for Optimal Control of Switched
+- Ninite, Banse, Berger, Jungers — [*A Path-Complete Approach for Optimal Control of Switched
   Systems*](https://arxiv.org/abs/2602.04310)
 - Anand, Jungers, Zamani, Allgöwer — [*On the Completeness and Ordering of Path-Complete
   Barrier Functions*](https://arxiv.org/abs/2503.19561)

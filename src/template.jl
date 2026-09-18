@@ -62,10 +62,15 @@ function add_function_variables!(
     node::Integer,
 )
     @assert dimension > 0
-    return JuMP.@variable(model, [1:dimension, 1:dimension], PSD, base_name = "P_$(node)",)
+    return JuMP.@variable(
+        model,
+        [1:dimension, 1:dimension],
+        Symmetric,
+        base_name = "P_$(node)",
+    )
 end
 
 function add_nonnegativity!(model::JuMP.Model, P::LinearAlgebra.Symmetric)
-    # `PSD` in add_function_variables! already imposes this constraint.
+    JuMP.@constraint(model, P in JuMP.PSDCone())
     return nothing
 end
