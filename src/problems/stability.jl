@@ -11,10 +11,7 @@ struct StabilityProblem{S} <: AbstractProblem
     system::S
 
     function StabilityProblem(system::S) where {S}
-        has_input(system) &&
-            throw(ArgumentError("StabilityProblem requires an input-free system"))
-
-        return new{S}(system)
+        return new{typeof(system)}(system)
     end
 end
 

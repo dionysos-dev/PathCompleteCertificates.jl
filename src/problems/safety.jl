@@ -24,10 +24,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     S0::M0
     Su::Mu
 
-    function SafetyProblem(system, S0::AbstractMatrix, Su::AbstractMatrix)
-        has_input(system) &&
-            throw(ArgumentError("SafetyProblem requires an input-free system"))
-
+    function SafetyProblem(system::S, S0::AbstractMatrix, Su::AbstractMatrix) where {S}
         A = mode_matrices(system)
 
         isempty(A) && throw(ArgumentError("at least one mode is required"))
