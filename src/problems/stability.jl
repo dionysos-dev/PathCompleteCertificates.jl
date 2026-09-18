@@ -18,17 +18,6 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
-"""
-    add_edge_constraint!(
-        model, problem, template, V_src, V_dst, dynamics, mode, gamma
-    )
-
-Add the stability certificate inequality for one labelled graph edge.
-
-Each concrete problem defines methods for the templates it supports.
-"""
-function add_edge_constraint! end
-
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::StabilityProblem,
