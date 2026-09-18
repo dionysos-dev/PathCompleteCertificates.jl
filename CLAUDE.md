@@ -28,9 +28,9 @@ features: a change that makes the graph less manipulable is working against the 
 
 ## 2. The one architectural contract — read this before touching `src/`
 
-Only the **edge inequality** changes between objectives:
+Only the **edge inequality** changes between problems:
 
-| Objective | Edge inequality on `(α, β, i)` |
+| Problem | Edge inequality on `(α, β, i)` |
 | :-- | :-- |
 | Stability | `V_α(x) ≥ γ⁻¹ V_β(A_i x)` |
 | Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
@@ -39,8 +39,8 @@ Only the **edge inequality** changes between objectives:
 The graph, the templates and the aggregation are identical. So the package has **two
 independent axes**, not one type hierarchy:
 
-- **template** (`src/templates/`) — what the node functions are;
-- **objective** (`src/objectives/`) — what the edge inequality says.
+- **template** (`src/template.jl`) — what the node functions are;
+- **problem** (`src/problems/`) — what the edge inequality says.
 
 ### The interfaces
 
@@ -49,16 +49,19 @@ independent axes**, not one type hierarchy:
 add_function_variables!(model, ::Type{T}, dim, node)  # -> a V_α of JuMP variables
 add_nonnegativity!(model, V)                          # V(x) ≥ 0
 
-# Objective axis — one method per objective.
-add_edge_constraint!(model, objective, V_src, V_dst, dynamics, mode)
+# Problem axis — one method per (problem, template) pair.
+add_edge_constraint!(model, problem, ::Type{T}, V_src, V_dst, dynamics, mode)
 
-# Aggregation — a trait on the graph, not a method per objective.
+# Aggregation — a trait on the graph, not a method per problem.
 aggregate(::Complete, Vs)      # min over nodes
 aggregate(::CoComplete, Vs)    # max over nodes
 aggregate(::Reachability, Vs)  # min over sets, max within
 ```
 
-**A new objective is one method. A new template is two. Their combination costs nothing.**
+`add_edge_constraint!` is declared **once**, in `src/problems/abstract.jl`; a problem file adds
+methods to it and never re-declares it, or its docstring silently replaces the generic one.
+
+**A new problem is one method. A new template is two. Their combination costs nothing.**
 
 That sentence is the contract. Every design decision is answerable to it.
 
@@ -85,13 +88,14 @@ What exists today — the package is young, so this is short:
 | :--- | :--- |
 | `src/graph.jl` | The labelled digraph and the path-completeness predicates |
 | `src/systems.jl` | Switched linear systems, with and without a control input |
+| `src/template.jl` | The template axis — quadratic, linear copositive |
+| `src/problems/` | The problem axis — `abstract.jl`, then one file per problem |
+| `src/utils.jl` | Graph constructions: De Bruijn, the observer lift |
 | `ext/` | Optional interop, one extension per weak dependency |
 | `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
 | `examples/` | Runnable scripts, run with `--project=test` |
 | `docs/` | The manual and these developer docs |
 
-Coming, per the two axes of §2: `templates/` (what the node functions are),
-`objectives/` (what the edge inequality says), and the synthesis driver over them.
 Add a directory when there is something to put in it, not before.
 
 ---
@@ -105,7 +109,7 @@ Add a directory when there is something to put in it, not before.
 - **Mutating functions end in `!`**.
 - **Argument ordering** follows the documented order: *function argument, I/O stream, input
   being mutated, **type**, input not being mutated, key, value, …* — which is why
-  `synthesize(QuadraticTemplate, graph, system, objective; optimizer)` takes the type first,
+  `safety_certificate(QuadraticTemplate, graph, problem; optimizer)` takes the type first,
   the same shape as `parse(Int, s)` and `read(io, T)`.
 - **No unnecessary static parameters.** `f(x::T) where {T <: Real}` becomes `f(x::Real)` when
   the parameter is unused.
@@ -176,6 +180,30 @@ New test files go in the `TEST_FILES` list in `test/runtests.jl` (tag a slow sui
 
 `makedocs` runs with `checkdocs = :all`: **every exported symbol needs a docstring** or the
 build fails. That is deliberate — the docs carry what the six-page paper cannot.
+
+### Don't relaunch Julia for every check
+
+A cold `julia` costs ~30 s of startup and precompilation, and `Pkg.test()` adds Aqua's
+persistent-task probe (~50 s) on top. Iterate in **one long-lived session** instead: the four
+test files together take 80 s warm against roughly five minutes of cold starts.
+
+```julia
+julia --project=test          # once, and leave it open
+using Revise                  # picks up edits to src/ without a restart
+include("test/safety.jl")     # rerun after each edit; ~8 s instead of ~3 min
+```
+
+In VS Code that is the integrated Julia REPL (`Alt-J Alt-O`); an agent without a terminal it can
+keep open gets the same effect from a background `julia` process that polls a file for code and
+writes the output to a log — same session, same warm caches, one message per command.
+
+Run the cold `Pkg.test()` **once** at the end, as the gate. It is what CI runs; it is not an
+iteration loop.
+
+**Trap:** `Manifest.toml` is gitignored, so a branch that adds a dependency leaves yours stale
+and `Pkg.test()` fails on `"X is a direct dependency, but does not appear in the manifest"`
+before running a single test. Fix with `rm Manifest.toml` then `Pkg.resolve()` — in the
+environment that failed (root, `test/` or `docs/`), not always the root one.
 
 ---
 

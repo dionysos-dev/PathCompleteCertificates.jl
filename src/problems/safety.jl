@@ -49,13 +49,6 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     end
 end
 
-"""
-    add_edge_constraint!(model, problem, template, P_src, P_dst, A, eps)
-
-Add the barrier decrease inequality for one labelled graph edge.
-"""
-function add_edge_constraint! end
-
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
@@ -104,12 +97,9 @@ function safety_problem(
     n = size(first(A), 1)
     d = n + 1
 
-    # Barrier matrices
+    # Barrier matrices: symmetric but sign-free, so no PSD constraint here --
+    # requiring it leaves P = 0 as the only solution.
     Ps = [add_function_variables!(model, template, d, i) for i in 1:n_nodes]
-
-    for P in Ps
-        add_nonnegativity!(model, P)
-    end
 
     # Initial-set and unsafe-set multipliers
     gamma0 =
