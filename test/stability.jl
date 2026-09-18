@@ -2,10 +2,13 @@
 module TestStability
 
 using Test
+using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
 
-const GRAPH = PCC.Graph(2, [(1, 2, 1), (2, 1, 1)])
+const GRAPH = GraphAutomaton(2)
+add_transition!(GRAPH, 1, 2, 1)
+add_transition!(GRAPH, 2, 1, 1)
 const A = [[0.5 0.0; 0.0 0.25]]
 const SYSTEM = PCC.switched_system(A)
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
@@ -16,7 +19,7 @@ const OPTIMIZER = Clarabel.Optimizer
 
     @test !PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.4; optimizer = OPTIMIZER)
 
-    bound = PCC.jsr_bound(
+    result = PCC.jsr_bound(
         PCC.QuadraticTemplate,
         GRAPH,
         PROBLEM;
@@ -24,7 +27,9 @@ const OPTIMIZER = Clarabel.Optimizer
         rtol = 1e-2,
     )
 
-    @test 0.5 <= bound <= 0.51
+    @test 0.5 <= result.bound <= 0.51
+    @test result.feasible
+    @test length(result.V) == 2
 end
 
 @testset "linear copositive stability" begin
@@ -47,7 +52,7 @@ end
         optimizer = OPTIMIZER,
     )
 
-    bound = PCC.jsr_bound(
+    result = PCC.jsr_bound(
         PCC.LinearCopositiveTemplate,
         GRAPH,
         PROBLEM;
@@ -55,11 +60,13 @@ end
         rtol = 1e-2,
     )
 
-    @test abs(bound - sqrt(0.5)) <= 0.01
+    @test abs(result.bound - sqrt(0.5)) <= 0.01
+    @test result.feasible
 end
 
 @testset "input validation" begin
-    invalid_label_graph = PCC.Graph(1, [(1, 1, 2)])
+    invalid_label_graph = GraphAutomaton(1)
+    add_transition!(invalid_label_graph, 1, 1, 2)
 
     @test_throws ArgumentError PCC.stability_problem(
         PCC.QuadraticTemplate,

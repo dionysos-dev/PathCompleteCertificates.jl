@@ -18,10 +18,11 @@ costs nothing. See `CLAUDE.md` for the full contract.
 """
 module PathCompleteCertificates
 
-include("graph.jl")
+include("graph_helper.jl")
 include("systems.jl")
 include("problems/abstract.jl")
 include("template.jl")
+include("extracting_common.jl")
 include("problems/stability.jl")
 include("utils.jl")
 include("problems/safety.jl")

@@ -76,7 +76,7 @@ Construct the path-complete barrier optimization model.
 """
 function safety_problem(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
 )
@@ -128,9 +128,17 @@ function safety_problem(
     # Transition constraints
     for edge in edges(graph)
         i = node_index[source(edge)]
-        j = node_index[target(edge)]
+        j = node_index[dest(edge)]
 
-        add_edge_constraint!(model, problem, template, Ps[i], Ps[j], A[label(edge)], eps)
+        add_edge_constraint!(
+            model,
+            problem,
+            template,
+            Ps[i],
+            Ps[j],
+            A[label(graph, edge)],
+            eps,
+        )
     end
 
     JuMP.@objective(model, Max, eps)
@@ -152,7 +160,7 @@ Solve the path-complete barrier optimization problem.
 """
 function safety_certificate(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
 )
@@ -223,7 +231,7 @@ function _homogeneous_dynamics(A::AbstractMatrix)
 end
 
 function _check_safety_data(
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
     problem::SafetyProblem,
 )
@@ -239,8 +247,9 @@ function _check_safety_data(
     end
 
     for edge in edges(graph)
-        1 <= label(edge) <= length(A) ||
-            throw(ArgumentError("edge label $(label(edge)) does not index a mode in A"))
+        edge_label = label(graph, edge)
+        1 <= edge_label <= length(A) ||
+            throw(ArgumentError("edge label $edge_label does not index a mode in A"))
     end
 
     return nothing
@@ -258,41 +267,11 @@ function barrier(P::AbstractMatrix, x::AbstractVector{<:Real})
     return LinearAlgebra.dot(z, P * z)
 end
 
-"""
-    CoBF_complete(Ps, x)
-
-Evaluate the common barrier function associated with a complete graph.
-"""
-function CoBF_complete(Ps::AbstractVector{<:AbstractMatrix}, x::AbstractVector{<:Real})
-    return minimum(barrier(P, x) for P in Ps)
-end
-
-"""
-    CoBF_co_complete(Ps, x)
-
-Evaluate the common barrier function associated with a co-complete graph.
-"""
-function CoBF_co_complete(Ps::AbstractVector{<:AbstractMatrix}, x::AbstractVector{<:Real})
-    return maximum(barrier(P, x) for P in Ps)
-end
-
-"""
-    CoBF(Ps, obs_states, x)
-
-Evaluate the common barrier function associated with a general graph.
-
-obs_states contains the sets of nodes corresponding to the observation
-classes. The node identifiers must correspond to indices in Ps.
-"""
-function CoBF(
-    Ps::AbstractVector{<:AbstractMatrix},
-    obs_states::AbstractVector{<:AbstractSet{<:Integer}},
+function _node_value(
+    ::Type{QuadraticTemplate},
+    ::SafetyProblem,
+    P::AbstractMatrix,
     x::AbstractVector{<:Real},
 )
-    vals = [maximum(barrier(Ps[v], x) for v in S) for S in obs_states]
-
-    return minimum(vals)
+    return barrier(P, x)
 end
-
-export SafetyProblem, safety_problem, safety_certificate
-export barrier, CoBF, CoBF_complete, CoBF_co_complete

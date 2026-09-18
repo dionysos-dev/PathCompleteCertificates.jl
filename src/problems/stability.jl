@@ -18,6 +18,15 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
+function _node_value(
+    ::Type{QuadraticTemplate},
+    ::StabilityProblem,
+    P::AbstractMatrix,
+    x::AbstractVector{<:Real},
+)
+    return LinearAlgebra.dot(x, P * x)
+end
+
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::StabilityProblem,
@@ -64,7 +73,7 @@ solver for `QuadraticTemplate`.
 """
 function stability_problem(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
@@ -93,11 +102,13 @@ function stability_problem(
             problem,
             template,
             Vs[source(edge)],
-            Vs[target(edge)],
-            A[label(edge)],
+            Vs[dest(edge)],
+            A[label(graph, edge)],
             gamma,
         )
     end
+
+    model[:stability_V] = Vs
 
     return model
 end
@@ -110,7 +121,7 @@ to a feasible termination status.
 """
 function is_stable(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
@@ -124,19 +135,19 @@ end
 
 """
     jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
-              max_iterations = 100, initial_upper = 1.0) -> Real
+              max_iterations = 100, initial_upper = 1.0)
 
 Estimate an upper bound on the joint spectral radius by bisection.
 
 At each candidate `gamma`, solve the fixed-`gamma` feasibility problem
 over every edge `(a, b, i)`.
 
-The result is the smallest feasible value found to relative tolerance
-`rtol`.
+The result is a named tuple containing the smallest feasible bound found to
+relative tolerance `rtol` and the corresponding node functions.
 """
 function jsr_bound(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     problem::StabilityProblem;
     optimizer,
     rtol::Real = 1e-3,
@@ -174,17 +185,26 @@ function jsr_bound(
         end
     end
 
-    return upper
+    model = stability_problem(template, graph, problem, upper; optimizer)
+    JuMP.optimize!(model)
+
+    status = JuMP.termination_status(model)
+    status in _FEASIBLE_TERMINATION_STATUSES ||
+        throw(ArgumentError("the final stability problem is not feasible"))
+
+    V = [JuMP.value.(v) for v in model[:stability_V]]
+
+    return (bound = upper, V = V, feasible = true)
 end
 
 """
-    jsr_bound(template, graph, system; kwargs...) -> Real
+    jsr_bound(template, graph, system; kwargs...)
 
 Estimate a joint-spectral-radius bound for an input-free switched system.
 """
 function jsr_bound(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     system::_HS.HybridSystem;
     kwargs...,
 )
@@ -215,7 +235,7 @@ end
 
 function _check_stability_data(
     template::Type{<:AbstractTemplate},
-    graph::Graph,
+    graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
 )
     isempty(A) && throw(ArgumentError("at least one mode is required"))
@@ -233,8 +253,9 @@ function _check_stability_data(
     end
 
     for edge in edges(graph)
-        1 <= label(edge) <= length(A) ||
-            throw(ArgumentError("edge label $(label(edge)) does not index a mode in A"))
+        edge_label = label(graph, edge)
+        1 <= edge_label <= length(A) ||
+            throw(ArgumentError("edge label $edge_label does not index a mode in A"))
     end
 
     if template === LinearCopositiveTemplate && any(A_i -> any(<(0), A_i), A)
@@ -247,5 +268,3 @@ function _check_stability_data(
 
     return nothing
 end
-
-export StabilityProblem, stability_problem, is_stable, jsr_bound

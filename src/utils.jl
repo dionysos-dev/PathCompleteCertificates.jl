@@ -12,7 +12,7 @@ The keyword `orientation` determines the orientation of the edges:
   `(σ, i₁, ..., iₗ₋₁)`, labeled `σ`.
 - `:co_complete`: the reverse orientation.
 
-Returns a `Graph`.
+Returns a `HybridSystems.GraphAutomaton`.
 """
 function de_bruijn(order::Integer, n_modes::Integer; orientation::Symbol = :complete)
     order >= 1 || throw(ArgumentError("The order must be positive."))
@@ -45,11 +45,15 @@ function de_bruijn(order::Integer, n_modes::Integer; orientation::Symbol = :comp
         end
     end
 
-    return Graph(length(tuples), graph_edges)
+    graph = _HS.GraphAutomaton(length(tuples))
+    for (src, dst, edge_label) in graph_edges
+        _HS.add_transition!(graph, src, dst, edge_label)
+    end
+    return graph
 end
 
 """
-    observer_graph(graph::Graph)
+    observer_graph(graph::HybridSystems.GraphAutomaton)
 
 Construct the observer graph associated with `graph`.
 
@@ -65,13 +69,13 @@ Observer states are explored using a breadth-first search.
 
 Returns:
 
-- `observer`: the observer graph as a `Graph`;
+- `observer`: the observer graph as a `HybridSystems.GraphAutomaton`;
 - `states`: a vector of sets, where `states[i]` is the subset
   of original nodes represented by observer node `i`.
 
 The observer graph contains only reachable nonempty subsets.
 """
-function observer_graph(graph::Graph)
+function observer_graph(graph::_HS.GraphAutomaton)
 
     ########################################################
     # Alphabet
@@ -87,8 +91,8 @@ function observer_graph(graph::Graph)
     succ = Dict{Tuple{Int, Int}, Set{Int}}()
 
     for edge in edges(graph)
-        key = (source(edge), label(edge))
-        push!(get!(succ, key, Set{Int}()), target(edge))
+        key = (source(edge), label(graph, edge))
+        push!(get!(succ, key, Set{Int}()), dest(edge))
     end
 
     ########################################################
@@ -149,9 +153,10 @@ function observer_graph(graph::Graph)
     # Return
     ########################################################
 
-    observer = Graph(length(states), graph_edges)
+    observer = _HS.GraphAutomaton(length(states))
+    for (src, dst, edge_label) in graph_edges
+        _HS.add_transition!(observer, src, dst, edge_label)
+    end
 
     return observer, states
 end
-
-export de_bruijn, observer_graph
