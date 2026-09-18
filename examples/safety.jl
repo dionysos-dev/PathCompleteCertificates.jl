@@ -2,13 +2,11 @@
 # presented in the following paper:
 # M. Anand, R. Jungers, M. Zamani, and F. Allgöwer, 
 # "Path-Complete Barrier Functions for Safety of Switched Linear Systems", CDC 2024
+#
+#     julia --project=test examples/safety.jl
 
 import PathCompleteCertificates as PCC
-
-using Mosek
-using MosekTools
-using LinearAlgebra
-using Plots
+import Clarabel
 
 const A1 = [
     0.7 0.77;
@@ -36,7 +34,7 @@ const Su = [
     0.0 0.0 -36.0
 ]
 
-const OPTIMIZER = Mosek.Optimizer
+const OPTIMIZER = Clarabel.Optimizer
 
 # ============================================================
 # Build the switched system and safety problem
