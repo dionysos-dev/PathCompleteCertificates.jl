@@ -12,7 +12,8 @@ const TEST_FILES = [
     ("./graph.jl",),
     ("./systems.jl",),
     ("./stability.jl", :slow),
-    ("./safety.jl", :slow),
+    ("./safety.jl",),
+    ("./utils.jl",),
 ]
 
 const _timings = Tuple{String, Float64}[]

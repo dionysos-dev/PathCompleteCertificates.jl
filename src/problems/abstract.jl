@@ -14,5 +14,3 @@ Add the certificate inequality for one labelled graph edge.  Each concrete
 problem defines methods for the templates it supports.
 """
 function add_edge_constraint! end
-
-export AbstractProblem, add_edge_constraint!
