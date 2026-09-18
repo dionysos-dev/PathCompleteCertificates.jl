@@ -10,15 +10,20 @@ inequality — which is why the package is organised along two independent axes
 rather than one type hierarchy:
 
   * **template** — what the node functions are (quadratic, polyhedral, …);
-  * **objective** — what the edge inequality says (stability, optimal control,
+  * **problem** — what the edge inequality says (stability, optimal control,
     safety).
 
-Adding an objective is one method, adding a template is two, and their
-combination costs nothing. See `CLAUDE.md` for the full contract.
+Adding a problem is one method, adding a template is two, and their combination
+costs nothing. See `CLAUDE.md` for the full contract.
 """
 module PathCompleteCertificates
 
 include("graph.jl")
 include("systems.jl")
+include("problems/abstract.jl")
+include("template.jl")
+include("problems/stability.jl")
+include("utils.jl")
+include("problems/safety.jl")
 
 end # module
