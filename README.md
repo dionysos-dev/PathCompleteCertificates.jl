@@ -9,7 +9,7 @@
 
 [build-img]: https://github.com/dionysos-dev/PathCompleteCertificates.jl/actions/workflows/ci.yml/badge.svg?branch=master
 [build-url]: https://github.com/dionysos-dev/PathCompleteCertificates.jl/actions?query=workflow%3ACI
-[codecov-img]: https://codecov.io/github/dionysos-dev/PathCompleteCertificates.jl/coverage.svg
+[codecov-img]: https://codecov.io/github/dionysos-dev/PathCompleteCertificates.jl/branch/master/graph/badge.svg
 [codecov-url]: https://app.codecov.io/github/dionysos-dev/PathCompleteCertificates.jl
 [aqua-img]: https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
