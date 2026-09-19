@@ -29,7 +29,7 @@ const OPTIMIZER = Clarabel.Optimizer
     @test !PCC.is_path_complete(mode_1_only, 1:2)    # not for the system's
 
     @test_throws ArgumentError PCC.is_stable(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         mode_1_only,
         problem,
         0.95;
@@ -37,7 +37,7 @@ const OPTIMIZER = Clarabel.Optimizer
     )
 
     @test_throws ArgumentError PCC.jsr_bound(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         mode_1_only,
         problem;
         optimizer = OPTIMIZER,
@@ -62,7 +62,7 @@ end
     @test PCC.is_path_complete(graph, 1:2)
 
     result = PCC.jsr_bound(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         graph,
         problem;
         optimizer = OPTIMIZER,
@@ -74,12 +74,18 @@ end
 end
 
 @testset "quadratic stability" begin
-    @test PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
+    @test PCC.is_stable(PCC.QuadraticTemplate(), GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
 
-    @test !PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.4; optimizer = OPTIMIZER)
+    @test !PCC.is_stable(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM,
+        0.4;
+        optimizer = OPTIMIZER,
+    )
 
     result = PCC.jsr_bound(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -92,35 +98,59 @@ end
 end
 
 @testset "linear copositive stability" begin
-    # For V(x) = c'x, the edge inequalities imply
-    # gamma^2 >= rho(A), hence gamma >= sqrt(0.5).
+    # `V(x) = c'x` is homogeneous of degree 1, so its edge condition is
+    # `V_dst(Ax) <= gamma * V_src(x)` and `gamma` is the contraction rate
+    # directly. The driver used to raise every template's rate to the square,
+    # which made this bound sqrt(rho(A)) = 0.707 rather than rho(A) = 0.5 --
+    # `jsr_bound` returned different quantities for different templates.
 
     @test PCC.is_stable(
-        PCC.LinearCopositiveTemplate,
-        GRAPH,
-        PROBLEM,
-        0.8;
-        optimizer = OPTIMIZER,
-    )
-
-    @test !PCC.is_stable(
-        PCC.LinearCopositiveTemplate,
+        PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM,
         0.6;
         optimizer = OPTIMIZER,
     )
 
+    @test !PCC.is_stable(
+        PCC.LinearCopositiveTemplate(),
+        GRAPH,
+        PROBLEM,
+        0.4;
+        optimizer = OPTIMIZER,
+    )
+
     result = PCC.jsr_bound(
-        PCC.LinearCopositiveTemplate,
+        PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
         rtol = 1e-2,
     )
 
-    @test abs(result.bound - sqrt(0.5)) <= 0.01
+    # rho(diag(0.5, 0.25)) = 0.5, and every template must agree on it.
+    @test abs(result.bound - 0.5) <= 0.01
     @test result.feasible
+end
+
+@testset "every template agrees on the rate" begin
+    # The point of `rate_exponent`: the same system and graph, three templates
+    # of two different degrees, one answer.
+    @test PCC.rate_exponent(PCC.QuadraticTemplate()) == 2
+    @test PCC.rate_exponent(PCC.LinearCopositiveTemplate()) == 1
+    @test PCC.rate_exponent(PCC.PolyhedralTemplate(2, 2)) == 1
+
+    bounds = map((
+        PCC.QuadraticTemplate(),
+        PCC.LinearCopositiveTemplate(),
+        PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+    )) do template
+        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).bound
+    end
+
+    for bound in bounds
+        @test abs(bound - 0.5) <= 0.01
+    end
 end
 
 @testset "input validation" begin
@@ -128,7 +158,7 @@ end
     add_transition!(invalid_label_graph, 1, 1, 2)
 
     @test_throws ArgumentError PCC.stability_problem(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         invalid_label_graph,
         PROBLEM,
         1.0;

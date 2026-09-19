@@ -15,6 +15,7 @@ const TEST_FILES = [
     ("./safety.jl",),
     ("./utils.jl",),
     ("./extracting_common.jl",),
+    ("./polyhedral.jl", :slow),
     ("./optimal_control.jl", :slow),
 ]
 

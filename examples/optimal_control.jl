@@ -55,7 +55,7 @@ problem = PCC.OptimalControlProblem(system, Q, R)
 
 graph = PCC.de_bruijn(1, 2; orientation = :complete)
 result = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate,
+    PCC.QuadraticTemplate(),
     graph,
     problem;
     optimizer = OPTIMIZER,
@@ -69,5 +69,5 @@ println("State-feedback gains: $(result.K)")
 
 # Evaluate the common upper bound at one state
 x = [1.0, 1.0]
-common_value = PCC.common(PCC.QuadraticTemplate, graph, problem, result.P, x)
+common_value = PCC.common(PCC.QuadraticTemplate(), graph, problem, result.P, x)
 println("Common upper bound value at x = $x: $common_value")

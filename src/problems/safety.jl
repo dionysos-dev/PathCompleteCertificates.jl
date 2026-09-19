@@ -52,7 +52,7 @@ end
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     P_src::LinearAlgebra.Symmetric,
     P_dst::LinearAlgebra.Symmetric,
     A::AbstractMatrix,
@@ -75,12 +75,12 @@ end
 Construct the path-complete barrier optimization model.
 """
 function safety_problem(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
 )
-    template === QuadraticTemplate ||
+    template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
     A = mode_matrices(problem.system)
@@ -159,7 +159,7 @@ end
 Solve the path-complete barrier optimization problem.
 """
 function safety_certificate(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
@@ -270,7 +270,7 @@ function barrier(P::AbstractMatrix, x::AbstractVector{<:Real})
 end
 
 function _node_value(
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     ::SafetyProblem,
     P::AbstractMatrix,
     x::AbstractVector{<:Real},
