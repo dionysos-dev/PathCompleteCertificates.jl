@@ -11,6 +11,7 @@ using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
 import LinearAlgebra
+using LinearAlgebra: normalize
 
 const OPTIMIZER = Clarabel.Optimizer
 

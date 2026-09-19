@@ -1,35 +1,6 @@
 import JuMP
 import LinearAlgebra
 
-"""
-    AbstractTemplate
-
-Abstract supertype for families of candidate functions.
-
-A template is passed as an **instance**, not as a type. `QuadraticTemplate()`
-and `LinearCopositiveTemplate()` are singletons carrying nothing, but a
-template is not in general determined by its type: [`PolyhedralTemplate`](@ref)
-carries one fixed matrix per node, and there is nowhere to put that on a
-`::Type{T}` argument.
-"""
-abstract type AbstractTemplate end
-
-raw"""
-    LinearCopositiveTemplate()
-
-The template ``V(x) = c^\top x`` on the nonnegative orthant.  It is applicable
-to positive switched systems only: every mode matrix must map ``\mathbb{R}^n_+``
-into itself.
-"""
-struct LinearCopositiveTemplate <: AbstractTemplate end
-
-raw"""
-    QuadraticTemplate()
-
-The template ``V(x) = x^\top P x``, with ``P`` positive definite.
-"""
-struct QuadraticTemplate <: AbstractTemplate end
-
 raw"""
     PolyhedralTemplate(G; min_weight = 1e-3)
     PolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
@@ -113,86 +84,6 @@ end
 
 (V::PolyhedralFunction)(x::AbstractVector{<:Real}) = maximum(abs.(V.G * x) ./ V.w)
 
-"""
-    rate_exponent(template) -> Int
-
-The degree of homogeneity of the template's functions: `V(cx) = c^d V(x)`.
-
-The edge condition is `V_dst(A x) <= gamma^d V_src(x)`, so this is what makes
-the `gamma` a driver bisects on mean the same thing for every template — a
-contraction rate, and hence a joint-spectral-radius bound. A quadratic form is
-degree 2; a linear functional and a norm are degree 1.
-"""
-function rate_exponent end
-
-rate_exponent(::LinearCopositiveTemplate) = 1
-rate_exponent(::QuadraticTemplate) = 2
-rate_exponent(::PolyhedralTemplate) = 1
-
-"""
-    add_function_variables!(model, template, dimension, node)
-
-Add the decision variables representing one candidate function at `node` and
-return it.  `node` selects the node's fixed template data, where the template
-has any, and names the variables.
-"""
-function add_function_variables! end
-
-"""
-    add_nonnegativity!(model, template, V)
-
-Constrain the candidate function `V` to be nonnegative.  Strict positivity is
-added separately by the stability problem's normalization.
-
-Dispatch is on the *template*, not on the type of `V`: two templates can
-perfectly well represent their functions with the same container, and then
-dispatching on the container silently applies the wrong constraint.
-"""
-function add_nonnegativity! end
-
-function add_function_variables!(
-    model::JuMP.Model,
-    ::LinearCopositiveTemplate,
-    dimension::Integer,
-    node::Integer,
-)
-    @assert dimension > 0
-    return JuMP.@variable(model, [1:dimension], base_name = "c_$(node)")
-end
-
-function add_nonnegativity!(
-    model::JuMP.Model,
-    ::LinearCopositiveTemplate,
-    c::AbstractVector,
-)
-    JuMP.@constraint(model, c .>= 0)
-    return nothing
-end
-
-function add_function_variables!(
-    model::JuMP.Model,
-    ::QuadraticTemplate,
-    dimension::Integer,
-    node::Integer,
-)
-    @assert dimension > 0
-    return JuMP.@variable(
-        model,
-        [1:dimension, 1:dimension],
-        Symmetric,
-        base_name = "P_$(node)",
-    )
-end
-
-function add_nonnegativity!(
-    model::JuMP.Model,
-    ::QuadraticTemplate,
-    P::LinearAlgebra.Symmetric,
-)
-    JuMP.@constraint(model, P in JuMP.PSDCone())
-    return nothing
-end
-
 function add_function_variables!(
     model::JuMP.Model,
     template::PolyhedralTemplate,
@@ -233,19 +124,52 @@ function add_nonnegativity!(
     return nothing
 end
 
-"""
-    solution_value(template, V)
-
-The fitted node function after `optimize!`: the same object with numbers where
-it held JuMP variables.
-
-A driver cannot just broadcast `JuMP.value` over whatever
-[`add_function_variables!`](@ref) returned, because a node function may carry
-fixed data alongside its variables — a `PolyhedralFunction` keeps its `G`.
-"""
-function solution_value end
-
-solution_value(::LinearCopositiveTemplate, c) = JuMP.value.(c)
-solution_value(::QuadraticTemplate, P) = JuMP.value.(P)
 solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
     PolyhedralFunction(V.G, JuMP.value.(V.w))
+
+rate_exponent(::PolyhedralTemplate) = 1
+
+function _add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
+    # `add_nonnegativity!` already floors the weights at `min_weight`, which is
+    # both the positivity and the normalization here: the edge conditions are
+    # homogeneous in w, so scaling every weight by t > 0 changes nothing.
+    return nothing
+end
+
+function add_domination!(
+    model::JuMP.Model,
+    ::PolyhedralTemplate,
+    V_src::PolyhedralFunction,
+    V_dst::PolyhedralFunction,
+    map::AbstractMatrix;
+    scale = 1,
+    margin = 0,
+)
+    margin == 0 || throw(
+        ArgumentError(
+            "PolyhedralTemplate cannot express a margin: the weights sit in a " *
+            "denominator, so the margin term is not linear in them",
+        ),
+    )
+
+    # V_dst(map x) <= scale * V_src(x) for every x is, after the change of
+    # coordinates z = W_src^-1 G_src x, the statement that the infinity-norm
+    # induced norm of W_dst^-1 G_dst map G_src^-1 W_src is at most `scale`. Row
+    # by row that is |G_dst map G_src^-1| w_src <= scale * w_dst -- linear in w,
+    # which is what keeps this template an LP.
+    #
+    # Note the weights of the *destination* carry the scale: w sits in a
+    # denominator, so it runs opposite to P and c.
+    M = abs.(V_dst.G * map * inv(V_src.G))
+
+    JuMP.@constraint(model, M * V_src.w .<= scale * V_dst.w)
+
+    return nothing
+end
+
+_node_value(
+    ::PolyhedralTemplate,
+    ::AbstractProblem,
+    V::PolyhedralFunction,
+    x::AbstractVector{<:Real},
+) = V(x)

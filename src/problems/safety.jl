@@ -49,21 +49,27 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     end
 end
 
+# One method, generic over templates, exactly as for stability. Safety differs
+# from stability in two arguments and nothing else: the dynamics are lifted to
+# homogeneous coordinates, and the strictness is carried by a margin rather than
+# by a scale.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
-    ::QuadraticTemplate,
-    P_src::LinearAlgebra.Symmetric,
-    P_dst::LinearAlgebra.Symmetric,
+    template::AbstractTemplate,
+    P_src,
+    P_dst,
     A::AbstractMatrix,
-    eps::JuMP.VariableRef,
+    eps,
 )
-    T_A = _homogeneous_dynamics(A)
-    d = size(A, 1) + 1
-
-    JuMP.@constraint(
+    add_domination!(
         model,
-        P_src - transpose(T_A) * P_dst * T_A - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
+        template,
+        P_src,
+        P_dst,
+        _homogeneous_dynamics(A);
+        scale = 1,
+        margin = eps,
     )
 
     return nothing

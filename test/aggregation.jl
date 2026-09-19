@@ -1,4 +1,4 @@
-module TestExtractingCommon
+module TestAggregation
 
 using Test
 using HybridSystems
@@ -51,9 +51,30 @@ end
     @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈ expected
 end
 
-@testset "only the quadratic template is supported so far" begin
+@testset "the aggregation is generic in the template" begin
+    # It used to be quadratic-only. Once `_node_value` moved onto the template
+    # axis, every template that defines it aggregates -- nothing in `common`
+    # mentions a template by name.
+    graph = PCC.de_bruijn(1, 2)
+    coefficients = [[1.0, 1.0], [2.0, 2.0]]
+
+    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, coefficients, X) ≈
+          minimum(LinearAlgebra.dot(c, X) for c in coefficients)
+
+    weights = [
+        PCC.PolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), [1.0, 1.0]),
+        PCC.PolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), [4.0, 4.0]),
+    ]
+
+    @test PCC.common(PCC.PolyhedralTemplate(2, 2), graph, PROBLEM, weights, X) ≈
+          minimum(V(X) for V in weights)
+end
+
+struct UnsupportedTemplate <: PCC.AbstractTemplate end
+
+@testset "a template with no node value says which pair is missing" begin
     @test_throws ArgumentError PCC.common(
-        PCC.LinearCopositiveTemplate(),
+        UnsupportedTemplate(),
         PCC.de_bruijn(1, 2),
         PROBLEM,
         PS,

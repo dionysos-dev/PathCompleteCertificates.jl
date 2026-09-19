@@ -43,15 +43,20 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
     end
 end
 
-function _node_value(
-    ::QuadraticTemplate,
-    ::OptimalControlProblem,
-    P::AbstractMatrix,
-    x::AbstractVector{<:Real},
-)
-    return LinearAlgebra.dot(x, P * x)
-end
-
+# The one edge condition that does not factor through `add_domination!`, and it
+# is worth being explicit about why rather than leaving it as an inconsistency.
+#
+# Domination is stated in the primal variables: `scale * V_src - V_dst . map`.
+# Here the inequality is
+#
+#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK),
+#
+# which is not convex in (P, K) jointly. It becomes convex only after the
+# substitution S = P^-1, Y = K S -- so this problem uses the template's
+# variables as the *inverse* of the node function, and its constraint cannot be
+# written against V_src and V_dst at all. A template that wants to support
+# optimal control therefore has to supply a second primitive, which is why no
+# template but the quadratic one does.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::OptimalControlProblem,

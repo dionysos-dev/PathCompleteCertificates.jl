@@ -36,28 +36,3 @@ function common(
         state in observer_states
     )
 end
-
-"""
-    _node_value(template, problem, V, x)
-
-Evaluate one node function at `x`.
-
-Defined per template, with a problem argument only because a problem may lift
-the function into other coordinates — `SafetyProblem` evaluates its barriers in
-homogeneous coordinates, which is the one case where the pair matters.
-"""
-function _node_value end
-
-function _node_value(
-    template::AbstractTemplate,
-    problem::AbstractProblem,
-    V,
-    ::AbstractVector{<:Real},
-)
-    return throw(
-        ArgumentError(
-            "no node-function evaluation for $(typeof(template)) on " *
-            "$(nameof(typeof(problem))); define `_node_value` for that pair",
-        ),
-    )
-end
