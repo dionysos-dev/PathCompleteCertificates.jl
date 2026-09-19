@@ -81,11 +81,9 @@ The state matrices `A`, indexed by mode.
 Needed because the matrices live on the transitions, keyed by event — reading
 `system.resetmaps` works only while those happen to be ordered by label.
 
-For a system with an input this returns `A` alone; use [`input_matrices`](@ref)
-for `B`. It used to return `A` or the pair `(A, B)` depending on a runtime
-check, which made it type-unstable and — worse — let `A, B = mode_matrices(sys)`
-silently destructure a two-mode input-free system into two matrices and report a
-nonsense state dimension.
+Always `A`, never the pair — use [`input_matrices`](@ref) for `B`. Returning
+one or the other on a runtime check would be type-unstable, and would let
+`A, B = mode_matrices(sys)` silently destructure a two-mode autonomous system.
 """
 function mode_matrices(system::_HS.HybridSystem)
     maps = _maps_by_mode(system)

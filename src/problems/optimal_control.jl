@@ -19,9 +19,8 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         Q::AbstractMatrix,
         R::AbstractMatrix,
     ) where {S}
-        # Without this, `mode_matrices` returns the bare `A` vector and the
-        # destructuring below silently splits it into two mode matrices,
-        # reporting a nonsense state dimension instead of the real problem.
+        # Without this the destructuring below silently splits a two-mode
+        # autonomous system into A and B, reporting a nonsense dimension.
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
@@ -65,20 +64,14 @@ struct OptimalControlCertificate{D <: CertificateData, K, T} <: AbstractCertific
     objective::T
 end
 
-# The one edge condition that does not factor through `add_domination!`, and it
-# is worth being explicit about why rather than leaving it as an inconsistency.
+# The one edge condition that does not factor through `add_domination!`.
 #
-# Domination is stated in the primal variables: `scale * V_src - V_dst . map`.
-# Here the inequality is
+#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK)
 #
-#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK),
-#
-# which is not convex in (P, K) jointly. It becomes convex only after the
-# substitution S = P^-1, Y = K S -- so this problem uses the template's
-# variables as the *inverse* of the node function, and its constraint cannot be
-# written against V_src and V_dst at all. A template that wants to support
-# optimal control therefore has to supply a second primitive, which is why no
-# template but the quadratic one does.
+# is not convex in (P, K) jointly, and becomes convex only under S = P^-1,
+# Y = K S. So this problem uses the template's variables as the *inverse* of
+# the node function and cannot be stated against V_src and V_dst at all --
+# which is why only the quadratic template supports it.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
@@ -235,11 +228,9 @@ function _check_optimal_control_data(graph, A, B; path_complete::Bool = true)
         size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
     end
 
-    # Stricter than `_check_path_complete` on purpose: this problem reads its
-    # bound off the plain minimum of Corollary III.3, which needs a *complete*
-    # graph. A path-complete graph that is neither complete nor co-complete is
-    # sound in general (Theorem III.8) but needs the observer aggregation,
-    # which is not implemented here.
+    # Stricter than `_check_path_complete`: the bound is read off the plain
+    # minimum of Corollary III.3, which needs a *complete* graph. The general
+    # case is sound (Theorem III.8) but needs the observer aggregation.
     is_complete(graph, 1:length(A)) || throw(
         ArgumentError(
             "optimal control currently supports only complete graphs; " *

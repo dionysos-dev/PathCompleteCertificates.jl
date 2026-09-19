@@ -18,10 +18,8 @@ include("graphs/observer.jl")
 include("systems.jl")
 
 # --- The two axes, declared before either is implemented ----------------------
-# Both interfaces come first so each may mention the other's abstract type: a
-# template's `node_value` is generic in the problem, and a problem's edge
-# condition is generic in the template. Neither axis depends on the other's
-# *implementations*, which is the property that matters.
+# Both interfaces come first so each may mention the other's abstract type.
+# Neither depends on the other's *implementations*, which is what matters.
 include("templates/abstract.jl")   # AXIS 1 -- what the node functions are
 include("problems/abstract.jl")    # AXIS 2 -- what the edge inequality says
 

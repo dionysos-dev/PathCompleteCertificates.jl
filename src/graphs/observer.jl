@@ -25,10 +25,6 @@ The observer graph contains only reachable nonempty subsets.
 function observer_graph(graph::_HS.GraphAutomaton)
     letters = sort!(collect(alphabet(graph)))
 
-    ########################################################
-    # Adjacency dictionary
-    ########################################################
-
     # succ[(node, label)] contains all reachable successors.
     succ = Dict{Tuple{Int, Int}, Set{Int}}()
 
@@ -37,26 +33,17 @@ function observer_graph(graph::_HS.GraphAutomaton)
         push!(get!(succ, key, Set{Int}()), dest(edge))
     end
 
-    ########################################################
-    # Observer states
-    ########################################################
-
     initial_state = Set(nodes(graph))
     states = [initial_state]
 
-    # Tuples of variable length are used as immutable dictionary keys.
+    # Variable-length tuples as immutable dictionary keys.
     state_to_id = Dict{Tuple{Vararg{Int}}, Int}()
     state_to_id[Tuple(sort!(collect(initial_state)))] = 1
 
     graph_edges = Tuple{Int, Int, Int}[]
 
-    # BFS queue: observer node indices.
     queue = [1]
     head = 1
-
-    ########################################################
-    # Breadth-first search
-    ########################################################
 
     while head <= length(queue)
         id_P = queue[head]
@@ -74,7 +61,6 @@ function observer_graph(graph::_HS.GraphAutomaton)
             # Empty observer states are not included.
             isempty(Q) && continue
 
-            # Canonical immutable representation of Q.
             key_Q = Tuple(sort!(collect(Q)))
 
             if !haskey(state_to_id, key_Q)
@@ -90,10 +76,6 @@ function observer_graph(graph::_HS.GraphAutomaton)
             push!(graph_edges, (id_P, id_Q, σ))
         end
     end
-
-    ########################################################
-    # Return
-    ########################################################
 
     observer = _HS.GraphAutomaton(length(states))
     for (src, dst, edge_label) in graph_edges
