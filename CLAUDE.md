@@ -86,11 +86,24 @@ What exists today — the package is young, so this is short:
 
 | Path | What it is |
 | :--- | :--- |
-| `src/graph.jl` | The labelled digraph and the path-completeness predicates |
+| `src/graph_helper.jl` | Queries and path-completeness predicates over `HybridSystems.GraphAutomaton` |
 | `src/systems.jl` | Switched linear systems, with and without a control input |
 | `src/template.jl` | The template axis — quadratic, linear copositive |
 | `src/problems/` | The problem axis — `abstract.jl`, then one file per problem |
+| `src/extracting_common.jl` | `common` — the aggregation over the graph's node functions |
 | `src/utils.jl` | Graph constructions: De Bruijn, the observer lift |
+
+**The path-complete graph is a `HybridSystems.GraphAutomaton`** — the same type as the
+system's own automaton. The package owns no graph type; `graph_helper.jl` adds the queries.
+That keeps one vocabulary across the system and the certificate, and it is why `label` takes
+the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its label.
+
+> The cost, so it is not rediscovered as a surprise: `GraphAutomaton` does not subtype
+> `Graphs.AbstractGraph`, so the ecosystem's algorithms do not come for free; label lookup
+> reaches into its `Σ` field; and the queries are still linear scans. Accepted deliberately.
+> **Because the two graphs are now the same type, nothing but the argument name stops
+> `system.automaton` being passed where the certificate graph belongs** — so keep the
+> arguments named `system`, `graph` and `reachability`, never `automaton`.
 | `ext/` | Optional interop, one extension per weak dependency |
 | `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
 | `examples/` | Runnable scripts, run with `--project=test` |
@@ -153,7 +166,16 @@ for the guarantee. Never present one as the other — conflating them is how uns
 ship.
 
 **Path-completeness is not graph completeness.** A "complete graph" in graph theory has every
-pair of vertices adjacent. That is a different property. The predicate is `is_path_complete`.
+pair of vertices adjacent. That is a different property. The predicates are
+`is_path_complete` and `is_co_path_complete`.
+
+**Path-completeness is relative to an alphabet, and the default is the weaker question.**
+`is_path_complete(graph)` asks about the labels the graph *happens to use*, so a graph that
+never mentions a mode passes trivially — and then certifies nothing about that mode. It once
+returned a JSR bound of 0.906 for a system whose JSR is at least 3. Always pass the system's
+alphabet when the question is about a certificate: `is_path_complete(graph, 1:n_modes)`.
+Every problem's data check calls `_check_path_complete(graph, length(A))`, which accepts
+either orientation; add the call when you add a problem.
 
 ---
 
