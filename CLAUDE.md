@@ -51,24 +51,32 @@ one fixed matrix per node, and `::Type{T}` has nowhere to put it.
 **A template supplies primitives; a problem chooses which to apply, and with what arguments.**
 Neither axis names the other.
 
+Every one of these is **public**. They are what a user implements, so none of them is
+`_`-prefixed — a hidden extension point is a contradiction.
+
 ```julia
 # --- Template axis (src/templates/). One file per template, answering all of it.
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                      # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
-_add_normalization!(model, template, V)              # excludes V ≡ 0
+add_normalization!(model, template, V)               # excludes V ≡ 0
 rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
-solution_value(template, V)                          # variables -> numbers, after optimize!
-_node_value(template, problem, V, x)                 # evaluate V_α; generic in the problem
-_check_dynamics(template, A)                         # is this template applicable at all?
+solution_value(template, V)                          # variables -> a callable node function
+node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
+check_dynamics(template, A)                          # is this template applicable at all?
 
 # --- Problem axis (src/problems/). One file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics, rate)
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 
 # --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
 #   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
+#   `common` is the literature's word (Philippe et al.) -- do not rename it to `aggregate`.
 ```
+
+Every problem returns a [`Certificate`](@ref): the fitted node functions, the status, and a
+`details` named tuple for whatever is problem-specific. It is callable — `certificate(x)` is
+the common function — so callers rarely touch the node functions individually.
 
 `add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
 lifting into a cone, and that lifting is template-specific — which is why it cannot be written
@@ -339,3 +347,19 @@ subsystem (`graphs`, `lifts`, `templates`, `objectives`, `synthesis`, `verificat
 `docs`, `meta`).
 
 Do **not** add a `Co-Authored-By` line.
+
+---
+
+## 8. Two traps measured, not guessed
+
+**Path-completeness is PSPACE-complete to decide.** It is NFA universality, and
+`is_path_complete` is the subset construction — exponential in `|V|` in the worst case. It is
+usable here because the graphs are not worst cases (a De Bruijn graph visits about `2|V|`
+subsets, not `2^|V|`) and because complete / co-complete short-circuit it. Refinement tests
+many candidate graphs with this predicate, so measure here first if a loop gets slow.
+
+**Index adjacency before scanning it.** `is_complete` used to call `outgoing_edges(graph, node,
+letter)` per pair, each a full scan of the edge list — `O(|V|·|Σ|·|E|)`. On `M = 4, k = 4` that
+was 46 ms, **50× slower than the PSPACE-complete predicate it was supposed to be a cheap
+substitute for**. Building the index once made it 0.1 ms. The graph queries in
+`graphs/queries.jl` are still linear scans; if any of them lands in a hot loop, do the same.

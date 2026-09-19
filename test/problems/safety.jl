@@ -25,8 +25,8 @@ certificate(graph) = PCC.safety_certificate(
     # A barrier is negative on the initial set and positive on the unsafe one,
     # so its matrix has eigenvalues of both signs. P = 0 would pass every other
     # test in this file.
-    for P in res.P
-        eigenvalues = LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(P)))
+    for V in PCC.functions(res)
+        eigenvalues = LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(V)))
         @test any(<(-1e-6), eigenvalues)
         @test any(>(1e-6), eigenvalues)
     end
@@ -34,8 +34,8 @@ end
 
 @testset "the multipliers stay nonnegative" begin
     res = certificate(PCC.de_bruijn(1, 2))
-    @test all(>=(-1e-8), res.gamma0)
-    @test all(>=(-1e-8), res.gammau)
+    @test all(>=(-1e-8), res.details.initial_multipliers)
+    @test all(>=(-1e-8), res.details.unsafe_multipliers)
 end
 
 @testset "the separation margin is a real quantity" begin
@@ -48,11 +48,11 @@ end
         res = certificate(PCC.de_bruijn(order, 2))
 
         @test res.feasible
-        @test res.eps > 1e-6
+        @test res.details.margin > 1e-6
 
         # The normalisation that makes `max eps` bounded.
-        for P in res.P
-            @test maximum(abs, P) <= 1 + 1e-6
+        for V in PCC.functions(res)
+            @test maximum(abs, Matrix(V)) <= 1 + 1e-6
         end
     end
 end
@@ -71,7 +71,7 @@ end
         optimizer = Clarabel.Optimizer,
     )
 
-    @test res.eps <= 1e-6
+    @test res.details.margin <= 1e-6
     @test !res.feasible
 end
 

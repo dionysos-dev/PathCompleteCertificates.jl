@@ -9,11 +9,11 @@ const A = [[0.5 0.0; 0.0 0.25], [0.25 0.0; 0.0 0.5]]
 const PROBLEM = PCC.StabilityProblem(PCC.switched_system(A))
 const X = [1.0, 2.0]
 
-const P1 = LinearAlgebra.Symmetric([1.0 0.0; 0.0 1.0])
-const P2 = LinearAlgebra.Symmetric([3.0 0.0; 0.0 3.0])
+const P1 = PCC.QuadraticFunction(LinearAlgebra.Symmetric([1.0 0.0; 0.0 1.0]))
+const P2 = PCC.QuadraticFunction(LinearAlgebra.Symmetric([3.0 0.0; 0.0 3.0]))
 const PS = [P1, P2]
 
-value(P) = LinearAlgebra.dot(X, P * X)
+value(V) = V(X)
 
 @testset "a complete graph aggregates with a minimum" begin
     graph = PCC.de_bruijn(1, 2)
@@ -52,7 +52,7 @@ end
 end
 
 @testset "the aggregation is generic in the template" begin
-    # It used to be quadratic-only. Once `_node_value` moved onto the template
+    # It used to be quadratic-only. Once `node_value` moved onto the template
     # axis, every template that defines it aggregates -- nothing in `common`
     # mentions a template by name.
     graph = PCC.de_bruijn(1, 2)

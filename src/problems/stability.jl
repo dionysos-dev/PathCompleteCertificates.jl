@@ -29,8 +29,8 @@ function add_edge_constraint!(
     template::AbstractTemplate,
     V_src,
     V_dst,
-    A::AbstractMatrix,
-    rate::Real,
+    A::AbstractMatrix;
+    rate::Real = 1,
 )
     add_domination!(model, template, V_src, V_dst, A; scale = rate)
 
@@ -75,7 +75,7 @@ function stability_problem(
 
     for V in Vs
         add_nonnegativity!(model, template, V)
-        _add_normalization!(model, template, V)
+        add_normalization!(model, template, V)
     end
 
     # The template's degree of homogeneity, not a hard-coded square: `gamma` is
@@ -90,8 +90,8 @@ function stability_problem(
             template,
             Vs[source(edge)],
             Vs[dest(edge)],
-            A[label(graph, edge)],
-            rate,
+            A[label(graph, edge)];
+            rate = rate,
         )
     end
 
@@ -129,8 +129,9 @@ Estimate an upper bound on the joint spectral radius by bisection.
 At each candidate `gamma`, solve the fixed-`gamma` feasibility problem
 over every edge `(a, b, i)`.
 
-The result is a named tuple containing the smallest feasible bound found to
-relative tolerance `rtol` and the corresponding node functions.
+Returns a [`Certificate`](@ref). Its `details.rate` is the smallest feasible
+bound found to relative tolerance `rtol`; `functions(certificate)` are the
+node Lyapunov functions, and `certificate(x)` evaluates the common one.
 """
 function jsr_bound(
     template::AbstractTemplate,
@@ -181,7 +182,7 @@ function jsr_bound(
 
     V = [solution_value(template, v) for v in model[:stability_V]]
 
-    return (bound = upper, V = V, feasible = true)
+    return Certificate(problem, template, graph, V, status, true, (rate = upper,))
 end
 
 """
@@ -205,29 +206,8 @@ function _check_stability_data(
     graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
 )
-    isempty(A) && throw(ArgumentError("at least one mode is required"))
-
-    dimension = size(first(A), 1)
-
-    dimension > 0 || throw(ArgumentError("mode matrices must have positive dimension"))
-
-    for (i, A_i) in enumerate(A)
-        size(A_i) == (dimension, dimension) || throw(
-            ArgumentError(
-                "A[$i] has size $(size(A_i)); " * "expected ($dimension, $dimension)",
-            ),
-        )
-    end
-
-    for edge in edges(graph)
-        edge_label = label(graph, edge)
-        1 <= edge_label <= length(A) ||
-            throw(ArgumentError("edge label $edge_label does not index a mode in A"))
-    end
-
-    _check_dynamics(template, A)
-
-    _check_path_complete(graph, length(A))
+    _check_modes(graph, A)
+    check_dynamics(template, A)
 
     return nothing
 end

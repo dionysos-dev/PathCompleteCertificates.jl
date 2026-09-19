@@ -22,9 +22,9 @@ function common(
     alphabet = 1:_n_modes(problem)
 
     if is_complete(graph, alphabet)
-        return minimum(_node_value(template, problem, P, x) for P in Ps)
+        return minimum(node_value(template, problem, P, x) for P in Ps)
     elseif is_co_complete(graph, alphabet)
-        return maximum(_node_value(template, problem, P, x) for P in Ps)
+        return maximum(node_value(template, problem, P, x) for P in Ps)
     end
 
     # Each observer node is a *set* of nodes of `graph`, so the aggregation is
@@ -32,7 +32,7 @@ function common(
     _, observer_states = observer_graph(graph)
 
     return minimum(
-        maximum(_node_value(template, problem, Ps[node], x) for node in state) for
+        maximum(node_value(template, problem, Ps[node], x) for node in state) for
         state in observer_states
     )
 end

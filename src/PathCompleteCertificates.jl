@@ -19,7 +19,7 @@ include("systems.jl")
 
 # --- The two axes, declared before either is implemented ----------------------
 # Both interfaces come first so each may mention the other's abstract type: a
-# template's `_node_value` is generic in the problem, and a problem's edge
+# template's `node_value` is generic in the problem, and a problem's edge
 # condition is generic in the template. Neither axis depends on the other's
 # *implementations*, which is the property that matters.
 include("templates/abstract.jl")   # AXIS 1 -- what the node functions are
@@ -41,5 +41,8 @@ include("problems/optimal_control.jl")
 # --- The join: collapsing a certificate's node functions into one -------------
 # Dispatches on the graph, not on the problem, so it sits with neither axis.
 include("aggregation.jl")
+
+# --- What a problem hands back ------------------------------------------------
+include("certificate.jl")
 
 end # module

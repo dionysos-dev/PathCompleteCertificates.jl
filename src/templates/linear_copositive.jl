@@ -33,7 +33,7 @@ solution_value(::LinearCopositiveTemplate, c) = JuMP.value.(c)
 
 rate_exponent(::LinearCopositiveTemplate) = 1
 
-function _add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
+function add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
     JuMP.@constraint(model, c .>= 1)
 
     return nothing
@@ -55,10 +55,10 @@ function add_domination!(
     return nothing
 end
 
-_node_value(::LinearCopositiveTemplate, ::AbstractProblem, c, x::AbstractVector{<:Real}) =
+node_value(::LinearCopositiveTemplate, ::AbstractProblem, c, x::AbstractVector{<:Real}) =
     LinearAlgebra.dot(c, x)
 
-function _check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
+function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
     any(A_i -> any(<(0), A_i), A) && throw(
         ArgumentError(
             "LinearCopositiveTemplate requires entrywise nonnegative matrices: " *

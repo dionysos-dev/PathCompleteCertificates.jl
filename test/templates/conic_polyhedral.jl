@@ -51,11 +51,11 @@ end
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test result.feasible
-    @test abs(result.bound - 0.5) <= 0.01
+    @test abs(result.details.rate - 0.5) <= 0.01
 
     # One facet row per cone, and the scale that keeps V away from zero.
-    @test size(result.V[1].P) == (length(cones), 2)
-    @test result.V[1].scale >= 1e-3 - 1e-9
+    @test size(PCC.functions(result)[1].P) == (length(cones), 2)
+    @test PCC.functions(result)[1].scale >= 1e-3 - 1e-9
 
     # The edge condition is imposed only on the cones' extreme rays; check it
     # actually holds everywhere, which is the point of the dominance
@@ -67,7 +67,8 @@ end
 
         for theta in range(0, 2pi; length = 400)
             x = [cos(theta), sin(theta)]
-            @test result.V[dst](A[mode] * x) <= result.bound * result.V[src](x) + 1e-6
+            @test PCC.functions(result)[dst](A[mode] * x) <=
+                  result.details.rate * PCC.functions(result)[src](x) + 1e-6
         end
     end
 end
@@ -90,13 +91,13 @@ end
         problem;
         optimizer = OPTIMIZER,
         rtol = 1e-4,
-    ).bound
+    ).details.rate
 
     @test fixed > 1.0     # certifies nothing about contraction
 
     bounds = map(1:4) do order
         template = PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(order)])
-        PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).bound
+        PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).details.rate
     end
 
     @test all(>=(0.9 - 1e-4), bounds)          # never below the true JSR

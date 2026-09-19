@@ -63,8 +63,8 @@ end
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test result.feasible
-    @test abs(result.bound - 0.5) <= 0.01
-    @test length(result.V) == 2
+    @test abs(result.details.rate - 0.5) <= 0.01
+    @test length(PCC.functions(result)) == 2
 end
 
 @testset "the certificate satisfies the edge condition it claims" begin
@@ -73,7 +73,7 @@ end
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    fitted = result.V
+    fitted = PCC.functions(result)
 
     for edge in PCC.edges(GRAPH)
         src = PCC.source(edge)
@@ -81,7 +81,7 @@ end
         mode = PCC.label(GRAPH, edge)
 
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [-2.0, 3.0], [0.7, -1.3])
-            @test fitted[dst](A[mode] * x) <= result.bound * fitted[src](x) + 1e-6
+            @test fitted[dst](A[mode] * x) <= result.details.rate * fitted[src](x) + 1e-6
         end
     end
 end
@@ -97,15 +97,15 @@ end
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test result.feasible
-    @test result.bound >= 0.5 - 1e-6      # never below the true rate
-    @test result.bound <= 1.0             # and still certifies contraction
+    @test result.details.rate >= 0.5 - 1e-6      # never below the true rate
+    @test result.details.rate <= 1.0             # and still certifies contraction
 end
 
 @testset "the aggregation works for this template too" begin
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    fitted = result.V
+    fitted = PCC.functions(result)
 
     x = [1.0, 2.0]
     value = PCC.common(template, GRAPH, PROBLEM, fitted, x)
@@ -124,7 +124,7 @@ end
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test result.feasible
-    for V in result.V
+    for V in PCC.functions(result)
         @test all(>=(2.5 - 1e-6), V.w)
     end
 end

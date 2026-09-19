@@ -9,7 +9,7 @@ Abstract supertype for families of candidate functions.
 **A template supplies primitives; a problem chooses which to apply.** That is
 the whole interface, and it is why a template is added by adding one file here
 and nothing else: `add_domination!` states one function dominates another under
-an affine map, `add_nonnegativity!` and `_add_normalization!` state a function
+an affine map, `add_nonnegativity!` and `add_normalization!` state a function
 is a usable member of the family, and the rest is bookkeeping. Stability applies
 all of them; safety applies only domination, because its barriers are sign-free.
 Nothing in this directory knows what a problem is.
@@ -56,7 +56,7 @@ dispatching on the container silently applies the wrong constraint.
 function add_nonnegativity! end
 
 """
-    _add_normalization!(model, template, V)
+    add_normalization!(model, template, V)
 
 Rule out the degenerate member of the family — typically `V ≡ 0`, which
 satisfies every homogeneous edge condition and certifies nothing.
@@ -66,7 +66,7 @@ without the other, and because what counts as degenerate is the template's
 business: a floor on the weights for a polyhedral function, `P ⪰ I` for a
 quadratic one.
 """
-function _add_normalization! end
+function add_normalization! end
 
 """
     add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
@@ -106,7 +106,7 @@ fixed data alongside its variables — a `PolyhedralFunction` keeps its `G`.
 function solution_value end
 
 """
-    _check_dynamics(template, A)
+    check_dynamics(template, A)
 
 Throw if `template` is not applicable to the mode matrices `A`.
 
@@ -115,6 +115,6 @@ nothing about a system that leaves the nonnegative orthant — so the check live
 with the template rather than as an `isa` test inside a problem. The default is
 that every template applies.
 """
-function _check_dynamics end
+function check_dynamics end
 
-_check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
+check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
