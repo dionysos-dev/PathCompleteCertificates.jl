@@ -349,8 +349,8 @@ Never commit to `master`; branch per change; format before committing; open a PR
 
 **Commit message format:** `[ACTION] module: description` — lowercase, no trailing period,
 ≤ 60 chars. Actions: `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV`. Module is the touched
-subsystem (`graphs`, `lifts`, `templates`, `objectives`, `synthesis`, `verification`, `test`,
-`docs`, `meta`).
+subsystem (`graphs`, `templates`, `problems`, `systems`, `aggregation`, `test`, `docs`,
+`examples`, `meta`).
 
 Do **not** add a `Co-Authored-By` line.
 

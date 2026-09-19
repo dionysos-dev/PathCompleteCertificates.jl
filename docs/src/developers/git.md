@@ -45,14 +45,14 @@ branch does.
 | `MOV`  | move / rename |
 | `REV`  | revert |
 
-**Module** is the touched subsystem, inferred from the paths: `graphs`, `lifts`, `templates`,
-`objectives`, `synthesis`, `verification`, `sets`, or `test` / `docs` / `examples`.
+**Module** is the touched subsystem, inferred from the paths: `graphs`, `templates`, `problems`,
+`systems`, `aggregation`, or `test` / `docs` / `examples`.
 Repository configuration, CI and tooling are `meta`.
 
 Examples:
 
 ```
-ADD objectives: optimal control edge constraint
+ADD problems: optimal control edge constraint
 FIX graphs: path-completeness on an empty alphabet
 IMP meta: one actions/checkout version across workflows
 ```

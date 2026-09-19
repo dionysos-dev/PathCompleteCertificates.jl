@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 636 130" role="img"
+     aria-label="PathCompleteCertificates.jl">
+  <title>PathCompleteCertificates.jl</title>
+
+  <!-- The mark of logo.svg, vertically centred, with the name set beside it. -->
+  <g transform="translate(0,7)">
+    <g fill="none" stroke="#4063D8" stroke-width="8" stroke-linecap="round">
+      <path d="M100.66,36.14 A30,30 0 0 1 139.72,20.88"/>
+      <path d="M155.34,79.86 A30,30 0 0 1 116.28,95.12"/>
+      <path d="M46.31,83.22 A26,26 0 0 1 32.39,33.14"/>
+      <path d="M209.69,32.78 A26,26 0 0 1 223.61,82.86"/>
+    </g>
+    <g fill="#4063D8">
+      <path d="M161.81,30.26 136.01,29.62 147.08,24.01 143.43,12.14Z"/>
+      <path d="M94.19,85.74 119.99,86.38 108.92,91.99 112.57,103.86Z"/>
+      <path d="M55.34,26.12 35.17,42.22 40.04,30.80 29.61,24.06Z"/>
+      <path d="M200.66,89.88 220.83,73.78 215.96,85.20 226.39,91.94Z"/>
+    </g>
+    <circle cx="72"  cy="58" r="30" fill="#CB3C33"/>
+    <circle cx="184" cy="58" r="30" fill="#389826"/>
+  </g>
+
+  <!-- textLength pins the layout: the banner is identical whatever sans-serif
+       the viewer happens to have, instead of overflowing the viewBox. -->
+  <g font-family="'Segoe UI','Helvetica Neue',Helvetica,Arial,sans-serif"
+     font-weight="700" font-size="50" fill="#1b1f24">
+    <text x="290" y="57"  textLength="336" lengthAdjust="spacing">PathComplete</text>
+    <text x="290" y="109" textLength="336" lengthAdjust="spacing">Certificates.jl</text>
+  </g>
+</svg>

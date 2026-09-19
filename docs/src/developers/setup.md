@@ -68,9 +68,10 @@ julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.in
 julia --project=docs docs/make.jl
 ```
 
-`makedocs` runs with `checkdocs = :all`: **every exported symbol needs a docstring** or the build
-fails. That is deliberate. The tool paper has six pages including references, so it cannot explain
-the package — these docs have to.
+**Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package exports
+nothing deliberately, so the `checkdocs = :all` setting has no symbol list to work from and checks
+nothing; `test/docstrings.jl` is the real gate. That matters because the tool paper has six pages
+including references, so it cannot explain the package — these docs have to.
 
 Do not commit the `docs/Project.toml` changes that `Pkg.develop` produces.
 

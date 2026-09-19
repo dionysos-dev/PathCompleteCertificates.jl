@@ -1,6 +1,7 @@
-<img src="docs/src/assets/logo.svg" alt="" width="300">
-
-# PathCompleteCertificates.jl
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/banner-dark.svg">
+  <img src="docs/src/assets/banner.svg" alt="PathCompleteCertificates.jl" width="460">
+</picture>
 
 | **Documentation** | **Build Status** |
 |:-----------------:|:----------------:|
@@ -24,8 +25,6 @@
 
 Certificates for switched systems built on **path-complete graphs**.
 
-> **Status: under construction.** The scaffolding is in place; the graph layer is next.
-
 ## What it does
 
 A path-complete certificate is always the same three things: a **labelled graph**, a function
@@ -36,14 +35,16 @@ that is the soundness condition.
 What changes between proving stability, bounding a value function, and certifying safety is
 only the edge inequality:
 
-| Objective | Edge inequality on `(α, β, i)` |
+| Problem | Edge inequality on `(α, β, i)` |
 | :-- | :-- |
-| Stability | `V_α(x) ≥ V_β(A_i x)` |
+| Stability | `V_α(x) ≥ γ⁻ᵈ V_β(A_i x)` |
 | Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
+| Safety | `B_α(x) ≥ B_β(A_i x)`, plus separation of the initial and unsafe sets |
 
 So the package is built along two independent axes — **template** (what the node functions
-are) and **objective** (what the edge inequality says) — which compose as a product. Adding an
-objective is one method; adding a template is two.
+are) and **problem** (what the edge inequality says) — which compose as a product. A new
+template is one file under `src/templates/`, a new problem one file under `src/problems/`,
+and neither requires editing the other.
 
 ## How it relates to the other tools
 
@@ -81,8 +82,8 @@ Contributions are welcome. Please open an
 discuss a feature, and see the Developer Docs for the setup, conventions and Git workflow.
 
 One thing to read before writing code: the package is organised along **two independent axes** —
-*template* (what the node functions are) and *objective* (what the edge inequality says). Adding an
-objective is one method; adding a template is two. The
+*template* (what the node functions are) and *problem* (what the edge inequality says). A new
+template is one file under `src/templates/`, a new problem one file under `src/problems/`. The
 [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
 page explains why, and what goes wrong when the structure is ignored.
 
