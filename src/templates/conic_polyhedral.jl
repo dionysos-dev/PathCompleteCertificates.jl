@@ -1,12 +1,12 @@
 import JuMP
 
-raw"""
+"""
     ConicPolyhedralTemplate(cones; min_scale = 1e-3)
 
 The general polyhedral template: at node ``s``,
 
 ```math
-V_s(x) = \max_i |p_{s,i}^\top x|,
+V_s(x) = \\max_i |p_{s,i}^\\top x|,
 ```
 
 whose sublevel sets are polytopes whose **facets are themselves solved for**,
@@ -24,7 +24,7 @@ The construction is dimension-general; only [`planar_conic_partition`](@ref),
 the ready-made partition, is two-dimensional.
 
 `min_scale` is the floor on the auxiliary scale ``c_s`` in
-``V_s(x) \ge c_s \|x\|_\infty``, which is what rules out ``V_s \equiv 0``.
+``V_s(x) \\ge c_s \\|x\\|_\\infty``, which is what rules out ``V_s \\equiv 0``.
 """
 struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
     cones::Vector{Vector{Matrix{T}}}
@@ -67,7 +67,7 @@ struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
     end
 end
 
-raw"""
+"""
     ConicPolyhedralFunction(cones, P, scale)
 
 One fitted node function of a [`ConicPolyhedralTemplate`](@ref),

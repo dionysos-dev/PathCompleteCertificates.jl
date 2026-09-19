@@ -1,11 +1,11 @@
 import JuMP
 import LinearAlgebra
 
-raw"""
+"""
     LinearCopositiveTemplate()
 
-The template ``V(x) = c^\top x`` on the nonnegative orthant.  It is applicable
-to positive switched systems only: every mode matrix must map ``\mathbb{R}^n_+``
+The template ``V(x) = c^\\top x`` on the nonnegative orthant.  It is applicable
+to positive switched systems only: every mode matrix must map ``\\mathbb{R}^n_+``
 into itself.
 """
 struct LinearCopositiveTemplate <: AbstractTemplate end

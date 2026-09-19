@@ -2,7 +2,7 @@
 # Jungers) and the two structural conditions that are sufficient for it
 # (Definition III.2). Keep the distinction: III.2 is not II.1.
 
-raw"""
+"""
     is_path_complete(graph)
     is_path_complete(graph, alphabet)
 
