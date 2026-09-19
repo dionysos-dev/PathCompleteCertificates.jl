@@ -24,7 +24,7 @@ const PROBLEM = PCC.OptimalControlProblem(SYSTEM, Q, R)
 const GRAPH = PCC.de_bruijn(1, 2)
 
 const RESULT = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate,
+    PCC.QuadraticTemplate(),
     GRAPH,
     PROBLEM;
     optimizer = OPTIMIZER,
@@ -74,7 +74,7 @@ end
     @test RESULT.objective < 0
 
     # The bound itself is a function of the state, and it is nonnegative.
-    @test PCC.common(PCC.QuadraticTemplate, GRAPH, PROBLEM, RESULT.P, [1.0, 1.0]) > 0
+    @test PCC.common(PCC.QuadraticTemplate(), GRAPH, PROBLEM, RESULT.P, [1.0, 1.0]) > 0
 end
 
 @testset "input validation" begin
@@ -83,14 +83,14 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q[1:1, 1:1], R)
 
     @test_throws ArgumentError PCC.optimal_control_certificate(
-        PCC.LinearCopositiveTemplate,
+        PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
     )
 
     @test_throws ArgumentError PCC.optimal_control_certificate(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -109,7 +109,7 @@ end
     add_transition!(incomplete, 1, 1, 2)
 
     @test_throws ArgumentError PCC.optimal_control_certificate(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         incomplete,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -121,7 +121,7 @@ end
 
     @test PCC.is_path_complete(mode_1_only)
     @test_throws ArgumentError PCC.optimal_control_certificate(
-        PCC.QuadraticTemplate,
+        PCC.QuadraticTemplate(),
         mode_1_only,
         PROBLEM;
         optimizer = OPTIMIZER,

@@ -21,10 +21,15 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 
 # Compute an upper bound on the JSR and the corresponding node Lyapunov functions
 
-result =
-    PCC.jsr_bound(PCC.QuadraticTemplate, graph, problem; optimizer = OPTIMIZER, rtol = 1e-2)
+result = PCC.jsr_bound(
+    PCC.QuadraticTemplate(),
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    rtol = 1e-2,
+)
 println("Joint spectral radius upper bound: $(result.bound)")
 
 x = [1.0, 1.0]
-common_value = PCC.common(PCC.QuadraticTemplate, graph, problem, result.V, x)
+common_value = PCC.common(PCC.QuadraticTemplate(), graph, problem, result.V, x)
 println("Common Lyapunov function value at x = $x: $common_value")

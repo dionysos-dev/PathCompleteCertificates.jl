@@ -44,7 +44,7 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
 end
 
 function _node_value(
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     ::OptimalControlProblem,
     P::AbstractMatrix,
     x::AbstractVector{<:Real},
@@ -55,7 +55,7 @@ end
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     S_src,
     Y_src,
     S_dst,
@@ -109,13 +109,13 @@ Returns a named tuple `(status, objective, P, K, feasible)`:
     negative, whereas the value function is nonnegative whenever `Q, R ≻ 0`.
 """
 function optimal_control_certificate(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
 )
-    template === QuadraticTemplate ||
+    template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 

@@ -12,7 +12,7 @@ const S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
 const SU = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
 
 certificate(graph) = PCC.safety_certificate(
-    PCC.QuadraticTemplate,
+    PCC.QuadraticTemplate(),
     graph,
     PCC.SafetyProblem(PCC.switched_system(A), S0, SU);
     optimizer = Clarabel.Optimizer,

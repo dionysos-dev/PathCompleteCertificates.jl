@@ -21,7 +21,7 @@ struct StabilityProblem{S} <: AbstractProblem
 end
 
 function _node_value(
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     ::StabilityProblem,
     P::AbstractMatrix,
     x::AbstractVector{<:Real},
@@ -29,16 +29,28 @@ function _node_value(
     return LinearAlgebra.dot(x, P * x)
 end
 
+function _node_value(
+    ::PolyhedralTemplate,
+    ::StabilityProblem,
+    V::PolyhedralFunction,
+    x::AbstractVector{<:Real},
+)
+    return V(x)
+end
+
+# `rate` is gamma^rate_exponent(template) -- see `rate_exponent`. Each method
+# below states the edge condition against it, so none of them hard-codes the
+# template's degree.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::StabilityProblem,
-    ::Type{LinearCopositiveTemplate},
+    ::LinearCopositiveTemplate,
     c_src,
     c_dst,
     A::AbstractMatrix,
-    gamma::Real,
+    rate::Real,
 )
-    JuMP.@constraint(model, transpose(A) * c_dst .<= gamma^2 * c_src,)
+    JuMP.@constraint(model, transpose(A) * c_dst .<= rate * c_src)
 
     return nothing
 end
@@ -46,13 +58,37 @@ end
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::StabilityProblem,
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     P_src::LinearAlgebra.Symmetric,
     P_dst::LinearAlgebra.Symmetric,
     A::AbstractMatrix,
-    gamma::Real,
+    rate::Real,
 )
-    JuMP.@constraint(model, gamma^2 * P_src - transpose(A) * P_dst * A in JuMP.PSDCone(),)
+    JuMP.@constraint(model, rate * P_src - transpose(A) * P_dst * A in JuMP.PSDCone())
+
+    return nothing
+end
+
+function add_edge_constraint!(
+    model::JuMP.Model,
+    problem::StabilityProblem,
+    ::PolyhedralTemplate,
+    V_src::PolyhedralFunction,
+    V_dst::PolyhedralFunction,
+    A::AbstractMatrix,
+    rate::Real,
+)
+    # V_dst(Ax) <= rate * V_src(x) for every x is, after the change of
+    # coordinates z = W_src^-1 G_src x, the statement that the infinity-norm
+    # induced norm of W_dst^-1 G_dst A G_src^-1 W_src is at most `rate`. Row by
+    # row that is |G_dst A G_src^-1| w_src <= rate * w_dst -- linear in w, which
+    # is what keeps this template an LP.
+    #
+    # Note the weights of the *destination* carry the rate: w sits in a
+    # denominator, so it runs opposite to P and c.
+    M = abs.(V_dst.G * A * inv(V_src.G))
+
+    JuMP.@constraint(model, M * V_src.w .<= rate * V_dst.w)
 
     return nothing
 end
@@ -74,7 +110,7 @@ The returned model has no objective. Use [`is_stable`](@ref) or
 solver for `QuadraticTemplate`.
 """
 function stability_problem(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::StabilityProblem,
     gamma::Real;
@@ -94,9 +130,14 @@ function stability_problem(
     Vs = [add_function_variables!(model, template, dimension, a) for a in nodes(graph)]
 
     for V in Vs
-        add_nonnegativity!(model, V)
+        add_nonnegativity!(model, template, V)
         _add_normalization!(model, template, V)
     end
+
+    # The template's degree of homogeneity, not a hard-coded square: `gamma` is
+    # the contraction rate for every template, so `jsr_bound` means the same
+    # thing whichever one is in use.
+    rate = gamma^rate_exponent(template)
 
     for edge in edges(graph)
         add_edge_constraint!(
@@ -106,7 +147,7 @@ function stability_problem(
             Vs[source(edge)],
             Vs[dest(edge)],
             A[label(graph, edge)],
-            gamma,
+            rate,
         )
     end
 
@@ -122,7 +163,7 @@ Return whether the fixed-`gamma` Lyapunov feasibility problem is solved
 to a feasible termination status.
 """
 function is_stable(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::StabilityProblem,
     gamma::Real;
@@ -148,7 +189,7 @@ The result is a named tuple containing the smallest feasible bound found to
 relative tolerance `rtol` and the corresponding node functions.
 """
 function jsr_bound(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::StabilityProblem;
     optimizer,
@@ -194,7 +235,7 @@ function jsr_bound(
     status in _FEASIBLE_TERMINATION_STATUSES ||
         throw(ArgumentError("the final stability problem is not feasible"))
 
-    V = [JuMP.value.(v) for v in model[:stability_V]]
+    V = [solution_value(template, v) for v in model[:stability_V]]
 
     return (bound = upper, V = V, feasible = true)
 end
@@ -205,7 +246,7 @@ end
 Estimate a joint-spectral-radius bound for an input-free switched system.
 """
 function jsr_bound(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     system::_HS.HybridSystem;
     kwargs...,
@@ -222,21 +263,28 @@ const _FEASIBLE_TERMINATION_STATUSES = (
     JuMP.MOI.ALMOST_LOCALLY_SOLVED,
 )
 
-function _add_normalization!(model::JuMP.Model, ::Type{LinearCopositiveTemplate}, c)
+function _add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
     JuMP.@constraint(model, c .>= 1)
 
     return nothing
 end
 
-function _add_normalization!(model::JuMP.Model, ::Type{QuadraticTemplate}, P)
+function _add_normalization!(model::JuMP.Model, ::QuadraticTemplate, P)
     JuMP.@constraint(model, P - LinearAlgebra.I in JuMP.PSDCone(),)
     JuMP.@constraint(model, 100*LinearAlgebra.I - P in JuMP.PSDCone(),)
 
     return nothing
 end
 
+function _add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
+    # `add_nonnegativity!` already floors the weights at `min_weight`, which is
+    # both the positivity and the normalization here: the edge conditions are
+    # homogeneous in w, so scaling every weight by t > 0 changes nothing.
+    return nothing
+end
+
 function _check_stability_data(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
 )
@@ -260,7 +308,7 @@ function _check_stability_data(
             throw(ArgumentError("edge label $edge_label does not index a mode in A"))
     end
 
-    if template === LinearCopositiveTemplate && any(A_i -> any(<(0), A_i), A)
+    if template isa LinearCopositiveTemplate && any(A_i -> any(<(0), A_i), A)
         throw(
             ArgumentError(
                 "LinearCopositiveTemplate requires entrywise nonnegative matrices",

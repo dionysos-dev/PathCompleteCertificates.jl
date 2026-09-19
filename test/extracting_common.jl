@@ -19,7 +19,7 @@ value(P) = LinearAlgebra.dot(X, P * X)
     graph = PCC.de_bruijn(1, 2)
     @test PCC.is_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate, graph, PROBLEM, PS, X) ≈
+    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈
           minimum(value(P) for P in PS)
 end
 
@@ -27,7 +27,7 @@ end
     graph = PCC.de_bruijn(1, 2; orientation = :co_complete)
     @test PCC.is_co_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate, graph, PROBLEM, PS, X) ≈
+    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈
           maximum(value(P) for P in PS)
 end
 
@@ -48,12 +48,12 @@ end
 
     expected = minimum(maximum(value(PS[node]) for node in state) for state in states)
 
-    @test PCC.common(PCC.QuadraticTemplate, graph, PROBLEM, PS, X) ≈ expected
+    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈ expected
 end
 
 @testset "only the quadratic template is supported so far" begin
     @test_throws ArgumentError PCC.common(
-        PCC.LinearCopositiveTemplate,
+        PCC.LinearCopositiveTemplate(),
         PCC.de_bruijn(1, 2),
         PROBLEM,
         PS,

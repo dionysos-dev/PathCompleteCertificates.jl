@@ -9,10 +9,10 @@ a common Lyapunov function for stability, a common barrier function for
 safety, or an upper bound on the value function for optimal control.
 """
 function common(
-    template::Type{QuadraticTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::AbstractProblem,
-    Ps::AbstractVector{<:AbstractMatrix},
+    Ps::AbstractVector,
     x::AbstractVector{<:Real},
 )
     # Corollary III.3 of Philippe et al.: a complete graph aggregates with a
@@ -37,14 +37,27 @@ function common(
     )
 end
 
-function common(
-    ::Type{<:AbstractTemplate},
-    graph::_HS.GraphAutomaton,
-    problem::AbstractProblem,
-    Vs,
-    x::AbstractVector{<:Real},
-)
-    return throw(ArgumentError("common currently supports only QuadraticTemplate"))
-end
+"""
+    _node_value(template, problem, V, x)
 
+Evaluate one node function at `x`.
+
+Defined per template, with a problem argument only because a problem may lift
+the function into other coordinates — `SafetyProblem` evaluates its barriers in
+homogeneous coordinates, which is the one case where the pair matters.
+"""
 function _node_value end
+
+function _node_value(
+    template::AbstractTemplate,
+    problem::AbstractProblem,
+    V,
+    ::AbstractVector{<:Real},
+)
+    return throw(
+        ArgumentError(
+            "no node-function evaluation for $(typeof(template)) on " *
+            "$(nameof(typeof(problem))); define `_node_value` for that pair",
+        ),
+    )
+end

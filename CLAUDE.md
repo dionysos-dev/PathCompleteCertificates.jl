@@ -44,26 +44,54 @@ independent axes**, not one type hierarchy:
 
 ### The interfaces
 
+A template is passed as an **instance**, never as a type. `QuadraticTemplate()` carries
+nothing, but a template is not in general determined by its type: `PolyhedralTemplate` carries
+one fixed matrix per node, and `::Type{T}` has nowhere to put it.
+
 ```julia
-# Template axis — two methods per template.
-add_function_variables!(model, ::Type{T}, dim, node)  # -> a V_α of JuMP variables
-add_nonnegativity!(model, V)                          # V(x) ≥ 0
+# Template axis — five methods, none of which mentions a problem.
+add_function_variables!(model, template, dim, node)  # -> the node function V_α
+add_nonnegativity!(model, template, V)               # V(x) ≥ 0
+_add_normalization!(model, template, V)              # excludes V ≡ 0
+rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
+solution_value(template, V)                          # variables -> numbers, after optimize!
 
-# Problem axis — one method per (problem, template) pair.
-add_edge_constraint!(model, problem, ::Type{T}, V_src, V_dst, dynamics, mode)
+# Problem axis — one method per problem, per template.
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics, rate)
+_node_value(template, problem, V, x)                 # evaluate V_α at a point
 
-# Aggregation — a trait on the graph, not a method per problem.
-aggregate(::Complete, Vs)      # min over nodes
-aggregate(::CoComplete, Vs)    # max over nodes
-aggregate(::Reachability, Vs)  # min over sets, max within
+# Aggregation — dispatches on the graph, not on the problem. See `common`.
+#   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
 ```
 
 `add_edge_constraint!` is declared **once**, in `src/problems/abstract.jl`; a problem file adds
 methods to it and never re-declares it, or its docstring silently replaces the generic one.
 
-**A new problem is one method. A new template is two. Their combination costs nothing.**
+### What a new template actually costs — measured, not asserted
 
-That sentence is the contract. Every design decision is answerable to it.
+The contract used to read *"a new problem is one method, a new template is two, and their
+combination costs nothing."* Porting the symmetric `2n`-face polyhedral template from Dionysos
+measured it: **five methods on the template axis, plus two per problem it supports.** For `P`
+problems that is `5 + 2P`, not `2`.
+
+The gap is worth understanding rather than papering over, because the two templates that were
+here first hid it — both are data-free and both are degree 2, so four of the five methods were
+constant and never had to exist:
+
+| What the third template needed | Why the first two did not |
+| :-- | :-- |
+| an instance, not a type | quadratic and copositive carry no data |
+| `add_nonnegativity!` on the *template* | it used to dispatch on the container, and `w` is a `Vector` exactly like `c` — silently the wrong constraint |
+| `rate_exponent` | `γ²` was hard-coded, so `jsr_bound` returned `√JSR` for the degree-1 template |
+| `solution_value` | `JuMP.value.(V)` works only if `V` is a bare container |
+| `V` to carry its fixed data | the edge condition needs `G_dst A G_src⁻¹`, which the variables alone do not determine |
+
+**`add_edge_constraint!` is the one that still scales as `n × m`**, and it is the one to fix.
+The route is a template-axis primitive that problems compose, rather than a method per pair —
+something like `add_domination!(model, template, V_src, V_dst, A, rate; margin)` for
+"`V_src ⪰ rate · V_dst ∘ A` everywhere", which is template-specific but problem-agnostic.
+Stability is then one call, safety that plus an S-procedure, optimal control that plus the cost
+term. Until that exists, the honest statement is the table above, not the slogan.
 
 > **The failure mode this prevents.** The code this package grew from had three synthesis
 > routines of 127, 171 and 200 lines that were largely the same program, differing only in
@@ -88,10 +116,16 @@ What exists today — the package is young, so this is short:
 | :--- | :--- |
 | `src/graph_helper.jl` | Queries and path-completeness predicates over `HybridSystems.GraphAutomaton` |
 | `src/systems.jl` | Switched linear systems, with and without a control input |
-| `src/template.jl` | The template axis — quadratic, linear copositive |
+| `src/template.jl` | The template axis — quadratic, linear copositive, polyhedral |
 | `src/problems/` | The problem axis — `abstract.jl`, then one file per problem |
 | `src/extracting_common.jl` | `common` — the aggregation over the graph's node functions |
 | `src/utils.jl` | Graph constructions: De Bruijn, the observer lift |
+| `ext/` | Optional interop, one extension per weak dependency |
+| `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
+| `examples/` | Runnable scripts, run with `--project=test` |
+| `docs/` | The manual and these developer docs |
+
+Add a directory when there is something to put in it, not before.
 
 **The path-complete graph is a `HybridSystems.GraphAutomaton`** — the same type as the
 system's own automaton. The package owns no graph type; `graph_helper.jl` adds the queries.
@@ -104,12 +138,6 @@ the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its la
 > **Because the two graphs are now the same type, nothing but the argument name stops
 > `system.automaton` being passed where the certificate graph belongs** — so keep the
 > arguments named `system`, `graph` and `reachability`, never `automaton`.
-| `ext/` | Optional interop, one extension per weak dependency |
-| `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
-| `examples/` | Runnable scripts, run with `--project=test` |
-| `docs/` | The manual and these developer docs |
-
-Add a directory when there is something to put in it, not before.
 
 ---
 
