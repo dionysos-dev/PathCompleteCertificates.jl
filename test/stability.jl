@@ -14,6 +14,36 @@ const SYSTEM = PCC.switched_system(A)
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 const OPTIMIZER = Clarabel.Optimizer
 
+@testset "a graph that is not path-complete for the system is rejected" begin
+    # The soundness condition, and the one the old `is_complete` could not see:
+    # this graph never mentions mode 2, so it constrains nothing about a mode
+    # that diverges at rate 3. Before the alphabet argument it returned a JSR
+    # bound of 0.906 for a system whose JSR is at least 3.
+    two_modes = PCC.switched_system([[0.9 0.0; 0.0 0.9], [3.0 0.0; 0.0 3.0]])
+    problem = PCC.StabilityProblem(two_modes)
+
+    mode_1_only = GraphAutomaton(1)
+    add_transition!(mode_1_only, 1, 1, 1)
+
+    @test PCC.is_path_complete(mode_1_only)          # for its own alphabet
+    @test !PCC.is_path_complete(mode_1_only, 1:2)    # not for the system's
+
+    @test_throws ArgumentError PCC.is_stable(
+        PCC.QuadraticTemplate,
+        mode_1_only,
+        problem,
+        0.95;
+        optimizer = OPTIMIZER,
+    )
+
+    @test_throws ArgumentError PCC.jsr_bound(
+        PCC.QuadraticTemplate,
+        mode_1_only,
+        problem;
+        optimizer = OPTIMIZER,
+    )
+end
+
 @testset "quadratic stability" begin
     @test PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
 
@@ -75,6 +105,10 @@ end
         1.0;
         optimizer = OPTIMIZER,
     )
+
+    # A system with an input is not a stability problem.
+    B = [reshape([1.0, 0.0], 2, 1)]
+    @test_throws ArgumentError PCC.StabilityProblem(PCC.switched_system(A, B))
 end
 
 end

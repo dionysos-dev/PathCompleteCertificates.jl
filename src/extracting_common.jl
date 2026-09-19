@@ -15,16 +15,20 @@ function common(
     Ps::AbstractVector{<:AbstractMatrix},
     x::AbstractVector{<:Real},
 )
-    if is_complete(graph)
+    if is_path_complete(graph)
         return minimum(_node_value(template, problem, P, x) for P in Ps)
-    elseif is_co_complete(graph)
+    elseif is_co_path_complete(graph)
         return maximum(_node_value(template, problem, P, x) for P in Ps)
     end
 
-    _, obs_states = observer_graph(graph)
-    vals = [_node_value(template, problem, Ps[v], x) for v in obs_states]
+    # Each observer node is a *set* of nodes of `graph`, so the aggregation is
+    # a maximum within each set and a minimum across them.
+    _, observer_states = observer_graph(graph)
 
-    return minimum(maximum(values) for values in vals)
+    return minimum(
+        maximum(_node_value(template, problem, Ps[node], x) for node in state) for
+        state in observer_states
+    )
 end
 
 function common(

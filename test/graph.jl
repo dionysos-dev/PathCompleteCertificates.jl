@@ -43,24 +43,45 @@ end
         add_transition!(G1, edge...)
     end
 
-    @test PCC.is_complete(G1)
-    @test !PCC.is_co_complete(G1)
+    @test PCC.is_path_complete(G1)
+    @test !PCC.is_co_path_complete(G1)
 
     G2 = GraphAutomaton(3)
     for edge in [(1, 2, 1), (2, 3, 2), (3, 1, 1)]
         add_transition!(G2, edge...)
     end
 
-    @test !PCC.is_complete(G2)
-    @test !PCC.is_co_complete(G2)
+    @test !PCC.is_path_complete(G2)
+    @test !PCC.is_co_path_complete(G2)
 
     G3 = GraphAutomaton(3)
     for edge in [(1, 1, 1), (2, 1, 2), (2, 2, 1), (3, 2, 2), (3, 3, 1), (1, 3, 2)]
         add_transition!(G3, edge...)
     end
 
-    @test PCC.is_complete(G3)
-    @test PCC.is_co_complete(G3)
+    @test PCC.is_path_complete(G3)
+    @test PCC.is_co_path_complete(G3)
+end
+
+@testset "path-completeness is relative to an alphabet" begin
+    # A graph that never mentions mode 2 is trivially complete for its own
+    # labels, and not path-complete for a two-mode system. The one-argument
+    # form cannot see the difference, which is why the two-argument form is
+    # what the problem constructors call.
+    graph = GraphAutomaton(1)
+    add_transition!(graph, 1, 1, 1)
+
+    @test PCC.is_path_complete(graph)
+    @test PCC.is_path_complete(graph, 1:1)
+    @test !PCC.is_path_complete(graph, 1:2)
+
+    @test PCC.is_co_path_complete(graph)
+    @test !PCC.is_co_path_complete(graph, 1:2)
+
+    # De Bruijn graphs are complete for exactly the alphabet they are built on.
+    de_bruijn = PCC.de_bruijn(2, 2)
+    @test PCC.is_path_complete(de_bruijn, 1:2)
+    @test !PCC.is_path_complete(de_bruijn, 1:3)
 end
 
 @testset "Graph validation" begin
