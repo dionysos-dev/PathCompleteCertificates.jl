@@ -27,9 +27,6 @@ function describe(name, system)
     println("   input        : ", PCC.has_input(system))
     println("   states       : ", HS.nstates(system.automaton))
     println("   transitions  : ", HS.ntransitions(system.automaton))
-    # The alias is pinned to OneStateAutomaton, so it matches only the
-    # unconstrained case -- see the note below.
-    println("   matches alias: ", system isa PCC.SwitchedLinearControlSystem)
     return println()
 end
 
@@ -53,17 +50,14 @@ describe(
     PCC.switched_system(A, B; automaton = constraint),
 )
 
-# The alias tracks the input and nothing else: constraining the switching does
-# not change whether a system matches it. That is deliberate -- an earlier
-# version pinned the automaton and silently excluded every constrained system.
-
 # --- reading the dynamics back --------------------------------------------
 # The matrices live on the transitions, keyed by mode, and the modes themselves
 # carry no dynamics at all -- which is why this accessor exists rather than
 # reaching into the fields.
 
 controlled = PCC.switched_system(A, B)
-Amat, Bmat = PCC.mode_matrices(controlled)
+Amat = PCC.mode_matrices(controlled)
+Bmat = PCC.input_matrices(controlled)
 
 println("A₁ == A[1] : ", Amat[1] == A[1])
 println("B₂ == B[2] : ", Bmat[2] == B[2])

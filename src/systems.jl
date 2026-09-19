@@ -16,8 +16,11 @@ restricted still matches.
 
 This is a test of *shape*, not of a property: it says the system has the
 parametrisation of a switched linear control system. To ask whether a system has
-an input at all — including one assembled by hand — use [`has_input`](@ref),
-which reads the reset maps.
+an input at all — including one assembled by hand, which need not match this
+parametrisation — use [`has_input`](@ref), which reads the reset maps. The
+problem constructors guard with `has_input` for exactly that reason; the alias
+pins what `switched_system` *returns*, so a later change emitting an affine or
+constrained map cannot pass unnoticed.
 """
 const SwitchedLinearControlSystem = _HS.HybridSystem{
     <:_HS.AbstractAutomaton,
@@ -73,15 +76,37 @@ end
 """
     mode_matrices(system)
 
-The dynamics indexed by mode: `A`, or `(A, B)` when the system has an input.
+The state matrices `A`, indexed by mode.
 
 Needed because the matrices live on the transitions, keyed by event — reading
 `system.resetmaps` works only while those happen to be ordered by label.
+
+Always `A`, never the pair — use [`input_matrices`](@ref) for `B`. Returning
+one or the other on a runtime check would be type-unstable, and would let
+`A, B = mode_matrices(sys)` silently destructure a two-mode autonomous system.
 """
 function mode_matrices(system::_HS.HybridSystem)
     maps = _maps_by_mode(system)
-    A = [maps[σ].A for σ in 1:length(maps)]
-    return has_input(system) ? (A, [maps[σ].B for σ in 1:length(maps)]) : A
+
+    return [maps[σ].A for σ in 1:length(maps)]
+end
+
+"""
+    input_matrices(system)
+
+The input matrices `B`, indexed by mode.
+
+Throws if the system has no input, rather than returning something empty: a
+caller asking for `B` on an autonomous system has made a mistake worth hearing
+about.
+"""
+function input_matrices(system::_HS.HybridSystem)
+    has_input(system) ||
+        throw(ArgumentError("the system has no input, so it has no B matrices"))
+
+    maps = _maps_by_mode(system)
+
+    return [maps[σ].B for σ in 1:length(maps)]
 end
 
 """

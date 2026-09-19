@@ -36,28 +36,25 @@ const Su = [
 
 const OPTIMIZER = Clarabel.Optimizer
 
-# ============================================================
 # Build the switched system and safety problem
-# ============================================================
 
-# ============================================================
 # De Bruijn graphs
-# ============================================================
 
 graph1 = PCC.de_bruijn(1, 2; orientation = :complete)
-graph2 = PCC.de_bruijn(2, 2; orientation = :complete)
+graph2 = PCC.de_bruijn(8, 2; orientation = :co_complete)
 
-# ============================================================
 # Compute path-complete barrier certificates
-# ============================================================
 
 problem = PCC.SafetyProblem(PCC.switched_system(A), S0, Su)
-res = PCC.safety_certificate(PCC.QuadraticTemplate, graph1, problem; optimizer = OPTIMIZER)
 
-x = [1.0, 4.0]
-common = PCC.CoBF_complete(res.P, x)
-println("Common barrier function value at [1.0, 4.0]: ", common)
-observer_graph, states = PCC.observer_graph(graph1)
-println("Observer graph: ", states)
-common_2 = PCC.CoBF(res.P, states, x)
-println("Common barrier function value at [1.0, 4.0]: ", common_2)
+x = [1.0, 1.0]
+
+res =
+    PCC.safety_certificate(PCC.QuadraticTemplate(), graph1, problem; optimizer = OPTIMIZER)
+common_value = PCC.common(PCC.QuadraticTemplate(), graph1, problem, PCC.functions(res), x)
+println("Common barrier function value at x = $x: $common_value for graph 1")
+
+res2 =
+    PCC.safety_certificate(PCC.QuadraticTemplate(), graph2, problem; optimizer = OPTIMIZER)
+common_value2 = PCC.common(PCC.QuadraticTemplate(), graph2, problem, PCC.functions(res2), x)
+println("Common barrier function value at x = $x: $common_value2 for graph 2")
