@@ -35,6 +35,11 @@ end
     s = PCC.switched_system(A, B)
     @test PCC.has_input(s)
 
+    # One reset-map type, so one call always returns one parametrisation.
+    # Emitting an affine or constrained map would silently return a different
+    # type from the same call.
+    @test s isa PCC.SwitchedLinearControlSystem
+
     rm = maps_by_mode(s)
     for σ in 1:2
         @test rm[σ] isa MS.LinearControlMap
@@ -60,6 +65,22 @@ end
     @test HS.ntransitions(s.automaton) == 2
     @test HS.mode(s, 1) isa MS.ContinuousIdentitySystem
     @test sort([HS.event(s.automaton, t) for t in HS.transitions(s.automaton)]) == [1, 2]
+end
+
+@testset "the alias covers every system with an input" begin
+    g = HS.GraphAutomaton(2)
+    HS.add_transition!(g, 1, 1, 1)
+    HS.add_transition!(g, 1, 2, 2)
+    HS.add_transition!(g, 2, 1, 1)
+
+    # It is a test of shape, and the shape must not depend on whether the
+    # switching happens to be restricted -- the automaton parameter is open.
+    @test PCC.switched_system(A, B) isa PCC.SwitchedLinearControlSystem
+    @test PCC.switched_system(A, B; automaton = g) isa PCC.SwitchedLinearControlSystem
+
+    # No input, no match, constrained or not.
+    @test !(PCC.switched_system(A) isa PCC.SwitchedLinearControlSystem)
+    @test !(PCC.switched_system(A; automaton = g) isa PCC.SwitchedLinearControlSystem)
 end
 
 @testset "constrained switching" begin
