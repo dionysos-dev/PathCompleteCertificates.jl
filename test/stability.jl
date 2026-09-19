@@ -44,6 +44,35 @@ const OPTIMIZER = Clarabel.Optimizer
     )
 end
 
+@testset "a path-complete graph that is neither complete nor co-complete" begin
+    # The check must not be stricter than the theory. Complete and co-complete
+    # are sufficient conditions (Philippe et al., Definition III.2); this graph
+    # is neither, yet reads every word, so it is a legitimate certificate
+    # structure and synthesis has to accept it.
+    contracting = PCC.switched_system([[0.5 0.0; 0.0 0.5], [0.4 0.0; 0.0 0.4]])
+    problem = PCC.StabilityProblem(contracting)
+
+    graph = GraphAutomaton(3)
+    for edge in [(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (3, 1, 1)]
+        add_transition!(graph, edge...)
+    end
+
+    @test !PCC.is_complete(graph, 1:2)
+    @test !PCC.is_co_complete(graph, 1:2)
+    @test PCC.is_path_complete(graph, 1:2)
+
+    result = PCC.jsr_bound(
+        PCC.QuadraticTemplate,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        rtol = 1e-2,
+    )
+
+    @test result.feasible
+    @test 0.5 <= result.bound <= 0.52
+end
+
 @testset "quadratic stability" begin
     @test PCC.is_stable(PCC.QuadraticTemplate, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
 

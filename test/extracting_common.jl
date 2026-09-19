@@ -17,7 +17,7 @@ value(P) = LinearAlgebra.dot(X, P * X)
 
 @testset "a complete graph aggregates with a minimum" begin
     graph = PCC.de_bruijn(1, 2)
-    @test PCC.is_path_complete(graph)
+    @test PCC.is_complete(graph)
 
     @test PCC.common(PCC.QuadraticTemplate, graph, PROBLEM, PS, X) ≈
           minimum(value(P) for P in PS)
@@ -25,7 +25,7 @@ end
 
 @testset "a co-complete graph aggregates with a maximum" begin
     graph = PCC.de_bruijn(1, 2; orientation = :co_complete)
-    @test PCC.is_co_path_complete(graph)
+    @test PCC.is_co_complete(graph)
 
     @test PCC.common(PCC.QuadraticTemplate, graph, PROBLEM, PS, X) ≈
           maximum(value(P) for P in PS)
@@ -40,8 +40,8 @@ end
     add_transition!(graph, 1, 2, 2)
     add_transition!(graph, 2, 1, 1)
 
-    @test !PCC.is_path_complete(graph)
-    @test !PCC.is_co_path_complete(graph)
+    @test !PCC.is_complete(graph)
+    @test !PCC.is_co_complete(graph)
 
     _, states = PCC.observer_graph(graph)
     @test states == [Set([1, 2]), Set([1]), Set([2])]

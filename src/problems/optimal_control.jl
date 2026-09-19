@@ -208,11 +208,14 @@ function _check_optimal_control_data(graph, A, B)
             throw(ArgumentError("edge label $mode does not index a mode in A and B"))
     end
 
-    # Stricter than `_check_path_complete`: the co-complete orientation is sound
-    # in general but the max aggregation is not implemented for this problem.
-    is_path_complete(graph, 1:length(A)) || throw(
+    # Stricter than `_check_path_complete` on purpose: this problem reads its
+    # bound off the plain minimum of Corollary III.3, which needs a *complete*
+    # graph. A path-complete graph that is neither complete nor co-complete is
+    # sound in general (Theorem III.8) but needs the observer aggregation,
+    # which is not implemented here.
+    is_complete(graph, 1:length(A)) || throw(
         ArgumentError(
-            "optimal control currently supports only path-complete graphs; " *
+            "optimal control currently supports only complete graphs; " *
             "the graph uses labels $(sort(collect(labels(graph)))) and the " *
             "system has $(length(A)) modes",
         ),
