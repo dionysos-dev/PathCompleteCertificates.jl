@@ -70,20 +70,13 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     unsafe_multipliers::M
 end
 
-# One method, generic over templates, exactly as for stability. Safety differs
-# from stability in one argument: the dynamics are lifted to homogeneous
-# coordinates. The edge condition is `B_dst(A x) <= B_src(x)` -- non-increasing,
-# with no margin.
+# `B_dst(A x) <= B_src(x)`: non-increasing, with no margin.
 #
-# A margin here is not merely unnecessary, it is unsatisfiable. In homogeneous
-# coordinates the constant direction e = [0, ..., 0, 1] is fixed by every lifted
-# map, so the edge condition read at e says P_src[end, end] >= P_dst[end, end] +
-# margin. Summed around any cycle the left and right sides telescope to the same
-# value, giving 0 >= L * margin -- so on any graph with a cycle, which is every
-# path-complete graph, the margin can only be zero. Asking for one made
-# `max margin` optimise nothing and reduced `feasible` to "the solver
-# converged". Separation between the initial and unsafe sets is what needs to be
-# strict, and that is imposed in `safety_problem` where it can be.
+# A margin here is unsatisfiable, not merely unnecessary. The constant direction
+# e = [0, ..., 0, 1] is fixed by every lifted map, so reading the condition at e
+# gives P_src[end, end] >= P_dst[end, end] + margin, which telescopes around any
+# cycle to 0 >= L * margin. Every path-complete graph has a cycle. Strictness
+# belongs on the set separation, and `safety_problem` puts it there.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
@@ -136,9 +129,8 @@ function safety_problem(
     gammau =
         [JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for i in 1:n_nodes]
 
-    # The separation margin: how strictly the barrier is negative on the initial
-    # set and positive on the unsafe one. This is where strictness belongs --
-    # see `add_edge_constraint!` for why it cannot go on the transitions.
+    # How strictly the barrier separates the two sets. See
+    # `add_edge_constraint!` for why it cannot live on the transitions.
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
 
     # Initial-set and unsafe-set constraints
@@ -153,12 +145,10 @@ function safety_problem(
             Ps[i] - gammau[i] * problem.Su - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
         )
 
-        # Every other constraint is homogeneous of degree one in (P, gamma, eps),
-        # so without a scale `max eps` is unbounded whenever it is positive at
-        # all. Fixing the scale of the barriers makes eps a comparable number --
-        # the margin achievable per unit of barrier -- rather than an arbitrary
-        # one, and it costs nothing: any feasible family can be scaled into this
-        # box.
+        # Everything else is homogeneous of degree one in (P, gamma, eps), so
+        # without a scale `max eps` is unbounded whenever positive at all. Any
+        # feasible family can be scaled into this box, so it costs nothing and
+        # makes eps comparable between graphs.
         JuMP.@constraint(model, LinearAlgebra.I(d) - Ps[i] in JuMP.PSDCone())
         JuMP.@constraint(model, Ps[i] + LinearAlgebra.I(d) in JuMP.PSDCone())
     end
@@ -238,10 +228,8 @@ function safety_certificate(
     gammau_val = JuMP.value.(gammau)
     eps_val = JuMP.value(eps)
 
-    # Re-check the S-procedure conditions on the returned numbers rather than
-    # trusting the status, and require a strictly positive separation: `eps = 0`
-    # means the barrier only just fails to distinguish the two sets, which
-    # certifies nothing.
+    # Re-check on the returned numbers rather than trusting the status. A
+    # margin of zero means the sets are not separated, so it certifies nothing.
     feas = eps_val > _SAFETY_MARGIN_TOLERANCE
 
     for i in eachindex(Pval)
@@ -300,9 +288,8 @@ function _check_safety_data(
     return nothing
 end
 
-# The one (template, problem) pair that genuinely needs its own method: a
-# barrier lives in homogeneous coordinates, so it is evaluated at [x; 1]
-# rather than at x. Everything else about the quadratic template is shared.
+# The one (template, problem) pair needing its own method: a barrier lives in
+# homogeneous coordinates, so it is evaluated at [x; 1].
 function node_value(
     ::QuadraticTemplate,
     ::SafetyProblem,

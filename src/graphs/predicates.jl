@@ -2,19 +2,12 @@
 # Jungers) and the two structural conditions that are sufficient for it
 # (Definition III.2). Keep the distinction: III.2 is not II.1.
 
-# Complexity, since it is easy to assume otherwise: deciding this is deciding
-# whether an NFA accepts every word, which is PSPACE-complete, and the subset
-# construction below is exponential in the number of nodes in the worst case.
-# There is no cleverer exact algorithm to reach for -- what makes it usable is
-# that the graphs this package builds are not worst cases. A De Bruijn graph
-# visits about 2|V| subsets rather than 2^|V|, because reading one letter from
-# the full node set already collapses it to the nodes sharing that last letter.
-# The complete and co-complete short-circuits below take the common cases out
-# of the search entirely.
-#
-# It matters because refinement (the package's headline feature) tests many
-# candidate graphs, and this is the predicate it tests them with. If a
-# refinement loop ever becomes slow, measure here first.
+# Deciding path-completeness is NFA universality: PSPACE-complete, and the
+# subset construction below is exponential in |V| in the worst case. It is
+# usable because the graphs built here are not worst cases -- a De Bruijn graph
+# visits about 2|V| subsets -- and because the short-circuits take the common
+# cases out of the search. Refinement tests many candidate graphs with this
+# predicate, so measure here first if a loop gets slow.
 """
     is_path_complete(graph)
     is_path_complete(graph, alphabet)
@@ -56,12 +49,11 @@ function is_path_complete(graph::_HS.GraphAutomaton, alphabet)
     end
 
     # `observer_graph` runs the same search but drops empty states, which is
-    # precisely the information this predicate needs, so it is repeated here.
+    # exactly what this predicate needs to see.
     start = Set(nodes(graph))
 
-    # Tuples of variable length as immutable keys, as `observer_graph` does.
-    # The element type has to be written out: inferring it from the first
-    # subset pins the arity, and later subsets are smaller.
+    # Variable-length tuples as immutable keys. The element type must be
+    # written out: inferring it from the first subset pins the arity.
     seen = Set{Tuple{Vararg{Int}}}()
     push!(seen, Tuple(sort!(collect(start))))
     pending = [start]

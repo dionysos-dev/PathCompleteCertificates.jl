@@ -3,9 +3,8 @@ import JuMP
 """
     AbstractProblem
 
-Abstract supertype for the problem imposed on every edge of a path-complete
-certificate.  A problem determines the edge inequality; templates determine
-the family from which node functions are drawn.
+What is proved: a problem determines the edge inequality, templates the family
+the node functions are drawn from.
 """
 abstract type AbstractProblem end
 
@@ -14,11 +13,8 @@ abstract type AbstractProblem end
 
 Add this problem's certificate inequality for one labelled graph edge.
 
-**One method per problem, generic in the template.** Compose the template's
-primitives — chiefly [`add_domination!`](@ref) — rather than dispatching on a
-template here; a method indexed by a (problem, template) pair is the thing this
-interface exists to avoid, and the only one left is optimal control's, which
-cannot be written in the primal variables at all.
+One method per problem, generic in the template: compose the template's
+primitives rather than dispatching on a template here.
 
 `rate` is the per-solve scalar a driver varies, such as the contraction rate
 stability bisects on. A problem with no such scalar ignores it.
@@ -28,10 +24,8 @@ function add_edge_constraint! end
 """
     _n_modes(problem)
 
-The size of the system's alphabet.
-
-Needed because "is this graph complete?" is only meaningful against the system's
-modes, not against the labels the graph happens to carry.
+The size of the system's alphabet — which is what completeness must be judged
+against, not the labels the graph happens to carry.
 """
 _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 
@@ -40,10 +34,9 @@ _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 
 Evaluate one node function at `x`.
 
-Declared on the problem axis because it is one of the two methods that vary
-with the (template, problem) pair: the value is the template's, but a problem
-may lift it into other coordinates — `SafetyProblem` evaluates its barriers in
-homogeneous coordinates, which is the one case where the pair really matters.
+On the problem axis because a problem may lift the value into other coordinates:
+`SafetyProblem` evaluates its barriers at `[x; 1]`, and that is the only pair
+where it matters.
 """
 function node_value end
 
@@ -66,16 +59,13 @@ end
 
 Validate the mode matrices against the graph, and return the state dimension.
 
-Every problem needs exactly this — square matrices of one size, edge labels that
-index them, and a graph that is path-complete for the system's alphabet — so it
-is written once. Anything beyond it is the problem's own business and stays in
-the problem's file.
+Square matrices of one size, edge labels that index them, and a graph that is
+path-complete for the system's alphabet. Anything beyond that is the problem's
+own business.
 
-`path_complete = false` skips the path-completeness test and **asserts** it
-instead. Deciding it is PSPACE-complete (see `is_path_complete`), so a caller
-with a large or adversarial graph, or one whose construction already guarantees
-the property, needs a way out. It is not the default: the failure it guards
-against is silent, and a rare performance cliff is the better risk.
+`path_complete = false` waives the last test and **asserts** it instead —
+deciding it is PSPACE-complete (see [`is_path_complete`](@ref)). Not the
+default: what it guards against is silent.
 """
 function _check_modes(
     graph::_HS.GraphAutomaton,
@@ -111,10 +101,6 @@ end
     _FEASIBLE_TERMINATION_STATUSES
 
 Termination statuses a driver treats as "the solver found something".
-
-Shared by every problem, so it lives here: it was previously defined in
-`stability.jl` and used from `safety.jl`, which made one problem file depend on
-another for no reason.
 """
 const _FEASIBLE_TERMINATION_STATUSES = (
     JuMP.MOI.OPTIMAL,
@@ -127,34 +113,22 @@ const _FEASIBLE_TERMINATION_STATUSES = (
     AbstractCertificate
 
 What a problem hands back: the fitted node functions, plus whatever that
-particular problem certifies.
+problem certifies.
 
-**One certificate type per problem, defined in the problem's own file.** A
-stability certificate carries a contraction rate, a safety certificate a
-separation margin and its S-procedure multipliers, an optimal-control
-certificate its feedback gains — as typed fields, not as entries in an untyped
-bag. Adding a problem means adding its certificate beside it, and nothing here
-changes.
+One certificate type per problem, declared in the problem's own file, with what
+it certifies as typed fields. What they all share lives once in
+[`CertificateData`](@ref), held in a field named `data` and read by the
+accessors below.
 
-What every certificate shares — the problem, the template, the graph, the node
-functions, the solver status — lives once in [`CertificateData`](@ref), which
-each concrete type holds in a field named `data`. The accessors below read it,
-so subtypes implement nothing unless they store it differently.
-
-A certificate is **callable**: `certificate(x)` is [`common`](@ref) evaluated at
-`x` — the Lyapunov function, barrier or value-function bound the graph and
-templates induce. That is usually what you want rather than the node functions
-one at a time.
+A certificate is **callable**: `certificate(x)` is [`common`](@ref) at `x`.
 """
 abstract type AbstractCertificate end
 
 """
     CertificateData(problem, template, graph, functions, status, feasible)
 
-The part of a certificate that does not depend on which problem produced it.
-
-Held in the `data` field of every [`AbstractCertificate`](@ref) so that the six
-shared fields are declared once rather than repeated in each problem's type.
+The part of a certificate that does not depend on which problem produced it,
+declared once rather than repeated in each problem's type.
 """
 struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     problem::P
@@ -168,9 +142,8 @@ end
 """
     _data(certificate)
 
-The shared [`CertificateData`](@ref). The default reads the `data` field; a
-certificate that stores it elsewhere overrides this one method and inherits
-every accessor.
+The shared [`CertificateData`](@ref). Override this one method and a
+certificate inherits every accessor.
 """
 _data(certificate::AbstractCertificate) = certificate.data
 
@@ -184,11 +157,10 @@ functions(certificate::AbstractCertificate) = _data(certificate).functions
 """
     status(certificate)
 
-The solver's termination status, unchanged.
+The solver's termination status.
 
-Kept distinct from [`is_feasible`](@ref): a solver can terminate happily on a
-model whose solution does not satisfy the conditions when they are re-checked,
-and the problems do re-check.
+Distinct from [`is_feasible`](@ref): a solver can terminate happily on a model
+whose solution fails the conditions when re-checked, and the problems re-check.
 """
 status(certificate::AbstractCertificate) = _data(certificate).status
 
@@ -198,8 +170,7 @@ status(certificate::AbstractCertificate) = _data(certificate).status
 Whether the solve produced a certificate.
 
 `false` means none was found **for this template on this graph** — never that
-the property fails. A richer template or a finer graph may well succeed where
-this one did not, which is the whole point of having more than one.
+the property fails.
 """
 is_feasible(certificate::AbstractCertificate) = _data(certificate).feasible
 

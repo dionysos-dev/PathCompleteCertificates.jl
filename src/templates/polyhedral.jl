@@ -130,9 +130,8 @@ solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
 rate_exponent(::PolyhedralTemplate) = 1
 
 function add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
-    # `add_nonnegativity!` already floors the weights at `min_weight`, which is
-    # both the positivity and the normalization here: the edge conditions are
-    # homogeneous in w, so scaling every weight by t > 0 changes nothing.
+    # `add_nonnegativity!` already floors the weights, which normalizes too:
+    # the edge conditions are homogeneous in w.
     return nothing
 end
 
@@ -152,14 +151,10 @@ function add_domination!(
         ),
     )
 
-    # V_dst(map x) <= scale * V_src(x) for every x is, after the change of
-    # coordinates z = W_src^-1 G_src x, the statement that the infinity-norm
-    # induced norm of W_dst^-1 G_dst map G_src^-1 W_src is at most `scale`. Row
-    # by row that is |G_dst map G_src^-1| w_src <= scale * w_dst -- linear in w,
-    # which is what keeps this template an LP.
-    #
-    # Note the weights of the *destination* carry the scale: w sits in a
-    # denominator, so it runs opposite to P and c.
+    # Under z = W_src^-1 G_src x this is an infinity-norm induced norm bound,
+    # which row by row is |G_dst map G_src^-1| w_src <= scale * w_dst -- linear
+    # in w, which keeps this template an LP. The *destination* carries the
+    # scale because w sits in a denominator.
     M = abs.(V_dst.G * map * inv(V_src.G))
 
     JuMP.@constraint(model, M * V_src.w .<= scale * V_dst.w)

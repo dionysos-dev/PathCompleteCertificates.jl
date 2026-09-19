@@ -37,8 +37,7 @@ struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
         isempty(cones) && throw(ArgumentError("at least one node partition is required"))
         min_scale > 0 || throw(ArgumentError("min_scale must be positive"))
 
-        # Every node's partition must be non-empty before any of them can be
-        # asked for its dimension.
+        # Non-empty before any can be asked for its dimension.
         for (node, node_cones) in enumerate(cones)
             isempty(node_cones) &&
                 throw(ArgumentError("node $node must have at least one cone"))
@@ -130,16 +129,15 @@ function add_nonnegativity!(
         for ray in eachcol(cone)
             values = V.P * ray
 
-            # Positive definiteness with a margin: on its own cone the active
-            # row is at least `scale * ||x||_inf`, written coordinatewise so it
-            # stays linear.
+            # On its own cone the active row is at least scale * ||x||_inf,
+            # written coordinatewise to stay linear.
             for j in 1:dimension
                 JuMP.@constraint(model, values[i] + V.scale * ray[j] >= 0)
                 JuMP.@constraint(model, values[i] - V.scale * ray[j] >= 0)
             end
 
-            # Row i really is the maximum on cone i. Without this the program
-            # would constrain a function that is not the template's `max`.
+            # Row i really is the maximum on cone i -- without this the program
+            # constrains a different function.
             for k in eachindex(V.cones)
                 k == i && continue
                 JuMP.@constraint(model, values[i] + values[k] >= 0)
@@ -154,9 +152,8 @@ end
 solution_value(::ConicPolyhedralTemplate, V::ConicPolyhedralFunction) =
     ConicPolyhedralFunction(V.cones, JuMP.value.(V.P), JuMP.value(V.scale))
 
-# The partition is data for this template, not a graph construction: it
-# partitions the state space, is indexed by node only because each node
-# gets one, and nothing graph-shaped ever touches it.
+# Template data, not a graph construction: it partitions the state space and
+# is indexed by node only because each node gets one.
 
 """
     planar_conic_partition(order)
@@ -217,11 +214,10 @@ function add_domination!(
     scale = 1,
     margin = 0,
 )
-    # On cone i of the source, V_src is the single row i, so the condition is
-    # |row_r of P_dst . map x| <= scale * row_i of P_src . x for every row r --
-    # linear. Imposing it on the extreme rays covers the cone, since both sides
-    # are positively homogeneous and the constraint set is convex. On a ray the
-    # margin term is a constant, so it stays linear too.
+    # On cone i the source is the single row i, so the condition is linear:
+    # |row_r of P_dst . map x| <= scale * row_i of P_src . x for every r.
+    # Imposing it on the extreme rays covers the cone -- both sides are
+    # positively homogeneous and the constraint set convex.
     for (i, cone) in enumerate(V_src.cones)
         for ray in eachcol(cone)
             source_value = (V_src.P * ray)[i]
