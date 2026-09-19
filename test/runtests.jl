@@ -9,14 +9,17 @@ const FAST_TESTS = "--fast" in ARGS
 # (path, tags...). Tag a suite `:slow` to exclude it from `--fast`.
 const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
-    ("./graph.jl",),
+    ("./graphs/queries.jl",),
+    ("./graphs/predicates.jl",),
+    ("./graphs/de_bruijn.jl",),
+    ("./graphs/observer.jl",),
     ("./systems.jl",),
-    ("./stability.jl", :slow),
-    ("./safety.jl",),
-    ("./utils.jl",),
-    ("./extracting_common.jl",),
-    ("./polyhedral.jl", :slow),
-    ("./optimal_control.jl", :slow),
+    ("./templates/polyhedral.jl", :slow),
+    ("./templates/conic_polyhedral.jl", :slow),
+    ("./problems/stability.jl", :slow),
+    ("./problems/safety.jl",),
+    ("./problems/optimal_control.jl", :slow),
+    ("./aggregation.jl",),
 ]
 
 const _timings = Tuple{String, Float64}[]

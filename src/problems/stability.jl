@@ -20,75 +20,19 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
-function _node_value(
-    ::QuadraticTemplate,
-    ::StabilityProblem,
-    P::AbstractMatrix,
-    x::AbstractVector{<:Real},
-)
-    return LinearAlgebra.dot(x, P * x)
-end
-
-function _node_value(
-    ::PolyhedralTemplate,
-    ::StabilityProblem,
-    V::PolyhedralFunction,
-    x::AbstractVector{<:Real},
-)
-    return V(x)
-end
-
-# `rate` is gamma^rate_exponent(template) -- see `rate_exponent`. Each method
-# below states the edge condition against it, so none of them hard-codes the
-# template's degree.
+# One method, generic over templates. `rate` is gamma^rate_exponent(template),
+# and the whole edge condition of this problem is the template's domination
+# primitive with that scale -- so a new template needs nothing here.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::StabilityProblem,
-    ::LinearCopositiveTemplate,
-    c_src,
-    c_dst,
+    template::AbstractTemplate,
+    V_src,
+    V_dst,
     A::AbstractMatrix,
     rate::Real,
 )
-    JuMP.@constraint(model, transpose(A) * c_dst .<= rate * c_src)
-
-    return nothing
-end
-
-function add_edge_constraint!(
-    model::JuMP.Model,
-    problem::StabilityProblem,
-    ::QuadraticTemplate,
-    P_src::LinearAlgebra.Symmetric,
-    P_dst::LinearAlgebra.Symmetric,
-    A::AbstractMatrix,
-    rate::Real,
-)
-    JuMP.@constraint(model, rate * P_src - transpose(A) * P_dst * A in JuMP.PSDCone())
-
-    return nothing
-end
-
-function add_edge_constraint!(
-    model::JuMP.Model,
-    problem::StabilityProblem,
-    ::PolyhedralTemplate,
-    V_src::PolyhedralFunction,
-    V_dst::PolyhedralFunction,
-    A::AbstractMatrix,
-    rate::Real,
-)
-    # V_dst(Ax) <= rate * V_src(x) for every x is, after the change of
-    # coordinates z = W_src^-1 G_src x, the statement that the infinity-norm
-    # induced norm of W_dst^-1 G_dst A G_src^-1 W_src is at most `rate`. Row by
-    # row that is |G_dst A G_src^-1| w_src <= rate * w_dst -- linear in w, which
-    # is what keeps this template an LP.
-    #
-    # Note the weights of the *destination* carry the rate: w sits in a
-    # denominator, so it runs opposite to P and c.
-    M = abs.(V_dst.G * A * inv(V_src.G))
-
-    JuMP.@constraint(model, M * V_src.w .<= rate * V_dst.w)
+    add_domination!(model, template, V_src, V_dst, A; scale = rate)
 
     return nothing
 end
@@ -256,33 +200,6 @@ function jsr_bound(
     return jsr_bound(template, graph, problem; kwargs...)
 end
 
-const _FEASIBLE_TERMINATION_STATUSES = (
-    JuMP.MOI.OPTIMAL,
-    JuMP.MOI.LOCALLY_SOLVED,
-    JuMP.MOI.ALMOST_OPTIMAL,
-    JuMP.MOI.ALMOST_LOCALLY_SOLVED,
-)
-
-function _add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
-    JuMP.@constraint(model, c .>= 1)
-
-    return nothing
-end
-
-function _add_normalization!(model::JuMP.Model, ::QuadraticTemplate, P)
-    JuMP.@constraint(model, P - LinearAlgebra.I in JuMP.PSDCone(),)
-    JuMP.@constraint(model, 100*LinearAlgebra.I - P in JuMP.PSDCone(),)
-
-    return nothing
-end
-
-function _add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
-    # `add_nonnegativity!` already floors the weights at `min_weight`, which is
-    # both the positivity and the normalization here: the edge conditions are
-    # homogeneous in w, so scaling every weight by t > 0 changes nothing.
-    return nothing
-end
-
 function _check_stability_data(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
@@ -308,13 +225,7 @@ function _check_stability_data(
             throw(ArgumentError("edge label $edge_label does not index a mode in A"))
     end
 
-    if template isa LinearCopositiveTemplate && any(A_i -> any(<(0), A_i), A)
-        throw(
-            ArgumentError(
-                "LinearCopositiveTemplate requires entrywise nonnegative matrices",
-            ),
-        )
-    end
+    _check_dynamics(template, A)
 
     _check_path_complete(graph, length(A))
 
