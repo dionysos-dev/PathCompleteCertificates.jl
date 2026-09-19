@@ -25,6 +25,9 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     Su::Mu
 
     function SafetyProblem(system::S, S0::AbstractMatrix, Su::AbstractMatrix) where {S}
+        has_input(system) &&
+            throw(ArgumentError("SafetyProblem requires an input-free system"))
+
         A = mode_matrices(system)
 
         isempty(A) && throw(ArgumentError("at least one mode is required"))
@@ -248,6 +251,8 @@ function _check_safety_data(
         1 <= edge_label <= length(A) ||
             throw(ArgumentError("edge label $edge_label does not index a mode in A"))
     end
+
+    _check_path_complete(graph, length(A))
 
     return nothing
 end

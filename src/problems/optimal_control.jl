@@ -19,6 +19,12 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         Q::AbstractMatrix,
         R::AbstractMatrix,
     ) where {S}
+        # Without this, `mode_matrices` returns the bare `A` vector and the
+        # destructuring below silently splits it into two mode matrices,
+        # reporting a nonsense state dimension instead of the real problem.
+        has_input(system) ||
+            throw(ArgumentError("OptimalControlProblem requires a system with an input"))
+
         A, B = mode_matrices(system)
         isempty(A) && throw(ArgumentError("at least one mode is required"))
 
@@ -91,6 +97,16 @@ end
 Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
 value function for `problem`. This first implementation supports complete graphs
 and `QuadraticTemplate` only.
+
+Returns a named tuple `(status, objective, P, K, feasible)`:
+
+  * `P` and `K` are the node matrices and feedback gains, one per node;
+  * the value-function bound itself is `common(template, graph, problem, P, x)` —
+    a function of the state, not a scalar;
+  * `objective` is the solved log-determinant objective `Σᵢ log det Pᵢ⁻¹`, the
+    volume heuristic that selects among the feasible certificates. It is a
+    solver diagnostic, **not** a bound on the value function — it is routinely
+    negative, whereas the value function is nonnegative whenever `Q, R ≻ 0`.
 """
 function optimal_control_certificate(
     template::Type{<:AbstractTemplate},
@@ -101,8 +117,6 @@ function optimal_control_certificate(
 )
     template === QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
-    is_complete(graph) ||
-        throw(ArgumentError("optimal control currently supports only complete graphs"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     A, B = mode_matrices(problem.system)
@@ -156,7 +170,7 @@ function optimal_control_certificate(
     if !feasible
         return (
             status = status,
-            bound = nothing,
+            objective = nothing,
             P = nothing,
             K = nothing,
             feasible = false,
@@ -169,7 +183,7 @@ function optimal_control_certificate(
 
     return (
         status = status,
-        bound = JuMP.objective_value(model),
+        objective = JuMP.objective_value(model),
         P = P,
         K = K,
         feasible = true,
@@ -193,6 +207,16 @@ function _check_optimal_control_data(graph, A, B)
         1 <= mode <= length(A) ||
             throw(ArgumentError("edge label $mode does not index a mode in A and B"))
     end
+
+    # Stricter than `_check_path_complete`: the co-complete orientation is sound
+    # in general but the max aggregation is not implemented for this problem.
+    is_path_complete(graph, 1:length(A)) || throw(
+        ArgumentError(
+            "optimal control currently supports only path-complete graphs; " *
+            "the graph uses labels $(sort(collect(labels(graph)))) and the " *
+            "system has $(length(A)) modes",
+        ),
+    )
 
     return nothing
 end

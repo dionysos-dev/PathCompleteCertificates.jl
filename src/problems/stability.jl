@@ -11,6 +11,11 @@ struct StabilityProblem{S} <: AbstractProblem
     system::S
 
     function StabilityProblem(system::S) where {S}
+        # Without this, `mode_matrices` returns the (A, B) pair and the failure
+        # surfaces much later as a MethodError inside the model builder.
+        has_input(system) &&
+            throw(ArgumentError("StabilityProblem requires an input-free system"))
+
         return new{typeof(system)}(system)
     end
 end
@@ -262,6 +267,8 @@ function _check_stability_data(
             ),
         )
     end
+
+    _check_path_complete(graph, length(A))
 
     return nothing
 end

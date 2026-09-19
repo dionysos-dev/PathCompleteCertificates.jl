@@ -104,18 +104,71 @@ incoming_labels(graph::_HS.GraphAutomaton, node::Integer) =
 outdegree(graph::_HS.GraphAutomaton, node::Integer) = length(outgoing_edges(graph, node))
 indegree(graph::_HS.GraphAutomaton, node::Integer) = length(incoming_edges(graph, node))
 
-function is_complete(graph::_HS.GraphAutomaton)
-    graph_labels = labels(graph)
+"""
+    is_path_complete(graph)
+    is_path_complete(graph, alphabet)
+
+Whether every node of `graph` has an outgoing edge for every letter of
+`alphabet` — the condition under which every switching sequence is readable as
+a path, and therefore the condition under which the edge inequalities certify
+anything at all.
+
+This is *not* graph-theoretic completeness, where every pair of vertices is
+adjacent. Different property, hence the name.
+
+`alphabet` defaults to the labels `graph` happens to use, which answers the
+weaker question. A graph that never mentions a mode is trivially complete for
+its own labels and **not** path-complete for a system that has that mode, so
+pass the system's alphabet whenever the question is about a certificate.
+"""
+is_path_complete(graph::_HS.GraphAutomaton) = is_path_complete(graph, labels(graph))
+
+function is_path_complete(graph::_HS.GraphAutomaton, alphabet)
     return all(
         !isempty(outgoing_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in graph_labels
+        node in nodes(graph), edge_label in alphabet
     )
 end
 
-function is_co_complete(graph::_HS.GraphAutomaton)
-    graph_labels = labels(graph)
+"""
+    is_co_path_complete(graph)
+    is_co_path_complete(graph, alphabet)
+
+The dual of [`is_path_complete`](@ref): every node has an *incoming* edge for
+every letter of `alphabet`. The dual De Bruijn graph is co-path-complete, and
+its certificates aggregate with a maximum rather than a minimum.
+"""
+is_co_path_complete(graph::_HS.GraphAutomaton) = is_co_path_complete(graph, labels(graph))
+
+function is_co_path_complete(graph::_HS.GraphAutomaton, alphabet)
     return all(
         !isempty(incoming_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in graph_labels
+        node in nodes(graph), edge_label in alphabet
     )
+end
+
+"""
+    _check_path_complete(graph, n_modes)
+
+Throw unless `graph` certifies something for a system with `n_modes` modes.
+
+Called by every problem's data check: path-completeness is the soundness
+condition, so a graph that fails it must not reach a solver. Both orientations
+are accepted — [`common`](@ref) aggregates a complete graph with a minimum and
+a co-complete one with a maximum.
+"""
+function _check_path_complete(graph::_HS.GraphAutomaton, n_modes::Integer)
+    alphabet = 1:n_modes
+
+    is_path_complete(graph, alphabet) ||
+        is_co_path_complete(graph, alphabet) ||
+        throw(
+            ArgumentError(
+                "the graph is neither path-complete nor co-path-complete for the " *
+                "system's $n_modes modes, so its edge inequalities certify nothing; " *
+                "the graph uses labels $(sort(collect(labels(graph))))",
+            ),
+        )
+
+    return nothing
 end
