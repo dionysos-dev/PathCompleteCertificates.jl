@@ -180,7 +180,7 @@ src/
 | :--- | :--- |
 | `ext/` | Optional interop, one extension per weak dependency |
 | `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
-| `examples/` | Runnable scripts, run with `--project=test` |
+| `examples/` | Runnable scripts. Plain ones run with `--project=test`; the ones that draw need `--project=examples`, which is where `Plots` lives — never a dependency of the package or of the environment CI instantiates |
 | `docs/` | The manual and these developer docs |
 
 Add a directory when there is something to put in it, not before.
