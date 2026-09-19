@@ -47,7 +47,8 @@ end
         @test rm[σ].B == B[σ]
     end
 
-    Amat, Bmat = PCC.mode_matrices(s)
+    Amat = PCC.mode_matrices(s)
+    Bmat = PCC.input_matrices(s)
     @test Amat == A
     @test Bmat == B
 

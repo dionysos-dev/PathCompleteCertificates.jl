@@ -33,6 +33,29 @@ struct QuadraticTemplate{T <: Real} <: AbstractTemplate
     end
 end
 
+"""
+    QuadraticFunction(P)
+
+One fitted node function of a [`QuadraticTemplate`](@ref), `V(x) = x'Px`.
+
+Only the *fitted* function is wrapped; while the model is being built the
+template hands out the bare `Symmetric` matrix of variables, because problems do
+matrix arithmetic with it — and because optimal control deliberately uses those
+variables as the **inverse** of the node function, where calling the container a
+`QuadraticFunction` would be a lie.
+
+Wrapping the result is what makes node functions uniformly callable across
+templates, so `node_value` is `V(x)` for all of them and the aggregation in
+[`common`](@ref) needs to know nothing about which template it has.
+"""
+struct QuadraticFunction{M <: AbstractMatrix}
+    P::M
+end
+
+(V::QuadraticFunction)(x::AbstractVector{<:Real}) = LinearAlgebra.dot(x, V.P * x)
+
+Base.Matrix(V::QuadraticFunction) = Matrix(V.P)
+
 function add_function_variables!(
     model::JuMP.Model,
     ::QuadraticTemplate,
@@ -57,11 +80,11 @@ function add_nonnegativity!(
     return nothing
 end
 
-solution_value(::QuadraticTemplate, P) = JuMP.value.(P)
+solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
 rate_exponent(::QuadraticTemplate) = 2
 
-function _add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
+function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
     # Scale only: the edge conditions are homogeneous, so any feasible family
     # can be scaled until every member dominates I. This excludes P = 0 and
     # nothing else.
@@ -98,5 +121,9 @@ function add_domination!(
     return nothing
 end
 
-_node_value(::QuadraticTemplate, ::AbstractProblem, P, x::AbstractVector{<:Real}) =
-    LinearAlgebra.dot(x, P * x)
+node_value(
+    ::QuadraticTemplate,
+    ::AbstractProblem,
+    V::QuadraticFunction,
+    x::AbstractVector{<:Real},
+) = V(x)

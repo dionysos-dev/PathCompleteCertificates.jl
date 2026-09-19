@@ -25,7 +25,8 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
-        A, B = mode_matrices(system)
+        A = mode_matrices(system)
+        B = input_matrices(system)
         isempty(A) && throw(ArgumentError("at least one mode is required"))
 
         n = size(first(A), 1)
@@ -64,8 +65,8 @@ function add_edge_constraint!(
     S_src,
     Y_src,
     S_dst,
-    dynamics,
-    psd_margin::Real,
+    dynamics;
+    psd_margin::Real = 1e-4,
 )
     A, B = dynamics
     n = size(A, 1)
@@ -103,15 +104,17 @@ Synthesize a quadratic state-feedback policy and an upper bound on the closed-lo
 value function for `problem`. This first implementation supports complete graphs
 and `QuadraticTemplate` only.
 
-Returns a named tuple `(status, objective, P, K, feasible)`:
+Returns a [`Certificate`](@ref):
 
-  * `P` and `K` are the node matrices and feedback gains, one per node;
-  * the value-function bound itself is `common(template, graph, problem, P, x)` —
-    a function of the state, not a scalar;
-  * `objective` is the solved log-determinant objective `Σᵢ log det Pᵢ⁻¹`, the
-    volume heuristic that selects among the feasible certificates. It is a
-    solver diagnostic, **not** a bound on the value function — it is routinely
-    negative, whereas the value function is nonnegative whenever `Q, R ≻ 0`.
+  * `functions(certificate)` are the node matrices and
+    `details.gains` the feedback gains, one of each per node;
+  * the value-function bound itself is `certificate(x)` — a function of the
+    state, not a scalar;
+  * `details.objective` is the solved log-determinant objective
+    `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
+    certificates. It is a solver diagnostic, **not** a bound on the value
+    function — it is routinely negative, whereas the value function is
+    nonnegative whenever `Q, R ≻ 0`.
 """
 function optimal_control_certificate(
     template::AbstractTemplate,
@@ -124,11 +127,11 @@ function optimal_control_certificate(
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    A, B = mode_matrices(problem.system)
+    A = mode_matrices(problem.system)
+    B = input_matrices(problem.system)
     _check_optimal_control_data(graph, A, B)
 
     node_list = collect(nodes(graph))
-    node_index = Dict(node => i for (i, node) in enumerate(node_list))
     n = size(first(A), 1)
     m = size(first(B), 2)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, n, n)
@@ -152,8 +155,8 @@ function optimal_control_certificate(
     end
 
     for edge in edges(graph)
-        source_index = node_index[source(edge)]
-        destination_index = node_index[dest(edge)]
+        source_index = source(edge)
+        destination_index = dest(edge)
         mode = label(graph, edge)
         add_edge_constraint!(
             model,
@@ -162,8 +165,8 @@ function optimal_control_certificate(
             S[source_index],
             Y[source_index],
             S[destination_index],
-            (A[mode], B[mode]),
-            psd_margin,
+            (A[mode], B[mode]);
+            psd_margin = psd_margin,
         )
     end
 
@@ -171,46 +174,44 @@ function optimal_control_certificate(
     JuMP.optimize!(model)
 
     status = JuMP.termination_status(model)
-    feasible = status in _OPTIMAL_CONTROL_FEASIBLE_STATUSES
+    feasible = status in _FEASIBLE_TERMINATION_STATUSES
     if !feasible
-        return (
-            status = status,
-            objective = nothing,
-            P = nothing,
-            K = nothing,
-            feasible = false,
+        return Certificate(
+            problem,
+            template,
+            graph,
+            QuadraticFunction{Matrix{Float64}}[],
+            status,
+            false,
+            (gains = nothing, objective = nothing),
         )
     end
 
     S_value = [JuMP.value.(matrix) for matrix in S]
-    P = [inv(LinearAlgebra.Symmetric(matrix)) for matrix in S_value]
-    K = [JuMP.value.(Y[i]) * P[i] for i in eachindex(P)]
+    P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]
+    K = [JuMP.value.(Y[i]) * P[i].P for i in eachindex(P)]
 
-    return (
-        status = status,
-        objective = JuMP.objective_value(model),
-        P = P,
-        K = K,
-        feasible = true,
+    return Certificate(
+        problem,
+        template,
+        graph,
+        P,
+        status,
+        true,
+        (gains = K, objective = JuMP.objective_value(model)),
     )
 end
 
 function _check_optimal_control_data(graph, A, B)
-    isempty(A) && throw(ArgumentError("at least one mode is required"))
+    n = _check_modes(graph, A)
+
     length(A) == length(B) ||
         throw(ArgumentError("A and B must have the same number of modes"))
 
-    n = size(first(A), 1)
     m = size(first(B), 2)
-    for (mode, (A_mode, B_mode)) in enumerate(zip(A, B))
-        size(A_mode) == (n, n) || throw(ArgumentError("A[$mode] must have size ($n, $n)"))
-        size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
-    end
 
-    for edge in edges(graph)
-        mode = label(graph, edge)
-        1 <= mode <= length(A) ||
-            throw(ArgumentError("edge label $mode does not index a mode in A and B"))
+    for (mode, B_mode) in enumerate(B)
+        size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
     end
 
     # Stricter than `_check_path_complete` on purpose: this problem reads its
@@ -221,17 +222,10 @@ function _check_optimal_control_data(graph, A, B)
     is_complete(graph, 1:length(A)) || throw(
         ArgumentError(
             "optimal control currently supports only complete graphs; " *
-            "the graph uses labels $(sort(collect(labels(graph)))) and the " *
+            "the graph uses labels $(sort(collect(alphabet(graph)))) and the " *
             "system has $(length(A)) modes",
         ),
     )
 
     return nothing
 end
-
-const _OPTIMAL_CONTROL_FEASIBLE_STATUSES = (
-    JuMP.MOI.OPTIMAL,
-    JuMP.MOI.LOCALLY_SOLVED,
-    JuMP.MOI.ALMOST_OPTIMAL,
-    JuMP.MOI.ALMOST_LOCALLY_SOLVED,
-)

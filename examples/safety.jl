@@ -51,10 +51,10 @@ x = [1.0, 1.0]
 
 res =
     PCC.safety_certificate(PCC.QuadraticTemplate(), graph1, problem; optimizer = OPTIMIZER)
-common_value = PCC.common(PCC.QuadraticTemplate(), graph1, problem, res.P, x)
+common_value = PCC.common(PCC.QuadraticTemplate(), graph1, problem, PCC.functions(res), x)
 println("Common barrier function value at x = $x: $common_value for graph 1")
 
 res2 =
     PCC.safety_certificate(PCC.QuadraticTemplate(), graph2, problem; optimizer = OPTIMIZER)
-common_value2 = PCC.common(PCC.QuadraticTemplate(), graph2, problem, res2.P, x)
+common_value2 = PCC.common(PCC.QuadraticTemplate(), graph2, problem, PCC.functions(res2), x)
 println("Common barrier function value at x = $x: $common_value2 for graph 2")

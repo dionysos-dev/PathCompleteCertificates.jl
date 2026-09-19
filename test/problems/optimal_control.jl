@@ -32,14 +32,14 @@ const RESULT = PCC.optimal_control_certificate(
 
 @testset "a certificate is produced" begin
     @test RESULT.feasible
-    @test length(RESULT.P) == PCC.n_nodes(GRAPH)
-    @test length(RESULT.K) == PCC.n_nodes(GRAPH)
+    @test length(PCC.functions(RESULT)) == PCC.n_nodes(GRAPH)
+    @test length(RESULT.details.gains) == PCC.n_nodes(GRAPH)
 
-    for P in RESULT.P
-        @test LinearAlgebra.isposdef(LinearAlgebra.Symmetric(Matrix(P)))
+    for V in PCC.functions(RESULT)
+        @test LinearAlgebra.isposdef(LinearAlgebra.Symmetric(Matrix(V)))
     end
 
-    for K in RESULT.K
+    for K in RESULT.details.gains
         @test size(K) == (size(first(B), 2), size(first(A), 1))
     end
 end
@@ -53,11 +53,14 @@ end
         b = PCC.dest(edge)
         i = PCC.label(GRAPH, edge)
 
-        K = RESULT.K[a]
+        K = RESULT.details.gains[a]
         closed_loop = A[i] + B[i] * K
         residual =
-            RESULT.P[a] -
-            (Q + transpose(K) * R * K + transpose(closed_loop) * RESULT.P[b] * closed_loop)
+            Matrix(PCC.functions(RESULT)[a]) - (
+                Q +
+                transpose(K) * R * K +
+                transpose(closed_loop) * Matrix(PCC.functions(RESULT)[b]) * closed_loop
+            )
 
         @test minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(residual)))) >
               -1e-6
@@ -68,13 +71,22 @@ end
     # It is named `objective` because it is exactly the solved objective. A
     # value-function bound could not be negative here, since Q and R are
     # positive definite.
-    log_det = sum(log(LinearAlgebra.det(inv(LinearAlgebra.Symmetric(P)))) for P in RESULT.P)
+    log_det = sum(
+        log(LinearAlgebra.det(inv(LinearAlgebra.Symmetric(Matrix(V))))) for
+        V in PCC.functions(RESULT)
+    )
 
-    @test RESULT.objective ≈ log_det rtol = 1e-4
-    @test RESULT.objective < 0
+    @test RESULT.details.objective ≈ log_det rtol = 1e-4
+    @test RESULT.details.objective < 0
 
     # The bound itself is a function of the state, and it is nonnegative.
-    @test PCC.common(PCC.QuadraticTemplate(), GRAPH, PROBLEM, RESULT.P, [1.0, 1.0]) > 0
+    @test PCC.common(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM,
+        PCC.functions(RESULT),
+        [1.0, 1.0],
+    ) > 0
 end
 
 @testset "input validation" begin

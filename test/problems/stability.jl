@@ -70,7 +70,7 @@ end
     )
 
     @test result.feasible
-    @test 0.5 <= result.bound <= 0.52
+    @test 0.5 <= result.details.rate <= 0.52
 end
 
 @testset "quadratic stability" begin
@@ -92,9 +92,9 @@ end
         rtol = 1e-2,
     )
 
-    @test 0.5 <= result.bound <= 0.51
+    @test 0.5 <= result.details.rate <= 0.51
     @test result.feasible
-    @test length(result.V) == 2
+    @test length(PCC.functions(result)) == 2
 end
 
 @testset "linear copositive stability" begin
@@ -129,7 +129,7 @@ end
     )
 
     # rho(diag(0.5, 0.25)) = 0.5, and every template must agree on it.
-    @test abs(result.bound - 0.5) <= 0.01
+    @test abs(result.details.rate - 0.5) <= 0.01
     @test result.feasible
 end
 
@@ -145,7 +145,7 @@ end
         PCC.LinearCopositiveTemplate(),
         PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
-        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).bound
+        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).details.rate
     end
 
     for bound in bounds
@@ -175,7 +175,7 @@ end
         rtol = 1e-3,
     )
 
-    @test abs(default.bound - 0.9) <= 0.01
+    @test abs(default.details.rate - 0.9) <= 0.01
     @test PCC.is_stable(
         PCC.QuadraticTemplate(),
         graph,
@@ -194,8 +194,8 @@ end
         rtol = 1e-3,
     )
 
-    @test capped.bound > default.bound + 0.1
-    @test capped.bound >= 0.9          # still a sound upper bound
+    @test capped.details.rate > default.details.rate + 0.1
+    @test capped.details.rate >= 0.9          # still a sound upper bound
 
     @test_throws ArgumentError PCC.QuadraticTemplate(; conditioning_bound = 0.5)
 end

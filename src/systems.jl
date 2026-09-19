@@ -76,15 +76,39 @@ end
 """
     mode_matrices(system)
 
-The dynamics indexed by mode: `A`, or `(A, B)` when the system has an input.
+The state matrices `A`, indexed by mode.
 
 Needed because the matrices live on the transitions, keyed by event — reading
 `system.resetmaps` works only while those happen to be ordered by label.
+
+For a system with an input this returns `A` alone; use [`input_matrices`](@ref)
+for `B`. It used to return `A` or the pair `(A, B)` depending on a runtime
+check, which made it type-unstable and — worse — let `A, B = mode_matrices(sys)`
+silently destructure a two-mode input-free system into two matrices and report a
+nonsense state dimension.
 """
 function mode_matrices(system::_HS.HybridSystem)
     maps = _maps_by_mode(system)
-    A = [maps[σ].A for σ in 1:length(maps)]
-    return has_input(system) ? (A, [maps[σ].B for σ in 1:length(maps)]) : A
+
+    return [maps[σ].A for σ in 1:length(maps)]
+end
+
+"""
+    input_matrices(system)
+
+The input matrices `B`, indexed by mode.
+
+Throws if the system has no input, rather than returning something empty: a
+caller asking for `B` on an autonomous system has made a mistake worth hearing
+about.
+"""
+function input_matrices(system::_HS.HybridSystem)
+    has_input(system) ||
+        throw(ArgumentError("the system has no input, so it has no B matrices"))
+
+    maps = _maps_by_mode(system)
+
+    return [maps[σ].B for σ in 1:length(maps)]
 end
 
 """

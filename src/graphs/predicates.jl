@@ -2,6 +2,19 @@
 # Jungers) and the two structural conditions that are sufficient for it
 # (Definition III.2). Keep the distinction: III.2 is not II.1.
 
+# Complexity, since it is easy to assume otherwise: deciding this is deciding
+# whether an NFA accepts every word, which is PSPACE-complete, and the subset
+# construction below is exponential in the number of nodes in the worst case.
+# There is no cleverer exact algorithm to reach for -- what makes it usable is
+# that the graphs this package builds are not worst cases. A De Bruijn graph
+# visits about 2|V| subsets rather than 2^|V|, because reading one letter from
+# the full node set already collapses it to the nodes sharing that last letter.
+# The complete and co-complete short-circuits below take the common cases out
+# of the search entirely.
+#
+# It matters because refinement (the package's headline feature) tests many
+# candidate graphs, and this is the predicate it tests them with. If a
+# refinement loop ever becomes slow, measure here first.
 """
     is_path_complete(graph)
     is_path_complete(graph, alphabet)
@@ -29,9 +42,13 @@ weaker question. A graph that never mentions a mode is trivially path-complete
 for its own labels and **not** path-complete for a system that has that mode,
 so pass the system's alphabet whenever the question is about a certificate.
 """
-is_path_complete(graph::_HS.GraphAutomaton) = is_path_complete(graph, labels(graph))
+is_path_complete(graph::_HS.GraphAutomaton) = is_path_complete(graph, alphabet(graph))
 
 function is_path_complete(graph::_HS.GraphAutomaton, alphabet)
+    # Definition III.2 implies II.1, and both are cheap and indexed, so try
+    # them before paying for the subset construction.
+    (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
+
     successors = Dict{Tuple{Int, Int}, Set{Int}}()
     for edge in edges(graph)
         key = (source(edge), label(graph, edge))
@@ -86,13 +103,10 @@ one only when the stronger structure is what is needed — it is what licenses
 the plain minimum aggregation of Corollary III.3, which is why
 [`common`](@ref) dispatches on it.
 """
-is_complete(graph::_HS.GraphAutomaton) = is_complete(graph, labels(graph))
+is_complete(graph::_HS.GraphAutomaton) = is_complete(graph, alphabet(graph))
 
 function is_complete(graph::_HS.GraphAutomaton, alphabet)
-    return all(
-        !isempty(outgoing_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in alphabet
-    )
+    return _covers_every_letter(graph, alphabet, source)
 end
 
 """
@@ -104,13 +118,40 @@ letter of `alphabet`. Also sufficient but not necessary for path-completeness,
 and it licenses the maximum aggregation of Corollary III.3. The dual De Bruijn
 graph is co-complete.
 """
-is_co_complete(graph::_HS.GraphAutomaton) = is_co_complete(graph, labels(graph))
+is_co_complete(graph::_HS.GraphAutomaton) = is_co_complete(graph, alphabet(graph))
 
 function is_co_complete(graph::_HS.GraphAutomaton, alphabet)
-    return all(
-        !isempty(incoming_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in alphabet
-    )
+    return _covers_every_letter(graph, alphabet, dest)
+end
+
+"""
+    _covers_every_letter(graph, alphabet, endpoint)
+
+Whether every node has, at the given `endpoint` of a transition, every letter.
+
+Indexed on purpose. Asking `outgoing_edges(graph, node, letter)` per pair costs
+a full scan of the edge list each time, so the predicate was O(|V|*|S|*|E|) --
+and measurably 50x slower than the exponential-in-theory `is_path_complete`,
+which builds its adjacency once. Building the index here makes it O(|E| +
+|V|*|S|).
+"""
+function _covers_every_letter(graph::_HS.GraphAutomaton, alphabet, endpoint)
+    available = Dict{Int, Set{Int}}()
+
+    for transition in edges(graph)
+        push!(get!(available, endpoint(transition), Set{Int}()), label(graph, transition))
+    end
+
+    for node in nodes(graph)
+        letters = get(available, node, nothing)
+        letters === nothing && return false
+
+        for letter in alphabet
+            letter in letters || return false
+        end
+    end
+
+    return true
 end
 
 """
@@ -128,7 +169,7 @@ function _check_path_complete(graph::_HS.GraphAutomaton, n_modes::Integer)
         ArgumentError(
             "the graph is not path-complete for the system's $n_modes modes, " *
             "so its edge inequalities certify nothing; the graph uses labels " *
-            "$(sort(collect(labels(graph))))",
+            "$(sort(collect(alphabet(graph))))",
         ),
     )
 

@@ -23,12 +23,7 @@ Returns:
 The observer graph contains only reachable nonempty subsets.
 """
 function observer_graph(graph::_HS.GraphAutomaton)
-
-    ########################################################
-    # Alphabet
-    ########################################################
-
-    alphabet = sort!(collect(labels(graph)))
+    letters = sort!(collect(alphabet(graph)))
 
     ########################################################
     # Adjacency dictionary
@@ -69,7 +64,7 @@ function observer_graph(graph::_HS.GraphAutomaton)
 
         P = states[id_P]
 
-        for σ in alphabet
+        for σ in letters
             Q = Set{Int}()
 
             for p in P

@@ -129,7 +129,7 @@ solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
 
 rate_exponent(::PolyhedralTemplate) = 1
 
-function _add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
+function add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
     # `add_nonnegativity!` already floors the weights at `min_weight`, which is
     # both the positivity and the normalization here: the edge conditions are
     # homogeneous in w, so scaling every weight by t > 0 changes nothing.
@@ -167,7 +167,7 @@ function add_domination!(
     return nothing
 end
 
-_node_value(
+node_value(
     ::PolyhedralTemplate,
     ::AbstractProblem,
     V::PolyhedralFunction,

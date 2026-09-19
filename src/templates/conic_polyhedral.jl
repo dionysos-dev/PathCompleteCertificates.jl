@@ -198,7 +198,7 @@ end
 
 rate_exponent(::ConicPolyhedralTemplate) = 1
 
-function _add_normalization!(
+function add_normalization!(
     model::JuMP.Model,
     ::ConicPolyhedralTemplate,
     ::ConicPolyhedralFunction,
@@ -236,7 +236,7 @@ function add_domination!(
     return nothing
 end
 
-_node_value(
+node_value(
     ::ConicPolyhedralTemplate,
     ::AbstractProblem,
     V::ConicPolyhedralFunction,
