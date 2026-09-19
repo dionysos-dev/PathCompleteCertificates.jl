@@ -1,3 +1,5 @@
+<img src="docs/src/assets/logo.svg" alt="" width="300">
+
 # PathCompleteCertificates.jl
 
 | **Documentation** | **Build Status** |
