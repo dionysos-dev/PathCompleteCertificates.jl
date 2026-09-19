@@ -5,6 +5,31 @@ const _HS = HybridSystems
 const _MS = MathematicalSystems
 
 """
+    SwitchedLinearControlSystem
+
+`x⁺ = A_σ x + B_σ u`, constrained or not.
+
+An alias for the `HybridSystem` parametrisation [`switched_system`](@ref)
+returns with an input, so a method can dispatch on it without spelling out four
+type parameters. The automaton is left open, so a system whose switching is
+restricted still matches.
+
+This is a test of *shape*, not of a property: it says the system has the
+parametrisation of a switched linear control system. To ask whether a system has
+an input at all — including one assembled by hand, which need not match this
+parametrisation — use [`has_input`](@ref), which reads the reset maps. The
+problem constructors guard with `has_input` for exactly that reason; the alias
+pins what `switched_system` *returns*, so a later change emitting an affine or
+constrained map cannot pass unnoticed.
+"""
+const SwitchedLinearControlSystem = _HS.HybridSystem{
+    <:_HS.AbstractAutomaton,
+    <:_MS.ContinuousIdentitySystem,
+    <:_MS.LinearControlMap,
+    _HS.AutonomousSwitching,
+}
+
+"""
     switched_system(A; automaton = nothing)
     switched_system(A, B; automaton = nothing)
 
