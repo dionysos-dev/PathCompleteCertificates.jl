@@ -39,31 +39,94 @@ Only the **edge inequality** changes between problems:
 The graph, the templates and the aggregation are identical. So the package has **two
 independent axes**, not one type hierarchy:
 
-- **template** (`src/template.jl`) — what the node functions are;
+- **template** (`src/templates/`) — what the node functions are;
 - **problem** (`src/problems/`) — what the edge inequality says.
 
 ### The interfaces
 
+A template is passed as an **instance**, never as a type. `QuadraticTemplate()` carries
+nothing, but a template is not in general determined by its type: `PolyhedralTemplate` carries
+one fixed matrix per node, and `::Type{T}` has nowhere to put it.
+
+**A template supplies primitives; a problem chooses which to apply, and with what arguments.**
+Neither axis names the other.
+
+Every one of these is **public**. They are what a user implements, so none of them is
+`_`-prefixed — a hidden extension point is a contradiction.
+
 ```julia
-# Template axis — two methods per template.
-add_function_variables!(model, ::Type{T}, dim, node)  # -> a V_α of JuMP variables
-add_nonnegativity!(model, V)                          # V(x) ≥ 0
+# --- Template axis (src/templates/). One file per template, answering all of it.
+add_function_variables!(model, template, dim, node)  # -> the node function V_α
+add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
+                                                     # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+add_nonnegativity!(model, template, V)               # V(x) ≥ 0
+add_normalization!(model, template, V)               # excludes V ≡ 0
+rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
+solution_value(template, V)                          # variables -> a callable node function
+node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
+check_dynamics(template, A)                          # is this template applicable at all?
 
-# Problem axis — one method per (problem, template) pair.
-add_edge_constraint!(model, problem, ::Type{T}, V_src, V_dst, dynamics, mode)
+# --- Problem axis (src/problems/). One file per problem, composing the above.
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 
-# Aggregation — a trait on the graph, not a method per problem.
-aggregate(::Complete, Vs)      # min over nodes
-aggregate(::CoComplete, Vs)    # max over nodes
-aggregate(::Reachability, Vs)  # min over sets, max within
+# --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
+#   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
+#   `common` is the literature's word (Philippe et al.) -- do not rename it to `aggregate`.
 ```
 
-`add_edge_constraint!` is declared **once**, in `src/problems/abstract.jl`; a problem file adds
-methods to it and never re-declares it, or its docstring silently replaces the generic one.
+**Each problem defines its own certificate, in its own file.** `AbstractCertificate` fixes the
+shared interface — `functions`, `status`, `is_feasible`, `problem`, `template`, `graph`, and
+callability, where `certificate(x)` is the common function. What a problem actually certifies
+is a **typed field** on its own type: `StabilityCertificate.rate`, `SafetyCertificate.margin`,
+`OptimalControlCertificate.gains`. Not entries in a shared bag — a field is documented,
+inferable and discoverable, and a new problem adds a type rather than inventing keys.
 
-**A new problem is one method. A new template is two. Their combination costs nothing.**
+The six shared fields live once in `CertificateData`, which each certificate holds as `data`;
+the accessors read it, so a certificate implements nothing to get them.
 
-That sentence is the contract. Every design decision is answerable to it.
+`add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
+lifting into a cone, and that lifting is template-specific — which is why it cannot be written
+once against a callable `V(x)`. But it is **problem-agnostic**: stability is this with
+`scale = γᵈ`, safety is this on the homogeneous lift with `margin = ε`. So:
+
+```julia
+# The whole of stability's edge condition, for every template that exists or will:
+add_edge_constraint!(model, ::StabilityProblem, template, V_src, V_dst, A, rate) =
+    add_domination!(model, template, V_src, V_dst, A; scale = rate)
+```
+
+**A new template is one file in `src/templates/`. A new problem is one file in
+`src/problems/`. Neither requires editing the other directory.** That is the contract, and
+`grep -c '^function add_edge_constraint!' src/problems/*.jl` returning 1 everywhere is how you
+check it still holds.
+
+### How this was arrived at, so it is not undone
+
+The contract once read *"a new template is two methods"*. Porting the two polyhedral templates
+from Dionysos measured it instead. The first exposed four interface defects, all invisible while
+the only templates were quadratic and copositive — both data-free, both degree 2:
+
+| What it needed | Why the first two hid it |
+| :-- | :-- |
+| an instance, not a `::Type{T}` | quadratic and copositive carry no data; polyhedral carries a matrix per node |
+| `add_nonnegativity!` dispatching on the *template* | it dispatched on the container, and `w` is a `Vector` exactly like `c` — silently the wrong constraint, with `w` in a denominator |
+| `rate_exponent` | `γ²` was hard-coded, so `jsr_bound` returned `√JSR` for the degree-1 template |
+| `solution_value` | `JuMP.value.(V)` works only if `V` is a bare container |
+
+The second polyhedral template — facets as decision variables, a conic partition per node — then
+needed **no interface change at all**, which is the evidence the two axes were right and only
+their interface was shaped around a coincidence.
+
+What remained was `add_edge_constraint!` scaling as templates × problems, and template-axis code
+living in `problems/stability.jl` (all four `_add_normalization!` methods, three `_node_value`
+methods, a copositive `isa` test). `add_domination!` removed the first; moving those methods to
+their own template files removed the second.
+
+**The one genuine exception is optimal control**, and it is documented in place rather than
+smoothed over: its inequality is convex only after the substitution `S = P⁻¹`, `Y = KS`, so it
+uses the template's variables as the *inverse* of the node function and cannot be written
+against `V_src` and `V_dst` at all. A template wanting to support it must supply a second
+primitive. One inhabitant is not yet a pattern, so none is introduced.
 
 > **The failure mode this prevents.** The code this package grew from had three synthesis
 > routines of 127, 171 and 200 lines that were largely the same program, differing only in
@@ -82,21 +145,69 @@ axes — you would write `QuadraticStabilityCertificate`,
 
 ## 3. Repository map
 
-What exists today — the package is young, so this is short:
+What exists today. The package is young, so this is short.
+
+**The two axes of §2 are the directory layout.** `templates/` and `problems/` have the same
+shape on purpose — an `abstract.jl` holding the interface, then one file per inhabitant that
+answers all of it. Adding a template or a problem is adding a file, and `ls src/` tells you the
+architecture before you read a line.
+
+```
+src/
+├── PathCompleteCertificates.jl   include order, grouped and commented
+├── systems.jl                    switched linear systems, with and without an input
+├── graphs/
+│   ├── queries.jl                the adapter over HybridSystems.GraphAutomaton
+│   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
+│   ├── de_bruijn.jl              the De Bruijn family, primal and dual
+│   └── observer.jl               the subset construction
+├── templates/                    AXIS 1 — what the node functions are
+│   ├── abstract.jl               AbstractTemplate and the primitives it must supply
+│   ├── linear_copositive.jl
+│   ├── quadratic.jl
+│   ├── polyhedral.jl             symmetric 2n-face, fixed facets
+│   └── conic_polyhedral.jl       free facets, plus the partition that linearises them
+├── problems/                     AXIS 2 — what the edge inequality says
+│   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses
+│   ├── stability.jl
+│   ├── safety.jl
+│   └── optimal_control.jl
+└── aggregation.jl                `common` — the join; dispatches on the graph, so it
+                                  belongs to neither axis
+```
 
 | Path | What it is |
 | :--- | :--- |
-| `src/graph.jl` | The labelled digraph and the path-completeness predicates |
-| `src/systems.jl` | Switched linear systems, with and without a control input |
-| `src/template.jl` | The template axis — quadratic, linear copositive |
-| `src/problems/` | The problem axis — `abstract.jl`, then one file per problem |
-| `src/utils.jl` | Graph constructions: De Bruijn, the observer lift |
 | `ext/` | Optional interop, one extension per weak dependency |
-| `test/` | Mirrors `src/`. Entry point `test/runtests.jl`; each file is standalone-runnable |
-| `examples/` | Runnable scripts, run with `--project=test` |
+| `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
+| `examples/` | Runnable scripts. Plain ones run with `--project=test`; the ones that draw need `--project=examples`, which is where `Plots` lives — never a dependency of the package or of the environment CI instantiates |
 | `docs/` | The manual and these developer docs |
 
 Add a directory when there is something to put in it, not before.
+
+Two placements that are deliberate rather than obvious:
+
+- **The conic partition lives with its template, not under `graphs/`.** It partitions the
+  *state space*, not the graph; it is indexed by node only because each node gets one. Nothing
+  graph-shaped touches it. (The plan filed it under `graphs/` — that was wrong.)
+- **`aggregation.jl` is top-level.** `common` reads all three of graph, template and problem,
+  so filing it inside one axis would misrepresent it. §2's contract names three things; there
+  are three homes.
+
+Avoid `utils.jl` and `*_helper.jl`. Both existed here and both were junk drawers — name a file
+for what is in it, and if nothing fits, that is the signal a concept is missing.
+
+**The path-complete graph is a `HybridSystems.GraphAutomaton`** — the same type as the
+system's own automaton. The package owns no graph type; `graph_helper.jl` adds the queries.
+That keeps one vocabulary across the system and the certificate, and it is why `label` takes
+the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its label.
+
+> The cost, so it is not rediscovered as a surprise: `GraphAutomaton` does not subtype
+> `Graphs.AbstractGraph`, so the ecosystem's algorithms do not come for free; label lookup
+> reaches into its `Σ` field; and the queries are still linear scans. Accepted deliberately.
+> **Because the two graphs are now the same type, nothing but the argument name stops
+> `system.automaton` being passed where the certificate graph belongs** — so keep the
+> arguments named `system`, `graph` and `reachability`, never `automaton`.
 
 ---
 
@@ -152,8 +263,33 @@ it is a cheap way to learn you are wrong, and finding nothing proves nothing. `c
 for the guarantee. Never present one as the other — conflating them is how unsound results
 ship.
 
-**Path-completeness is not graph completeness.** A "complete graph" in graph theory has every
-pair of vertices adjacent. That is a different property. The predicate is `is_path_complete`.
+**Three predicates, and they are not the same thing.** Philippe, Athanasopoulos, Angeli &
+Jungers, *On Path-Complete Lyapunov Functions*, is the authority:
+
+| Predicate | Paper | Meaning |
+| :-- | :-- | :-- |
+| `is_path_complete` | Def. II.1 | **every** finite switching sequence is readable as a path |
+| `is_complete` | Def. III.2 | every node has an *outgoing* edge for every mode |
+| `is_co_complete` | Def. III.2 | every node has an *incoming* edge for every mode |
+
+`is_complete` and `is_co_complete` are **sufficient, not necessary**. A graph can read every
+word without every node reading every letter, so never use them to answer "is this a valid
+certificate" — that question is `is_path_complete`, decided by the subset construction (the
+graph is path-complete iff the subset construction from *all* nodes never reaches ∅).
+
+What each one licenses (Cor. III.3, Thm III.8) is why both survive: complete → aggregate with
+`min`, co-complete → `max`, general path-complete → `min` of `max` over the observer graph.
+`common` dispatches on exactly that.
+
+Neither is graph-theoretic completeness, where every pair of vertices is adjacent.
+
+**Path-completeness is relative to an alphabet, and the default is the weaker question.**
+`is_path_complete(graph)` asks about the labels the graph *happens to use*, so a graph that
+never mentions a mode passes trivially — and then certifies nothing about that mode. It once
+returned a JSR bound of 0.906 for a system whose JSR is at least 3. Always pass the system's
+alphabet when the question is about a certificate: `is_path_complete(graph, 1:n_modes)`.
+Every problem's data check calls `_check_path_complete(graph, length(A))`; add the call when
+you add a problem.
 
 ---
 
@@ -217,3 +353,31 @@ subsystem (`graphs`, `lifts`, `templates`, `objectives`, `synthesis`, `verificat
 `docs`, `meta`).
 
 Do **not** add a `Co-Authored-By` line.
+
+---
+
+## 8. Two traps measured, not guessed
+
+**Path-completeness is PSPACE-complete to decide, so it is checked once and can be waived.** It is NFA universality, and
+`is_path_complete` is the subset construction — exponential in `|V|` in the worst case. It is
+usable here because the graphs are not worst cases (a De Bruijn graph visits about `2|V|`
+subsets, not `2^|V|`) and because complete / co-complete short-circuit it. Refinement tests
+many candidate graphs with this predicate, so measure here first if a loop gets slow.
+
+**Index adjacency before scanning it.** `is_complete` used to call `outgoing_edges(graph, node,
+letter)` per pair, each a full scan of the edge list — `O(|V|·|Σ|·|E|)`. On `M = 4, k = 4` that
+was 46 ms, **50× slower than the PSPACE-complete predicate it was supposed to be a cheap
+substitute for**. Building the index once made it 0.1 ms. The graph queries in
+`graphs/queries.jl` are still linear scans; if any of them lands in a hot loop, do the same.
+
+Two consequences of that cost, both already in the code:
+
+- **Check once per solve, not once per model.** `jsr_bound` used to validate, then build a model
+  per bisection step, each rebuild revalidating — running the PSPACE-complete test a dozen times
+  on a graph that cannot have changed. It now checks once and passes `path_complete = false`
+  inward.
+- **`path_complete = false` on every entry point** waives the test and *asserts* the property,
+  for a caller with a large graph or one whose construction already guarantees it — a lift of a
+  path-complete graph, say. It is not the default and must not become one: the failure it guards
+  against is silent and unsound, and a rare performance cliff is the better risk. De Bruijn
+  graphs are cheap here (≈ 2|V| subsets), but nothing stops a user passing an arbitrary graph.

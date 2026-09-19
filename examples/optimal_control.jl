@@ -7,8 +7,8 @@
 #     julia --project=test examples/optimal_control.jl
 
 import PathCompleteCertificates as PCC
-using Mosek
-using MosekTools
+import Clarabel
+import JuMP
 
 const A1 = [
     0.0 1.0;
@@ -30,7 +30,21 @@ const Q = [
 ]
 const R = [1.0;;]
 
-const OPTIMIZER = Mosek.Optimizer
+# Clarabel errors on this model with its chordal decomposition enabled (the
+# default) -- `MethodError: no method matching getindex(::OrderedSet{Int64},
+# ::Int64)` out of its decomposition pass. That is a Clarabel bug rather than a
+# property of the problem, and one setting avoids it. With the setting it
+# solves to OPTIMAL at De Bruijn orders 1-3, and the resulting gains satisfy
+# the Bellman inequality with a positive margin -- `test/optimal_control.jl`
+# checks that directly rather than trusting the status.
+#
+# Do not reach for Mosek here: an example that needs a licence cannot be
+# evaluated. SCS is not an alternative either -- it aborts inside its
+# log-determinant cone on this objective.
+const OPTIMIZER = JuMP.optimizer_with_attributes(
+    Clarabel.Optimizer,
+    "chordal_decomposition_enable" => false,
+)
 
 # Build the switched system and optimal-control problem
 
@@ -41,17 +55,19 @@ problem = PCC.OptimalControlProblem(system, Q, R)
 
 graph = PCC.de_bruijn(1, 2; orientation = :complete)
 result = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate,
+    PCC.QuadraticTemplate(),
     graph,
     problem;
     optimizer = OPTIMIZER,
 )
 
-println("Optimization objective: $(result.bound)")
-println("Feasible certificate: $(result.feasible)")
-println("State-feedback gains: $(result.K)")
+# `objective` is the log-determinant volume heuristic, not the value-function
+# bound -- the bound is `common` below, and it is a function of the state.
+println("Optimization objective: $(result.objective)")
+println("Feasible certificate: $(PCC.is_feasible(result))")
+println("State-feedback gains: $(result.gains)")
 
 # Evaluate the common upper bound at one state
 x = [1.0, 1.0]
-common_value = PCC.common(PCC.QuadraticTemplate, graph, problem, result.P, x)
+common_value = PCC.common(PCC.QuadraticTemplate(), graph, problem, PCC.functions(result), x)
 println("Common upper bound value at x = $x: $common_value")

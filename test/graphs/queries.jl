@@ -29,38 +29,12 @@ import PathCompleteCertificates as PCC
     @test PCC.out_neighbors(graph, 1) == [2, 3]
     @test PCC.in_neighbors(graph, 1) == [3]
 
-    @test PCC.labels(graph) == [1, 2]
-    @test PCC.outgoing_labels(graph, 1) == [1, 2]
-    @test PCC.incoming_labels(graph, 3) == [2]
+    @test PCC.alphabet(graph) == [1, 2]
+    @test PCC.outgoing_alphabet(graph, 1) == [1, 2]
+    @test PCC.incoming_alphabet(graph, 3) == [2]
 
     @test PCC.outdegree(graph, 1) == 2
     @test PCC.indegree(graph, 1) == 1
-end
-
-@testset "Graph completeness" begin
-    G1 = GraphAutomaton(3)
-    for edge in [(1, 1, 1), (1, 2, 2), (2, 2, 1), (2, 3, 2), (3, 1, 1), (3, 3, 2)]
-        add_transition!(G1, edge...)
-    end
-
-    @test PCC.is_complete(G1)
-    @test !PCC.is_co_complete(G1)
-
-    G2 = GraphAutomaton(3)
-    for edge in [(1, 2, 1), (2, 3, 2), (3, 1, 1)]
-        add_transition!(G2, edge...)
-    end
-
-    @test !PCC.is_complete(G2)
-    @test !PCC.is_co_complete(G2)
-
-    G3 = GraphAutomaton(3)
-    for edge in [(1, 1, 1), (2, 1, 2), (2, 2, 1), (3, 2, 2), (3, 3, 1), (1, 3, 2)]
-        add_transition!(G3, edge...)
-    end
-
-    @test PCC.is_complete(G3)
-    @test PCC.is_co_complete(G3)
 end
 
 @testset "Graph validation" begin

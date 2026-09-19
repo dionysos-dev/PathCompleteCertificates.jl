@@ -25,6 +25,9 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     Su::Mu
 
     function SafetyProblem(system::S, S0::AbstractMatrix, Su::AbstractMatrix) where {S}
+        has_input(system) &&
+            throw(ArgumentError("SafetyProblem requires an input-free system"))
+
         A = mode_matrices(system)
 
         isempty(A) && throw(ArgumentError("at least one mode is required"))
@@ -46,22 +49,44 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     end
 end
 
+"""
+    SafetyCertificate
+
+A path-complete barrier function and the separation it achieves.
+
+`margin` is how strictly the barrier is negative on the initial set and positive
+on the unsafe one. It is strictly positive exactly when the barrier certifies
+anything; at zero the two sets are not separated. The barriers are
+scale-normalised, so it is comparable between graphs rather than an arbitrary
+number.
+
+`initial_multipliers` and `unsafe_multipliers` are the S-procedure multipliers,
+one per node, kept because re-checking the conditions needs them.
+"""
+struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
+    data::D
+    margin::T
+    initial_multipliers::M
+    unsafe_multipliers::M
+end
+
+# `B_dst(A x) <= B_src(x)`: non-increasing, with no margin.
+#
+# A margin here is unsatisfiable, not merely unnecessary. The constant direction
+# e = [0, ..., 0, 1] is fixed by every lifted map, so reading the condition at e
+# gives P_src[end, end] >= P_dst[end, end] + margin, which telescopes around any
+# cycle to 0 >= L * margin. Every path-complete graph has a cycle. Strictness
+# belongs on the set separation, and `safety_problem` puts it there.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
-    ::Type{QuadraticTemplate},
-    P_src::LinearAlgebra.Symmetric,
-    P_dst::LinearAlgebra.Symmetric,
-    A::AbstractMatrix,
-    eps::JuMP.VariableRef,
+    template::AbstractTemplate,
+    P_src,
+    P_dst,
+    A::AbstractMatrix;
+    rate::Real = 1,
 )
-    T_A = _homogeneous_dynamics(A)
-    d = size(A, 1) + 1
-
-    JuMP.@constraint(
-        model,
-        P_src - transpose(T_A) * P_dst * T_A - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
-    )
+    add_domination!(model, template, P_src, P_dst, _homogeneous_dynamics(A); scale = 1)
 
     return nothing
 end
@@ -72,21 +97,20 @@ end
 Construct the path-complete barrier optimization model.
 """
 function safety_problem(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
+    path_complete::Bool = true,
 )
-    template === QuadraticTemplate ||
+    template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
     A = mode_matrices(problem.system)
-    _check_safety_data(graph, A, problem)
+    _check_safety_data(graph, A, problem; path_complete = path_complete)
 
     node_list = collect(nodes(graph))
     n_nodes = length(node_list)
-
-    node_index = Dict(v => i for (i, v) in enumerate(node_list))
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
@@ -105,12 +129,12 @@ function safety_problem(
     gammau =
         [JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for i in 1:n_nodes]
 
+    # How strictly the barrier separates the two sets. See
+    # `add_edge_constraint!` for why it cannot live on the transitions.
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
 
     # Initial-set and unsafe-set constraints
-    for v in node_list
-        i = node_index[v]
-
+    for i in 1:n_nodes
         JuMP.@constraint(
             model,
             -(Ps[i] + gamma0[i] * problem.S0) - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
@@ -120,22 +144,21 @@ function safety_problem(
             model,
             Ps[i] - gammau[i] * problem.Su - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
         )
+
+        # Everything else is homogeneous of degree one in (P, gamma, eps), so
+        # without a scale `max eps` is unbounded whenever positive at all. Any
+        # feasible family can be scaled into this box, so it costs nothing and
+        # makes eps comparable between graphs.
+        JuMP.@constraint(model, LinearAlgebra.I(d) - Ps[i] in JuMP.PSDCone())
+        JuMP.@constraint(model, Ps[i] + LinearAlgebra.I(d) in JuMP.PSDCone())
     end
 
     # Transition constraints
     for edge in edges(graph)
-        i = node_index[source(edge)]
-        j = node_index[dest(edge)]
+        i = source(edge)
+        j = dest(edge)
 
-        add_edge_constraint!(
-            model,
-            problem,
-            template,
-            Ps[i],
-            Ps[j],
-            A[label(graph, edge)],
-            eps,
-        )
+        add_edge_constraint!(model, problem, template, Ps[i], Ps[j], A[label(graph, edge)])
     end
 
     JuMP.@objective(model, Max, eps)
@@ -154,27 +177,44 @@ end
     safety_certificate(template, graph, problem; optimizer)
 
 Solve the path-complete barrier optimization problem.
+
+Returns a [`SafetyCertificate`](@ref). Its `margin` is the separation achieved
+between the initial and unsafe sets, and it is strictly positive exactly when
+the barrier certifies anything; `initial_multipliers` and
+`unsafe_multipliers` are the S-procedure multipliers.
 """
 function safety_certificate(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
+    path_complete::Bool = true,
 )
-    model = safety_problem(template, graph, problem; optimizer = optimizer)
+    model = safety_problem(
+        template,
+        graph,
+        problem;
+        optimizer = optimizer,
+        path_complete = path_complete,
+    )
 
     JuMP.optimize!(model)
 
     status = JuMP.termination_status(model)
 
     if !(status in _FEASIBLE_TERMINATION_STATUSES)
-        return (
-            status = status,
-            P = nothing,
-            gamma0 = nothing,
-            gammau = nothing,
-            eps = nothing,
-            feasible = false,
+        return SafetyCertificate(
+            CertificateData(
+                problem,
+                template,
+                graph,
+                QuadraticFunction{Matrix{Float64}}[],
+                status,
+                false,
+            ),
+            nothing,
+            nothing,
+            nothing,
         )
     end
 
@@ -183,18 +223,19 @@ function safety_certificate(
     gammau = model[:safety_gammau]
     eps = model[:safety_eps]
 
-    Pval = [JuMP.value.(P) for P in Ps]
+    Pval = [solution_value(template, P) for P in Ps]
     gamma0_val = JuMP.value.(gamma0)
     gammau_val = JuMP.value.(gammau)
     eps_val = JuMP.value(eps)
 
-    # Check the initial-set and unsafe-set constraints
-    feas = true
+    # Re-check on the returned numbers rather than trusting the status. A
+    # margin of zero means the sets are not separated, so it certifies nothing.
+    feas = eps_val > _SAFETY_MARGIN_TOLERANCE
 
     for i in eachindex(Pval)
-        initial_margin = LinearAlgebra.Symmetric(-(Pval[i] + gamma0_val[i] * problem.S0))
+        initial_margin = LinearAlgebra.Symmetric(-(Pval[i].P + gamma0_val[i] * problem.S0))
 
-        unsafe_margin = LinearAlgebra.Symmetric(Pval[i] - gammau_val[i] * problem.Su)
+        unsafe_margin = LinearAlgebra.Symmetric(Pval[i].P - gammau_val[i] * problem.Su)
 
         if minimum(LinearAlgebra.eigvals(initial_margin)) < eps_val - 1e-7 ||
            minimum(LinearAlgebra.eigvals(unsafe_margin)) < eps_val - 1e-7
@@ -203,15 +244,24 @@ function safety_certificate(
         end
     end
 
-    return (
-        status = status,
-        P = Pval,
-        gamma0 = gamma0_val,
-        gammau = gammau_val,
-        eps = eps_val,
-        feasible = feas && eps_val > -1e-7,
+    return SafetyCertificate(
+        CertificateData(problem, template, graph, Pval, status, feas),
+        eps_val,
+        gamma0_val,
+        gammau_val,
     )
 end
+
+"""
+    _SAFETY_MARGIN_TOLERANCE
+
+How positive the separation margin has to be before a barrier counts as one.
+
+Not a numerical fudge: `eps` is a genuine quantity now that the barriers are
+scale-normalised, so a value at solver noise means the initial and unsafe sets
+were not separated.
+"""
+const _SAFETY_MARGIN_TOLERANCE = 1e-8
 
 """
     _homogeneous_dynamics(A)
@@ -230,45 +280,23 @@ end
 function _check_safety_data(
     graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
-    problem::SafetyProblem,
+    problem::SafetyProblem;
+    path_complete::Bool = true,
 )
-    isempty(A) && throw(ArgumentError("at least one mode is required"))
-
-    n = size(first(A), 1)
-
-    n > 0 || throw(ArgumentError("mode matrices must have positive dimension"))
-
-    for (i, A_i) in enumerate(A)
-        size(A_i) == (n, n) ||
-            throw(ArgumentError("A[$i] has size $(size(A_i)); expected ($n, $n)"))
-    end
-
-    for edge in edges(graph)
-        edge_label = label(graph, edge)
-        1 <= edge_label <= length(A) ||
-            throw(ArgumentError("edge label $edge_label does not index a mode in A"))
-    end
+    _check_modes(graph, A; path_complete = path_complete)
 
     return nothing
 end
 
-"""
-    barrier(P, x)
-
-Evaluate the quadratic barrier function
-
-    B(x) = [x; 1]' * P * [x; 1].
-"""
-function barrier(P::AbstractMatrix, x::AbstractVector{<:Real})
-    z = [x; 1.0]
-    return LinearAlgebra.dot(z, P * z)
-end
-
-function _node_value(
-    ::Type{QuadraticTemplate},
+# The one (template, problem) pair needing its own method: a barrier lives in
+# homogeneous coordinates, so it is evaluated at [x; 1].
+function node_value(
+    ::QuadraticTemplate,
     ::SafetyProblem,
-    P::AbstractMatrix,
+    V::QuadraticFunction,
     x::AbstractVector{<:Real},
 )
-    return barrier(P, x)
+    z = [x; one(eltype(x))]
+
+    return LinearAlgebra.dot(z, V.P * z)
 end

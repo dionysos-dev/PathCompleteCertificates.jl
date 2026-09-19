@@ -31,3 +31,6 @@ bench/results/
 .claude/*
 !.claude/commands/
 
+
+# Figures produced by the examples
+examples/*.png
