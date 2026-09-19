@@ -1,6 +1,7 @@
-<img src="docs/src/assets/logo.svg" alt="" width="300">
-
-# PathCompleteCertificates.jl
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/banner-dark.svg">
+  <img src="docs/src/assets/banner.svg" alt="PathCompleteCertificates.jl" width="460">
+</picture>
 
 | **Documentation** | **Build Status** |
 |:-----------------:|:----------------:|
