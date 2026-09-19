@@ -49,6 +49,27 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     end
 end
 
+"""
+    SafetyCertificate
+
+A path-complete barrier function and the separation it achieves.
+
+`margin` is how strictly the barrier is negative on the initial set and positive
+on the unsafe one. It is strictly positive exactly when the barrier certifies
+anything; at zero the two sets are not separated. The barriers are
+scale-normalised, so it is comparable between graphs rather than an arbitrary
+number.
+
+`initial_multipliers` and `unsafe_multipliers` are the S-procedure multipliers,
+one per node, kept because re-checking the conditions needs them.
+"""
+struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
+    data::D
+    margin::T
+    initial_multipliers::M
+    unsafe_multipliers::M
+end
+
 # One method, generic over templates, exactly as for stability. Safety differs
 # from stability in one argument: the dynamics are lifted to homogeneous
 # coordinates. The edge condition is `B_dst(A x) <= B_src(x)` -- non-increasing,
@@ -87,12 +108,13 @@ function safety_problem(
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
+    path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
     A = mode_matrices(problem.system)
-    _check_safety_data(graph, A, problem)
+    _check_safety_data(graph, A, problem; path_complete = path_complete)
 
     node_list = collect(nodes(graph))
     n_nodes = length(node_list)
@@ -166,32 +188,43 @@ end
 
 Solve the path-complete barrier optimization problem.
 
-Returns a [`Certificate`](@ref). `details.margin` is the separation achieved
+Returns a [`SafetyCertificate`](@ref). Its `margin` is the separation achieved
 between the initial and unsafe sets, and it is strictly positive exactly when
-the barrier certifies anything; `details.initial_multipliers` and
-`details.unsafe_multipliers` are the S-procedure multipliers.
+the barrier certifies anything; `initial_multipliers` and
+`unsafe_multipliers` are the S-procedure multipliers.
 """
 function safety_certificate(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
+    path_complete::Bool = true,
 )
-    model = safety_problem(template, graph, problem; optimizer = optimizer)
+    model = safety_problem(
+        template,
+        graph,
+        problem;
+        optimizer = optimizer,
+        path_complete = path_complete,
+    )
 
     JuMP.optimize!(model)
 
     status = JuMP.termination_status(model)
 
     if !(status in _FEASIBLE_TERMINATION_STATUSES)
-        return Certificate(
-            problem,
-            template,
-            graph,
-            QuadraticFunction{Matrix{Float64}}[],
-            status,
-            false,
-            (margin = nothing, initial_multipliers = nothing, unsafe_multipliers = nothing),
+        return SafetyCertificate(
+            CertificateData(
+                problem,
+                template,
+                graph,
+                QuadraticFunction{Matrix{Float64}}[],
+                status,
+                false,
+            ),
+            nothing,
+            nothing,
+            nothing,
         )
     end
 
@@ -223,18 +256,11 @@ function safety_certificate(
         end
     end
 
-    return Certificate(
-        problem,
-        template,
-        graph,
-        Pval,
-        status,
-        feas,
-        (
-            margin = eps_val,
-            initial_multipliers = gamma0_val,
-            unsafe_multipliers = gammau_val,
-        ),
+    return SafetyCertificate(
+        CertificateData(problem, template, graph, Pval, status, feas),
+        eps_val,
+        gamma0_val,
+        gammau_val,
     )
 end
 
@@ -266,9 +292,10 @@ end
 function _check_safety_data(
     graph::_HS.GraphAutomaton,
     A::AbstractVector{<:AbstractMatrix},
-    problem::SafetyProblem,
+    problem::SafetyProblem;
+    path_complete::Bool = true,
 )
-    _check_modes(graph, A)
+    _check_modes(graph, A; path_complete = path_complete)
 
     return nothing
 end

@@ -31,15 +31,15 @@ const RESULT = PCC.optimal_control_certificate(
 )
 
 @testset "a certificate is produced" begin
-    @test RESULT.feasible
+    @test PCC.is_feasible(RESULT)
     @test length(PCC.functions(RESULT)) == PCC.n_nodes(GRAPH)
-    @test length(RESULT.details.gains) == PCC.n_nodes(GRAPH)
+    @test length(RESULT.gains) == PCC.n_nodes(GRAPH)
 
     for V in PCC.functions(RESULT)
         @test LinearAlgebra.isposdef(LinearAlgebra.Symmetric(Matrix(V)))
     end
 
-    for K in RESULT.details.gains
+    for K in RESULT.gains
         @test size(K) == (size(first(B), 2), size(first(A), 1))
     end
 end
@@ -53,7 +53,7 @@ end
         b = PCC.dest(edge)
         i = PCC.label(GRAPH, edge)
 
-        K = RESULT.details.gains[a]
+        K = RESULT.gains[a]
         closed_loop = A[i] + B[i] * K
         residual =
             Matrix(PCC.functions(RESULT)[a]) - (
@@ -76,8 +76,8 @@ end
         V in PCC.functions(RESULT)
     )
 
-    @test RESULT.details.objective ≈ log_det rtol = 1e-4
-    @test RESULT.details.objective < 0
+    @test RESULT.objective ≈ log_det rtol = 1e-4
+    @test RESULT.objective < 0
 
     # The bound itself is a function of the state, and it is nonnegative.
     @test PCC.common(

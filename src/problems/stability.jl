@@ -20,6 +20,25 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
+"""
+    StabilityCertificate
+
+A path-complete Lyapunov function and the contraction rate it certifies.
+
+`rate` is an **upper** bound on the joint spectral radius: every switching
+sequence contracts at least this fast under the node functions. It is the
+smallest rate the bisection in [`jsr_bound`](@ref) could certify with this
+template on this graph, so a larger value says the template is conservative,
+not that the system is slower.
+
+`functions(certificate)` are the node Lyapunov functions and `certificate(x)`
+the common one.
+"""
+struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertificate
+    data::D
+    rate::T
+end
+
 # One method, generic over templates. `rate` is gamma^rate_exponent(template),
 # and the whole edge condition of this problem is the template's domination
 # primitive with that scale -- so a new template needs nothing here.
@@ -59,12 +78,13 @@ function stability_problem(
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
+    path_complete::Bool = true,
 )
     gamma >= 0 || throw(ArgumentError("gamma must be nonnegative"))
 
     A = mode_matrices(problem.system)
 
-    _check_stability_data(template, graph, A)
+    _check_stability_data(template, graph, A; path_complete = path_complete)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
@@ -112,8 +132,16 @@ function is_stable(
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
+    path_complete::Bool = true,
 )
-    model = stability_problem(template, graph, problem, gamma; optimizer)
+    model = stability_problem(
+        template,
+        graph,
+        problem,
+        gamma;
+        optimizer,
+        path_complete = path_complete,
+    )
 
     JuMP.optimize!(model)
 
@@ -129,7 +157,7 @@ Estimate an upper bound on the joint spectral radius by bisection.
 At each candidate `gamma`, solve the fixed-`gamma` feasibility problem
 over every edge `(a, b, i)`.
 
-Returns a [`Certificate`](@ref). Its `details.rate` is the smallest feasible
+Returns a [`StabilityCertificate`](@ref). Its `rate` is the smallest feasible
 bound found to relative tolerance `rtol`; `functions(certificate)` are the
 node Lyapunov functions, and `certificate(x)` evaluates the common one.
 """
@@ -141,6 +169,7 @@ function jsr_bound(
     rtol::Real = 1e-3,
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
+    path_complete::Bool = true,
 )
     rtol > 0 || throw(ArgumentError("rtol must be positive"))
 
@@ -149,12 +178,16 @@ function jsr_bound(
     initial_upper > 0 || throw(ArgumentError("initial_upper must be positive"))
 
     A = mode_matrices(problem.system)
-    _check_stability_data(template, graph, A)
+
+    # Once, here. The bisection below builds a model per step and each build
+    # revalidates, so leaving this on would run a PSPACE-complete test a dozen
+    # times over on a graph that cannot have changed.
+    _check_stability_data(template, graph, A; path_complete = path_complete)
 
     lower = zero(initial_upper)
     upper = initial_upper
 
-    while !is_stable(template, graph, problem, upper; optimizer)
+    while !is_stable(template, graph, problem, upper; optimizer, path_complete = false)
         upper *= 2
 
         isfinite(upper) ||
@@ -166,14 +199,15 @@ function jsr_bound(
 
         candidate = (lower + upper) / 2
 
-        if is_stable(template, graph, problem, candidate; optimizer)
+        if is_stable(template, graph, problem, candidate; optimizer, path_complete = false)
             upper = candidate
         else
             lower = candidate
         end
     end
 
-    model = stability_problem(template, graph, problem, upper; optimizer)
+    model =
+        stability_problem(template, graph, problem, upper; optimizer, path_complete = false)
     JuMP.optimize!(model)
 
     status = JuMP.termination_status(model)
@@ -182,7 +216,10 @@ function jsr_bound(
 
     V = [solution_value(template, v) for v in model[:stability_V]]
 
-    return Certificate(problem, template, graph, V, status, true, (rate = upper,))
+    return StabilityCertificate(
+        CertificateData(problem, template, graph, V, status, true),
+        upper,
+    )
 end
 
 """
@@ -204,9 +241,10 @@ end
 function _check_stability_data(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
-    A::AbstractVector{<:AbstractMatrix},
+    A::AbstractVector{<:AbstractMatrix};
+    path_complete::Bool = true,
 )
-    _check_modes(graph, A)
+    _check_modes(graph, A; path_complete = path_complete)
     check_dynamics(template, A)
 
     return nothing

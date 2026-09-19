@@ -63,9 +63,9 @@ result = PCC.optimal_control_certificate(
 
 # `objective` is the log-determinant volume heuristic, not the value-function
 # bound -- the bound is `common` below, and it is a function of the state.
-println("Optimization objective: $(result.details.objective)")
-println("Feasible certificate: $(result.feasible)")
-println("State-feedback gains: $(result.details.gains)")
+println("Optimization objective: $(result.objective)")
+println("Feasible certificate: $(PCC.is_feasible(result))")
+println("State-feedback gains: $(result.gains)")
 
 # Evaluate the common upper bound at one state
 x = [1.0, 1.0]

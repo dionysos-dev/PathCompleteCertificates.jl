@@ -62,8 +62,8 @@ end
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    @test result.feasible
-    @test abs(result.details.rate - 0.5) <= 0.01
+    @test PCC.is_feasible(result)
+    @test abs(result.rate - 0.5) <= 0.01
     @test length(PCC.functions(result)) == 2
 end
 
@@ -81,7 +81,7 @@ end
         mode = PCC.label(GRAPH, edge)
 
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [-2.0, 3.0], [0.7, -1.3])
-            @test fitted[dst](A[mode] * x) <= result.details.rate * fitted[src](x) + 1e-6
+            @test fitted[dst](A[mode] * x) <= result.rate * fitted[src](x) + 1e-6
         end
     end
 end
@@ -96,9 +96,9 @@ end
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    @test result.feasible
-    @test result.details.rate >= 0.5 - 1e-6      # never below the true rate
-    @test result.details.rate <= 1.0             # and still certifies contraction
+    @test PCC.is_feasible(result)
+    @test result.rate >= 0.5 - 1e-6      # never below the true rate
+    @test result.rate <= 1.0             # and still certifies contraction
 end
 
 @testset "the aggregation works for this template too" begin
@@ -123,7 +123,7 @@ end
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2; min_weight = 2.5)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    @test result.feasible
+    @test PCC.is_feasible(result)
     for V in PCC.functions(result)
         @test all(>=(2.5 - 1e-6), V.w)
     end

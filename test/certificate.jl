@@ -1,10 +1,13 @@
 module TestCertificate
 
-# One result shape for every problem. Before this, stability returned
-# (bound, V, feasible), safety (status, P, gamma0, gammau, eps, feasible) and
-# optimal control (status, objective, P, K, feasible) -- the same concept named
+# One certificate type per problem, sharing an interface. Before this, each
+# problem returned a differently shaped named tuple -- the same concept named
 # `V` in one and `P` in the others, `status` present in two of three, and a
 # `feasible` field that stability set unconditionally to true.
+#
+# The shared part is accessed through methods and stored once in
+# `CertificateData`; what a problem actually certifies is a typed field on its
+# own certificate type, declared beside the problem it belongs to.
 
 using Test
 using HybridSystems
@@ -31,11 +34,14 @@ const STABILITY = PCC.jsr_bound(
 )
 
 @testset "the accessors are the interface" begin
-    @test STABILITY isa PCC.Certificate
+    @test STABILITY isa PCC.StabilityCertificate
+    @test STABILITY isa PCC.AbstractCertificate
     @test PCC.is_feasible(STABILITY)
     @test length(PCC.functions(STABILITY)) == PCC.n_nodes(GRAPH)
     @test PCC.status(STABILITY) isa JuMP.MOI.TerminationStatusCode
-    @test PCC.details(STABILITY).rate ≈ STABILITY.details.rate
+    @test STABILITY.rate > 0
+    @test PCC.problem(STABILITY) === PROBLEM
+    @test PCC.graph(STABILITY) === GRAPH
 end
 
 @testset "a certificate is callable, and is the common function" begin
@@ -79,17 +85,22 @@ end
     )
 
     for certificate in (STABILITY, safety, control)
-        @test certificate isa PCC.Certificate
+        @test certificate isa PCC.AbstractCertificate
         @test PCC.is_feasible(certificate)
         @test !isempty(PCC.functions(certificate))
         @test PCC.status(certificate) isa JuMP.MOI.TerminationStatusCode
         @test certificate([1.0, 1.0]) isa Real
     end
 
-    # The problem-specific part, and only that, lives in `details`.
-    @test keys(PCC.details(STABILITY)) == (:rate,)
-    @test keys(PCC.details(safety)) == (:margin, :initial_multipliers, :unsafe_multipliers)
-    @test keys(PCC.details(control)) == (:gains, :objective)
+    # What each problem certifies is a typed field on its own type, not an
+    # entry in a shared bag -- so it is discoverable and documented.
+    @test STABILITY isa PCC.StabilityCertificate
+    @test safety isa PCC.SafetyCertificate
+    @test control isa PCC.OptimalControlCertificate
+
+    @test STABILITY.rate > 0
+    @test safety.margin > 0
+    @test length(control.gains) == PCC.n_nodes(PCC.graph(control))
 end
 
 @testset "an infeasible solve still returns a certificate" begin
@@ -105,16 +116,8 @@ end
         optimizer = OPTIMIZER,
     )
 
-    @test res isa PCC.Certificate
+    @test res isa PCC.SafetyCertificate
     @test !PCC.is_feasible(res)
-end
-
-@testset "show says what it is" begin
-    text = sprint(show, STABILITY)
-
-    @test occursin("StabilityProblem", text)
-    @test occursin("QuadraticTemplate", text)
-    @test occursin("feasible", text)
 end
 
 end

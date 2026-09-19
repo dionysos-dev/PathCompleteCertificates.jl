@@ -74,9 +74,15 @@ add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 #   `common` is the literature's word (Philippe et al.) -- do not rename it to `aggregate`.
 ```
 
-Every problem returns a [`Certificate`](@ref): the fitted node functions, the status, and a
-`details` named tuple for whatever is problem-specific. It is callable — `certificate(x)` is
-the common function — so callers rarely touch the node functions individually.
+**Each problem defines its own certificate, in its own file.** `AbstractCertificate` fixes the
+shared interface — `functions`, `status`, `is_feasible`, `problem`, `template`, `graph`, and
+callability, where `certificate(x)` is the common function. What a problem actually certifies
+is a **typed field** on its own type: `StabilityCertificate.rate`, `SafetyCertificate.margin`,
+`OptimalControlCertificate.gains`. Not entries in a shared bag — a field is documented,
+inferable and discoverable, and a new problem adds a type rather than inventing keys.
+
+The six shared fields live once in `CertificateData`, which each certificate holds as `data`;
+the accessors read it, so a certificate implements nothing to get them.
 
 `add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
 lifting into a cone, and that lifting is template-specific — which is why it cannot be written
@@ -352,7 +358,7 @@ Do **not** add a `Co-Authored-By` line.
 
 ## 8. Two traps measured, not guessed
 
-**Path-completeness is PSPACE-complete to decide.** It is NFA universality, and
+**Path-completeness is PSPACE-complete to decide, so it is checked once and can be waived.** It is NFA universality, and
 `is_path_complete` is the subset construction — exponential in `|V|` in the worst case. It is
 usable here because the graphs are not worst cases (a De Bruijn graph visits about `2|V|`
 subsets, not `2^|V|`) and because complete / co-complete short-circuit it. Refinement tests
@@ -363,3 +369,15 @@ letter)` per pair, each a full scan of the edge list — `O(|V|·|Σ|·|E|)`. On
 was 46 ms, **50× slower than the PSPACE-complete predicate it was supposed to be a cheap
 substitute for**. Building the index once made it 0.1 ms. The graph queries in
 `graphs/queries.jl` are still linear scans; if any of them lands in a hot loop, do the same.
+
+Two consequences of that cost, both already in the code:
+
+- **Check once per solve, not once per model.** `jsr_bound` used to validate, then build a model
+  per bisection step, each rebuild revalidating — running the PSPACE-complete test a dozen times
+  on a graph that cannot have changed. It now checks once and passes `path_complete = false`
+  inward.
+- **`path_complete = false` on every entry point** waives the test and *asserts* the property,
+  for a caller with a large graph or one whose construction already guarantees it — a lift of a
+  path-complete graph, say. It is not the default and must not become one: the failure it guards
+  against is silent and unsound, and a rare performance cliff is the better risk. De Bruijn
+  graphs are cheap here (≈ 2|V| subsets), but nothing stops a user passing an arbitrary graph.

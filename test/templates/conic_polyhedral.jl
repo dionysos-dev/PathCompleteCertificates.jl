@@ -50,8 +50,8 @@ end
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
-    @test result.feasible
-    @test abs(result.details.rate - 0.5) <= 0.01
+    @test PCC.is_feasible(result)
+    @test abs(result.rate - 0.5) <= 0.01
 
     # One facet row per cone, and the scale that keeps V away from zero.
     @test size(PCC.functions(result)[1].P) == (length(cones), 2)
@@ -68,7 +68,7 @@ end
         for theta in range(0, 2pi; length = 400)
             x = [cos(theta), sin(theta)]
             @test PCC.functions(result)[dst](A[mode] * x) <=
-                  result.details.rate * PCC.functions(result)[src](x) + 1e-6
+                  result.rate * PCC.functions(result)[src](x) + 1e-6
         end
     end
 end
@@ -91,13 +91,13 @@ end
         problem;
         optimizer = OPTIMIZER,
         rtol = 1e-4,
-    ).details.rate
+    ).rate
 
     @test fixed > 1.0     # certifies nothing about contraction
 
     bounds = map(1:4) do order
         template = PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(order)])
-        PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).details.rate
+        PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).rate
     end
 
     @test all(>=(0.9 - 1e-4), bounds)          # never below the true JSR
