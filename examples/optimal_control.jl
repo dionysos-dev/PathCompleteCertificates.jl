@@ -7,8 +7,8 @@
 #     julia --project=test examples/optimal_control.jl
 
 import PathCompleteCertificates as PCC
-using Mosek
-using MosekTools
+import Clarabel
+import JuMP
 
 const A1 = [
     0.0 1.0;
@@ -30,7 +30,13 @@ const Q = [
 ]
 const R = [1.0;;]
 
-const OPTIMIZER = Mosek.Optimizer
+# Clarabel's chordal decomposition mis-handles the block LMI below and errors
+# inside `psd_completion!`; the solve is small, so turn it off rather than
+# reaching for a commercial solver.
+const OPTIMIZER = JuMP.optimizer_with_attributes(
+    Clarabel.Optimizer,
+    "chordal_decomposition_enable" => false,
+)
 
 # Build the switched system and optimal-control problem
 
@@ -47,7 +53,9 @@ result = PCC.optimal_control_certificate(
     optimizer = OPTIMIZER,
 )
 
-println("Optimization objective: $(result.bound)")
+# `objective` is the log-determinant volume heuristic, not the value-function
+# bound -- the bound is `common` below, and it is a function of the state.
+println("Optimization objective: $(result.objective)")
 println("Feasible certificate: $(result.feasible)")
 println("State-feedback gains: $(result.K)")
 
