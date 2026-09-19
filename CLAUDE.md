@@ -165,17 +165,33 @@ it is a cheap way to learn you are wrong, and finding nothing proves nothing. `c
 for the guarantee. Never present one as the other — conflating them is how unsound results
 ship.
 
-**Path-completeness is not graph completeness.** A "complete graph" in graph theory has every
-pair of vertices adjacent. That is a different property. The predicates are
-`is_path_complete` and `is_co_path_complete`.
+**Three predicates, and they are not the same thing.** Philippe, Athanasopoulos, Angeli &
+Jungers, *On Path-Complete Lyapunov Functions*, is the authority:
+
+| Predicate | Paper | Meaning |
+| :-- | :-- | :-- |
+| `is_path_complete` | Def. II.1 | **every** finite switching sequence is readable as a path |
+| `is_complete` | Def. III.2 | every node has an *outgoing* edge for every mode |
+| `is_co_complete` | Def. III.2 | every node has an *incoming* edge for every mode |
+
+`is_complete` and `is_co_complete` are **sufficient, not necessary**. A graph can read every
+word without every node reading every letter, so never use them to answer "is this a valid
+certificate" — that question is `is_path_complete`, decided by the subset construction (the
+graph is path-complete iff the subset construction from *all* nodes never reaches ∅).
+
+What each one licenses (Cor. III.3, Thm III.8) is why both survive: complete → aggregate with
+`min`, co-complete → `max`, general path-complete → `min` of `max` over the observer graph.
+`common` dispatches on exactly that.
+
+Neither is graph-theoretic completeness, where every pair of vertices is adjacent.
 
 **Path-completeness is relative to an alphabet, and the default is the weaker question.**
 `is_path_complete(graph)` asks about the labels the graph *happens to use*, so a graph that
 never mentions a mode passes trivially — and then certifies nothing about that mode. It once
 returned a JSR bound of 0.906 for a system whose JSR is at least 3. Always pass the system's
 alphabet when the question is about a certificate: `is_path_complete(graph, 1:n_modes)`.
-Every problem's data check calls `_check_path_complete(graph, length(A))`, which accepts
-either orientation; add the call when you add a problem.
+Every problem's data check calls `_check_path_complete(graph, length(A))`; add the call when
+you add a problem.
 
 ---
 

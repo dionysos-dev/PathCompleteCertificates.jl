@@ -15,9 +15,15 @@ function common(
     Ps::AbstractVector{<:AbstractMatrix},
     x::AbstractVector{<:Real},
 )
-    if is_path_complete(graph)
+    # Corollary III.3 of Philippe et al.: a complete graph aggregates with a
+    # minimum, a co-complete one with a maximum. Both are special cases of the
+    # observer construction below (Theorem III.8), taken here because they are
+    # cheaper and need no subset construction.
+    alphabet = 1:_n_modes(problem)
+
+    if is_complete(graph, alphabet)
         return minimum(_node_value(template, problem, P, x) for P in Ps)
-    elseif is_co_path_complete(graph)
+    elseif is_co_complete(graph, alphabet)
         return maximum(_node_value(template, problem, P, x) for P in Ps)
     end
 

@@ -30,9 +30,17 @@ const Q = [
 ]
 const R = [1.0;;]
 
-# Clarabel's chordal decomposition mis-handles the block LMI below and errors
-# inside `psd_completion!`; the solve is small, so turn it off rather than
-# reaching for a commercial solver.
+# Clarabel errors on this model with its chordal decomposition enabled (the
+# default) -- `MethodError: no method matching getindex(::OrderedSet{Int64},
+# ::Int64)` out of its decomposition pass. That is a Clarabel bug rather than a
+# property of the problem, and one setting avoids it. With the setting it
+# solves to OPTIMAL at De Bruijn orders 1-3, and the resulting gains satisfy
+# the Bellman inequality with a positive margin -- `test/optimal_control.jl`
+# checks that directly rather than trusting the status.
+#
+# Do not reach for Mosek here: an example that needs a licence cannot be
+# evaluated. SCS is not an alternative either -- it aborts inside its
+# log-determinant cone on this objective.
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,
