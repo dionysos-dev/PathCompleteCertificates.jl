@@ -20,8 +20,8 @@ const TEST_FILES = [
     ("./problems/stability.jl", :slow),
     ("./problems/safety.jl",),
     ("./problems/optimal_control.jl", :slow),
+    ("./problems/certificate.jl", :slow),
     ("./aggregation.jl",),
-    ("./certificate.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]
