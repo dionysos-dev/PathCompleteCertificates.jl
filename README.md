@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/src/assets/banner-dark.svg">
-  <img src="docs/src/assets/banner.svg" alt="PathCompleteCertificates.jl" width="460">
+  <img src="docs/src/assets/banner.svg" alt="PathCompleteCertificates.jl" width="720">
 </picture>
 
 | **Documentation** | **Build Status** |
