@@ -50,9 +50,19 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
 end
 
 # One method, generic over templates, exactly as for stability. Safety differs
-# from stability in two arguments and nothing else: the dynamics are lifted to
-# homogeneous coordinates, and the strictness is carried by a margin rather than
-# by a scale.
+# from stability in one argument: the dynamics are lifted to homogeneous
+# coordinates. The edge condition is `B_dst(A x) <= B_src(x)` -- non-increasing,
+# with no margin.
+#
+# A margin here is not merely unnecessary, it is unsatisfiable. In homogeneous
+# coordinates the constant direction e = [0, ..., 0, 1] is fixed by every lifted
+# map, so the edge condition read at e says P_src[end, end] >= P_dst[end, end] +
+# margin. Summed around any cycle the left and right sides telescope to the same
+# value, giving 0 >= L * margin -- so on any graph with a cycle, which is every
+# path-complete graph, the margin can only be zero. Asking for one made
+# `max margin` optimise nothing and reduced `feasible` to "the solver
+# converged". Separation between the initial and unsafe sets is what needs to be
+# strict, and that is imposed in `safety_problem` where it can be.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
@@ -60,17 +70,9 @@ function add_edge_constraint!(
     P_src,
     P_dst,
     A::AbstractMatrix,
-    eps,
+    _unused,
 )
-    add_domination!(
-        model,
-        template,
-        P_src,
-        P_dst,
-        _homogeneous_dynamics(A);
-        scale = 1,
-        margin = eps,
-    )
+    add_domination!(model, template, P_src, P_dst, _homogeneous_dynamics(A); scale = 1)
 
     return nothing
 end
@@ -114,6 +116,9 @@ function safety_problem(
     gammau =
         [JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for i in 1:n_nodes]
 
+    # The separation margin: how strictly the barrier is negative on the initial
+    # set and positive on the unsafe one. This is where strictness belongs --
+    # see `add_edge_constraint!` for why it cannot go on the transitions.
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
 
     # Initial-set and unsafe-set constraints
@@ -129,6 +134,15 @@ function safety_problem(
             model,
             Ps[i] - gammau[i] * problem.Su - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
         )
+
+        # Every other constraint is homogeneous of degree one in (P, gamma, eps),
+        # so without a scale `max eps` is unbounded whenever it is positive at
+        # all. Fixing the scale of the barriers makes eps a comparable number --
+        # the margin achievable per unit of barrier -- rather than an arbitrary
+        # one, and it costs nothing: any feasible family can be scaled into this
+        # box.
+        JuMP.@constraint(model, LinearAlgebra.I(d) - Ps[i] in JuMP.PSDCone())
+        JuMP.@constraint(model, Ps[i] + LinearAlgebra.I(d) in JuMP.PSDCone())
     end
 
     # Transition constraints
@@ -197,8 +211,11 @@ function safety_certificate(
     gammau_val = JuMP.value.(gammau)
     eps_val = JuMP.value(eps)
 
-    # Check the initial-set and unsafe-set constraints
-    feas = true
+    # Re-check the S-procedure conditions on the returned numbers rather than
+    # trusting the status, and require a strictly positive separation: `eps = 0`
+    # means the barrier only just fails to distinguish the two sets, which
+    # certifies nothing.
+    feas = eps_val > _SAFETY_MARGIN_TOLERANCE
 
     for i in eachindex(Pval)
         initial_margin = LinearAlgebra.Symmetric(-(Pval[i] + gamma0_val[i] * problem.S0))
@@ -218,9 +235,20 @@ function safety_certificate(
         gamma0 = gamma0_val,
         gammau = gammau_val,
         eps = eps_val,
-        feasible = feas && eps_val > -1e-7,
+        feasible = feas,
     )
 end
+
+"""
+    _SAFETY_MARGIN_TOLERANCE
+
+How positive the separation margin has to be before a barrier counts as one.
+
+Not a numerical fudge: `eps` is a genuine quantity now that the barriers are
+scale-normalised, so a value at solver noise means the initial and unsafe sets
+were not separated.
+"""
+const _SAFETY_MARGIN_TOLERANCE = 1e-8
 
 """
     _homogeneous_dynamics(A)
