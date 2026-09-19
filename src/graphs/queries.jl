@@ -60,11 +60,23 @@ function _check_node(graph::_HS.GraphAutomaton, node::Integer)
     return nothing
 end
 
+"""
+    outgoing_edges(graph, node)
+    outgoing_edges(graph, node, label)
+
+The transitions leaving `node`, optionally only those carrying `label`.
+"""
 function outgoing_edges(graph::_HS.GraphAutomaton, node::Integer)
     _check_node(graph, node)
     return [transition for transition in edges(graph) if source(transition) == node]
 end
 
+"""
+    incoming_edges(graph, node)
+    incoming_edges(graph, node, label)
+
+The transitions entering `node`, optionally only those carrying `label`.
+"""
 function incoming_edges(graph::_HS.GraphAutomaton, node::Integer)
     _check_node(graph, node)
     return [transition for transition in edges(graph) if dest(transition) == node]
@@ -86,36 +98,63 @@ function incoming_edges(graph::_HS.GraphAutomaton, node::Integer, edge_label::In
     ]
 end
 
+"""
+    out_neighbors(graph, node)
+
+The nodes directly reachable from `node`, one entry per transition — so a node
+reachable under two labels appears twice.
+"""
 out_neighbors(graph::_HS.GraphAutomaton, node::Integer) =
     [dest(transition) for transition in outgoing_edges(graph, node)]
 
+"""
+    in_neighbors(graph, node)
+
+The nodes with a transition into `node`, one entry per transition.
+"""
 in_neighbors(graph::_HS.GraphAutomaton, node::Integer) =
     [source(transition) for transition in incoming_edges(graph, node)]
 
-labels(graph::_HS.GraphAutomaton) =
+"""
+    alphabet(graph)
+
+The distinct labels appearing on the transitions of `graph` — the switching
+alphabet it can read.
+
+This is the alphabet the graph *uses*, which is not in general the system's.
+A graph that never mentions a mode has a smaller alphabet and is not
+path-complete for a system that has it, so pass the system's alphabet
+explicitly to [`is_path_complete`](@ref) rather than relying on this.
+"""
+alphabet(graph::_HS.GraphAutomaton) =
     unique(label(graph, transition) for transition in edges(graph))
 
-outgoing_labels(graph::_HS.GraphAutomaton, node::Integer) =
+"""
+    outgoing_alphabet(graph, node)
+
+The distinct labels on the transitions leaving `node` — the letters readable
+from it.
+"""
+outgoing_alphabet(graph::_HS.GraphAutomaton, node::Integer) =
     unique(label(graph, transition) for transition in outgoing_edges(graph, node))
 
-incoming_labels(graph::_HS.GraphAutomaton, node::Integer) =
+"""
+    incoming_alphabet(graph, node)
+
+The distinct labels on the transitions entering `node`.
+"""
+incoming_alphabet(graph::_HS.GraphAutomaton, node::Integer) =
     unique(label(graph, transition) for transition in incoming_edges(graph, node))
 
+"""
+    outdegree(graph, node)
+
+The number of transitions leaving `node`.
+"""
 outdegree(graph::_HS.GraphAutomaton, node::Integer) = length(outgoing_edges(graph, node))
+"""
+    indegree(graph, node)
+
+The number of transitions entering `node`.
+"""
 indegree(graph::_HS.GraphAutomaton, node::Integer) = length(incoming_edges(graph, node))
-
-function is_complete(graph::_HS.GraphAutomaton)
-    graph_labels = labels(graph)
-    return all(
-        !isempty(outgoing_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in graph_labels
-    )
-end
-
-function is_co_complete(graph::_HS.GraphAutomaton)
-    graph_labels = labels(graph)
-    return all(
-        !isempty(incoming_edges(graph, node, edge_label)) for
-        node in nodes(graph), edge_label in graph_labels
-    )
-end

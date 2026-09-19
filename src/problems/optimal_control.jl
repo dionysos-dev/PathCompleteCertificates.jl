@@ -19,7 +19,13 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         Q::AbstractMatrix,
         R::AbstractMatrix,
     ) where {S}
-        A, B = mode_matrices(system)
+        # Without this the destructuring below silently splits a two-mode
+        # autonomous system into A and B, reporting a nonsense dimension.
+        has_input(system) ||
+            throw(ArgumentError("OptimalControlProblem requires a system with an input"))
+
+        A = mode_matrices(system)
+        B = input_matrices(system)
         isempty(A) && throw(ArgumentError("at least one mode is required"))
 
         n = size(first(A), 1)
@@ -37,24 +43,44 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
     end
 end
 
-function _node_value(
-    ::Type{QuadraticTemplate},
-    ::OptimalControlProblem,
-    P::AbstractMatrix,
-    x::AbstractVector{<:Real},
-)
-    return LinearAlgebra.dot(x, P * x)
+"""
+    OptimalControlCertificate
+
+A jointly synthesised state-feedback policy and the value-function bound it
+comes with.
+
+`gains` is one feedback matrix per node: at node `a` the policy is
+`u = gains[a] * x`. The bound on the closed-loop value function is
+`certificate(x)` — a function of the state, not a scalar.
+
+`objective` is the solved log-determinant objective `Sum_i log det inv(P_i)`,
+the volume heuristic that selects among the feasible certificates. It is a
+solver diagnostic and **not** a bound on anything: it is routinely negative,
+whereas the value function is nonnegative whenever `Q, R` are positive definite.
+"""
+struct OptimalControlCertificate{D <: CertificateData, K, T} <: AbstractCertificate
+    data::D
+    gains::K
+    objective::T
 end
 
+# The one edge condition that does not factor through `add_domination!`.
+#
+#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK)
+#
+# is not convex in (P, K) jointly, and becomes convex only under S = P^-1,
+# Y = K S. So this problem uses the template's variables as the *inverse* of
+# the node function and cannot be stated against V_src and V_dst at all --
+# which is why only the quadratic template supports it.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
-    ::Type{QuadraticTemplate},
+    ::QuadraticTemplate,
     S_src,
     Y_src,
     S_dst,
-    dynamics,
-    psd_margin::Real,
+    dynamics;
+    psd_margin::Real = 1e-4,
 )
     A, B = dynamics
     n = size(A, 1)
@@ -91,25 +117,36 @@ end
 Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
 value function for `problem`. This first implementation supports complete graphs
 and `QuadraticTemplate` only.
+
+Returns an [`OptimalControlCertificate`](@ref):
+
+  * `functions(certificate)` are the node matrices and
+    `gains` the feedback gains, one of each per node;
+  * the value-function bound itself is `certificate(x)` — a function of the
+    state, not a scalar;
+  * `objective` is the solved log-determinant objective
+    `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
+    certificates. It is a solver diagnostic, **not** a bound on the value
+    function — it is routinely negative, whereas the value function is
+    nonnegative whenever `Q, R ≻ 0`.
 """
 function optimal_control_certificate(
-    template::Type{<:AbstractTemplate},
+    template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
+    path_complete::Bool = true,
 )
-    template === QuadraticTemplate ||
+    template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
-    is_complete(graph) ||
-        throw(ArgumentError("optimal control currently supports only complete graphs"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    A, B = mode_matrices(problem.system)
-    _check_optimal_control_data(graph, A, B)
+    A = mode_matrices(problem.system)
+    B = input_matrices(problem.system)
+    _check_optimal_control_data(graph, A, B; path_complete = path_complete)
 
     node_list = collect(nodes(graph))
-    node_index = Dict(node => i for (i, node) in enumerate(node_list))
     n = size(first(A), 1)
     m = size(first(B), 2)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, n, n)
@@ -133,8 +170,8 @@ function optimal_control_certificate(
     end
 
     for edge in edges(graph)
-        source_index = node_index[source(edge)]
-        destination_index = node_index[dest(edge)]
+        source_index = source(edge)
+        destination_index = dest(edge)
         mode = label(graph, edge)
         add_edge_constraint!(
             model,
@@ -143,8 +180,8 @@ function optimal_control_certificate(
             S[source_index],
             Y[source_index],
             S[destination_index],
-            (A[mode], B[mode]),
-            psd_margin,
+            (A[mode], B[mode]);
+            psd_margin = psd_margin,
         )
     end
 
@@ -152,54 +189,55 @@ function optimal_control_certificate(
     JuMP.optimize!(model)
 
     status = JuMP.termination_status(model)
-    feasible = status in _OPTIMAL_CONTROL_FEASIBLE_STATUSES
+    feasible = status in _FEASIBLE_TERMINATION_STATUSES
     if !feasible
-        return (
-            status = status,
-            bound = nothing,
-            P = nothing,
-            K = nothing,
-            feasible = false,
+        return OptimalControlCertificate(
+            CertificateData(
+                problem,
+                template,
+                graph,
+                QuadraticFunction{Matrix{Float64}}[],
+                status,
+                false,
+            ),
+            nothing,
+            nothing,
         )
     end
 
     S_value = [JuMP.value.(matrix) for matrix in S]
-    P = [inv(LinearAlgebra.Symmetric(matrix)) for matrix in S_value]
-    K = [JuMP.value.(Y[i]) * P[i] for i in eachindex(P)]
+    P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]
+    K = [JuMP.value.(Y[i]) * P[i].P for i in eachindex(P)]
 
-    return (
-        status = status,
-        bound = JuMP.objective_value(model),
-        P = P,
-        K = K,
-        feasible = true,
+    return OptimalControlCertificate(
+        CertificateData(problem, template, graph, P, status, true),
+        K,
+        JuMP.objective_value(model),
     )
 end
 
-function _check_optimal_control_data(graph, A, B)
-    isempty(A) && throw(ArgumentError("at least one mode is required"))
+function _check_optimal_control_data(graph, A, B; path_complete::Bool = true)
+    n = _check_modes(graph, A; path_complete = path_complete)
+
     length(A) == length(B) ||
         throw(ArgumentError("A and B must have the same number of modes"))
 
-    n = size(first(A), 1)
     m = size(first(B), 2)
-    for (mode, (A_mode, B_mode)) in enumerate(zip(A, B))
-        size(A_mode) == (n, n) || throw(ArgumentError("A[$mode] must have size ($n, $n)"))
+
+    for (mode, B_mode) in enumerate(B)
         size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
     end
 
-    for edge in edges(graph)
-        mode = label(graph, edge)
-        1 <= mode <= length(A) ||
-            throw(ArgumentError("edge label $mode does not index a mode in A and B"))
-    end
+    # Stricter than `_check_path_complete`: the bound is read off the plain
+    # minimum of Corollary III.3, which needs a *complete* graph. The general
+    # case is sound (Theorem III.8) but needs the observer aggregation.
+    is_complete(graph, 1:length(A)) || throw(
+        ArgumentError(
+            "optimal control currently supports only complete graphs; " *
+            "the graph uses labels $(sort(collect(alphabet(graph)))) and the " *
+            "system has $(length(A)) modes",
+        ),
+    )
 
     return nothing
 end
-
-const _OPTIMAL_CONTROL_FEASIBLE_STATUSES = (
-    JuMP.MOI.OPTIMAL,
-    JuMP.MOI.LOCALLY_SOLVED,
-    JuMP.MOI.ALMOST_OPTIMAL,
-    JuMP.MOI.ALMOST_LOCALLY_SOLVED,
-)

@@ -56,7 +56,8 @@ describe(
 # reaching into the fields.
 
 controlled = PCC.switched_system(A, B)
-Amat, Bmat = PCC.mode_matrices(controlled)
+Amat = PCC.mode_matrices(controlled)
+Bmat = PCC.input_matrices(controlled)
 
 println("A₁ == A[1] : ", Amat[1] == A[1])
 println("B₂ == B[2] : ", Bmat[2] == B[2])
