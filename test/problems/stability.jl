@@ -153,6 +153,53 @@ end
     end
 end
 
+@testset "the conditioning cap is opt-in, because it changes the answer" begin
+    # A rotation in coordinates stretched by 20: rho = 0.9, and the only
+    # quadratic certificates have cond(P) = 400. The normalisation used to cap
+    # that at 100 unconditionally, so `jsr_bound` returned 1.5 for a system
+    # whose true rate is 0.9 and `is_stable` said false for a stable system.
+    stretch = [1.0 0.0; 0.0 20.0]
+    theta = pi / 4
+    stretched =
+        stretch * (0.9 * [cos(theta) -sin(theta); sin(theta) cos(theta)]) * inv(stretch)
+
+    graph = GraphAutomaton(1)
+    add_transition!(graph, 1, 1, 1)
+    problem = PCC.StabilityProblem(PCC.switched_system([stretched]))
+
+    default = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        rtol = 1e-3,
+    )
+
+    @test abs(default.bound - 0.9) <= 0.01
+    @test PCC.is_stable(
+        PCC.QuadraticTemplate(),
+        graph,
+        problem,
+        0.95;
+        optimizer = OPTIMIZER,
+    )
+
+    # The cap still available, and still conservative -- which is the point of
+    # making the caller ask for it.
+    capped = PCC.jsr_bound(
+        PCC.QuadraticTemplate(; conditioning_bound = 100),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        rtol = 1e-3,
+    )
+
+    @test capped.bound > default.bound + 0.1
+    @test capped.bound >= 0.9          # still a sound upper bound
+
+    @test_throws ArgumentError PCC.QuadraticTemplate(; conditioning_bound = 0.5)
+end
+
 @testset "input validation" begin
     invalid_label_graph = GraphAutomaton(1)
     add_transition!(invalid_label_graph, 1, 1, 2)

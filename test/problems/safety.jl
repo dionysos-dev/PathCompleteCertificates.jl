@@ -38,6 +38,43 @@ end
     @test all(>=(-1e-8), res.gammau)
 end
 
+@testset "the separation margin is a real quantity" begin
+    # `eps` used to be pinned to zero: it sat on the edge condition, where the
+    # constant direction of the homogeneous lift telescopes around any cycle to
+    # force `eps <= 0`. It now sits only on the initial- and unsafe-set
+    # conditions, where it can be positive, with the barriers scale-normalised
+    # so that maximising it is bounded.
+    for order in 1:3
+        res = certificate(PCC.de_bruijn(order, 2))
+
+        @test res.feasible
+        @test res.eps > 1e-6
+
+        # The normalisation that makes `max eps` bounded.
+        for P in res.P
+            @test maximum(abs, P) <= 1 + 1e-6
+        end
+    end
+end
+
+@testset "an unseparable instance is reported as one" begin
+    # Unsafe set ‖x‖ >= 1 overlaps the initial set ‖x‖ <= 4, so no barrier can
+    # exist. The margin has to come back at zero and `feasible` has to say so --
+    # with `eps` pinned to zero for every instance, this could not be told
+    # apart from a genuine certificate.
+    overlapping = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -1.0]
+
+    res = PCC.safety_certificate(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        PCC.SafetyProblem(PCC.switched_system(A), S0, overlapping);
+        optimizer = Clarabel.Optimizer,
+    )
+
+    @test res.eps <= 1e-6
+    @test !res.feasible
+end
+
 @testset "input-free systems only" begin
     B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
     controlled = PCC.switched_system(A, B)
