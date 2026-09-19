@@ -68,14 +68,14 @@ quadratic one.
 """
 function _add_normalization! end
 
-raw"""
+"""
     add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
 
 Constrain, for every ``x``,
 
 ```math
-\text{scale} \cdot V_{src}(x) \;-\; V_{dst}(\text{map} \cdot x)
-    \;-\; \text{margin}\,\|x\|^d \;\ge\; 0,
+\\text{scale} \\cdot V_{src}(x) \\;-\\; V_{dst}(\\text{map} \\cdot x)
+    \\;-\\; \\text{margin}\\,\\|x\\|^d \\;\\ge\\; 0,
 ```
 
 where ``d`` is [`rate_exponent`](@ref). `scale` and `margin` may be JuMP

@@ -1,7 +1,7 @@
 import JuMP
 import LinearAlgebra
 
-raw"""
+"""
     PolyhedralTemplate(G; min_weight = 1e-3)
     PolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
 
@@ -9,11 +9,11 @@ The symmetric ``2n``-face polyhedral template of Athanasopoulos et al.: at node
 ``s``,
 
 ```math
-V_s(x) = \max_k \frac{|(G_s x)_k|}{w_{s,k}},
+V_s(x) = \\max_k \\frac{|(G_s x)_k|}{w_{s,k}},
 ```
 
 a weighted infinity norm in the coordinates fixed by ``G_s``. Its sublevel set
-``\{x : -\gamma w_s \le G_s x \le \gamma w_s\}`` is a symmetric polytope with
+``\\{x : -\\gamma w_s \\le G_s x \\le \\gamma w_s\\}`` is a symmetric polytope with
 ``2n`` faces, hence the name.
 
 `G` holds one invertible matrix per node and is **fixed data, not a decision
@@ -67,7 +67,7 @@ function PolyhedralTemplate(n_nodes::Integer, dimension::Integer; min_weight::Re
     return PolyhedralTemplate([copy(identity) for _ in 1:n_nodes]; min_weight = min_weight)
 end
 
-raw"""
+"""
     PolyhedralFunction(G, w)
 
 One fitted node function of a [`PolyhedralTemplate`](@ref), `V(x) = max_k |(Gx)_k| / w_k`.
