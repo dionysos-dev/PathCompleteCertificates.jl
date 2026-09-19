@@ -28,7 +28,7 @@ result = PCC.jsr_bound(
     optimizer = OPTIMIZER,
     rtol = 1e-2,
 )
-println("Joint spectral radius upper bound: $(result.details.rate)")
+println("Joint spectral radius upper bound: $(result.rate)")
 
 x = [1.0, 1.0]
 common_value = PCC.common(PCC.QuadraticTemplate(), graph, problem, PCC.functions(result), x)

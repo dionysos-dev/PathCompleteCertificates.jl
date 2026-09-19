@@ -44,6 +44,27 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
     end
 end
 
+"""
+    OptimalControlCertificate
+
+A jointly synthesised state-feedback policy and the value-function bound it
+comes with.
+
+`gains` is one feedback matrix per node: at node `a` the policy is
+`u = gains[a] * x`. The bound on the closed-loop value function is
+`certificate(x)` — a function of the state, not a scalar.
+
+`objective` is the solved log-determinant objective `Sum_i log det inv(P_i)`,
+the volume heuristic that selects among the feasible certificates. It is a
+solver diagnostic and **not** a bound on anything: it is routinely negative,
+whereas the value function is nonnegative whenever `Q, R` are positive definite.
+"""
+struct OptimalControlCertificate{D <: CertificateData, K, T} <: AbstractCertificate
+    data::D
+    gains::K
+    objective::T
+end
+
 # The one edge condition that does not factor through `add_domination!`, and it
 # is worth being explicit about why rather than leaving it as an inconsistency.
 #
@@ -104,13 +125,13 @@ Synthesize a quadratic state-feedback policy and an upper bound on the closed-lo
 value function for `problem`. This first implementation supports complete graphs
 and `QuadraticTemplate` only.
 
-Returns a [`Certificate`](@ref):
+Returns an [`OptimalControlCertificate`](@ref):
 
   * `functions(certificate)` are the node matrices and
-    `details.gains` the feedback gains, one of each per node;
+    `gains` the feedback gains, one of each per node;
   * the value-function bound itself is `certificate(x)` — a function of the
     state, not a scalar;
-  * `details.objective` is the solved log-determinant objective
+  * `objective` is the solved log-determinant objective
     `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
     certificates. It is a solver diagnostic, **not** a bound on the value
     function — it is routinely negative, whereas the value function is
@@ -122,6 +143,7 @@ function optimal_control_certificate(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
+    path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
@@ -129,7 +151,7 @@ function optimal_control_certificate(
 
     A = mode_matrices(problem.system)
     B = input_matrices(problem.system)
-    _check_optimal_control_data(graph, A, B)
+    _check_optimal_control_data(graph, A, B; path_complete = path_complete)
 
     node_list = collect(nodes(graph))
     n = size(first(A), 1)
@@ -176,14 +198,17 @@ function optimal_control_certificate(
     status = JuMP.termination_status(model)
     feasible = status in _FEASIBLE_TERMINATION_STATUSES
     if !feasible
-        return Certificate(
-            problem,
-            template,
-            graph,
-            QuadraticFunction{Matrix{Float64}}[],
-            status,
-            false,
-            (gains = nothing, objective = nothing),
+        return OptimalControlCertificate(
+            CertificateData(
+                problem,
+                template,
+                graph,
+                QuadraticFunction{Matrix{Float64}}[],
+                status,
+                false,
+            ),
+            nothing,
+            nothing,
         )
     end
 
@@ -191,19 +216,15 @@ function optimal_control_certificate(
     P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]
     K = [JuMP.value.(Y[i]) * P[i].P for i in eachindex(P)]
 
-    return Certificate(
-        problem,
-        template,
-        graph,
-        P,
-        status,
-        true,
-        (gains = K, objective = JuMP.objective_value(model)),
+    return OptimalControlCertificate(
+        CertificateData(problem, template, graph, P, status, true),
+        K,
+        JuMP.objective_value(model),
     )
 end
 
-function _check_optimal_control_data(graph, A, B)
-    n = _check_modes(graph, A)
+function _check_optimal_control_data(graph, A, B; path_complete::Bool = true)
+    n = _check_modes(graph, A; path_complete = path_complete)
 
     length(A) == length(B) ||
         throw(ArgumentError("A and B must have the same number of modes"))

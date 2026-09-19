@@ -44,6 +44,39 @@ const OPTIMIZER = Clarabel.Optimizer
     )
 end
 
+@testset "the path-completeness check can be waived, and then it is an assertion" begin
+    # Deciding path-completeness is PSPACE-complete, so a caller with a large
+    # graph, or one whose construction already guarantees the property, needs a
+    # way out. `path_complete = false` is that way out -- and it asserts rather
+    # than checks, so the same graph that is rejected by default is accepted.
+    two_modes = PCC.switched_system([[0.9 0.0; 0.0 0.9], [0.5 0.0; 0.0 0.5]])
+    problem = PCC.StabilityProblem(two_modes)
+
+    mode_1_only = GraphAutomaton(1)
+    add_transition!(mode_1_only, 1, 1, 1)
+
+    @test !PCC.is_path_complete(mode_1_only, 1:2)
+
+    @test_throws ArgumentError PCC.is_stable(
+        PCC.QuadraticTemplate(),
+        mode_1_only,
+        problem,
+        0.95;
+        optimizer = OPTIMIZER,
+    )
+
+    # Waived: the solve runs. The bound it produces says nothing about mode 2,
+    # which is exactly the risk the caller has taken on.
+    @test PCC.is_stable(
+        PCC.QuadraticTemplate(),
+        mode_1_only,
+        problem,
+        0.95;
+        optimizer = OPTIMIZER,
+        path_complete = false,
+    )
+end
+
 @testset "a path-complete graph that is neither complete nor co-complete" begin
     # The check must not be stricter than the theory. Complete and co-complete
     # are sufficient conditions (Philippe et al., Definition III.2); this graph
@@ -69,8 +102,8 @@ end
         rtol = 1e-2,
     )
 
-    @test result.feasible
-    @test 0.5 <= result.details.rate <= 0.52
+    @test PCC.is_feasible(result)
+    @test 0.5 <= result.rate <= 0.52
 end
 
 @testset "quadratic stability" begin
@@ -92,8 +125,8 @@ end
         rtol = 1e-2,
     )
 
-    @test 0.5 <= result.details.rate <= 0.51
-    @test result.feasible
+    @test 0.5 <= result.rate <= 0.51
+    @test PCC.is_feasible(result)
     @test length(PCC.functions(result)) == 2
 end
 
@@ -129,8 +162,8 @@ end
     )
 
     # rho(diag(0.5, 0.25)) = 0.5, and every template must agree on it.
-    @test abs(result.details.rate - 0.5) <= 0.01
-    @test result.feasible
+    @test abs(result.rate - 0.5) <= 0.01
+    @test PCC.is_feasible(result)
 end
 
 @testset "every template agrees on the rate" begin
@@ -145,7 +178,7 @@ end
         PCC.LinearCopositiveTemplate(),
         PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
-        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).details.rate
+        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
     end
 
     for bound in bounds
@@ -175,7 +208,7 @@ end
         rtol = 1e-3,
     )
 
-    @test abs(default.details.rate - 0.9) <= 0.01
+    @test abs(default.rate - 0.9) <= 0.01
     @test PCC.is_stable(
         PCC.QuadraticTemplate(),
         graph,
@@ -194,8 +227,8 @@ end
         rtol = 1e-3,
     )
 
-    @test capped.details.rate > default.details.rate + 0.1
-    @test capped.details.rate >= 0.9          # still a sound upper bound
+    @test capped.rate > default.rate + 0.1
+    @test capped.rate >= 0.9          # still a sound upper bound
 
     @test_throws ArgumentError PCC.QuadraticTemplate(; conditioning_bound = 0.5)
 end

@@ -20,7 +20,7 @@ certificate(graph) = PCC.safety_certificate(
 
 @testset "the barrier is not the trivial one" begin
     res = certificate(PCC.de_bruijn(1, 2))
-    @test res.feasible
+    @test PCC.is_feasible(res)
 
     # A barrier is negative on the initial set and positive on the unsafe one,
     # so its matrix has eigenvalues of both signs. P = 0 would pass every other
@@ -34,8 +34,8 @@ end
 
 @testset "the multipliers stay nonnegative" begin
     res = certificate(PCC.de_bruijn(1, 2))
-    @test all(>=(-1e-8), res.details.initial_multipliers)
-    @test all(>=(-1e-8), res.details.unsafe_multipliers)
+    @test all(>=(-1e-8), res.initial_multipliers)
+    @test all(>=(-1e-8), res.unsafe_multipliers)
 end
 
 @testset "the separation margin is a real quantity" begin
@@ -47,8 +47,8 @@ end
     for order in 1:3
         res = certificate(PCC.de_bruijn(order, 2))
 
-        @test res.feasible
-        @test res.details.margin > 1e-6
+        @test PCC.is_feasible(res)
+        @test res.margin > 1e-6
 
         # The normalisation that makes `max eps` bounded.
         for V in PCC.functions(res)
@@ -71,8 +71,8 @@ end
         optimizer = Clarabel.Optimizer,
     )
 
-    @test res.details.margin <= 1e-6
-    @test !res.feasible
+    @test res.margin <= 1e-6
+    @test !PCC.is_feasible(res)
 end
 
 @testset "input-free systems only" begin

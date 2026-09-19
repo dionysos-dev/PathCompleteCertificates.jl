@@ -42,7 +42,4 @@ include("problems/optimal_control.jl")
 # Dispatches on the graph, not on the problem, so it sits with neither axis.
 include("aggregation.jl")
 
-# --- What a problem hands back ------------------------------------------------
-include("certificate.jl")
-
 end # module
