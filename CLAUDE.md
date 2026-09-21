@@ -158,7 +158,7 @@ architecture before you read a line.
 src/
 ├── PathCompleteCertificates.jl   include order, grouped and commented
 ├── systems/                      the input to every problem, and runs of it
-│   ├── systems.jl                switched linear systems, with and without an input
+│   ├── switched.jl               switched linear systems, with and without an input
 │   └── simulate.jl               sampling runs -- the substrate for `refute`
 ├── graphs/
 │   ├── queries.jl                the adapter over HybridSystems.GraphAutomaton

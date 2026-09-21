@@ -14,7 +14,7 @@ const TEST_FILES = [
     ("./graphs/predicates.jl",),
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
-    ("./systems/systems.jl",),
+    ("./systems/switched.jl",),
     ("./systems/simulate.jl",),
     ("./templates/polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
