@@ -22,7 +22,7 @@ clone resolves for itself.
 runnable standalone:
 
 ```
-julia --project=test test/systems.jl
+julia --project=test test/systems/simulate.jl
 ```
 
 Each file declares its own imports and fixtures. If one is *not* standalone-runnable, that is a bug
@@ -64,16 +64,30 @@ than having them fixed, so the style stops being something anyone argues about. 
 ## Build the documentation
 
 ```
-julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 julia --project=docs docs/make.jl
 ```
+
+No `Pkg.develop` here: `docs/Project.toml` carries a relative `[sources]` entry pointing at
+the repository, and `Pkg.develop` would overwrite it with an absolute path from your own
+machine.
+
+**The build executes the examples.** Every file under `docs/src/examples/` runs for real --
+most solve semidefinite programs, and two of them draw. That is what keeps their printed
+numbers and figures true of the current code, and it costs minutes rather than seconds.
+While iterating on prose:
+
+```
+PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl
+```
+
+Pages whose markdown is not already in `docs/src/generated` are then dropped from the nav
+rather than breaking the build, so run a full build before opening a pull request.
 
 **Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package exports
 nothing deliberately, so the `checkdocs = :all` setting has no symbol list to work from and checks
 nothing; `test/docstrings.jl` is the real gate. That matters because the tool paper has six pages
 including references, so it cannot explain the package — these docs have to.
-
-Do not commit the `docs/Project.toml` changes that `Pkg.develop` produces.
 
 ## Continuous integration
 

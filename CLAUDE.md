@@ -157,7 +157,10 @@ architecture before you read a line.
 ```
 src/
 ├── PathCompleteCertificates.jl   include order, grouped and commented
-├── systems.jl                    switched linear systems, with and without an input
+├── systems/                      the input to every problem, and runs of it
+│   ├── switched.jl               switched linear systems, with and without an input
+│   ├── trajectory.jl             one run: states, switching sequence, inputs
+│   └── simulate.jl               sampling runs -- the substrate for `refute`
 ├── graphs/
 │   ├── queries.jl                the adapter over HybridSystems.GraphAutomaton
 │   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
@@ -180,7 +183,7 @@ src/
 
 | Path | What it is |
 | :--- | :--- |
-| `ext/` | Optional interop, one extension per weak dependency |
+| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory`, behind `RecipesBase`, so plotting is never a dependency of the package |
 | `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
 | `docs/` | The manual, the examples and these developer docs |
 | `docs/src/examples/` | Runnable scripts, **executed by the docs build** via Literate. Run one with `--project=docs`, which is where `Clarabel` and `Plots` live — never a dependency of the package or of the environment CI instantiates. There is no top-level `examples/`: it was folded in here so an example cannot go stale unnoticed |
