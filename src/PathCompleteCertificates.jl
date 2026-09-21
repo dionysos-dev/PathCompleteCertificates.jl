@@ -16,6 +16,7 @@ include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
 include("systems/switched.jl")
+include("systems/trajectory.jl")
 include("systems/simulate.jl")
 
 # --- The two axes, declared before either is implemented ----------------------

@@ -4,20 +4,21 @@ import Random
     simulate(system, x0, modes; u = nothing)
     simulate(system, x0, horizon::Integer; u = nothing, node = 1, rng = Random.default_rng())
 
-The state trajectory of `system` starting at `x0`, along a switching sequence:
-`x[k+1] = A_{modes[k]} x[k]`, or, once `system` has an input,
-`x[k+1] = A_{modes[k]} x[k] + B_{modes[k]} u[k]`.
+Run `system` from `x0` along a switching sequence and return a
+[`Trajectory`](@ref): `x[k+1] = A_{modes[k]} x[k]`, or, once `system` has an
+input, `x[k+1] = A_{modes[k]} x[k] + B_{modes[k]} u[k]`.
 
-Given `modes` explicitly, returns the trajectory alone -- a `Vector` of
-states, `length(modes) + 1` long, `x0` first.
+Given `modes` explicitly, that sequence is taken. Prefer this in a test —
+Julia's default random stream is not stable across releases.
 
-Given a `horizon` instead, a switching sequence of that length is drawn: a
-random walk on `system`'s automaton, starting at discrete state `node` and,
-at each step, picking uniformly among the transitions leaving the current
-state. A system built with a restricted `automaton` therefore only ever
-produces a sequence that automaton admits, never an inadmissible one. Since
-the sequence is not the caller's to know in advance, this method returns
-`(xs, modes)` -- the trajectory together with the sequence that generated it.
+Given a `horizon` instead, a sequence of that length is drawn: a random walk on
+`system`'s automaton, starting at discrete state `node` and, at each step,
+picking uniformly among the transitions leaving the current state. A system
+built with a restricted `automaton` therefore only ever produces a sequence
+that automaton admits, never an inadmissible one.
+
+Both return the same type, so the drawn sequence is read back off the result
+with [`switching`](@ref) rather than returned alongside it.
 
 `u` is required exactly when [`has_input`](@ref)`(system)`; passing one for an
 autonomous system, or omitting it for a controlled one, throws. It is either a
@@ -58,13 +59,21 @@ function simulate(
 
     xs = Vector{Vector{T}}(undef, length(modes) + 1)
     xs[1] = convert(Vector{T}, x0)
+    us = controlled ? Vector{Vector{T}}(undef, length(modes)) : nothing
+
     for k in eachindex(modes)
         σ = modes[k]
         x = xs[k]
-        xs[k + 1] = controlled ? A[σ] * x + B[σ] * _input_at(u, k, x) : A[σ] * x
+
+        if controlled
+            us[k] = convert(Vector{T}, _input_at(u, k, x))
+            xs[k + 1] = A[σ] * x + B[σ] * us[k]
+        else
+            xs[k + 1] = A[σ] * x
+        end
     end
 
-    return xs
+    return Trajectory(xs, modes, us)
 end
 
 function simulate(
@@ -75,8 +84,7 @@ function simulate(
     node::Integer = 1,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
-    modes = _random_modes(system.automaton, node, horizon, rng)
-    return simulate(system, x0, modes; u = u), modes
+    return simulate(system, x0, _random_modes(system.automaton, node, horizon, rng); u = u)
 end
 
 _input_at(u::AbstractVector, k, x) = u[k]
