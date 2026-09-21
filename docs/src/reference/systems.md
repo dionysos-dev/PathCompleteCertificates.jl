@@ -11,7 +11,7 @@ problem, and [`common`](@ref) reads all three of graph, template and problem.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["systems.jl"]
+Pages   = ["systems/systems.jl", "systems/simulate.jl"]
 ```
 
 ## Aggregation
