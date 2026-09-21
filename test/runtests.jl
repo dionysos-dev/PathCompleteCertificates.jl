@@ -17,6 +17,7 @@ const TEST_FILES = [
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
+    ("./systems/closed_loop.jl", :slow),
     ("./templates/polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./problems/stability.jl", :slow),

@@ -38,6 +38,11 @@ include("problems/stability.jl")
 include("problems/safety.jl")
 include("problems/optimal_control.jl")
 
+# --- The closed loop: simulation that depends on the problem axis ------------
+# The rest of the systems files sit in the foundations above; this one
+# dispatches on a certificate, so it can only be included once one exists.
+include("systems/closed_loop.jl")
+
 # --- The join: collapsing a certificate's node functions into one -------------
 # Dispatches on the graph, not on the problem, so it sits with neither axis.
 include("aggregation.jl")

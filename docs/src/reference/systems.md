@@ -18,7 +18,7 @@ Pages   = ["systems/switched.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["systems/trajectory.jl", "systems/simulate.jl"]
+Pages   = ["systems/trajectory.jl", "systems/simulate.jl", "systems/closed_loop.jl"]
 ```
 
 ## Aggregation
