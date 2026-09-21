@@ -160,7 +160,8 @@ src/
 ├── systems/                      the input to every problem, and runs of it
 │   ├── switched.jl               switched linear systems, with and without an input
 │   ├── trajectory.jl             one run: states, switching sequence, inputs
-│   └── simulate.jl               sampling runs -- the substrate for `refute`
+│   ├── simulate.jl               sampling runs -- the substrate for `refute`
+│   └── closed_loop.jl            the one simulation that needs a certificate
 ├── graphs/
 │   ├── queries.jl                the adapter over HybridSystems.GraphAutomaton
 │   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
