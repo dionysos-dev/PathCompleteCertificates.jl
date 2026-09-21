@@ -15,7 +15,9 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
-include("systems.jl")
+include("systems/switched.jl")
+include("systems/trajectory.jl")
+include("systems/simulate.jl")
 
 # --- The two axes, declared before either is implemented ----------------------
 # Both interfaces come first so each may mention the other's abstract type.

@@ -197,6 +197,10 @@ cheap way to learn you are wrong, and finding nothing proves nothing. `certify` 
 guarantee. When refutation lands, keep both visible in the API and never present one as the other —
 conflating them is how unsound results ship.
 
+The sampling half is already here: `simulate` runs a system along one switching sequence. It is
+filed under `src/systems/` rather than with the problems, because nothing about it certifies.
+`refute` is that plus a property to check and a search over sequences.
+
 ## 6. Tests, formatting, docs
 
 - Every test file is standalone-runnable and wired into `TEST_FILES` in `test/runtests.jl`.
