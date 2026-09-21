@@ -21,10 +21,14 @@ the sequence is not the caller's to know in advance, this method returns
 
 `u` is required exactly when [`has_input`](@ref)`(system)`; passing one for an
 autonomous system, or omitting it for a controlled one, throws. It is either a
-sequence of inputs, as long as the switching sequence and indexed like it, or
-a feedback law `u(x)` called on the current state at each step -- a closure
-over an [`OptimalControlCertificate`](@ref)'s `gains` is the common case, but
-nothing here is specific to that certificate.
+sequence of inputs, as long as the switching sequence and indexed like it, or a
+*memoryless* feedback law `u(x)`, called on the current state at each step.
+
+An [`OptimalControlCertificate`](@ref) policy is not memoryless, so it is not
+one of these: its gains are indexed by node of the certificate graph, and that
+node advances along the observed mode. A `u(x)` closure is never told the mode,
+so it cannot follow the graph — written naively it applies the starting node's
+gain forever, which is not the policy the certificate certifies.
 """
 function simulate(
     system::_HS.HybridSystem,
@@ -43,8 +47,17 @@ function simulate(
     A = mode_matrices(system)
     B = controlled ? input_matrices(system) : nothing
 
-    xs = Vector{typeof(x0)}(undef, length(modes) + 1)
-    xs[1] = x0
+    n = size(first(A), 1)
+    length(x0) == n ||
+        throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
+
+    # Promoted, not `typeof(x0)`: an integer `x0` under real dynamics is the
+    # obvious call, and storing the result back into a `Vector{Int}` would throw
+    # an `InexactError` from the second step.
+    T = promote_type(eltype(x0), eltype(first(A)), controlled ? eltype(first(B)) : Bool)
+
+    xs = Vector{Vector{T}}(undef, length(modes) + 1)
+    xs[1] = convert(Vector{T}, x0)
     for k in eachindex(modes)
         σ = modes[k]
         x = xs[k]
@@ -73,7 +86,11 @@ _input_at(u, k, x) = u(x)
 function _random_modes(automaton, node::Integer, horizon::Integer, rng::Random.AbstractRNG)
     modes = Vector{Int}(undef, horizon)
     for k in 1:horizon
-        options = outgoing_edges(automaton, node)
+        # Not `outgoing_edges`: those queries are the adapter over
+        # `GraphAutomaton`, the type a *certificate* graph has. The automaton of
+        # a system built without a restriction is a `OneStateAutomaton`, which
+        # they do not accept. The HybridSystems walk works on both.
+        options = collect(_HS.out_transitions(automaton, node))
         isempty(options) && throw(
             ArgumentError(
                 "node $node has no outgoing transition; the switching " *
@@ -81,8 +98,8 @@ function _random_modes(automaton, node::Integer, horizon::Integer, rng::Random.A
             ),
         )
         transition = rand(rng, options)
-        modes[k] = label(automaton, transition)
-        node = dest(transition)
+        modes[k] = _HS.event(automaton, transition)
+        node = _HS.target(automaton, transition)
     end
     return modes
 end
