@@ -5,8 +5,9 @@ on:
     tags: '*'
   pull_request:
     types: [opened, synchronize, reopened]
-# Two docs runs racing (back-to-back pushes) fight over the gh-pages push and the
-# loser fails with "fetch first" — cancel the superseded run instead.
+# Successive pushes to the same ref supersede one another, so cancel the build
+# already in flight rather than paying for both. This is per-ref, and therefore
+# NOT what keeps the `gh-pages` pushes apart — see the job-level group below.
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: true
@@ -17,6 +18,20 @@ jobs:
     # every pull request, which would block all of them.
     name: docs
     runs-on: ubuntu-latest
+    # Every run of this workflow writes to `gh-pages`: master to `dev/`, a pull
+    # request to `previews/PR<n>`. So does doc-preview-cleanup.yml, which
+    # force-pushes the whole branch. Three writers, and the group above is
+    # per-ref, so it does not hold a master deploy apart from a preview deploy:
+    # merge a pull request while its last preview build is still running and
+    # both push, the loser dying with
+    #     cannot lock ref 'refs/heads/gh-pages': is at X but expected Y
+    # This group is shared by everything that writes the branch, so those runs
+    # queue instead of racing. It gates the build as well as the push -- a job
+    # is the smallest unit concurrency can hold -- which costs some wall clock
+    # when several docs runs are outstanding, and is worth it.
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@latest
