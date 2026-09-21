@@ -19,6 +19,7 @@ const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"
 # while the reading order stays curated.
 const ORDER = [
     "switched_systems",
+    "simulate",
     "stability",
     "safety",
     "safety_barrier",

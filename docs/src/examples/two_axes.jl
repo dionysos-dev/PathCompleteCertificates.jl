@@ -140,27 +140,11 @@ end
 
 right
 
-# !!! note "The rates are ordered; the sublevel sets are not"
-#     Each bound in the legend is tighter than the one above it, and that is
-#     guaranteed rather than lucky: the memoryless certificate is a **feasible
-#     point for every richer graph** — copy its single function onto every node
-#     — so a graph with more memory can always reproduce what one with less
-#     certifies. More memory is *more* freedom, not less.
-#
-#     The sets, though, are not nested, and nothing says they should be. A
-#     certificate is homogeneous, so ``V`` and ``cV`` certify identically and
-#     each solve picks its own normalisation; these curves are then rescaled on
-#     top of that. Containment between two of them carries no information.
-#     Read the rates.
-#
-#     Nor would you expect the richer sets to shrink: the common function of a
-#     multi-node graph is a *minimum* of quadratics, so its sublevel set is a
-#     **union** of ellipses. Memory buys non-convexity, not a smaller set.
-#
-#     Finally, the ordering here holds because De Bruijn orders form a chain.
-#     Between two arbitrary path-complete graphs it is only a *partial* order,
-#     and deciding it is the work this package is built for and does not do
-#     yet.
+# !!! note "The rates are ordered; the sets are not"
+#     Each bound is tighter than the last, necessarily: a richer graph can
+#     reproduce a poorer one by copying its single function onto every node.
+#     The sets are not nested — a certificate is homogeneous, so containment
+#     between two of them carries no information. Read the rates.
 
 # ## Both together
 
