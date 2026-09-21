@@ -14,8 +14,14 @@ on:
   pull_request:
     types: [closed]
 
+# Shared with the deploy job in documentation.yml -- the reasoning is there.
+# This job is both the branch's most destructive writer and the one that loses
+# the race: it force-pushes a tree captured at checkout time, so a deploy that
+# lands in between is discarded with no error at all, and closing a pull request
+# whose last preview build is still running deleted a directory that the build
+# then recreated fourteen seconds later. Serialising fixes both directions.
 concurrency:
-  group: doc-preview-cleanup
+  group: gh-pages
   cancel-in-progress: false
 
 jobs:
