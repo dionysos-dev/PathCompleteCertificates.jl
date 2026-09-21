@@ -4,22 +4,35 @@ name: Doc Preview Cleanup
 # for every pull request (`push_preview = true` in `docs/make.jl`). Nothing
 # removes them by default, so previews accumulate forever — hundreds of stale
 # directories and several gigabytes, which then dominate what a `git clone`
-# transfers. This deletes a preview once its PR closes, and collapses `gh-pages`
-# to a single commit so the deleted content stops shipping in the pack.
+# transfers. This removes them, and collapses `gh-pages` to a single commit so
+# the deleted content stops shipping in the pack.
 #
 # Present from the first commit on purpose: retrofitting it means rewriting
 # `gh-pages` history on a live repository, which is a great deal more work than
 # having the workflow from the start.
+#
+# **It sweeps, rather than deleting the one preview the triggering event names.**
+# A preview build still queued when its pull request is merged lands *after*
+# this has run, and `pull_request: closed` never fires again — so that preview
+# is stranded for good. PR18 stranded exactly that way. A sweep costs one API
+# call per preview and has no such hole. Two more leaks it closes: a fork's
+# `pull_request` event gets a read-only token, so the close-triggered run cannot
+# push at all; and a run cancelled while pending — which the shared concurrency
+# group below makes possible — simply gets picked up by the next sweep.
 on:
   pull_request:
     types: [closed]
+  # The backstop for everything a close event misses. GitHub disables scheduled
+  # workflows after 60 days without repository activity; re-enable from the
+  # Actions tab if this package ever goes that quiet.
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
 
-# Shared with the deploy job in documentation.yml -- the reasoning is there.
-# This job is both the branch's most destructive writer and the one that loses
-# the race: it force-pushes a tree captured at checkout time, so a deploy that
-# lands in between is discarded with no error at all, and closing a pull request
-# whose last preview build is still running deleted a directory that the build
-# then recreated fourteen seconds later. Serialising fixes both directions.
+# Shared with the deploy job in documentation.yml — the reasoning is there.
+# This job is the branch's most destructive writer: it force-pushes a tree
+# captured at checkout time, so a deploy landing between its checkout and its
+# push would be discarded with no rejected push and no failed run.
 concurrency:
   group: gh-pages
   cancel-in-progress: false
@@ -29,21 +42,66 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read
+
     steps:
       - name: Checkout gh-pages
         uses: actions/checkout@v7
         with:
           ref: gh-pages
 
-      - name: Delete the preview and collapse the branch history
+      - name: Remove every preview whose pull request is closed
         env:
-          preview_dir: previews/PR${{ github.event.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          if [ -d "${preview_dir}" ]; then
-            git config user.name "Documenter.jl"
-            git config user.email "documenter@juliadocs.github.io"
-            git rm -rf "${preview_dir}"
-            git commit -m "delete preview"
-            git branch gh-pages-new $(echo "delete history" | git commit-tree HEAD^{tree})
-            git push --force origin gh-pages-new:gh-pages
+          set -euo pipefail
+
+          [ -d previews ] || { echo "no previews/ directory, nothing to do"; exit 0; }
+
+          base=$(git rev-parse HEAD)
+          removed=0
+
+          for dir in previews/PR*; do
+            [ -d "$dir" ] || continue
+            number=${dir#previews/PR}
+
+            state=$(gh api "repos/${GH_REPO}/pulls/${number}" --jq .state 2>/dev/null || echo unknown)
+
+            case "$state" in
+              closed)
+                echo "PR${number}: closed — removing ${dir}"
+                git rm -r --quiet "$dir"
+                removed=$((removed + 1))
+                ;;
+              open)
+                echo "PR${number}: open — keeping ${dir}"
+                ;;
+              *)
+                # A directory with no pull request behind it, or an API error. A
+                # sweep that guesses here would delete a live preview on a bad
+                # day, so it keeps what it cannot identify.
+                echo "PR${number}: state unknown — keeping ${dir}"
+                ;;
+            esac
+          done
+
+          if [ "$removed" -eq 0 ]; then
+            echo "nothing to remove"
+            exit 0
           fi
+
+          git config user.name "Documenter.jl"
+          git config user.email "documenter@juliadocs.github.io"
+
+          # A plain delete commit leaves the blobs reachable, so every clone
+          # still pays for them. Collapsing to a parentless commit is what
+          # actually reclaims the space.
+          collapsed=$(git commit-tree "$(git write-tree)" -m "delete history")
+
+          # --force-with-lease, not --force: the concurrency group should
+          # already have kept a deploy from landing since the checkout, but if
+          # one did, abort rather than discard it silently.
+          git push --force-with-lease=gh-pages:"${base}" origin "${collapsed}:gh-pages"
+
+          echo "removed ${removed} stale preview(s)"
