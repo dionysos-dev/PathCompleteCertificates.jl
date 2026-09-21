@@ -40,6 +40,8 @@ They compose as a product. Not every pair is wired up yet:
   [Stability: a first certificate](@ref).
 - **What do the axes buy?** [The two axes, drawn](@ref) — three templates on one
   graph, one template on four graphs.
+- **Want to watch one run?** [Simulating: what a run looks like](@ref) — one
+  switching sequence, plotted.
 - **Looking for a function?** [Graph reference](@ref),
   [Template reference](@ref), [Problem reference](@ref),
   [Systems and aggregation](@ref).

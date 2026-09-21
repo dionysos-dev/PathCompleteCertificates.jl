@@ -15,7 +15,8 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
-include("systems.jl")
+include("systems/switched.jl")
+include("systems/trajectory.jl")
 
 # --- The two axes, declared before either is implemented ----------------------
 # Both interfaces come first so each may mention the other's abstract type.
@@ -35,6 +36,11 @@ include("templates/conic_polyhedral.jl")
 include("problems/stability.jl")
 include("problems/safety.jl")
 include("problems/optimal_control.jl")
+
+# --- Simulation: the substrate for refutation, never for certification -------
+# Last of the systems files rather than beside the other two: the closed-loop
+# method dispatches on OptimalControlCertificate, which has to exist first.
+include("systems/simulate.jl")
 
 # --- The join: collapsing a certificate's node functions into one -------------
 # Dispatches on the graph, not on the problem, so it sits with neither axis.

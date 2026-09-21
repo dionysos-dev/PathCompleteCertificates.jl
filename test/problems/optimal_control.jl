@@ -6,6 +6,7 @@ import PathCompleteCertificates as PCC
 import Clarabel
 import JuMP
 import LinearAlgebra
+import Random
 
 # Clarabel's chordal decomposition errors inside `psd_completion!` on the block
 # LMI this problem builds. The solves here are small, so switch it off.
@@ -138,6 +139,38 @@ end
         PROBLEM;
         optimizer = OPTIMIZER,
     )
+end
+
+@testset "the certificate drives a closed-loop simulation" begin
+    rng = Random.MersenneTwister(3)
+    trajectory = PCC.simulate(RESULT, [1.0, 1.0], 20; rng = rng)
+
+    @test PCC.has_input(trajectory)
+    @test length(trajectory) == 20
+    @test length(PCC.inputs(trajectory)) == 20
+
+    # The policy has memory: the gain applied at each step is the one sitting on
+    # the node the graph is currently in, so replaying the run needs the node
+    # sequence and not merely the mode. Walking it here is what checks that
+    # `simulate` walks it too.
+    visited = PCC.states(trajectory)
+    applied = PCC.inputs(trajectory)
+    node = 1
+
+    for (step, mode) in enumerate(PCC.switching(trajectory))
+        @test applied[step] ≈ RESULT.gains[node] * visited[step]
+        @test visited[step + 1] ≈ A[mode] * visited[step] + B[mode] * applied[step]
+        node = PCC.dest(first(PCC.outgoing_edges(GRAPH, node, mode)))
+    end
+
+    # The closed loop contracts, which is the whole point of the gains.
+    @test LinearAlgebra.norm(last(visited)) < LinearAlgebra.norm(first(visited))
+end
+
+@testset "closed-loop input validation" begin
+    @test_throws ArgumentError PCC.simulate(RESULT, [1.0, 1.0, 1.0], 5)
+    @test_throws ArgumentError PCC.simulate(RESULT, [1.0, 1.0], 5; node = 99)
+    @test_throws ArgumentError PCC.simulate(RESULT, [1.0, 1.0], -1)
 end
 
 end
