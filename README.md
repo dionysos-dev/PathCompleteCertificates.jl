@@ -51,12 +51,11 @@ and neither requires editing the other.
 | | Question it answers |
 | :-- | :-- |
 | **[SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl)** | How large is the joint spectral radius, and how tightly can I bound it? Invariant sets via sum-of-squares. |
-| **JSR Toolbox** (MATLAB) | The same question, and the baseline the literature is written against. |
+| **[JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)** (MATLAB) | The same question, and the baseline the literature is written against. |
 | **This package** | Path-complete graphs as objects: build them, compare two of them, order them, refine one iteratively, and attach certificates of any objective to them. |
 
 The first two use a path-complete graph as an internal device for getting a bound. This one
-makes the graph the thing you work on. Where a joint-spectral-radius number is wanted, the
-other two remain the reference.
+makes the graph the thing you work on.
 
 ## Installation
 
@@ -89,19 +88,9 @@ page explains why, and what goes wrong when the structure is ignored.
 
 ## References
 
-- Ahmadi, Jungers, Parrilo, Roozbehani — [*Joint Spectral Radius and Path-Complete Graph Lyapunov
-  Functions*](https://doi.org/10.1137/110855272), SIAM J. Control Optim. 52(1), 687–717, 2014
-  ([arXiv](https://arxiv.org/abs/1111.3427))
-- Philippe, Athanasopoulos, Angeli, Jungers — [*On Path-Complete Lyapunov Functions: Geometry
-  and Comparison*](https://arxiv.org/abs/1712.00381)
-- Debauche, Della Rossa, Jungers — [*Comparison of Path-Complete Lyapunov Functions via
-  Template-Dependent Lifts*](https://arxiv.org/abs/2110.13474)
-- Jongeneel, Jungers — [*Ordering and refining path-complete Lyapunov functions through
-  composition lifts*](https://arxiv.org/abs/2503.18189)
-- Ninite, Banse, Berger, Jungers — [*A Path-Complete Approach for Optimal Control of Switched
-  Systems*](https://arxiv.org/abs/2602.04310)
-- Anand, Jungers, Zamani, Allgöwer — [*On the Completeness and Ordering of Path-Complete
-  Barrier Functions*](https://arxiv.org/abs/2503.19561)
+The [bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/)
+lists every paper the package implements, grouped by what each one underwrites -- the
+predicates, the templates, the problems, and the work that is designed but not yet built.
 
 ## Acknowledgements
 

@@ -32,5 +32,5 @@ bench/results/
 !.claude/commands/
 
 
-# Figures produced by the examples
-examples/*.png
+# Figures produced by the examples are written into docs/src/generated, which
+# is already ignored above -- the examples themselves now live in the docs.
