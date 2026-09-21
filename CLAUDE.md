@@ -18,8 +18,10 @@ A path-complete certificate is always the same three things:
 The graph is **path-complete** when every switching sequence of the system is readable as a
 path in it. That is the soundness condition — without it the inequalities certify nothing.
 
-**What makes this package different from the tools that exist** (SwitchOnSafety.jl, the
-MATLAB JSR Toolbox): they treat the path-complete graph as an internal device for obtaining a
+**What makes this package different from the tools that exist**
+([SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl), the MATLAB
+[JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)):
+they treat the path-complete graph as an internal device for obtaining a
 joint-spectral-radius bound. Here the graph is *the object of study* — something you build,
 compare against another, order, and refine iteratively. Keep that framing when adding
 features: a change that makes the graph less manipulable is working against the package.
@@ -180,8 +182,8 @@ src/
 | :--- | :--- |
 | `ext/` | Optional interop, one extension per weak dependency |
 | `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
-| `examples/` | Runnable scripts. Plain ones run with `--project=test`; the ones that draw need `--project=examples`, which is where `Plots` lives — never a dependency of the package or of the environment CI instantiates |
-| `docs/` | The manual and these developer docs |
+| `docs/` | The manual, the examples and these developer docs |
+| `docs/src/examples/` | Runnable scripts, **executed by the docs build** via Literate. Run one with `--project=docs`, which is where `Clarabel` and `Plots` live — never a dependency of the package or of the environment CI instantiates. There is no top-level `examples/`: it was folded in here so an example cannot go stale unnoticed |
 
 Add a directory when there is something to put in it, not before.
 
@@ -308,14 +310,21 @@ julia --project -e 'using Pkg; Pkg.test()'
 # Format — REQUIRED before every commit, CI fails on any diff
 julia -e 'using JuliaFormatter; format(".")'
 
-# Docs
+# Docs. The examples under docs/src/examples/ are EXECUTED by this build, so it
+# solves a handful of SDPs and draws two figures -- a few minutes, not seconds.
 julia --project=docs docs/make.jl
+
+# Docs without running the examples, for fast iteration on prose
+PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl
 ```
 
 New test files go in the `TEST_FILES` list in `test/runtests.jl` (tag a slow suite `:slow`).
 
-`makedocs` runs with `checkdocs = :all`: **every exported symbol needs a docstring** or the
-build fails. That is deliberate — the docs carry what the six-page paper cannot.
+`makedocs` runs with `checkdocs = :all`, but the package **exports nothing deliberately**, so
+that setting has no symbol list to work from and checks nothing for coverage. The real gate is
+`test/docstrings.jl`, which walks every non-underscore name reachable as `PCC.name`. What
+`checkdocs` still catches is a docstring missing from the manual — every one must land in an
+`@autodocs` block under `docs/src/reference/`.
 
 ### Don't relaunch Julia for every check
 
@@ -350,7 +359,7 @@ Never commit to `master`; branch per change; format before committing; open a PR
 **Commit message format:** `[ACTION] module: description` — lowercase, no trailing period,
 ≤ 60 chars. Actions: `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV`. Module is the touched
 subsystem (`graphs`, `templates`, `problems`, `systems`, `aggregation`, `test`, `docs`,
-`examples`, `meta`).
+`meta`), or `examples` for a change confined to `docs/src/examples/`.
 
 Do **not** add a `Co-Authored-By` line.
 

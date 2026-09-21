@@ -1,0 +1,43 @@
+```@meta
+CurrentModule = PathCompleteCertificates
+```
+
+# Template reference
+
+The first axis: what the node functions are. See [Templates](@ref) for the
+concepts, and [What works with what](@ref) for which problems accept each one.
+
+## The interface
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/abstract.jl"]
+```
+
+## Quadratic
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/quadratic.jl"]
+```
+
+## Linear copositive
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/linear_copositive.jl"]
+```
+
+## Polyhedral, fixed facets
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/polyhedral.jl"]
+```
+
+## Polyhedral, free facets
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/conic_polyhedral.jl"]
+```

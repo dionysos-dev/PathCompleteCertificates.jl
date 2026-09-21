@@ -46,7 +46,8 @@ branch does.
 | `REV`  | revert |
 
 **Module** is the touched subsystem, inferred from the paths: `graphs`, `templates`, `problems`,
-`systems`, `aggregation`, or `test` / `docs` / `examples`.
+`systems`, `aggregation`, or `test` / `docs`. Use `examples` for a change confined to
+`docs/src/examples/`, which is where the runnable scripts live.
 Repository configuration, CI and tooling are `meta`.
 
 Examples:
