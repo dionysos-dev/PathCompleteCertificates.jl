@@ -112,25 +112,14 @@ function add_edge_constraint!(
 end
 
 """
-	optimal_control_certificate(template, graph, problem; optimizer, psd_margin = 1e-4)
+    optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
-value function for `problem`. This first implementation supports complete graphs
-and `QuadraticTemplate` only.
+Build the optimal-control program without solving it.
 
-Returns an [`OptimalControlCertificate`](@ref):
-
-  * `functions(certificate)` are the node matrices and
-    `gains` the feedback gains, one of each per node;
-  * the value-function bound itself is `certificate(x)` — a function of the
-    state, not a scalar;
-  * `objective` is the solved log-determinant objective
-    `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
-    certificates. It is a solver diagnostic, **not** a bound on the value
-    function — it is routinely negative, whereas the value function is
-    nonnegative whenever `Q, R ≻ 0`.
+Supports complete graphs and `QuadraticTemplate` only; see
+[`certify`](@ref) for what the solved program yields.
 """
-function optimal_control_certificate(
+function optimization_model(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::OptimalControlProblem;
@@ -186,24 +175,60 @@ function optimal_control_certificate(
     end
 
     JuMP.@objective(model, Max, sum(t))
-    JuMP.optimize!(model)
 
+    model[:optimal_control_S] = S
+    model[:optimal_control_Y] = Y
+
+    return model
+end
+
+"""
+    certify(template, graph, problem; optimizer, psd_margin = 1e-4)
+
+Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
+value function for `problem`. This first implementation supports complete graphs
+and `QuadraticTemplate` only.
+
+Returns an [`OptimalControlCertificate`](@ref):
+
+  * `functions(certificate)` are the node matrices and
+    `gains` the feedback gains, one of each per node;
+  * the value-function bound itself is `certificate(x)` — a function of the
+    state, not a scalar;
+  * `objective` is the solved log-determinant objective
+    `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
+    certificates. It is a solver diagnostic, **not** a bound on the value
+    function — it is routinely negative, whereas the value function is
+    nonnegative whenever `Q, R ≻ 0`.
+"""
+function certify(
+    template::AbstractTemplate,
+    graph::_HS.GraphAutomaton,
+    problem::OptimalControlProblem;
+    optimizer,
+    psd_margin::Real = 1e-4,
+    path_complete::Bool = true,
+)
+    model = optimization_model(
+        template,
+        graph,
+        problem;
+        optimizer = optimizer,
+        psd_margin = psd_margin,
+        path_complete = path_complete,
+    )
+
+    JuMP.optimize!(model)
     status = JuMP.termination_status(model)
-    feasible = status in _FEASIBLE_TERMINATION_STATUSES
-    if !feasible
-        return OptimalControlCertificate(
-            CertificateData(
-                problem,
-                template,
-                graph,
-                QuadraticFunction{Matrix{Float64}}[],
-                status,
-                false,
-            ),
-            nothing,
-            nothing,
-        )
-    end
+
+    status in _FEASIBLE_TERMINATION_STATUSES || return OptimalControlCertificate(
+        _failed(problem, template, graph, status),
+        nothing,
+        nothing,
+    )
+
+    S = model[:optimal_control_S]
+    Y = model[:optimal_control_Y]
 
     S_value = [JuMP.value.(matrix) for matrix in S]
     P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]

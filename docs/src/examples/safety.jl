@@ -40,8 +40,7 @@ PCC.n_nodes(graph1), PCC.n_nodes(graph2)
 
 # The small graph first.
 
-certificate1 =
-    PCC.safety_certificate(PCC.QuadraticTemplate(), graph1, problem; optimizer = OPTIMIZER)
+certificate1 = PCC.certify(PCC.QuadraticTemplate(), graph1, problem; optimizer = OPTIMIZER)
 
 PCC.is_feasible(certificate1), certificate1.margin
 
@@ -54,8 +53,7 @@ PCC.is_feasible(certificate1), certificate1.margin
 # Now a graph with eight modes of memory, 256 nodes, in the opposite
 # orientation.
 
-certificate2 =
-    PCC.safety_certificate(PCC.QuadraticTemplate(), graph2, problem; optimizer = OPTIMIZER)
+certificate2 = PCC.certify(PCC.QuadraticTemplate(), graph2, problem; optimizer = OPTIMIZER)
 
 PCC.is_feasible(certificate2), certificate2.margin
 

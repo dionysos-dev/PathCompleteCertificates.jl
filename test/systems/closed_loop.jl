@@ -28,12 +28,8 @@ const SYSTEM = PCC.switched_system(A, B)
 const PROBLEM = PCC.OptimalControlProblem(SYSTEM, Q, R)
 const GRAPH = PCC.de_bruijn(1, 2)
 
-const CERTIFICATE = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate(),
-    GRAPH,
-    PROBLEM;
-    optimizer = OPTIMIZER,
-)
+const CERTIFICATE =
+    PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
 @testset "the certificate drives the loop" begin
     @test PCC.is_feasible(CERTIFICATE)

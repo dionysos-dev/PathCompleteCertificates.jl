@@ -41,12 +41,7 @@ problem = PCC.OptimalControlProblem(system, Q, R)
 
 graph = PCC.de_bruijn(1, 2; orientation = :complete)
 
-certificate = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate(),
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-)
+certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 
 PCC.is_feasible(certificate)
 

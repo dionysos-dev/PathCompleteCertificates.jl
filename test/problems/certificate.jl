@@ -60,14 +60,14 @@ end
     Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
     modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
 
-    safety = PCC.safety_certificate(
+    safety = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.de_bruijn(1, 2),
         PCC.SafetyProblem(PCC.switched_system(modes), S0, Su);
         optimizer = OPTIMIZER,
     )
 
-    control = PCC.optimal_control_certificate(
+    control = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.de_bruijn(1, 2),
         PCC.OptimalControlProblem(
@@ -109,7 +109,7 @@ end
     S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
     modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
 
-    res = PCC.safety_certificate(
+    res = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.de_bruijn(1, 2),
         PCC.SafetyProblem(PCC.switched_system(modes), S0, overlapping);

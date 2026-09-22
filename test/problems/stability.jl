@@ -237,7 +237,7 @@ end
     invalid_label_graph = GraphAutomaton(1)
     add_transition!(invalid_label_graph, 1, 1, 2)
 
-    @test_throws ArgumentError PCC.stability_problem(
+    @test_throws ArgumentError PCC.optimization_model(
         PCC.QuadraticTemplate(),
         invalid_label_graph,
         PROBLEM,

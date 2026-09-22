@@ -76,7 +76,7 @@ end
 # e = [0, ..., 0, 1] is fixed by every lifted map, so reading the condition at e
 # gives P_src[end, end] >= P_dst[end, end] + margin, which telescopes around any
 # cycle to 0 >= L * margin. Every path-complete graph has a cycle. Strictness
-# belongs on the set separation, and `safety_problem` puts it there.
+# belongs on the set separation, and the model builder puts it there.
 function add_edge_constraint!(
     model::JuMP.Model,
     problem::SafetyProblem,
@@ -92,11 +92,11 @@ function add_edge_constraint!(
 end
 
 """
-    safety_problem(template, graph, problem; optimizer)
+    optimization_model(template, graph, problem; optimizer)
 
 Construct the path-complete barrier optimization model.
 """
-function safety_problem(
+function optimization_model(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
@@ -174,7 +174,7 @@ function safety_problem(
 end
 
 """
-    safety_certificate(template, graph, problem; optimizer)
+    certify(template, graph, problem; optimizer)
 
 Solve the path-complete barrier optimization problem.
 
@@ -183,14 +183,14 @@ between the initial and unsafe sets, and it is strictly positive exactly when
 the barrier certifies anything; `initial_multipliers` and
 `unsafe_multipliers` are the S-procedure multipliers.
 """
-function safety_certificate(
+function certify(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::SafetyProblem;
     optimizer,
     path_complete::Bool = true,
 )
-    model = safety_problem(
+    model = optimization_model(
         template,
         graph,
         problem;
@@ -204,14 +204,7 @@ function safety_certificate(
 
     if !(status in _FEASIBLE_TERMINATION_STATUSES)
         return SafetyCertificate(
-            CertificateData(
-                problem,
-                template,
-                graph,
-                QuadraticFunction{Matrix{Float64}}[],
-                status,
-                false,
-            ),
+            _failed(problem, template, graph, status),
             nothing,
             nothing,
             nothing,

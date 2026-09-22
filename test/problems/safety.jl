@@ -11,7 +11,7 @@ const A = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
 const S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
 const SU = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
 
-certificate(graph) = PCC.safety_certificate(
+certificate(graph) = PCC.certify(
     PCC.QuadraticTemplate(),
     graph,
     PCC.SafetyProblem(PCC.switched_system(A), S0, SU);
@@ -64,7 +64,7 @@ end
     # apart from a genuine certificate.
     overlapping = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -1.0]
 
-    res = PCC.safety_certificate(
+    res = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.de_bruijn(1, 2),
         PCC.SafetyProblem(PCC.switched_system(A), S0, overlapping);

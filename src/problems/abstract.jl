@@ -204,3 +204,51 @@ function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
         x,
     )
 end
+
+"""
+    optimization_model(template, graph, problem; optimizer, kwargs...)
+
+Build the JuMP model this problem and template induce on `graph`, without
+solving it.
+
+One method per problem. Use it to inspect the program, add your own
+constraints, or change the objective before handing it to `JuMP.optimize!`;
+[`certify`](@ref) is this plus the solve and the extraction.
+
+The name avoids `model`, which is the first argument of every template
+primitive and would be shadowed inside each of them, and avoids `program`,
+which reads a letter away from `problem`.
+"""
+function optimization_model end
+
+"""
+    certify(template, graph, problem; optimizer, kwargs...)
+
+Solve for the guarantee, and return an [`AbstractCertificate`](@ref).
+
+One entry point for every problem: build the model, solve it, and read the
+result back. What each problem certifies is a typed field on the certificate it
+returns — `rate`, `margin`, `gains`.
+
+Check [`is_feasible`](@ref) before reading anything else. An infeasible result
+is still a certificate object, carrying the solver [`status`](@ref) so that "no
+certificate exists in this template on this graph" is distinguishable from "the
+solver gave up".
+
+Not to be confused with refutation, when that lands: sampling for a violation
+is a cheap way to learn you are wrong, and finding none proves nothing.
+"""
+function certify end
+
+"""
+    _failed(problem, template, graph, status)
+
+The [`CertificateData`](@ref) of a solve that produced nothing.
+
+`functions` is empty, and its element type is deliberately unconstrained: there
+is no fitted function to name a type after, and naming one anyway is how this
+came to claim `QuadraticFunction` for templates that are nothing of the kind.
+"""
+function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
+    return CertificateData(problem, template, graph, Any[], status, false)
+end
