@@ -287,3 +287,62 @@ function _check_stability_data(
 
     return nothing
 end
+
+"""
+    edge_slacks(certificate)
+
+The slack of every edge inequality, in `edges(graph(certificate))` order.
+
+Zero means the edge is tight: the certificate is held at exactly that
+inequality, and no smaller rate is available without changing the graph or the
+template. A large value means the edge is not what limits the bound.
+
+Throws on an infeasible certificate, which has no fitted functions to measure.
+"""
+function edge_slacks(certificate::StabilityCertificate)
+    is_feasible(certificate) ||
+        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+
+    graph_ = graph(certificate)
+    template_ = template(certificate)
+    V = functions(certificate)
+    A = mode_matrices(problem(certificate).system)
+
+    # The certificate stores gamma; the edge inequality is imposed at
+    # gamma^d, exactly as `optimization_model` builds it.
+    scale = certificate.rate^rate_exponent(template_)
+
+    return [
+        domination_slack(
+            template_,
+            V[source(edge)],
+            V[dest(edge)],
+            A[label(graph_, edge)];
+            scale = scale,
+        ) for edge in edges(graph_)
+    ]
+end
+
+"""
+    tight_edges(certificate; atol = 1e-6)
+
+The edges whose inequality is active, as `(source, destination, mode)` tuples.
+
+These are the edges that hold the bound up. A node with **two or more** tight
+outgoing edges is the one a refinement step splits: it is being asked to serve
+two futures with a single function, and giving it one copy per successor is
+what buys a tighter rate.
+
+`atol` is absolute, and a certificate is only determined up to scale — so read
+it against [`edge_slacks`](@ref) rather than trusting a default on a template
+whose normalisation you have not checked.
+"""
+function tight_edges(certificate::StabilityCertificate; atol::Real = 1e-6)
+    graph_ = graph(certificate)
+    slacks = edge_slacks(certificate)
+
+    return [
+        (source(edge), dest(edge), label(graph_, edge)) for
+        (edge, slack) in zip(edges(graph_), slacks) if slack <= atol
+    ]
+end

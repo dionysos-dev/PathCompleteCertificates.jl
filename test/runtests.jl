@@ -21,6 +21,7 @@ const TEST_FILES = [
     ("./templates/polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./problems/certify.jl", :slow),
+    ("./problems/tight_edges.jl", :slow),
     ("./problems/stability.jl", :slow),
     ("./problems/safety.jl",),
     ("./problems/optimal_control.jl", :slow),
