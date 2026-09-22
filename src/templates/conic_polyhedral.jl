@@ -238,3 +238,26 @@ node_value(
     V::ConicPolyhedralFunction,
     x::AbstractVector{<:Real},
 ) = V(x)
+
+function domination_slack(
+    ::ConicPolyhedralTemplate,
+    V_src::ConicPolyhedralFunction,
+    V_dst::ConicPolyhedralFunction,
+    map::AbstractMatrix;
+    scale = 1,
+)
+    # `add_domination!` imposes both signs of the destination row, so the pair
+    # is equivalent to scale * source - |destination| >= 0 on every ray.
+    worst = Inf
+
+    for (i, cone) in enumerate(V_src.cones)
+        for ray in eachcol(cone)
+            source_value = (V_src.P * ray)[i]
+            destination_values = V_dst.P * (map * ray)
+
+            worst = min(worst, minimum(scale * source_value .- abs.(destination_values)))
+        end
+    end
+
+    return worst
+end
