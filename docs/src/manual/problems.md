@@ -9,15 +9,15 @@ aggregation are the same across all three.
 
 | Problem | Edge inequality on ``(\alpha, \beta, i)`` | Entry points |
 | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_\alpha(x) \ge \gamma^{-d} V_\beta(A_i x)`` | [`is_stable`](@ref), [`jsr_bound`](@ref) |
-| [`SafetyProblem`](@ref) | ``B_\alpha(x) \ge B_\beta(A_i x)``, plus set separation | [`safety_certificate`](@ref) |
-| [`OptimalControlProblem`](@ref) | ``V_\alpha(x) \ge x^\top Q x + u^\top R u + V_\beta(A_i x + B_i u)`` | [`optimal_control_certificate`](@ref) |
+| [`StabilityProblem`](@ref) | ``V_\alpha(x) \ge \gamma^{-d} V_\beta(A_i x)`` | [`certify`](@ref), [`is_stable`](@ref), [`jsr_bound`](@ref) |
+| [`SafetyProblem`](@ref) | ``B_\alpha(x) \ge B_\beta(A_i x)``, plus set separation | [`certify`](@ref) |
+| [`OptimalControlProblem`](@ref) | ``V_\alpha(x) \ge x^\top Q x + u^\top R u + V_\beta(A_i x + B_i u)`` | [`certify`](@ref) |
 
 ## Stability
 
-[ahmadi2014joint](@cite). [`is_stable`](@ref) answers at a fixed rate;
-[`jsr_bound`](@ref) bisects for the best rate the template and graph can
-certify. Every template works here.
+[ahmadi2014joint](@cite). [`certify`](@ref) solves once at a given rate;
+[`is_stable`](@ref) asks only whether that rate is feasible, and
+[`jsr_bound`](@ref) bisects for the best one. Every template works here.
 
 ```@docs; canonical=false
 jsr_bound
@@ -49,7 +49,7 @@ adversarial, the input is yours. Returns the bound and a state-feedback gain per
 node.
 
 ```@docs; canonical=false
-optimal_control_certificate
+certify
 ```
 
 Convex only after the substitution ``S = P^{-1}``, ``Y = KS``, which is specific

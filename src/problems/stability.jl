@@ -57,7 +57,7 @@ function add_edge_constraint!(
 end
 
 """
-    stability_problem(template, graph, problem, gamma; optimizer)
+    optimization_model(template, graph, problem, gamma; optimizer)
 
 Create the feasibility problem for the Lyapunov inequalities
 
@@ -72,7 +72,7 @@ The returned model has no objective. Use [`is_stable`](@ref) or
 `optimizer` must be an LP solver for that template and an SDP-capable
 solver for `QuadraticTemplate`.
 """
-function stability_problem(
+function optimization_model(
     template::AbstractTemplate,
     graph::_HS.GraphAutomaton,
     problem::StabilityProblem,
@@ -134,7 +134,7 @@ function is_stable(
     optimizer,
     path_complete::Bool = true,
 )
-    model = stability_problem(
+    model = optimization_model(
         template,
         graph,
         problem,
@@ -206,19 +206,57 @@ function jsr_bound(
         end
     end
 
-    model =
-        stability_problem(template, graph, problem, upper; optimizer, path_complete = false)
-    JuMP.optimize!(model)
+    certificate = certify(
+        template,
+        graph,
+        problem;
+        optimizer = optimizer,
+        rate = upper,
+        path_complete = false,
+    )
 
-    status = JuMP.termination_status(model)
-    status in _FEASIBLE_TERMINATION_STATUSES ||
+    is_feasible(certificate) ||
         throw(ArgumentError("the final stability problem is not feasible"))
+
+    return certificate
+end
+
+"""
+    certify(template, graph, problem::StabilityProblem; optimizer, rate = 1)
+
+Solve the fixed-`rate` Lyapunov feasibility problem once.
+
+This is the single solve; [`jsr_bound`](@ref) bisects on `rate` on top of it,
+and [`is_stable`](@ref) asks only whether a given rate is feasible.
+"""
+function certify(
+    template::AbstractTemplate,
+    graph::_HS.GraphAutomaton,
+    problem::StabilityProblem;
+    optimizer,
+    rate::Real = 1,
+    path_complete::Bool = true,
+)
+    model = optimization_model(
+        template,
+        graph,
+        problem,
+        rate;
+        optimizer = optimizer,
+        path_complete = path_complete,
+    )
+
+    JuMP.optimize!(model)
+    status = JuMP.termination_status(model)
+
+    status in _FEASIBLE_TERMINATION_STATUSES ||
+        return StabilityCertificate(_failed(problem, template, graph, status), rate)
 
     V = [solution_value(template, v) for v in model[:stability_V]]
 
     return StabilityCertificate(
         CertificateData(problem, template, graph, V, status, true),
-        upper,
+        rate,
     )
 end
 

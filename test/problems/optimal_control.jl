@@ -23,12 +23,7 @@ const SYSTEM = PCC.switched_system(A, B)
 const PROBLEM = PCC.OptimalControlProblem(SYSTEM, Q, R)
 const GRAPH = PCC.de_bruijn(1, 2)
 
-const RESULT = PCC.optimal_control_certificate(
-    PCC.QuadraticTemplate(),
-    GRAPH,
-    PROBLEM;
-    optimizer = OPTIMIZER,
-)
+const RESULT = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
 @testset "a certificate is produced" begin
     @test PCC.is_feasible(RESULT)
@@ -94,14 +89,14 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, -Q, R)         # Q not pd
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q[1:1, 1:1], R)
 
-    @test_throws ArgumentError PCC.optimal_control_certificate(
+    @test_throws ArgumentError PCC.certify(
         PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
     )
 
-    @test_throws ArgumentError PCC.optimal_control_certificate(
+    @test_throws ArgumentError PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -120,7 +115,7 @@ end
     add_transition!(incomplete, 2, 1, 1)
     add_transition!(incomplete, 1, 1, 2)
 
-    @test_throws ArgumentError PCC.optimal_control_certificate(
+    @test_throws ArgumentError PCC.certify(
         PCC.QuadraticTemplate(),
         incomplete,
         PROBLEM;
@@ -132,7 +127,7 @@ end
     add_transition!(mode_1_only, 1, 1, 1)
 
     @test PCC.is_path_complete(mode_1_only)
-    @test_throws ArgumentError PCC.optimal_control_certificate(
+    @test_throws ArgumentError PCC.certify(
         PCC.QuadraticTemplate(),
         mode_1_only,
         PROBLEM;

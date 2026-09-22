@@ -25,8 +25,7 @@ problem = PCC.SafetyProblem(PCC.switched_system(A), S0, Su)
 
 graph = PCC.de_bruijn(1, 2)
 
-certificate =
-    PCC.safety_certificate(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
+certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 
 PCC.is_feasible(certificate) || error("no barrier found")
 

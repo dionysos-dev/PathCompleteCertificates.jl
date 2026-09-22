@@ -130,7 +130,7 @@ The reference throughout is the
 
 - **Argument ordering** follows the documented Julia order: *function argument, I/O stream, input
   being mutated, **type**, input not being mutated, key, value, …*. This is why
-  `safety_certificate(QuadraticTemplate(), graph, problem; optimizer)` takes the template first —
+  `certify(QuadraticTemplate(), graph, problem; optimizer)` takes the template first —
   the same shape as `parse(Int, s)` and `read(io, T)`.
 - **No unnecessary static parameters.** `f(x::T) where {T <: Real}` becomes `f(x::Real)` when the
   parameter is never used.
