@@ -1,29 +1,70 @@
 import PathCompleteCertificates as PCC
 import Clarabel
+using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
 
 A = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
 
-S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
-Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
+INITIAL_RADIUS = 4.0
+UNSAFE_RADIUS = 6.0
+
+S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 INITIAL_RADIUS^2]
+Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -UNSAFE_RADIUS^2]
 
 problem = PCC.SafetyProblem(PCC.switched_system(A), S0, Su)
 
-graph1 = PCC.de_bruijn(1, 2; orientation = :complete)
-graph2 = PCC.de_bruijn(8, 2; orientation = :co_complete)
+graph = PCC.de_bruijn(1, 2)
 
-PCC.n_nodes(graph1), PCC.n_nodes(graph2)
+certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 
-certificate1 = PCC.certify(PCC.QuadraticTemplate(), graph1, problem; optimizer = OPTIMIZER)
+PCC.is_feasible(certificate), certificate.margin
 
-PCC.is_feasible(certificate1), certificate1.margin
+circle(radius) = (
+    radius .* cos.(range(0, 2pi; length = 400)),
+    radius .* sin.(range(0, 2pi; length = 400)),
+)
 
-certificate2 = PCC.certify(PCC.QuadraticTemplate(), graph2, problem; optimizer = OPTIMIZER)
+figure = plot(;
+    aspect_ratio = :equal,
+    legend = :outerbottom,
+    framestyle = :origin,
+    title = "a path-complete barrier certificate",
+    size = (760, 780),
+)
 
-PCC.is_feasible(certificate2), certificate2.margin
+plot!(figure, circle(INITIAL_RADIUS)...; lw = 2, ls = :dash, label = "initial set ‖x‖ ≤ 4")
+plot!(figure, circle(UNSAFE_RADIUS)...; lw = 2, ls = :dash, label = "unsafe set ‖x‖ ≥ 6")
+
+grid = range(-8, 8; length = 400)
+values = [certificate([x, y]) for y in grid, x in grid]
+
+contour!(
+    figure,
+    grid,
+    grid,
+    values;
+    levels = [0.0],
+    lw = 2,
+    linecolor = :black,
+    colorbar = false,
+)
+
+# `contour!` adds no legend entry of its own.
+plot!(figure, [NaN], [NaN]; lw = 2, color = :black, label = "barrier, B(x) = 0")
+
+figure
+
+dual = PCC.de_bruijn(8, 2; orientation = :co_complete)
+
+PCC.n_nodes(dual)
+
+certificate_dual =
+    PCC.certify(PCC.QuadraticTemplate(), dual, problem; optimizer = OPTIMIZER)
+
+PCC.is_feasible(certificate_dual), certificate_dual.margin
 
 x = [1.0, 1.0]
-certificate1(x), certificate2(x)
+certificate(x), certificate_dual(x)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
