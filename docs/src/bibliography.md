@@ -31,6 +31,10 @@ wrong result.
 [`QuadraticTemplate`](@ref) and [`LinearCopositiveTemplate`](@ref) are standard
 and have no single source.
 
+[parrilo2008approximation](@cite) is [`SumOfSquaresTemplate`](@ref): the
+sum-of-squares relaxation of the joint spectral radius, whose bound tightens
+monotonically with the degree.
+
 ## Problem sources
 
 [anand2024barrier](@cite) is [`SafetyProblem`](@ref).

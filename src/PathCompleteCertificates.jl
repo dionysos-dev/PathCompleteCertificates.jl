@@ -32,6 +32,9 @@ include("templates/linear_copositive.jl")
 include("templates/quadratic.jl")
 include("templates/polyhedral.jl")
 include("templates/conic_polyhedral.jl")
+# The methods live in ext/PathCompleteCertificatesSumOfSquaresExt.jl: the type
+# is cheap, the polynomial stack behind it is not.
+include("templates/sum_of_squares.jl")
 
 # --- Axis 2: one file per problem, each composing those primitives ------------
 include("problems/stability.jl")

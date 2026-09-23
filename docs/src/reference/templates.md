@@ -41,3 +41,13 @@ Pages   = ["templates/polyhedral.jl"]
 Modules = [PathCompleteCertificates]
 Pages   = ["templates/conic_polyhedral.jl"]
 ```
+
+## Sum of squares
+
+The primitives are defined in a package extension, so `using SumOfSquares` is
+required before this template can be solved with.
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/sum_of_squares.jl"]
+```

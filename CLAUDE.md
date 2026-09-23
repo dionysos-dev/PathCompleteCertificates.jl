@@ -172,7 +172,8 @@ src/
 │   ├── linear_copositive.jl
 │   ├── quadratic.jl
 │   ├── polyhedral.jl             symmetric 2n-face, fixed facets
-│   └── conic_polyhedral.jl       free facets, plus the partition that linearises them
+│   ├── conic_polyhedral.jl       free facets, plus the partition that linearises them
+│   └── sum_of_squares.jl         the type only -- its methods are in ext/
 ├── problems/                     AXIS 2 — what the edge inequality says
 │   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses
 │   ├── stability.jl
@@ -184,7 +185,7 @@ src/
 
 | Path | What it is |
 | :--- | :--- |
-| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory`, behind `RecipesBase`, so plotting is never a dependency of the package |
+| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory` behind `RecipesBase`, and the sum-of-squares template behind `SumOfSquares`. **A template may be split this way** — type in `src/templates/`, primitives in `ext/` — when its stack is too heavy to load for an LP |
 | `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
 | `docs/` | The manual, the examples and these developer docs |
 | `docs/src/examples/` | Runnable scripts, **executed by the docs build** via Literate. Run one with `--project=docs`, which is where `Clarabel` and `Plots` live — never a dependency of the package or of the environment CI instantiates. There is no top-level `examples/`: it was folded in here so an example cannot go stale unnoticed |

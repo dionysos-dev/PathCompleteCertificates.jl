@@ -16,11 +16,16 @@ JuMP = "1"
 LinearAlgebra = "1"
 MathematicalSystems = "0.14"
 Random = "1"
+MultivariatePolynomials = "0.5"
 RecipesBase = "1"
+SumOfSquares = "0.7"
 julia = "1.10"
 
 [weakdeps]
+MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [extensions]
 PathCompleteCertificatesRecipesBaseExt = "RecipesBase"
+PathCompleteCertificatesSumOfSquaresExt = ["SumOfSquares", "MultivariatePolynomials"]
