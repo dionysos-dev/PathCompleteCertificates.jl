@@ -25,6 +25,7 @@ const ORDER = [
     "safety_barrier",
     "optimal_control",
     "two_axes",
+    "sum_of_squares",
 ]
 
 function example_stems()

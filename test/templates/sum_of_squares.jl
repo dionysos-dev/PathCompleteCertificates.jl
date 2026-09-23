@@ -133,4 +133,51 @@ end
     end
 end
 
+@testset "a genuine path-complete graph, with two distinct node functions" begin
+    # Everything above runs on one node, where V_src and V_dst are the same
+    # object: the substitution is never exercised on two different functions,
+    # and a swapped source/destination cannot be detected. This is that test.
+    graph = PCC.de_bruijn(1, 2)
+    template = PCC.SumOfSquaresTemplate(2, x)
+
+    @test PCC.n_nodes(graph) == 2
+    @test PCC.n_edges(graph) == 4
+
+    certificate =
+        PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+    @test PCC.is_feasible(certificate)
+
+    V = PCC.functions(certificate)
+    @test length(V) == 2
+
+    # Memory buys something here, so the two-node bound beats the one-node one.
+    memoryless =
+        PCC.jsr_bound(template, MEMORYLESS, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+    @test certificate.rate <= memoryless.rate + 1e-6
+
+    # The nodes really do carry different functions.
+    probe = [1.0, 0.7]
+    @test !(V[1](probe) ≈ V[2](probe))
+
+    # The edge inequality, per edge, with the pairing the graph dictates. A
+    # source/destination swap fails here and nowhere else.
+    scale = certificate.rate^PCC.rate_exponent(template)
+
+    for edge in PCC.edges(graph)
+        src = V[PCC.source(edge)]
+        dst = V[PCC.dest(edge)]
+        map = A[PCC.label(graph, edge)]
+
+        for point in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, -2.0], [-0.5, 3.0])
+            @test scale * src(point) - dst(map * point) >= -1e-6
+        end
+    end
+
+    # `common` over a complete graph is the minimum over the nodes, and the
+    # certificate is callable through it.
+    for point in ([1.0, 1.0], [2.0, -1.0], [0.3, 0.8])
+        @test certificate(point) ≈ min(V[1](point), V[2](point)) rtol = 1e-6
+    end
+end
+
 end
