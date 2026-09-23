@@ -20,6 +20,7 @@ const TEST_FILES = [
     ("./systems/closed_loop.jl", :slow),
     ("./templates/polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
+    ("./templates/sum_of_squares.jl", :slow),
     ("./problems/certify.jl", :slow),
     ("./problems/stability.jl", :slow),
     ("./problems/safety.jl",),

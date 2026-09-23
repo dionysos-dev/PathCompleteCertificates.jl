@@ -13,8 +13,12 @@ three problems are still quadratic-only.
 | [`LinearCopositiveTemplate`](@ref)  | ✓ ¹ | ✗ | ✗ |
 | [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
+| [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
 
 ¹ Entrywise nonnegative mode matrices only.
+
+² Behind a package extension: `using SumOfSquares` first, or its primitives are
+not defined.
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control
 additionally requires a **complete** graph, not merely a path-complete one.

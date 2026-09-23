@@ -13,7 +13,7 @@ member.
     data — [`PolyhedralTemplate`](@ref) holds one matrix per node — and a type
     has nowhere to put it.
 
-## The four templates
+## The five templates
 
 | Template | ``V_s(x)`` | Degree | Solved for | Source |
 | :-- | :-- | :-: | :-- | :-- |
@@ -21,8 +21,13 @@ member.
 | [`LinearCopositiveTemplate`](@ref) | ``c_s^\top x`` | 1 | ``c_s > 0`` | standard |
 | [`PolyhedralTemplate`](@ref) | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | 1 | weights ``w_s`` | [athanasopoulos2019polyhedral](@cite) |
 | [`ConicPolyhedralTemplate`](@ref) | ``\max_i \lvert p_{s,i}^\top x \rvert`` | 1 | facets ``p_{s,i}`` | unpublished ¹ |
+| [`SumOfSquaresTemplate`](@ref) | ``z(x)^\top Q_s z(x)`` | ``2d`` | ``Q_s \succeq 0`` | [parrilo2008approximation](@cite) ² |
 
 ¹ The free-facet construction is not yet published — currently under submission.
+
+² Behind a package extension, since it pulls the whole polynomial stack. Raising
+`d` tightens the bound monotonically, and `d = 1` is exactly
+[`QuadraticTemplate`](@ref) — a useful thing to check a change against.
 
 The degree is [`rate_exponent`](@ref): ``V(cx) = c^d V(x)``. It is accounted for
 when rates are computed, so bounds from different templates are comparable.
