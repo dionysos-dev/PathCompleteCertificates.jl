@@ -14,6 +14,7 @@ const TEST_FILES = [
     ("./graphs/predicates.jl",),
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
+    ("./refinement/lift.jl",),
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
@@ -27,6 +28,7 @@ const TEST_FILES = [
     ("./problems/optimal_control.jl", :slow),
     ("./problems/certificate.jl", :slow),
     ("./aggregation.jl",),
+    ("./refinement/stability.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]

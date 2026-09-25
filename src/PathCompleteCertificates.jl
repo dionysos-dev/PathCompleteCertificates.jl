@@ -15,6 +15,9 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
+# Pure graph transforms -- no template, no problem -- so they sit with the
+# other graph foundations despite living in refinement/ (see that file).
+include("refinement/lift.jl")
 include("systems/switched.jl")
 include("systems/trajectory.jl")
 include("systems/simulate.jl")
@@ -49,5 +52,11 @@ include("systems/closed_loop.jl")
 # --- The join: collapsing a certificate's node functions into one -------------
 # Dispatches on the graph, not on the problem, so it sits with neither axis.
 include("aggregation.jl")
+
+# --- The co-design of graph and certificate: iterative lifting ---------------
+# Reads graph, template and problem at once, like aggregation.jl above --
+# except scoped to stability, so it is included once that problem exists
+# rather than claimed as a third generic axis it does not yet have.
+include("refinement/stability.jl")
 
 end # module
