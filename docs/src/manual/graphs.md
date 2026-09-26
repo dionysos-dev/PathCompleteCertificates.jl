@@ -61,6 +61,22 @@ Order `k` over `m` modes has `mᵏ` nodes and remembers the last `k` modes. High
 order buys a tighter bound at exponential cost. `orientation` decides which
 sufficient condition holds, and so which aggregation applies.
 
+## Or not choosing one
+
+De Bruijn spends its nodes on remembering the last `k` modes whether or not that
+is where the certificate was tight. [`refine`](@ref) spends them where the solver
+says it hurts: it certifies, reads off which edge inequalities are active with
+[`tight_edges`](@ref), splits a node held at two of them, and repeats.
+
+```@docs; canonical=false
+refine
+```
+
+At equal node count it beats De Bruijn on the example in
+[Refinement: letting the graph design itself](@ref). This is the one place the
+package *designs* the certificate rather than solving for one on a graph you
+supplied — and it is why the graph queries are worth their cost.
+
 ## When the check costs you
 
 Deciding path-completeness is PSPACE-complete in general. On De Bruijn graphs it

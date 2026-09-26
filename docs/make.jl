@@ -25,6 +25,7 @@ const ORDER = [
     "optimal_control",
     "two_axes",
     "sum_of_squares",
+    "refinement",
 ]
 
 function example_stems()
