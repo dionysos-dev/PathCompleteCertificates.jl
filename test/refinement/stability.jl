@@ -119,4 +119,81 @@ end
     )
 end
 
+# A rotation and a shear, both scaled by 0.69: no quadratic function attains the
+# joint spectral radius of this pair, so the memoryless bound is loose and there
+# is something for refinement to win. Same system as the SOS example.
+const SHEARED = PCC.StabilityProblem(
+    PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
+)
+
+const MEMORYLESS = GraphAutomaton(1)
+add_transition!(MEMORYLESS, 1, 1, 1)
+add_transition!(MEMORYLESS, 1, 1, 2)
+
+@testset "the node-grained lift cannot split the memoryless graph, and says so" begin
+    # Two tight self-loops, so the tight-edge count selects node 1 -- but
+    # `forward_lift` splits by distinct *successor* and node 1 has only itself.
+    # The lift is the identity here, and `refine` must report convergence rather
+    # than re-solve the same graph until `depth_max`.
+    trace = PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        depth_max = 4,
+        lift = PCC.forward_lift,
+    )
+
+    @test PCC.is_converged(trace)
+    @test length(PCC.graphs(trace)) == 1
+    @test PCC.n_nodes(only(PCC.graphs(trace))) == 1
+end
+
+@testset "the edge-grained lift refines it, and beats De Bruijn node for node" begin
+    trace = PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        depth_max = 4,
+        lift = PCC.forward_edge_lift,
+    )
+
+    rates = PCC.rates(trace)
+
+    @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 3, 4]
+
+    # The point of the whole loop: the bound genuinely falls, not merely fails to
+    # rise. Anything weaker is satisfied by a lift that does nothing.
+    @test all(<(0), diff(rates))
+
+    # Two nodes reached by lifting is De Bruijn of order 1, up to relabeling, so
+    # the bounds agree; four nodes reached by lifting is *not* De Bruijn of order
+    # 2, and is strictly better than it.
+    memory_1 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
+    memory_2 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
+
+    @test isapprox(rates[2], memory_1.rate; rtol = 1e-3)
+    @test rates[4] < memory_2.rate
+end
+
+@testset "the trace carries the certificates, not only the bounds" begin
+    trace = PCC.refine(
+        TEMPLATE,
+        TWO_NODES,
+        TWO_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        depth_max = 2,
+    )
+
+    every = PCC.certificates(trace)
+
+    @test length(every) == length(PCC.graphs(trace))
+    @test all(PCC.is_feasible, every)
+    @test [c.rate for c in every] == PCC.rates(trace)
+
+    # The Lyapunov functions are there, so a run can be drawn without re-solving.
+    @test all(c -> c([1.0, 1.0]) > 0, every)
+end
+
 end # module

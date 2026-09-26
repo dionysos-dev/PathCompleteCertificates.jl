@@ -61,6 +61,9 @@ Every one of these is **public**. They are what a user implements, so none of th
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                      # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+domination_slack(template, V_src, V_dst, map; scale = 1)
+                                                     # the same, read off a *solution*: ≥ 0 when
+                                                     # it holds, 0 exactly when the edge is tight
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
 add_normalization!(model, template, V)               # excludes V ≡ 0
 rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
@@ -70,6 +73,10 @@ check_dynamics(template, A)                          # is this template applicab
 
 # --- Problem axis (src/problems/). One file per problem, composing the above.
 add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
+optimization_model(template, graph, problem; optimizer, ...)  # build, do not solve
+certify(template, graph, problem; optimizer, ...)             # build, solve, extract
+# Not `model`: it is the first argument of every primitive above and would be
+# shadowed inside all of them. Not `program`: one letter from `problem`.
 
 # --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
 #   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
@@ -179,6 +186,10 @@ src/
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
+├── refinement/                   designing the graph, rather than solving on a given one
+│   ├── lift.jl                   the forward node-splitting lifts — pure graph transforms
+│   └── stability.jl              `refine`, the greedy loop; reads all three, like
+│                                 aggregation.jl, so it is filed under neither axis
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
