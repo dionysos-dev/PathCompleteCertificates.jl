@@ -186,6 +186,10 @@ src/
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
+├── refinement/                   designing the graph, rather than solving on a given one
+│   ├── lift.jl                   the forward node-splitting lifts — pure graph transforms
+│   └── stability.jl              `refine`, the greedy loop; reads all three, like
+│                                 aggregation.jl, so it is filed under neither axis
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
