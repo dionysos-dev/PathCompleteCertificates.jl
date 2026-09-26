@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>The two axes, drawn · PathCompleteCertificates.jl</title><meta name="title" content="The two axes, drawn · PathCompleteCertificates.jl"/><meta property="og:title" content="The two axes, drawn · PathCompleteCertificates.jl"/><meta property="twitter:title" content="The two axes, drawn · PathCompleteCertificates.jl"/><meta name="description" content="Documentation for PathCompleteCertificates.jl."/><meta property="og:description" content="Documentation for PathCompleteCertificates.jl."/><meta property="twitter:description" content="Documentation for PathCompleteCertificates.jl."/><meta property="og:url" content="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/two_axes/"/><meta property="twitter:url" content="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/two_axes/"/><link rel="canonical" href="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/two_axes/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/documentercitations/citations-hover.css" rel="stylesheet" type="text/css"/><link href="../../assets/documentercitations/citations.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercitations/citations-data.js"></script><script src="../../assets/documentercitations/citations-hover.js"></script><script src="../../assets/documentercitations/citations-backlinks.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.svg" alt="PathCompleteCertificates.jl logo"/><img class="docs-dark-only" src="../../assets/logo-dark.svg" alt="PathCompleteCertificates.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">PathCompleteCertificates.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../manual/graphs/">Path-complete graphs</a></li><li><a class="tocitem" href="../../manual/templates/">Templates</a></li><li><a class="tocitem" href="../../manual/problems/">Problems</a></li><li><a class="tocitem" href="../../manual/support/">What works with what</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../switched_systems/">Switched systems: the four kinds</a></li><li><a class="tocitem" href="../simulate/">Simulating: what a run looks like</a></li><li><a class="tocitem" href="../stability/">Stability: a first certificate</a></li><li><a class="tocitem" href="../safety/">Safety: a barrier certificate</a></li><li><a class="tocitem" href="../optimal_control/">Optimal control: bounding the value function</a></li><li class="is-active"><a class="tocitem" href>The two axes, drawn</a><ul class="internal"><li><a class="tocitem" href="#Left:-fix-the-graph,-vary-the-template"><span>Left: fix the graph, vary the template</span></a></li><li><a class="tocitem" href="#Right:-fix-the-template,-vary-the-graph"><span>Right: fix the template, vary the graph</span></a></li><li><a class="tocitem" href="#Both-together"><span>Both together</span></a></li></ul></li><li><a class="tocitem" href="../sum_of_squares/">The sum-of-squares hierarchy</a></li><li><a class="tocitem" href="../refinement/">Refinement: letting the graph design itself</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../reference/systems/">Systems and aggregation</a></li><li><a class="tocitem" href="../../reference/graphs/">Graphs</a></li><li><a class="tocitem" href="../../reference/templates/">Templates</a></li><li><a class="tocitem" href="../../reference/problems/">Problems</a></li><li><a class="tocitem" href="../../reference/refinement/">Refinement</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../developers/setup/">Set up</a></li><li><a class="tocitem" href="../../developers/conventions/">Conventions</a></li><li><a class="tocitem" href="../../developers/examples/">Adding an example</a></li><li><a class="tocitem" href="../../developers/git/">Git</a></li></ul></li><li><a class="tocitem" href="../../bibliography/">Bibliography</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>The two axes, drawn</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>The two axes, drawn</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/dionysos-dev/PathCompleteCertificates.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/dionysos-dev/PathCompleteCertificates.jl/blob/master/docs/src/examples/two_axes.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="The-two-axes,-drawn"><a class="docs-heading-anchor" href="#The-two-axes,-drawn">The two axes, drawn</a><a id="The-two-axes,-drawn-1"></a><a class="docs-heading-anchor-permalink" href="#The-two-axes,-drawn" title="Permalink"></a></h1><p>The package&#39;s two axes on one figure.</p><ul><li><strong>Left</strong> — one graph, three templates: what the node functions are.</li><li><strong>Right</strong> — one template, four graphs: what the graph remembers.</li></ul><p>Both panels show the certified sublevel set <span>$\{x : V(x) \le 1\}$</span> of the <em>common</em> function, which is what <code>certificate(x)</code> evaluates.</p><pre><code class="language-julia hljs">import PathCompleteCertificates as PCC
+import Clarabel
+using HybridSystems
+using Plots
+
+const OPTIMIZER = Clarabel.Optimizer</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Clarabel.MOIwrapper.Optimizer</code></pre><p>No level-set tracing is needed. Every node function is positively homogeneous of degree <span>$d$</span> = <a href="../../reference/templates/#PathCompleteCertificates.rate_exponent"><code>rate_exponent</code></a>, and so is the common function built from them, so <span>$V(ru) = r^d V(u)$</span> and the radius in direction <span>$u$</span> is exactly <span>$V(u)^{-1/d}$</span>. The same three lines work for every template, which is the point.</p><pre><code class="language-julia hljs">function sublevel_boundary(certificate; samples = 721)
+    degree = PCC.rate_exponent(PCC.template(certificate))
+    angles = range(0, 2pi; length = samples)
+    radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
+    radii ./= maximum(radii)
+
+    return radii .* cos.(angles), radii .* sin.(angles)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">sublevel_boundary (generic function with 1 method)</code></pre><div class="admonition is-warning" id="Only-the-shape-is-comparable-9ac9b4592aff7052"><header class="admonition-header">Only the shape is comparable<a class="admonition-anchor" href="#Only-the-shape-is-comparable-9ac9b4592aff7052" title="Permalink"></a></header><div class="admonition-body"><p>Every edge condition is homogeneous, so a certificate is determined only up to scale, and each template pins that scale differently — <span>$P \succeq I$</span> for the quadratic one, a floor on the weights for the polyhedral ones. Plotted raw, the sets differ in size for reasons that mean nothing, and the eye reads the smallest as the tightest. The quality of a certificate is its <strong>rate</strong>, which is in the legend.</p></div></div><h2 id="Left:-fix-the-graph,-vary-the-template"><a class="docs-heading-anchor" href="#Left:-fix-the-graph,-vary-the-template">Left: fix the graph, vary the template</a><a id="Left:-fix-the-graph,-vary-the-template-1"></a><a class="docs-heading-anchor-permalink" href="#Left:-fix-the-graph,-vary-the-template" title="Permalink"></a></h2><p>One mode, a rotation scaled by <code>0.9</code>, on a single self-loop. The true joint spectral radius is <code>0.9</code>, and the templates disagree about how close they get to it — a rotation is exactly quadratically stable, badly approximated by a fixed-facet polytope, and well approximated once the facets are free.</p><pre><code class="language-julia hljs">THETA = pi / 3
+ROTATION = [0.9 * [cos(THETA) -sin(THETA); sin(THETA) cos(THETA)]]
+
+rotation_graph = GraphAutomaton(1)
+add_transition!(rotation_graph, 1, 1, 1)
+
+rotation_problem = PCC.StabilityProblem(PCC.switched_system(ROTATION))
+
+templates = [
+    (&quot;quadratic&quot;, PCC.QuadraticTemplate()),
+    (&quot;polyhedral, fixed facets&quot;, PCC.PolyhedralTemplate(1, 2)),
+    (
+        &quot;polyhedral, free facets&quot;,
+        PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(3)]),
+    ),
+]
+
+left = plot(;
+    title = &quot;one graph, three templates\n(shape only — scale is arbitrary)&quot;,
+    aspect_ratio = :equal,
+    legend = :outerbottom,
+    framestyle = :origin,
+)
+
+for (name, template) in templates
+    certificate = PCC.jsr_bound(
+        template,
+        rotation_graph,
+        rotation_problem;
+        optimizer = OPTIMIZER,
+        rtol = 1e-4,
+    )
+
+    xs, ys = sublevel_boundary(certificate)
+    plot!(
+        left,
+        xs,
+        ys;
+        label = &quot;$name — rate $(round(certificate.rate; digits = 3))&quot;,
+        lw = 2,
+    )
+end
+
+left</code></pre><img src="5b8838d8.svg" alt="Example block output"/><h2 id="Right:-fix-the-template,-vary-the-graph"><a class="docs-heading-anchor" href="#Right:-fix-the-template,-vary-the-graph">Right: fix the template, vary the graph</a><a id="Right:-fix-the-template,-vary-the-graph-1"></a><a class="docs-heading-anchor-permalink" href="#Right:-fix-the-template,-vary-the-graph" title="Permalink"></a></h2><p>A rotation and a shear. One quadratic function for the whole system is conservative; letting the certificate remember the last <span>$k$</span> modes is not. The sublevel sets are unions of ellipses — non-convex, and richer with memory, which is (<a href="../../bibliography/#philippe2017path" id="philippe2017path-cite-2">Philippe <em>et al.</em>, 2017</a>)&#39;s point that a path-complete Lyapunov function <em>is</em> a common one built from minima and maxima.</p><pre><code class="language-julia hljs">MIXED = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
+
+mixed_problem = PCC.StabilityProblem(PCC.switched_system(MIXED))
+
+memoryless = GraphAutomaton(1)
+add_transition!(memoryless, 1, 1, 1)
+add_transition!(memoryless, 1, 1, 2)
+
+graphs = [(&quot;no memory&quot;, memoryless)]
+for order in 1:3
+    push!(graphs, (&quot;memory $order&quot;, PCC.de_bruijn(order, 2)))
+end
+
+right = plot(;
+    title = &quot;one template, four graphs\n(shape only — scale is arbitrary)&quot;,
+    aspect_ratio = :equal,
+    legend = :outerbottom,
+    framestyle = :origin,
+)
+
+for (name, graph) in graphs
+    certificate = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        graph,
+        mixed_problem;
+        optimizer = OPTIMIZER,
+        rtol = 1e-4,
+    )
+
+    n = PCC.n_nodes(graph)
+    xs, ys = sublevel_boundary(certificate)
+    plot!(
+        right,
+        xs,
+        ys;
+        label = &quot;$name, $n node$(n == 1 ? &quot;&quot; : &quot;s&quot;) — rate $(round(certificate.rate; digits = 3))&quot;,
+        lw = 2,
+    )
+end
+
+right</code></pre><img src="676197da.svg" alt="Example block output"/><div class="admonition is-info" id="The-rates-are-ordered;-the-sets-are-not-6959462fccc80e6a"><header class="admonition-header">The rates are ordered; the sets are not<a class="admonition-anchor" href="#The-rates-are-ordered;-the-sets-are-not-6959462fccc80e6a" title="Permalink"></a></header><div class="admonition-body"><p>Each bound is tighter than the last, necessarily: a richer graph can reproduce a poorer one by copying its single function onto every node. The sets are not nested — a certificate is homogeneous, so containment between two of them carries no information. Read the rates.</p></div></div><h2 id="Both-together"><a class="docs-heading-anchor" href="#Both-together">Both together</a><a id="Both-together-1"></a><a class="docs-heading-anchor-permalink" href="#Both-together" title="Permalink"></a></h2><pre><code class="language-julia hljs">figure = plot(left, right; layout = (1, 2), size = (1100, 620))</code></pre><img src="2c031e02.svg" alt="Example block output"/><p>The <strong>template</strong> decides the shape of the certificate and how conservative it is: a rotation is exactly quadratically stable, so only the quadratic template reaches the true rate <code>0.9</code>.</p><p>The <strong>graph</strong> decides how much history the certificate may use. Each extra mode of memory tightens the bound, and the sublevel set becomes a union of more ellipses — non-convex, which is exactly what a path-complete certificate buys over a single Lyapunov function.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../optimal_control/">« Optimal control: bounding the value function</a><a class="docs-footer-nextpage" href="../sum_of_squares/">The sum-of-squares hierarchy »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Saturday 26 September 2026 15:09">Saturday 26 September 2026</span>. Using Julia version 1.13.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
