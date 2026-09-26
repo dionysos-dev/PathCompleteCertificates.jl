@@ -57,8 +57,9 @@ rates(trace::RefinementTrace) = [certificate.rate for certificate in trace.certi
 """
     is_converged(trace) -> Bool
 
-Whether a [`refine`](@ref) run stopped because no node had more than one tight
-outgoing edge — splitting further could not relax anything.
+Whether a [`refine`](@ref) run stopped because no node was left that the lift
+could usefully split — every node either has at most one tight outgoing edge,
+or the lift cannot separate the ones it has.
 
 `false` means it stopped for another reason: `depth_max` was reached, or
 `until_stability` saw a certified rate below 1.
@@ -83,10 +84,19 @@ futures with one function; splitting it with `lift` — [`forward_lift`](@ref)
 future its own function and can only relax the problem. Ties are broken
 uniformly at random via `rng`.
 
-The loop stops early once no such node remains: [`is_converged`](@ref) is then
-`true`. Set `until_stability = true` to also stop as soon as the certified rate
-drops below 1 — [`jsr_bound`](@ref) returns a rate the solver certified feasible,
-so that is already a proof of stability and needs no further margin.
+The loop stops early once no such node remains *that the lift can actually
+split*: [`is_converged`](@ref) is then `true`. Set `until_stability = true` to
+also stop as soon as the certified rate drops below 1 — [`jsr_bound`](@ref)
+returns a rate the solver certified feasible, so that is already a proof of
+stability and needs no further margin.
+
+!!! note "The default lift cannot refine the memoryless graph"
+    [`forward_lift`](@ref) splits by distinct successor, and the one-node graph
+    has only itself, so `refine` on it converges at once having certified the
+    memoryless bound and nothing more. [`forward_edge_lift`](@ref) does refine
+    it: on a rotation-and-shear pair it walks `0.976, 0.925, 0.907, 0.904` over
+    one, two, three and four nodes — and its four-node graph beats
+    `de_bruijn(2, 2)`, which also has four nodes, at `0.905`.
 
 Returns a [`RefinementTrace`](@ref), which carries the certificates themselves
 and not merely the bounds.
@@ -145,7 +155,7 @@ function refine(
         depth == depth_max && break
         until_stability && certificate.rate < 1 && break
 
-        node = _node_to_split(certificate; atol = atol, rng = rng)
+        node = _node_to_split(certificate, lift; atol = atol, rng = rng)
 
         if node === nothing
             converged = true
@@ -159,17 +169,28 @@ function refine(
 end
 
 """
-    _node_to_split(certificate; atol, rng)
+    _node_to_split(certificate, lift; atol, rng)
 
-The node the lift should be applied to next, or `nothing` when there is none.
+The node `lift` should be applied to next, or `nothing` when there is none.
 
 Candidates are the nodes with the most tight outgoing edges, and at least two of
 them — below that, splitting frees nothing. Among equals, one is drawn with
 `rng`.
 
+A candidate that `lift` cannot actually split is dropped, and this is not an
+edge case: `forward_lift` splits by distinct *successor* while tightness is
+counted per *edge*, so the memoryless one-node graph — two tight self-loops, one
+successor — is selected by the count and left unchanged by the lift. Without
+this filter `refine` re-solves the same graph until `depth_max`, reporting no
+convergence and no error.
+
+Asking the lift is cheaper than reasoning about its grain: the lifts are pure
+graph transforms, and one of them costs nothing next to the bisection that
+produced `certificate`.
 """
 function _node_to_split(
-    certificate::StabilityCertificate;
+    certificate::StabilityCertificate,
+    lift;
     atol::Real,
     rng::Random.AbstractRNG,
 )
@@ -183,6 +204,8 @@ function _node_to_split(
 
     # Sorted, so a given `rng` gives the same run twice over.
     candidates = sort([node for (node, count) in tight if count > 1])
+
+    filter!(node -> n_nodes(lift(graph_, node)) > n_nodes(graph_), candidates)
 
     isempty(candidates) && return nothing
 
