@@ -206,7 +206,10 @@ filed under `src/systems/` rather than with the problems, because nothing about 
 - Every test file is standalone-runnable and wired into `TEST_FILES` in `test/runtests.jl`.
 - Format before every commit; CI fails on any diff.
 - **Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package
-  exports nothing deliberately, which means Documenter's `checkdocs = :all` has no symbol list to
-  work from and checks nothing — eight docstrings written as `raw"""`, which never attach, once
-  went missing exactly that way. `test/docstrings.jl` is the real gate: it walks every
-  non-underscore reachable name and fails on any that is undocumented.
+  exports nothing deliberately, so Documenter's `checkdocs = :all` cannot see a name that has no
+  docstring at all — eight docstrings written as `raw"""`, which never attach, once went missing
+  exactly that way. `test/docstrings.jl` is the gate for that: it walks every non-underscore
+  reachable name and fails on any that is undocumented.
+- **Every docstring must land in an `@autodocs` block under `docs/src/reference/`.** This one
+  `checkdocs = :all` does enforce, by failing the docs build — so a new file in `src/` needs a
+  `Pages` entry as well as tests.

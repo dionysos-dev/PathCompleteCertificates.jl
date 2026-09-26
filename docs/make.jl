@@ -103,6 +103,7 @@ push!(
         "Graphs" => "reference/graphs.md",
         "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",
+        "Refinement" => "reference/refinement.md",
     ],
 )
 push!(
@@ -132,9 +133,10 @@ makedocs(;
         ),
     ],
     # The tool paper has six pages including references, so it cannot explain
-    # the package -- these docs have to. Note that the package exports nothing
-    # deliberately, so `checkdocs = :all` has no symbol list to work from and
-    # checks nothing; `test/docstrings.jl` is the gate that actually bites.
+    # the package -- these docs have to. `checkdocs = :all` ignores the export
+    # list, so it covers every docstring in the module and *fails the build* on
+    # one that no `@autodocs` block under `src/reference/` picks up. Adding a
+    # file to `src/` therefore means adding it to a `Pages` list as well.
     checkdocs = :all,
 )
 
