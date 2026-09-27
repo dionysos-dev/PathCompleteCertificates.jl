@@ -1,7 +1,7 @@
 # The co-design of graph and certificate from Ninite & Jungers, "Iterative
 # graph lifting for automatic design of path-complete stability certificates"
 # (arXiv:2607.00637, 2026): `refine` drives `jsr_bound`/`certify` and the lifts
-# of `lift.jl` together, so it belongs to neither axis of CLAUDE.md's section 2
+# of `src/lifts/` together, so it belongs to neither axis of CLAUDE.md's section 2
 # -- it reads the graph, a template and a problem at once, exactly the reason
 # `aggregation.jl` is top-level rather than filed under one of them.
 #

@@ -186,8 +186,12 @@ src/
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
+├── lifts/                        transformations of the graph — not a third axis, an
+│   │                             operation on one of the three things a certificate is
+│   ├── abstract.jl               AbstractLift; a lift preserves path-completeness, and
+│   │                             that is its whole definition (Debauche et al., Def. 5)
+│   └── forward.jl                the node-splitting lifts, valid for every template
 ├── refinement/                   designing the graph, rather than solving on a given one
-│   ├── lift.jl                   the forward node-splitting lifts — pure graph transforms
 │   └── stability.jl              `refine`, the greedy loop; reads all three, like
 │                                 aggregation.jl, so it is filed under neither axis
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it

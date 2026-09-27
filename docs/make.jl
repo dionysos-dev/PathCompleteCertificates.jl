@@ -104,6 +104,7 @@ push!(
         "Graphs" => "reference/graphs.md",
         "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",
+        "Lifts" => "reference/lifts.md",
         "Refinement" => "reference/refinement.md",
     ],
 )
