@@ -8,9 +8,15 @@
 # Scoped to `QuadraticTemplate` and `StabilityProblem` on purpose, and the
 # reason is soundness rather than plumbing: whether a lift may be applied at all
 # depends on the closure properties of the template (CLAUDE.md section 5), and
-# those are proved for none of our templates yet. Everything below is written
-# against `edge_slacks`, which every template answers, so widening the signature
-# is the only edit that generalisation needs -- once the mathematics licenses it.
+# those are proved for none of our templates yet. Nothing below reads the
+# template except through `edge_slacks`, which every template answers, so
+# widening the signature is the only edit that generalisation needs -- once the
+# mathematics licenses it.
+#
+# Widening to another PROBLEM needs one concept this file does not have: the
+# scalar the problem is trying to improve, and the driver that minimises it.
+# Here those are `certificate.rate` and `jsr_bound`; safety would want `margin`.
+# Naming that concept is the work -- copying this file is not.
 
 import Random
 
@@ -34,8 +40,8 @@ end
 
 The certificate solved on each graph a [`refine`](@ref) run visited.
 
-These are the Lyapunov functions themselves, not only the bounds they attain,
-so a refinement run can be drawn without solving anything a second time.
+These are the Lyapunov functions themselves, not only the bounds they attain, so
+a refinement run can be drawn without solving anything a second time.
 """
 certificates(trace::RefinementTrace) = trace.certificates
 
@@ -57,9 +63,8 @@ rates(trace::RefinementTrace) = [certificate.rate for certificate in trace.certi
 """
     is_converged(trace) -> Bool
 
-Whether a [`refine`](@ref) run stopped because no node was left that the lift
-could usefully split — every node either has at most one tight outgoing edge,
-or the lift cannot separate the ones it has.
+Whether a [`refine`](@ref) run stopped because no node was left whose tight edges
+`lift` could separate.
 
 `false` means it stopped for another reason: `depth_max` was reached, or
 `until_stability` saw a certified rate below 1.
@@ -69,60 +74,48 @@ is_converged(trace::RefinementTrace) = trace.converged
 """
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
-           lift = forward_lift, atol = 1e-4, rtol = 1e-6,
+           lift = ForwardLift(), atol = 1e-4, rtol = 1e-6,
            rng = Random.default_rng())
 
 Iteratively lift `graph` to tighten the stability certificate it carries, by the
 greedy strategy of Ninite & Jungers, *Iterative graph lifting for automatic
 design of path-complete stability certificates* (arXiv:2607.00637).
 
-At each step [`jsr_bound`](@ref) certifies the current graph, and
+At each step [`jsr_bound`](@ref) certifies the current graph and
 [`tight_edges`](@ref) reads off which edge inequalities the solution is held at.
-A node with **two or more** tight outgoing edges is being asked to serve two
-futures with one function; splitting it with `lift` — [`forward_lift`](@ref)
-(the paper's, and the default) or [`forward_edge_lift`](@ref) — gives each
-future its own function and can only relax the problem. Ties are broken
-uniformly at random via `rng`.
+A node whose tight edges fall into **two or more** copies of `lift`
+([`copies`](@ref)) is being asked to serve two futures with one function, and
+splitting it gives each its own. Nodes are scored by how many copies would
+receive a tight edge, the highest score is taken, and ties are broken uniformly
+at random via `rng`.
 
-The loop stops early once no such node remains *that the lift can actually
-split*: [`is_converged`](@ref) is then `true`. Set `until_stability = true` to
-also stop as soon as the certified rate drops below 1 — [`jsr_bound`](@ref)
-returns a rate the solver certified feasible, so that is already a proof of
-stability and needs no further margin.
+Counting *copies* rather than edges is what makes the rule honest about the lift
+in hand: [`ForwardLift`](@ref) cannot separate two edges to the same successor,
+so a node held at exactly those is no candidate for it, however tight they are.
 
-!!! note "The default lift cannot refine the memoryless graph"
-    [`forward_lift`](@ref) splits by distinct successor, and the one-node graph
-    has only itself, so `refine` on it converges at once having certified the
-    memoryless bound and nothing more. [`forward_edge_lift`](@ref) does refine
-    it: on a rotation-and-shear pair it walks `0.976, 0.925, 0.907, 0.904` over
-    one, two, three and four nodes — and its four-node graph beats
-    `de_bruijn(2, 2)`, which also has four nodes, at `0.905`.
+The loop stops early once no such node remains: [`is_converged`](@ref) is then
+`true`. Set `until_stability = true` to also stop as soon as the certified rate
+drops below 1 — [`jsr_bound`](@ref) returns a rate the solver certified feasible,
+so that is already a proof of stability and needs no margin.
 
 Returns a [`RefinementTrace`](@ref), which carries the certificates themselves
 and not merely the bounds.
 
 ## Choosing the two tolerances
 
-`rtol` is the bisection tolerance of each [`jsr_bound`](@ref) call and `atol`
-the one that decides tightness, and they have to be read together:
-`rtol ≪ atol ≪ 1`.
+`rtol` is the bisection tolerance of each [`jsr_bound`](@ref) call and `atol` the
+one that decides tightness. They have to be read together: `rtol ≪ atol ≪ 1`.
 
 Bisection stops at a rate slightly *above* the optimum, so the model is still
 strictly feasible and a genuinely tight edge does not measure zero — it measures
-about the bisection gap. On a rotation-and-shear pair over `de_bruijn(1, 2)`
-with `rtol = 1e-6`, the three active edges measure `1.3e-7`, `6.0e-7` and
-`2.9e-6` while the slack one measures `0.17`. Any `atol` between those two
-scales reads the same set; the defaults sit in the middle of five orders of
-magnitude of room.
+about the bisection gap. On a rotation-and-shear pair over `de_bruijn(1, 2)` with
+`rtol = 1e-6`, the three active edges measure `1.3e-7`, `6.0e-7` and `2.9e-6`
+while the slack one measures `0.17`. Any `atol` between those two scales reads
+the same set; the defaults sit in the middle of five orders of magnitude of room.
 
-Lower `atol` towards `rtol` and active edges start being missed, so the loop
-converges early on a graph that could still be improved. Raise it and slack
-edges are called tight, so a node is split for no gain.
-
-!!! warning "Both stopping conditions are heuristics, not theorems"
-    Neither exhausts the search. `is_converged` says this lift has nothing left
-    to separate, not that the graph attains the exact joint spectral radius; a
-    different lift, or a template of higher degree, may still do better.
+Lower `atol` towards `rtol` and active edges start being missed, so the search
+ends early on a graph that could still be improved. Raise it and slack edges are
+called tight, so a node is split for no gain.
 """
 function refine(
     template::QuadraticTemplate,
@@ -131,7 +124,7 @@ function refine(
     optimizer,
     depth_max::Integer = 5,
     until_stability::Bool = false,
-    lift = forward_lift,
+    lift::AbstractLift = ForwardLift(),
     atol::Real = 1e-4,
     rtol::Real = 1e-6,
     rng::Random.AbstractRNG = Random.default_rng(),
@@ -155,7 +148,7 @@ function refine(
         depth == depth_max && break
         until_stability && certificate.rate < 1 && break
 
-        node = _node_to_split(certificate, lift; atol = atol, rng = rng)
+        node = _node_to_split(lift, certificate; atol = atol, rng = rng)
 
         if node === nothing
             converged = true
@@ -169,47 +162,38 @@ function refine(
 end
 
 """
-    _node_to_split(certificate, lift; atol, rng)
+    _node_to_split(lift, certificate; atol, rng)
 
 The node `lift` should be applied to next, or `nothing` when there is none.
 
-Candidates are the nodes with the most tight outgoing edges, and at least two of
-them — below that, splitting frees nothing. Among equals, one is drawn with
-`rng`.
+A node scores the number of `lift`'s [`copies`](@ref) that would receive at least
+one tight edge, and two is the minimum worth acting on: at one, every tight edge
+stays together and the split frees nothing. The highest score wins and ties are
+drawn with `rng`.
 
-A candidate that `lift` cannot actually split is dropped, and this is not an
-edge case: `forward_lift` splits by distinct *successor* while tightness is
-counted per *edge*, so the memoryless one-node graph — two tight self-loops, one
-successor — is selected by the count and left unchanged by the lift. Without
-this filter `refine` re-solves the same graph until `depth_max`, reporting no
-convergence and no error.
-
-Asking the lift is cheaper than reasoning about its grain: the lifts are pure
-graph transforms, and one of them costs nothing next to the bisection that
-produced `certificate`.
+No graph is built to decide this, which is the point of `copies` answering in
+terms of edges — the alternative is one lift per candidate, thrown away.
 """
 function _node_to_split(
-    certificate::StabilityCertificate,
-    lift;
+    lift::AbstractLift,
+    certificate::StabilityCertificate;
     atol::Real,
     rng::Random.AbstractRNG,
 )
     graph_ = graph(certificate)
+    tight = Set(tight_edges(certificate; atol = atol))
 
-    tight = Dict(node => 0 for node in nodes(graph_))
+    separated = zeros(Int, n_nodes(graph_))
 
-    for (source_node, _, _) in tight_edges(certificate; atol = atol)
-        tight[source_node] += 1
+    for node in nodes(graph_)
+        for group in copies(lift, graph_, node)
+            any(edge -> (node, dest(edge), label(graph_, edge)) in tight, group) &&
+                (separated[node] += 1)
+        end
     end
 
-    # Sorted, so a given `rng` gives the same run twice over.
-    candidates = sort([node for (node, count) in tight if count > 1])
+    best = maximum(separated)
+    best > 1 || return nothing
 
-    filter!(node -> n_nodes(lift(graph_, node)) > n_nodes(graph_), candidates)
-
-    isempty(candidates) && return nothing
-
-    best = maximum(tight[node] for node in candidates)
-
-    return rand(rng, filter(node -> tight[node] == best, candidates))
+    return rand(rng, [node for node in nodes(graph_) if separated[node] == best])
 end

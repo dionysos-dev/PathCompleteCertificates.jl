@@ -2,6 +2,7 @@ module TestRefinementStability
 
 using Test
 using HybridSystems
+using Random
 import PathCompleteCertificates as PCC
 import Clarabel
 
@@ -132,7 +133,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
 
 @testset "the node-grained lift cannot split the memoryless graph, and says so" begin
     # Two tight self-loops, so the tight-edge count selects node 1 -- but
-    # `forward_lift` splits by distinct *successor* and node 1 has only itself.
+    # `ForwardLift` splits by distinct *successor* and node 1 has only itself.
     # The lift is the identity here, and `refine` must report convergence rather
     # than re-solve the same graph until `depth_max`.
     trace = PCC.refine(
@@ -141,7 +142,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 4,
-        lift = PCC.forward_lift,
+        lift = PCC.ForwardLift(),
     )
 
     @test PCC.is_converged(trace)
@@ -156,11 +157,14 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 4,
-        lift = PCC.forward_edge_lift,
+        lift = PCC.ForwardEdgeLift(),
+        rng = MersenneTwister(1),
     )
 
     rates = PCC.rates(trace)
 
+    # Ties between equally-held nodes are broken at random, so an exact
+    # trajectory is only assertable against a fixed `rng`.
     @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 3, 4]
 
     # The point of the whole loop: the bound genuinely falls, not merely fails to

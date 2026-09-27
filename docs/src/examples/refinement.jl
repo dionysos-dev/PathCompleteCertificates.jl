@@ -11,6 +11,7 @@
 import PathCompleteCertificates as PCC
 import Clarabel
 using HybridSystems
+using Random
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
@@ -36,8 +37,13 @@ trace = PCC.refine(
     problem;
     optimizer = OPTIMIZER,
     depth_max = 4,
-    lift = PCC.forward_edge_lift,
+    lift = PCC.ForwardEdgeLift(),
+    rng = MersenneTwister(1),
 )
+
+# The seed is not cosmetic: ties between equally-held nodes are broken at random,
+# so a run is only reproducible — and the numbers quoted below only stable — with
+# `rng` fixed.
 
 sizes = PCC.n_nodes.(PCC.graphs(trace))
 bounds = PCC.rates(trace)
@@ -45,10 +51,10 @@ bounds = PCC.rates(trace)
 collect(zip(sizes, round.(bounds; digits = 5)))
 
 # !!! note "Two lifts, and only one of them refines this graph"
-#     [`forward_lift`](@ref), the default, splits a node into one copy per
+#     [`ForwardLift`](@ref), the default, splits a node into one copy per
 #     distinct **successor**. The seed's only successor is itself, so it is
 #     unsplittable and `refine` converges immediately — correctly, and
-#     [`is_converged`](@ref) says so. [`forward_edge_lift`](@ref) splits per
+#     [`is_converged`](@ref) says so. [`ForwardEdgeLift`](@ref) splits per
 #     outgoing **edge** instead, which is why it is the one used here.
 
 # ## Against De Bruijn
