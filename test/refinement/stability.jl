@@ -200,4 +200,72 @@ end
     @test all(c -> c([1.0, 1.0]) > 0, every)
 end
 
+@testset "an exact certificate stalls instead of growing the graph forever" begin
+    # ROTATED and ROTATED2 are rotations scaled by 0.9, so P = I is an EXACT
+    # certificate and the JSR is exactly 0.9 on any graph at all. Every edge is
+    # therefore tight, every node always looks splittable, and NOTHING_TO_SPLIT
+    # can never fire. Measured before this criterion existed: 2, 3, 5, 7, 10
+    # nodes over five identical bounds, reporting no convergence.
+    trace = PCC.refine(
+        TEMPLATE,
+        TWO_NODES,
+        TWO_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        depth_max = 5,
+    )
+
+    @test PCC.status(trace) == PCC.STALLED
+    @test PCC.is_converged(trace)
+    @test length(PCC.graphs(trace)) == 2
+    @test all(rate -> isapprox(rate, 0.9; atol = 1e-3), PCC.rates(trace))
+
+    # And the knob that lets a greedy search cross a plateau, at one bisection
+    # per extra step.
+    patient = PCC.refine(
+        TEMPLATE,
+        TWO_NODES,
+        TWO_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        depth_max = 5,
+        stall_max = 3,
+    )
+
+    @test PCC.status(patient) == PCC.STALLED
+    @test length(PCC.graphs(patient)) == 4
+end
+
+@testset "the status tells the four outcomes apart" begin
+    @test PCC.status(
+        PCC.refine(
+            TEMPLATE,
+            ONE_NODE,
+            ONE_MODE_PROBLEM;
+            optimizer = OPTIMIZER,
+            depth_max = 3,
+        ),
+    ) == PCC.NOTHING_TO_SPLIT
+
+    @test PCC.status(
+        PCC.refine(
+            TEMPLATE,
+            ONE_NODE,
+            ONE_MODE_PROBLEM;
+            optimizer = OPTIMIZER,
+            depth_max = 3,
+            until_stability = true,
+        ),
+    ) == PCC.STABLE
+
+    @test PCC.status(
+        PCC.refine(
+            TEMPLATE,
+            MEMORYLESS,
+            SHEARED;
+            optimizer = OPTIMIZER,
+            depth_max = 2,
+            lift = PCC.ForwardEdgeLift(),
+        ),
+    ) == PCC.DEPTH_EXHAUSTED
+end
+
 end # module

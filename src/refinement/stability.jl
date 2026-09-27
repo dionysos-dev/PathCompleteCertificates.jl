@@ -21,10 +21,57 @@
 import Random
 
 """
-    RefinementTrace(certificates, converged)
+    RefinementStatus
+
+Why a [`refine`](@ref) run stopped. Four outcomes, because a `Bool` cannot say
+which of them happened and the difference decides what to do next.
+"""
+@enum RefinementStatus NOTHING_TO_SPLIT STALLED DEPTH_EXHAUSTED STABLE
+
+"""
+    NOTHING_TO_SPLIT
+
+No node had tight outgoing edges in two different copies of the lift, so no
+split could relax anything. The search is exhausted **for this lift**.
+"""
+NOTHING_TO_SPLIT
+
+"""
+    STALLED
+
+A lift stopped buying anything: the certified rate failed to improve, `stall_max`
+times in a row.
+
+Not the same as [`NOTHING_TO_SPLIT`](@ref), and the difference is the whole
+reason this outcome exists. A graph that already attains the exact joint spectral
+radius holds *every* edge tight, so it always looks splittable and never
+converges — it stalls. Without this outcome such a run grows the graph forever at
+a constant bound.
+"""
+STALLED
+
+"""
+    DEPTH_EXHAUSTED
+
+`depth_max` certificates were solved with the search still making progress.
+Raise it.
+"""
+DEPTH_EXHAUSTED
+
+"""
+    STABLE
+
+`until_stability` was set and the certified rate dropped below 1, which already
+proves the system stable. Nothing further was attempted.
+"""
+STABLE
+
+"""
+    RefinementTrace(certificates, status)
 
 The record of one [`refine`](@ref) run: one [`StabilityCertificate`](@ref) per
-graph visited, the seed graph's first.
+graph visited, the seed graph's first, and a [`RefinementStatus`](@ref) saying
+why it stopped.
 
 A certificate carries its own graph and rate, so [`graphs`](@ref) and
 [`rates`](@ref) read them off rather than storing them again — they cannot
@@ -32,7 +79,7 @@ disagree about how many steps were taken.
 """
 struct RefinementTrace{C <: StabilityCertificate}
     certificates::Vector{C}
-    converged::Bool
+    status::RefinementStatus
 end
 
 """
@@ -61,20 +108,28 @@ same order.
 rates(trace::RefinementTrace) = [certificate.rate for certificate in trace.certificates]
 
 """
+    status(trace::RefinementTrace)
+
+Why the run stopped, as a [`RefinementStatus`](@ref).
+"""
+status(trace::RefinementTrace) = trace.status
+
+"""
     is_converged(trace) -> Bool
 
-Whether a [`refine`](@ref) run stopped because no node was left whose tight edges
-`lift` could separate.
+Whether the search ended because this lift had nothing left to give —
+[`NOTHING_TO_SPLIT`](@ref) or [`STALLED`](@ref).
 
-`false` means it stopped for another reason: `depth_max` was reached, or
-`until_stability` saw a certified rate below 1.
+The derived predicate over [`status`](@ref), as [`is_feasible`](@ref) is over a
+certificate's. Read `status` when the difference matters, which it usually does:
+one says no split was available, the other that the splits taken stopped paying.
 """
-is_converged(trace::RefinementTrace) = trace.converged
+is_converged(trace::RefinementTrace) = status(trace) in (NOTHING_TO_SPLIT, STALLED)
 
 """
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
-           lift = ForwardLift(), atol = 1e-4, rtol = 1e-6,
+           lift = ForwardLift(), atol = 1e-4, rtol = 1e-6, stall_max = 1,
            rng = Random.default_rng())
 
 Iteratively lift `graph` to tighten the stability certificate it carries, by the
@@ -93,13 +148,27 @@ Counting *copies* rather than edges is what makes the rule honest about the lift
 in hand: [`ForwardLift`](@ref) cannot separate two edges to the same successor,
 so a node held at exactly those is no candidate for it, however tight they are.
 
-The loop stops early once no such node remains: [`is_converged`](@ref) is then
-`true`. Set `until_stability = true` to also stop as soon as the certified rate
-drops below 1 — [`jsr_bound`](@ref) returns a rate the solver certified feasible,
-so that is already a proof of stability and needs no margin.
-
 Returns a [`RefinementTrace`](@ref), which carries the certificates themselves
-and not merely the bounds.
+and not merely the bounds, and a [`RefinementStatus`](@ref) saying which of the
+four ways the run ended.
+
+## Stopping
+
+- no candidate node → [`NOTHING_TO_SPLIT`](@ref);
+- `stall_max` lifts in a row failing to improve the rate by more than `rtol` →
+  [`STALLED`](@ref);
+- `depth_max` certificates solved → [`DEPTH_EXHAUSTED`](@ref);
+- `until_stability` and a rate below 1 → [`STABLE`](@ref). [`jsr_bound`](@ref)
+  returns a rate the solver certified feasible, so that is already a proof of
+  stability and needs no margin.
+
+`stall_max = 1` stops at the first lift that buys nothing. Raise it to let a
+greedy search cross a plateau, at one bisection per extra step.
+
+!!! warning "Stopping is not a certificate of optimality"
+    None of the four says the graph attains the exact joint spectral radius.
+    `NOTHING_TO_SPLIT` says this lift has nothing left to separate; a different
+    lift, or a template of higher degree, may still do better.
 
 ## Choosing the two tolerances
 
@@ -127,12 +196,15 @@ function refine(
     lift::AbstractLift = ForwardLift(),
     atol::Real = 1e-4,
     rtol::Real = 1e-6,
+    stall_max::Integer = 1,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
+    stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
 
     trace = StabilityCertificate[]
-    converged = false
+    outcome = DEPTH_EXHAUSTED
+    stalled = 0
 
     for depth in 1:depth_max
         certificate = jsr_bound(template, graph, problem; optimizer, rtol = rtol)
@@ -143,22 +215,36 @@ function refine(
             ),
         )
 
+        if !isempty(trace)
+            improved = certificate.rate <= last(trace).rate * (1 - rtol)
+            stalled = improved ? 0 : stalled + 1
+        end
+
         push!(trace, certificate)
 
+        if until_stability && certificate.rate < 1
+            outcome = STABLE
+            break
+        end
+
+        if stalled >= stall_max
+            outcome = STALLED
+            break
+        end
+
         depth == depth_max && break
-        until_stability && certificate.rate < 1 && break
 
         node = _node_to_split(lift, certificate; atol = atol, rng = rng)
 
         if node === nothing
-            converged = true
+            outcome = NOTHING_TO_SPLIT
             break
         end
 
         graph = lift(graph, node)
     end
 
-    return RefinementTrace(identity.(trace), converged)
+    return RefinementTrace(identity.(trace), outcome)
 end
 
 """

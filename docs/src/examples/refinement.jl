@@ -50,6 +50,16 @@ bounds = PCC.rates(trace)
 
 collect(zip(sizes, round.(bounds; digits = 5)))
 
+# Why it stopped is part of the answer, so it is a [`RefinementStatus`](@ref) and
+# not a flag. Here the budget ran out with the bound still falling.
+
+PCC.status(trace)
+
+# The one to watch for is [`STALLED`](@ref) — a lift that buys nothing. It is not
+# a rare case: a graph that already attains the exact joint spectral radius holds
+# *every* edge tight, so it always looks splittable and would otherwise be grown
+# forever at a constant bound.
+
 # !!! note "Two lifts, and only one of them refines this graph"
 #     [`ForwardLift`](@ref), the default, splits a node into one copy per
 #     distinct **successor**. The seed's only successor is itself, so it is
