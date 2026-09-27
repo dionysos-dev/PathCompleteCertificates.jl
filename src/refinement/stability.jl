@@ -104,7 +104,7 @@ is_converged(trace::RefinementTrace) = status(trace) in (NOTHING_TO_SPLIT, STALL
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
            lift = ForwardLift(), atol = 1e-4, rtol = 1e-6, stall_max = 1,
-           rng = Random.default_rng())
+           path_complete = true, rng = Random.default_rng())
 
 Iteratively lift `graph` to tighten the stability certificate it carries.
 
@@ -141,6 +141,10 @@ zero — it measures about the bisection gap. On a rotation-and-shear pair over
 `de_bruijn(1, 2)` at `rtol = 1e-6` the three active edges measure `1.3e-7`,
 `6.0e-7` and `2.9e-6` against `0.17` for the slack one. Lower `atol` towards
 `rtol` and active edges are missed; raise it and slack edges are called tight.
+
+`path_complete` decides the **seed** only: a lift of a path-complete graph is
+path-complete, so the loop asserts rather than re-deciding a PSPACE-complete
+question. Set it `false` to assert the seed too.
 """
 function refine(
     template::QuadraticTemplate,
@@ -153,6 +157,7 @@ function refine(
     atol::Real = 1e-4,
     rtol::Real = 1e-6,
     stall_max::Integer = 1,
+    path_complete::Bool = true,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
@@ -172,7 +177,14 @@ function refine(
     stalled = 0
 
     for depth in 1:depth_max
-        certificate = jsr_bound(template, graph, problem; optimizer, rtol = rtol)
+        certificate = jsr_bound(
+            template,
+            graph,
+            problem;
+            optimizer,
+            rtol = rtol,
+            path_complete = path_complete && depth == 1,
+        )
 
         is_feasible(certificate) || throw(
             ArgumentError(

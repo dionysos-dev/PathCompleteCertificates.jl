@@ -289,4 +289,35 @@ end
     )
 end
 
+@testset "path_complete decides the seed, and the lifts are trusted after it" begin
+    settings = (
+        optimizer = OPTIMIZER,
+        depth_max = 3,
+        lift = PCC.ForwardEdgeLift(),
+        rng = MersenneTwister(1),
+    )
+
+    # Waiving the check cannot change the answer on a graph that has the
+    # property -- it only skips deciding it.
+    checked = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., path_complete = true)
+    waived = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., path_complete = false)
+
+    @test PCC.rates(checked) == PCC.rates(waived)
+    @test PCC.n_nodes.(PCC.graphs(checked)) == PCC.n_nodes.(PCC.graphs(waived))
+
+    # Which is the half the loop relies on: preservation. Skipping the recheck is
+    # only sound because every lift of a path-complete graph is path-complete,
+    # and that is asserted here rather than at run time.
+    @test all(graph -> PCC.is_path_complete(graph, 1:2), PCC.graphs(waived))
+
+    # The seed, though, is still decided -- node 2 has no outgoing edge, so no
+    # word ending in mode 2 is readable.
+    dead_end = GraphAutomaton(2)
+    add_transition!(dead_end, 1, 1, 1)
+    add_transition!(dead_end, 1, 2, 2)
+
+    @test !PCC.is_path_complete(dead_end, 1:2)
+    @test_throws ArgumentError PCC.refine(TEMPLATE, dead_end, SHEARED; settings...)
+end
+
 end # module
