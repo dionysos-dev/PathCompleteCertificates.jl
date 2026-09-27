@@ -155,9 +155,10 @@ PCC.is_co_complete.(PCC.graphs(trace))
 
 all(graph -> PCC.is_path_complete(graph, 1:length(A)), PCC.graphs(trace))
 
-# !!! warning "Path-completeness is not the whole soundness argument"
-#     Whether a lift may be applied at all also depends on the analytical
-#     properties of the *template* — closure under maximum, minimum or linear
-#     image — and those are settled in the literature for none of the templates
-#     here. That is why [`refine`](@ref) takes a
-#     [`QuadraticTemplate`](@ref) and nothing else: the scoping is the check.
+# !!! note "Path-completeness *is* the whole soundness argument"
+#     A lift is defined as a map on graphs preserving it, so the check above is
+#     the guarantee. A template's closure properties decide something else —
+#     whether the lift is *valid*, meaning the lifted graph is no **worse** — and
+#     the forward lifts need none, since each copy inherits the split node's
+#     function. [`refine`](@ref) takes a [`QuadraticTemplate`](@ref) because that
+#     is what is tested.

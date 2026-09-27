@@ -48,11 +48,12 @@ implemented here.
 
 ## Designed, not implemented
 
-Both describe traps that fail *silently*.
+Both are about *comparing* path-complete graphs rather than certifying with one.
 
-[debauche2021comparison](@cite) — whether a lift may be applied depends on the
-template's analytical properties, not on the graph alone. Skip that check and
-you get a certificate that certifies nothing.
+[debauche2021comparison](@cite) — a lift is any map on graphs preserving
+path-completeness, so it is sound whatever the template. What the template's
+closure properties decide is *validity*: whether the lifted graph is guaranteed
+no worse than the one it came from.
 
 [jongeneel2025ordering](@cite) — ordering and refining path-complete Lyapunov
 functions through composition lifts. The work named in [Status](@ref).
