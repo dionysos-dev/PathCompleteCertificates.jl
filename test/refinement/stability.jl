@@ -158,13 +158,14 @@ end
         optimizer = OPTIMIZER,
         depth_max = 4,
         lift = PCC.ForwardEdgeLift(),
-        rng = MersenneTwister(1),
     )
 
     rates = PCC.rates(trace)
 
-    # Ties between equally-held nodes are broken at random, so an exact
-    # trajectory is only assertable against a fixed `rng`.
+    # Deterministic without a seed, which is the point: ties go to the cheapest
+    # split, so this trajectory is the same on every Julia version. Seeding an
+    # `rng` would NOT give that -- `rand(rng, ::Vector)` may sample differently
+    # between versions, and this assertion failed on 1.10 while passing on 1.12.
     @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 3, 4]
 
     # The point of the whole loop: the bound genuinely falls, not merely fails to
@@ -179,6 +180,19 @@ end
 
     @test isapprox(rates[2], memory_1.rate; rtol = 1e-3)
     @test rates[4] < memory_2.rate
+
+    # An explicit rng still breaks the remaining ties, and still refines.
+    random = PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        depth_max = 3,
+        lift = PCC.ForwardEdgeLift(),
+        rng = MersenneTwister(1),
+    )
+
+    @test all(<(0), diff(PCC.rates(random)))
 end
 
 @testset "the trace carries the certificates, not only the bounds" begin
@@ -290,12 +304,7 @@ end
 end
 
 @testset "path_complete decides the seed, and the lifts are trusted after it" begin
-    settings = (
-        optimizer = OPTIMIZER,
-        depth_max = 3,
-        lift = PCC.ForwardEdgeLift(),
-        rng = MersenneTwister(1),
-    )
+    settings = (optimizer = OPTIMIZER, depth_max = 3, lift = PCC.ForwardEdgeLift())
 
     # Waiving the check cannot change the answer on a graph that has the
     # property -- it only skips deciding it.

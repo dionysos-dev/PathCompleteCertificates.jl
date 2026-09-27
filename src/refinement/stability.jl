@@ -104,7 +104,7 @@ is_converged(trace::RefinementTrace) = status(trace) in (NOTHING_TO_SPLIT, STALL
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
            lift = ForwardLift(), atol = 1e-4, rtol = 1e-6, stall_max = 1,
-           path_complete = true, rng = Random.default_rng())
+           path_complete = true, rng = nothing)
 
 Iteratively lift `graph` to tighten the stability certificate it carries.
 
@@ -112,7 +112,12 @@ Each step certifies with [`jsr_bound`](@ref) and reads off the active edge
 inequalities with [`tight_edges`](@ref). A node whose tight edges fall into two
 or more [`copies`](@ref) of `lift` is serving two futures with one function;
 splitting it gives each its own. Nodes are scored by how many copies would
-receive a tight edge, the best is taken, ties broken via `rng`.
+receive a tight edge and the best is taken.
+
+Ties go to the lowest-numbered node, so a run is reproducible across machines and
+Julia versions. Pass an `rng` to break them at random instead — but note that
+seeding one does *not* make a run reproducible across Julia versions, because
+`rand(rng, ::Vector)` is free to sample differently between them.
 
 Counting *copies* rather than edges keeps the rule honest about the lift in hand:
 [`ForwardLift`](@ref) cannot separate two edges to the same successor, so a node
@@ -158,7 +163,7 @@ function refine(
     rtol::Real = 1e-6,
     stall_max::Integer = 1,
     path_complete::Bool = true,
-    rng::Random.AbstractRNG = Random.default_rng(),
+    rng::Union{Nothing, Random.AbstractRNG} = nothing,
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
@@ -237,15 +242,19 @@ function _node_to_split(
     lift::AbstractLift,
     certificate::StabilityCertificate;
     atol::Real,
-    rng::Random.AbstractRNG,
+    rng::Union{Nothing, Random.AbstractRNG},
 )
     graph_ = graph(certificate)
     tight = Set(tight_edges(certificate; atol = atol))
 
     separated = zeros(Int, n_nodes(graph_))
+    cost = zeros(Int, n_nodes(graph_))
 
     for node in nodes(graph_)
-        for group in copies(lift, graph_, node)
+        groups = copies(lift, graph_, node)
+        cost[node] = length(groups)
+
+        for group in groups
             any(edge -> (node, dest(edge), label(graph_, edge)) in tight, group) &&
                 (separated[node] += 1)
         end
@@ -254,5 +263,14 @@ function _node_to_split(
     best = maximum(separated)
     best > 1 || return nothing
 
-    return rand(rng, [node for node in nodes(graph_) if separated[node] == best])
+    # Among equally-held nodes, split the cheapest: `cost` is how many nodes the
+    # graph gains, and node count is the budget the whole comparison is about.
+    candidates = [node for node in nodes(graph_) if separated[node] == best]
+    cheapest = minimum(cost[node] for node in candidates)
+    filter!(node -> cost[node] == cheapest, candidates)
+
+    # Deterministic by default, and not merely seeded: `rand(rng, ::Vector)` is
+    # not guaranteed to pick the same element across Julia versions, so a seed
+    # reproduces a run on one version and silently changes it on the next.
+    return rng === nothing ? first(candidates) : rand(rng, candidates)
 end

@@ -11,7 +11,6 @@
 import PathCompleteCertificates as PCC
 import Clarabel
 using HybridSystems
-using Random
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
@@ -38,12 +37,10 @@ trace = PCC.refine(
     optimizer = OPTIMIZER,
     depth_max = 4,
     lift = PCC.ForwardEdgeLift(),
-    rng = MersenneTwister(1),
 )
 
-# The seed is not cosmetic: ties between equally-held nodes are broken at random,
-# so a run is only reproducible — and the numbers quoted below only stable — with
-# `rng` fixed.
+# No seed, and none needed: ties go to the **cheapest** split — the one adding
+# fewest nodes — so this run is identical on every machine and Julia version.
 
 sizes = PCC.n_nodes.(PCC.graphs(trace))
 bounds = PCC.rates(trace)
