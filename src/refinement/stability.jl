@@ -173,7 +173,8 @@ greedy search cross a plateau, at one bisection per extra step.
 ## Choosing the two tolerances
 
 `rtol` is the bisection tolerance of each [`jsr_bound`](@ref) call and `atol` the
-one that decides tightness. They have to be read together: `rtol ≪ atol ≪ 1`.
+one that decides tightness. They have to be read together, `rtol ≪ atol ≪ 1`,
+and `atol > rtol` is enforced.
 
 Bisection stops at a rate slightly *above* the optimum, so the model is still
 strictly feasible and a genuinely tight edge does not measure zero — it measures
@@ -201,6 +202,16 @@ function refine(
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
+
+    # Not cosmetic: at `atol <= rtol` every edge measures tight, because the
+    # bisection residual is itself of order `rtol` -- so the test never
+    # discriminates and the run ends immediately with no sign that it did not.
+    atol > rtol || throw(
+        ArgumentError(
+            "atol ($atol) must exceed rtol ($rtol), and by orders of magnitude: " *
+            "a tight edge measures about the bisection gap, not zero",
+        ),
+    )
 
     trace = StabilityCertificate[]
     outcome = DEPTH_EXHAUSTED

@@ -268,4 +268,25 @@ end
     ) == PCC.DEPTH_EXHAUSTED
 end
 
+@testset "the two tolerances must be orders apart, and it is enforced" begin
+    # At atol <= rtol the bisection residual alone makes every edge look tight,
+    # so the test never discriminates -- a silent early stop, hence the throw.
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        ONE_NODE,
+        ONE_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        atol = 1e-6,
+        rtol = 1e-6,
+    )
+
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        ONE_NODE,
+        ONE_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        stall_max = 0,
+    )
+end
+
 end # module
