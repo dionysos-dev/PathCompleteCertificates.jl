@@ -28,6 +28,7 @@ const TEST_FILES = [
     ("./templates/polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),
+    ("./templates/set_prog.jl", :slow),
     ("./problems/certify.jl", :slow),
     ("./problems/tight_edges.jl", :slow),
     ("./problems/stability.jl", :slow),

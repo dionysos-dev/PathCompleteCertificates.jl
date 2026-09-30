@@ -18,14 +18,17 @@ MathematicalSystems = "0.14"
 Random = "1"
 MultivariatePolynomials = "0.5"
 RecipesBase = "1"
+SetProg = "0.4"
 SumOfSquares = "0.7, 0.8"
 julia = "1.10"
 
 [weakdeps]
 MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+SetProg = "39881422-4b75-5582-a5c7-0feb14562a65"
 SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [extensions]
 PathCompleteCertificatesRecipesBaseExt = "RecipesBase"
+PathCompleteCertificatesSetProgExt = "SetProg"
 PathCompleteCertificatesSumOfSquaresExt = ["SumOfSquares", "MultivariatePolynomials"]

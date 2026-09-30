@@ -15,11 +15,12 @@ three problems are still quadratic-only.
 | [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
 | [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
+| [`SetProgTemplate`](@ref)           | ✓ ² | ✗ | ✗ |
 
 ¹ Entrywise nonnegative mode matrices only.
 
-² Behind a package extension: `using SumOfSquares` first, or its primitives are
-not defined.
+² Behind a package extension: `using SumOfSquares` first, or `using SetProg`
+for [`SetProgTemplate`](@ref), or its primitives are not defined.
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control
 additionally requires a **complete** graph, not merely a path-complete one.
@@ -44,8 +45,9 @@ tight:
 | [`PolyhedralTemplate`](@ref) | ✓ | map; relation on the duals when the node matrices coincide |
 | [`ConicPolyhedralTemplate`](@ref) | ✓ | map |
 | [`SumOfSquaresTemplate`](@ref) | ✗ ³ | map, linear program |
+| [`SetProgTemplate`](@ref) | ✗ ³ | map |
 
-³ No `domination_slack` yet, so the loop cannot read where that template is
+³ No `domination_slack` yet, so the loop cannot read where these templates are
 tight.
 
 The second column is what the template's closures entitle

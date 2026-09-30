@@ -1,0 +1,205 @@
+module TestSetProg
+
+# The SetProg template lives in a package extension, so this file is the only
+# one that loads SetProg.
+#
+# The anchors are the templates it overlaps with: an ellipsoid is
+# `QuadraticTemplate`, a polynomial set is `SumOfSquaresTemplate`, and a
+# polytope that is linear on the cones over the facets of a partition is
+# `ConicPolyhedralTemplate` on the same cones. What it adds, the piecewise
+# semi-ellipsoids, is checked against these and against the edge inequality.
+
+using Test
+using LinearAlgebra
+using HybridSystems
+using SetProg
+using SumOfSquares, DynamicPolynomials
+import PathCompleteCertificates as PCC
+import Clarabel
+
+const OPTIMIZER = Clarabel.Optimizer
+
+# A rotation and a shear: no quadratic attains the joint spectral radius.
+const A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
+const PROBLEM = PCC.StabilityProblem(PCC.switched_system(A))
+# Every product of modes bounds the joint spectral radius from below.
+const LOWER_BOUND = maximum(Ai -> maximum(abs, eigvals(Ai)), A)
+
+const MEMORYLESS = GraphAutomaton(1)
+add_transition!(MEMORYLESS, 1, 1, 1)
+add_transition!(MEMORYLESS, 1, 1, 2)
+
+# The Polyhedra library needs an LP solver to detect the linearity of the pieces
+const LIB = Polyhedra.DefaultLibrary{Float64}(
+    JuMP.optimizer_with_attributes(Clarabel.Optimizer, JuMP.MOI.Silent() => true),
+)
+
+# Partitions with exact facets, see the warning in the docstring. The cones over
+# the facets of the octagon are the cones of `planar_conic_partition(1)`: its
+# vertices are on the rays ±(1, 0), ±(1, 1), ±(0, 1) and ±(-1, 1).
+const SQUARE = polyhedron(
+    hrep([
+        HalfSpace([1.0, 0.0], 1.0),
+        HalfSpace([-1.0, 0.0], 1.0),
+        HalfSpace([0.0, 1.0], 1.0),
+        HalfSpace([0.0, -1.0], 1.0),
+    ]),
+    LIB,
+)
+const OCTAGON = polyhedron(
+    hrep([
+        HalfSpace(a, 6.0) for a in [
+            [2.0, 1.0],
+            [1.0, 2.0],
+            [-1.0, 2.0],
+            [-2.0, 1.0],
+            [-2.0, -1.0],
+            [-1.0, -2.0],
+            [1.0, -2.0],
+            [2.0, -1.0],
+        ]
+    ]),
+    LIB,
+)
+
+@polyvar x[1:2]
+
+rate(template, graph = MEMORYLESS) =
+    PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+
+# The edge inequality `V_dst(A x) ≤ γᵈ V_src(x)`, sampled on the circle.
+function test_edges(certificate, template, graph)
+    V = PCC.functions(certificate)
+    scale = certificate.rate^PCC.rate_exponent(template)
+
+    for edge in PCC.edges(graph), θ in range(0, 2π; length = 97)
+        point = [cos(θ), sin(θ)]
+        src = V[PCC.source(edge)]
+        dst = V[PCC.dest(edge)]
+        @test scale * src(point) - dst(A[PCC.label(graph, edge)] * point) >= -1e-5
+    end
+end
+
+@testset "the extension is what supplies the methods" begin
+    @test Base.get_extension(PCC, :PathCompleteCertificatesSetProgExt) !== nothing
+end
+
+@testset "the degree is the one of the set variable" begin
+    @test PCC.rate_exponent(PCC.SetProgTemplate(Ellipsoid(symmetric = true))) == 2
+    @test PCC.rate_exponent(
+        PCC.SetProgTemplate(PolySet(symmetric = true, degree = 6, variables = x)),
+    ) == 6
+    @test PCC.rate_exponent(
+        PCC.SetProgTemplate(Polytope(symmetric = true, piecewise = SQUARE)),
+    ) == 1
+    mixed = PCC.SetProgTemplate([
+        Ellipsoid(symmetric = true),
+        PolySet(symmetric = true, degree = 4, variables = x),
+    ])
+    @test_throws ArgumentError PCC.rate_exponent(mixed)
+end
+
+@testset "an ellipsoid reproduces the quadratic template" begin
+    quadratic = rate(PCC.QuadraticTemplate())
+    ellipsoid = rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true)))
+
+    @test PCC.is_feasible(ellipsoid)
+    @test abs(ellipsoid.rate - quadratic.rate) <= 1e-3
+
+    V = only(PCC.functions(ellipsoid))
+    @test V isa PCC.SetProgFunction
+    # V(cx) = c² V(x), and the normalization `V ≥ ‖x‖²`
+    @test V([2.0, 3.0]) ≈ 4 * V([1.0, 1.5]) rtol = 1e-6
+    @test V([1.0, 1.0]) >= 2 - 1e-6
+    test_edges(ellipsoid, PCC.SetProgTemplate(Ellipsoid(symmetric = true)), MEMORYLESS)
+end
+
+@testset "a polynomial set reproduces the sum-of-squares template" begin
+    sos = rate(PCC.SumOfSquaresTemplate(2, x))
+    template = PCC.SetProgTemplate(PolySet(symmetric = true, degree = 4, variables = x))
+    polyset = rate(template)
+
+    @test PCC.is_feasible(polyset)
+    @test abs(polyset.rate - sos.rate) <= 1e-3
+    test_edges(polyset, template, MEMORYLESS)
+end
+
+@testset "a piecewise polytope reproduces the conic polyhedral template" begin
+    conic = rate(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)]))
+    template = PCC.SetProgTemplate(Polytope(symmetric = true, piecewise = OCTAGON))
+    polytope = rate(template)
+
+    @test PCC.is_feasible(polytope)
+    @test abs(polytope.rate - conic.rate) <= 1e-3
+    test_edges(polytope, template, MEMORYLESS)
+end
+
+@testset "piecewise semi-ellipsoids" begin
+    ellipsoid = rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true))).rate
+
+    @testset "$name" for (name, partition) in [("square", SQUARE), ("octagon", OCTAGON)]
+        template = PCC.SetProgTemplate(Ellipsoid(symmetric = true, piecewise = partition))
+        certificate = rate(template)
+
+        @test PCC.is_feasible(certificate)
+        # An ellipsoid is a piecewise semi-ellipsoid whose pieces are equal
+        @test certificate.rate <= ellipsoid + 1e-4
+        @test certificate.rate >= LOWER_BOUND - 1e-4
+
+        V = only(PCC.functions(certificate))
+        @test V.set isa SetProg.Sets.Piecewise
+        test_edges(certificate, template, MEMORYLESS)
+    end
+
+    @testset "more pieces, lower rate" begin
+        octagon =
+            rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true, piecewise = OCTAGON)))
+        @test octagon.rate < ellipsoid - 1e-2
+    end
+
+    @testset "one partition per node" begin
+        graph = PCC.de_bruijn(1, 2)
+        template = PCC.SetProgTemplate([
+            Ellipsoid(symmetric = true, piecewise = SQUARE),
+            Ellipsoid(symmetric = true, piecewise = OCTAGON),
+        ])
+        certificate = rate(template, graph)
+
+        @test PCC.is_feasible(certificate)
+        @test certificate.rate >= LOWER_BOUND - 1e-4
+        test_edges(certificate, template, graph)
+    end
+end
+
+@testset "what the template does not support" begin
+    @test_throws ArgumentError rate(PCC.SetProgTemplate(Ellipsoid(dimension = 2)))
+    @test_throws ArgumentError rate(
+        PCC.SetProgTemplate(PolySet(symmetric = true, degree = 4)),
+    )
+    @test_throws ArgumentError rate(
+        PCC.SetProgTemplate(Polytope(symmetric = true, dimension = 2)),
+    )
+    @polyvar y[1:3]
+    @test_throws ArgumentError rate(
+        PCC.SetProgTemplate(PolySet(symmetric = true, degree = 4, variables = y)),
+    )
+    @test_throws ArgumentError rate(
+        PCC.SetProgTemplate([Ellipsoid(symmetric = true)]),
+        PCC.de_bruijn(1, 2),
+    )
+
+    model = JuMP.Model()
+    template = PCC.SetProgTemplate(Ellipsoid(symmetric = true))
+    S = PCC.add_function_variables!(model, template, 2, 1)
+    @test_throws ArgumentError PCC.add_domination!(model, template, S, S, A[1]; margin = 1)
+    @test_throws ArgumentError PCC.add_domination!(
+        model,
+        template,
+        S,
+        S,
+        A[1];
+        scale = JuMP.@variable(model),
+    )
+end
+
+end

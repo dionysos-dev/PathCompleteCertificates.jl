@@ -58,6 +58,9 @@ include("templates/conic_polyhedral.jl")
 # The methods live in ext/PathCompleteCertificatesSumOfSquaresExt.jl: the type
 # is cheap, the polynomial stack behind it is not.
 include("templates/sum_of_squares.jl")
+# Same split, behind `SetProg`: its sets reach templates the others do not have,
+# piecewise semi-ellipsoids among them.
+include("templates/set_prog.jl")
 
 # --- Axis 2: one file per problem, each composing those primitives ------------
 include("problems/stability.jl")
