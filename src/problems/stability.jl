@@ -346,3 +346,98 @@ function tight_edges(certificate::StabilityCertificate; atol::Real = 1e-6)
         (edge, slack) in zip(edges(graph_), slacks) if slack <= atol
     ]
 end
+
+"""
+    tight_subgraph(certificate; atol = 1e-6)
+
+The subgraph of the edges whose inequality is active — Definition 4 of Ninite &
+Jungers, `Ē = {(a,b,i) ∈ E : λ_min(γ²P_a − Aᵢᵀ P_b A_i) = 0}`.
+
+Same nodes as the certificate's graph, so node numbers carry over; only edges
+are dropped. `atol` stands in for the exact zero, which a bisected solution
+never reaches — see [`refine`](@ref) on choosing it.
+
+This is the object the optimality theory is stated on: [`is_jsr_exact`](@ref)
+reads its out-degrees and [`jsr_lower_bound`](@ref) its cycles.
+"""
+function tight_subgraph(certificate::StabilityCertificate; atol::Real = 1e-6)
+    graph_ = graph(certificate)
+    subgraph = _HS.GraphAutomaton(n_nodes(graph_))
+
+    for (source_node, destination, mode) in tight_edges(certificate; atol = atol)
+        _HS.add_transition!(subgraph, source_node, destination, mode)
+    end
+
+    return subgraph
+end
+
+"""
+    is_jsr_exact(certificate; atol = 1e-6) -> Bool
+
+Whether the certificate's rate is the **exact** joint spectral radius, by the
+optimality certificate of Ninite & Jungers (Theorem 4): if every node has at
+most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
+
+!!! warning "Sufficient, not necessary — and `atol`-dependent"
+    `false` means *unknown*, never "inexact". A graph can attain the exact rate
+    with every edge tight, where the condition cannot hold: two opposite
+    rotations scaled by `0.9` do exactly that.
+
+    And the test is only as good as `atol`. Too small, and genuinely active
+    edges are missed, the subgraph is too thin, and this returns `true` without
+    grounds. [`jsr_lower_bound`](@ref) is the tolerance-free alternative: it
+    brackets the answer instead of asserting it.
+"""
+function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
+    subgraph = tight_subgraph(certificate; atol = atol)
+
+    return all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph))
+end
+
+"""
+    jsr_lower_bound(certificate; atol = 1e-6, max_length = nothing)
+
+A **lower** bound on the joint spectral radius, from the cycles of the
+[`tight_subgraph`](@ref).
+
+A cycle `(a₁,a₂,i₁) … (a_k,a₁,i_k)` of the graph forces
+`γ ≥ ρ(A_{i_k} ⋯ A_{i_1})^{1/k}`, and any product of modes bounds the joint
+spectral radius from below (Ninite & Jungers, Lemma 1). The largest such value
+over the cycles found is returned; `0` when there are none.
+
+Together with the certificate's own rate — an *upper* bound — this brackets the
+answer, and **the bracket holds whatever `atol` was**: a cycle of the tight
+subgraph is still a cycle of the graph, so its bound is valid even if the tight
+set was identified badly. `atol` only decides where to look for good cycles, and
+`max_length` how far; both affect how tight the bound is, neither whether it is
+true. That is what makes this the honest companion to [`is_jsr_exact`](@ref).
+
+`max_length` defaults to the number of nodes, which enumerates every simple
+cycle. Lower it when the tight subgraph is dense enough for that to bite.
+"""
+function jsr_lower_bound(
+    certificate::StabilityCertificate;
+    atol::Real = 1e-6,
+    max_length::Union{Nothing, Integer} = nothing,
+)
+    subgraph = tight_subgraph(certificate; atol = atol)
+    A = mode_matrices(problem(certificate).system)
+
+    length_bound = something(max_length, n_nodes(subgraph))
+    best = zero(float(eltype(first(A))))
+
+    for cycle in simple_cycles(subgraph; max_length = length_bound)
+        # Composing the edge inequalities along the cycle puts the last mode
+        # leftmost, which is also the order in which they act: A_{i_1} first.
+        product = LinearAlgebra.I
+
+        for edge in cycle
+            product = A[label(subgraph, edge)] * product
+        end
+
+        radius = maximum(abs, LinearAlgebra.eigvals(Matrix(product)))
+        best = max(best, radius^(1 / length(cycle)))
+    end
+
+    return best
+end
