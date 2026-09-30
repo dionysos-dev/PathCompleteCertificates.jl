@@ -30,14 +30,7 @@ add_transition!(seed, 1, 1, 2)
 
 # ## Running the loop
 
-trace = PCC.refine(
-    TEMPLATE,
-    seed,
-    problem;
-    optimizer = OPTIMIZER,
-    depth_max = 4,
-    lift = PCC.ForwardEdgeLift(),
-)
+trace = PCC.refine(TEMPLATE, seed, problem; optimizer = OPTIMIZER, depth_max = 4)
 
 # No seed, and none needed: ties go to the **cheapest** split — the one adding
 # fewest nodes — so this run is identical on every machine and Julia version.
@@ -78,14 +71,13 @@ exact = PCC.refine(TEMPLATE, PCC.de_bruijn(1, 2), rotations; optimizer = OPTIMIZ
 
 PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
-# !!! note "Two lifts, and only one of them refines this graph"
-#     [`ForwardEdgeLift`](@ref), the default, splits a node into one copy per
-#     outgoing **edge**. [`ForwardLift`](@ref) — the paper's — splits per distinct
-#     **successor**, and the seed's only successor is itself, so it cannot be
-#     split at all: `refine` would stop at once with [`NOTHING_TO_SPLIT`](@ref).
+# !!! note "Why the lift splits per edge"
+#     [`ForwardEdgeLift`](@ref) makes one copy per outgoing **edge**. The paper
+#     splits per distinct **successor** — and the seed's only successor is itself,
+#     so that grain could not take a single step here.
 #
-#     The edge grain is also what makes the split rule and Theorem 4 agree, since
-#     both then count outgoing edges.
+#     It is also what makes the split rule and Theorem 4 the same test, since both
+#     then count outgoing edges.
 
 # ## Against De Bruijn
 #

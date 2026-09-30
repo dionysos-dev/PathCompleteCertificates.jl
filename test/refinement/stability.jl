@@ -128,34 +128,8 @@ end
     )
 end
 
-@testset "the node-grained lift cannot split the memoryless graph, and says so" begin
-    # Two tight self-loops, so the tight-edge count selects node 1 -- but
-    # `ForwardLift` splits by distinct *successor* and node 1 has only itself.
-    # The lift is the identity here, and `refine` must report convergence rather
-    # than re-solve the same graph until `depth_max`.
-    trace = PCC.refine(
-        TEMPLATE,
-        MEMORYLESS,
-        SHEARED;
-        optimizer = OPTIMIZER,
-        depth_max = 4,
-        lift = PCC.ForwardLift(),
-    )
-
-    @test PCC.is_converged(trace)
-    @test length(PCC.graphs(trace)) == 1
-    @test PCC.n_nodes(only(PCC.graphs(trace))) == 1
-end
-
-@testset "the edge-grained lift refines it, and beats De Bruijn node for node" begin
-    trace = PCC.refine(
-        TEMPLATE,
-        MEMORYLESS,
-        SHEARED;
-        optimizer = OPTIMIZER,
-        depth_max = 4,
-        lift = PCC.ForwardEdgeLift(),
-    )
+@testset "refinement beats De Bruijn node for node" begin
+    trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 4)
 
     rates = PCC.rates(trace)
 
@@ -185,7 +159,6 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        lift = PCC.ForwardEdgeLift(),
         rng = MersenneTwister(1),
     )
 
@@ -270,7 +243,7 @@ end
     @test length(PCC.graphs(patient)) == 4
 end
 
-@testset "the status tells the five outcomes apart" begin
+@testset "the status tells the four outcomes apart" begin
     # One mode, one tight self-loop: Theorem 4's condition holds, and the cycle
     # through that self-loop meets the rate. Certified either way.
     @test PCC.status(
@@ -282,19 +255,6 @@ end
             depth_max = 3,
         ),
     ) == PCC.OPTIMAL
-
-    # Two tight edges to one successor: the node-grained lift cannot separate
-    # them, so the search dries up with Theorem 4 unsatisfied and nothing proved.
-    @test PCC.status(
-        PCC.refine(
-            TEMPLATE,
-            MEMORYLESS,
-            SHEARED;
-            optimizer = OPTIMIZER,
-            depth_max = 3,
-            lift = PCC.ForwardLift(),
-        ),
-    ) == PCC.NOTHING_TO_SPLIT
 
     @test PCC.status(
         PCC.refine(

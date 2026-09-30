@@ -190,7 +190,7 @@ src/
 │                                 operation on one of the three things a certificate is
 │   ├── abstract.jl               AbstractLift; a lift preserves path-completeness, and
 │   │                             that is its whole definition (Debauche et al., Def. 5)
-│   └── forward.jl                the node-splitting lifts, valid for every template
+│   └── forward.jl                the node-splitting lift, valid for every template
 ├── refinement/                   designing the graph, rather than solving on a given one
 │   └── stability.jl              `refine`, the greedy loop; reads all three, like
 │                                 aggregation.jl, so it is filed under neither axis

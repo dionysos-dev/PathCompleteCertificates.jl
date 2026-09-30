@@ -55,33 +55,27 @@ node had and the old certificate is still feasible, so the rate can only fall or
 stay. That is why the sequence of rates is monotone, and it needs nothing from
 the template — which is why the forward lifts are sound for all of them.
 
-## The two lifts
+## The lift
 
-Both split one node; they differ in how finely.
+[`ForwardEdgeLift`](@ref) splits a node into one copy per outgoing **edge**.
 
-| | splits into | |
-| :-- | :-- | :-- |
-| [`ForwardLift`](@ref) | one copy per distinct **successor** | the paper's |
-| [`ForwardEdgeLift`](@ref) | one copy per outgoing **edge** | the default here |
+Ninite & Jungers split per distinct **successor**. That grain cannot separate two
+edges to the same successor, so a node held at exactly those stays held however
+often it is lifted, and the optimality certificate below — which counts tight
+outgoing *edges* — is unreachable for it. Measured over seven seed and system
+combinations it never gives a better bound at equal node count, and on the
+memoryless graph it cannot take a single step.
 
-[`copies`](@ref) reports that partition without building anything, which lets the
-loop ask *which* edges a split would separate before paying for it.
-
-The default is the edge-grained one, and the reason is not taste. The optimality
-certificate below counts tight **edges** per node. Under [`ForwardLift`](@ref) a
-node held at two edges to the *same* successor cannot be split at all — both
-copies would be one copy — so it keeps two tight outgoing edges forever and the
-certificate is unreachable. Under [`ForwardEdgeLift`](@ref) the splitting rule
-and the certificate count the same thing.
+With one grain a copy simply **is** an outgoing edge, so the rule below counts
+edges rather than asking what a given lift can tell apart.
 
 ## Choosing among bottlenecks
 
 Several nodes may qualify. The rule is:
 
-1. prefer the node whose tight edges land in the **most** copies, which is how
-   much the split actually separates;
-2. break ties by the **cheapest** split, the one adding fewest nodes, node count
-   being the budget;
+1. prefer the node with the **most** tight outgoing edges;
+2. break ties by the **cheapest** split — fewest outgoing edges, since the lift
+   adds one node per edge — node count being the budget;
 3. break what remains by lowest node number.
 
 No randomness, so a run is identical on every machine and Julia version. Pass an
@@ -97,7 +91,6 @@ things happened.
 | | |
 | :-- | :-- |
 | [`OPTIMAL`](@ref) | the rate **is** the joint spectral radius |
-| [`NOTHING_TO_SPLIT`](@ref) | nothing this lift can usefully split, and not certified |
 | [`STALLED`](@ref) | `stall_max` lifts in a row bought nothing |
 | [`DEPTH_EXHAUSTED`](@ref) | `depth_max` reached with the bound still falling |
 | [`STABLE`](@ref) | `until_stability` was set and the rate fell below 1 |
@@ -188,10 +181,14 @@ Worth knowing if you are reading both.
 
 | | paper | here |
 | :-- | :-- | :-- |
-| lift | node-grained | edge-grained by default, so the split rule and Theorem 4 count the same thing |
+| lift | node-grained | edge-grained, the coarse grain being dominated — which makes the split rule and Theorem 4 literally the same test |
 | cycle bound | computed once the structural condition fires | checked every step, the only way the all-edges-tight case is ever certified |
 | tolerance escalation | restart the algorithm | re-read the same certificate; no solve repeated |
 | tie-breaking | unspecified | cheapest split, deterministic |
+
+The first row is why the search drying up *is* the certificate here: with copies
+and edges the same thing, "no node holds two tight outgoing edges" is exactly
+Theorem 4's hypothesis, so there is no outcome for *exhausted but unproved*.
 
 ```@docs; canonical=false
 refine
