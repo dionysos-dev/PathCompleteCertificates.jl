@@ -15,9 +15,13 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
-# Pure graph transforms -- no template, no problem -- so they sit with the
-# other graph foundations despite living in refinement/ (see that file).
-include("refinement/lift.jl")
+include("graphs/cycles.jl")
+# Transformations of the graph. A lift is a map on graphs preserving
+# path-completeness, so it reads no template and no problem and belongs with the
+# graph foundations it transforms. `refine` is one consumer; ordering two graphs
+# is the other.
+include("lifts/abstract.jl")
+include("lifts/forward.jl")
 include("systems/switched.jl")
 include("systems/trajectory.jl")
 include("systems/simulate.jl")

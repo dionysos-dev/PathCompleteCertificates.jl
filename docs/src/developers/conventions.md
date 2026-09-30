@@ -175,22 +175,25 @@ default: the failure it guards against is silent and unsound.
 Two designs are settled but unimplemented. They are recorded so that the first implementation does
 not have to rediscover them.
 
-**Lift admissibility depends on the template.** Debauche, Della Rossa and Jungers showed that
-whether a lift may be applied depends on the *analytical properties of the template*, not on the
-graph alone. A refinement loop that applies a lift without checking will happily produce a
-certificate — one that certifies nothing. So admissibility must be answered through **properties**,
-never by dispatching on the concrete template type, which would need one method per
-(lift, template) pair: the *n × m* explosion §1 exists to avoid.
+**A lift is sound by definition; the template decides whether it *improves*.** Debauche, Della
+Rossa and Jungers define a lift (Def. 5) as any map on graphs with `L(G)` path-complete whenever
+`G` is. Path-completeness is the soundness condition, so a certificate on a lifted graph always
+certifies the system. What the closure properties buy is **validity** (Def. 6): the guarantee
+`G ≤_V L(G)`, that the lift never makes the bound *worse*. Break it and you get a worse bound,
+visible as soon as you solve.
+
+Validity is answered through **properties**, never by dispatching on the concrete template type,
+which would need one method per (lift, template) pair: the *n × m* explosion §1 exists to avoid.
 
 ```julia
-closed_under_max(::Type{T})::Bool
-closed_under_min(::Type{T})::Bool
-closed_under_linear_image(::Type{T})::Bool
-
-is_admissible(lift, ::Type{T})  # written ONCE, against the properties
+is_closed_under(template, ⋆)        # the template declares what it is closed under
+operation(lift)                     # the lift names the operation it needs
+is_valid(lift, template)            # written ONCE, against the two
 ```
 
-This is the most expensive mistake available here, because it fails silently.
+Use the papers' word: **valid**, not "admissible". The forward node-splitting lift `refine` uses
+needs no closure property — every copy of the split node inherits its function, so no two are
+ever combined.
 
 **`refute` will not be `certify`.** A refutation routine samples looking for a violation: it is a
 cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves for the
@@ -206,7 +209,10 @@ filed under `src/systems/` rather than with the problems, because nothing about 
 - Every test file is standalone-runnable and wired into `TEST_FILES` in `test/runtests.jl`.
 - Format before every commit; CI fails on any diff.
 - **Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package
-  exports nothing deliberately, which means Documenter's `checkdocs = :all` has no symbol list to
-  work from and checks nothing — eight docstrings written as `raw"""`, which never attach, once
-  went missing exactly that way. `test/docstrings.jl` is the real gate: it walks every
-  non-underscore reachable name and fails on any that is undocumented.
+  exports nothing deliberately, so Documenter's `checkdocs = :all` cannot see a name that has no
+  docstring at all — eight docstrings written as `raw"""`, which never attach, once went missing
+  exactly that way. `test/docstrings.jl` is the gate for that: it walks every non-underscore
+  reachable name and fails on any that is undocumented.
+- **Every docstring must land in an `@autodocs` block under `docs/src/reference/`.** This one
+  `checkdocs = :all` does enforce, by failing the docs build — so a new file in `src/` needs a
+  `Pages` entry as well as tests.

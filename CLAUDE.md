@@ -61,6 +61,9 @@ Every one of these is **public**. They are what a user implements, so none of th
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                      # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+domination_slack(template, V_src, V_dst, map; scale = 1)
+                                                     # the same, read off a *solution*: ≥ 0 when
+                                                     # it holds, 0 exactly when the edge is tight
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
 add_normalization!(model, template, V)               # excludes V ≡ 0
 rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
@@ -70,6 +73,10 @@ check_dynamics(template, A)                          # is this template applicab
 
 # --- Problem axis (src/problems/). One file per problem, composing the above.
 add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
+optimization_model(template, graph, problem; optimizer, ...)  # build, do not solve
+certify(template, graph, problem; optimizer, ...)             # build, solve, extract
+# Not `model`: it is the first argument of every primitive above and would be
+# shadowed inside all of them. Not `program`: one letter from `problem`.
 
 # --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
 #   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
@@ -179,6 +186,14 @@ src/
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
+├── lifts/                        transformations of the graph — not a third axis, an
+│                                 operation on one of the three things a certificate is
+│   ├── abstract.jl               AbstractLift; a lift preserves path-completeness, and
+│   │                             that is its whole definition (Debauche et al., Def. 5)
+│   └── forward.jl                the node-splitting lift, valid for every template
+├── refinement/                   designing the graph, rather than solving on a given one
+│   └── stability.jl              `refine`, the greedy loop; reads all three, like
+│                                 aggregation.jl, so it is filed under neither axis
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
@@ -247,23 +262,30 @@ the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its la
 
 ## 5. Gotchas
 
-**Lift admissibility is template-dependent, and getting it wrong fails silently.**
+**A lift is always sound. The template decides whether it *improves*.**
 
-Debauche, Della Rossa & Jungers showed that whether a lift may be applied depends on the
-*analytical properties of the template*, not on the graph alone. A refinement loop that applies
-a lift without checking will happily produce a certificate — one that certifies nothing.
+Debauche, Della Rossa & Jungers define a lift (Def. 5) as any `L : Graphs_M → Graphs_M` with
+`L(G)` path-complete whenever `G` is. No template in it — so a certificate on `L(G)` certifies
+the system whatever template it carries. What their closure properties decide is **validity**
+(Def. 6): whether `G ≤_V L(G)`, the guarantee that the lift does not make the bound *worse*.
+Apply one where it does not hold and you get a worse bound, visible the moment you solve, not
+an unsound certificate.
 
-So admissibility is answered through **properties**, never by dispatching on the concrete
-template type (which would need one method per (lift, template) pair — *n × m*, the explosion
-§2 exists to avoid):
+Validity is answered through **properties**, never by dispatching on the concrete template type
+— that would need one method per (lift, template) pair, the *n × m* explosion §2 exists to
+avoid:
 
 ```julia
-closed_under_max(::Type{T})::Bool
-closed_under_min(::Type{T})::Bool
-closed_under_linear_image(::Type{T})::Bool
-
-is_admissible(lift, ::Type{T})  # written ONCE, against the properties
+is_closed_under(template, ⋆)        # the template declares
+operation(lift)                     # the lift names what it needs
+is_valid(lift, template)            # written ONCE, against the two
 ```
+
+Use the papers' word: **valid**, not "admissible".
+
+The forward node-splitting lift needs none of it: give every copy of the split node the same
+`V_α` and each edge of `L(G)` descends from an edge of `G` between the same two functions, so
+no functions are combined. It is valid for every template.
 
 **`refute` and `certify` are not the same thing.** `refute` samples looking for a violation:
 it is a cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves

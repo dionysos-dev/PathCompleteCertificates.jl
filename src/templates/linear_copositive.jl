@@ -69,3 +69,13 @@ function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:Abstract
 
     return nothing
 end
+
+function domination_slack(
+    ::LinearCopositiveTemplate,
+    c_src::AbstractVector,
+    c_dst::AbstractVector,
+    map::AbstractMatrix;
+    scale = 1,
+)
+    return minimum(scale * c_src - transpose(map) * c_dst)
+end

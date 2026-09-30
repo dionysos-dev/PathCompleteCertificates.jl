@@ -23,6 +23,21 @@ not defined.
 A ✗ throws an `ArgumentError` before any model is built. Optimal control
 additionally requires a **complete** graph, not merely a path-complete one.
 
+## And one cell for refinement
+
+[`refine`](@ref) designs the graph rather than taking one, so it is not a column
+of the table above — it sits on top of a cell of it, and only on one:
+
+| | [`StabilityProblem`](@ref) |
+| :-- | :-: |
+| [`QuadraticTemplate`](@ref) | ✓ |
+
+The scope is **what is tested**, not a mathematical obstacle: a lift preserves
+path-completeness, which is the soundness condition, and the forward lift needs
+nothing from the template besides. Everything inside `refine` goes through
+[`edge_slacks`](@ref), which every template answers, so this cell is one
+signature and a test away from being a column.
+
 ## The two gaps are different
 
 **Safety** imposes its inequality on the homogeneous lift, which the polyhedral

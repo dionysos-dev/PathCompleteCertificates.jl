@@ -1,92 +1,220 @@
-# The co-design of graph and certificate from Ninite & Jungers, "Iterative
-# graph lifting for automatic design of path-complete stability certificates"
-# (arXiv:2607.00637, 2026): `refine` drives `jsr_bound`/`certify` and the lifts
-# of `lift.jl` together, so it belongs to neither axis of CLAUDE.md's section 2
-# -- it reads the graph, a template and a problem at once, exactly the reason
-# `aggregation.jl` is top-level rather than filed under one of them.
+# `refine` drives `jsr_bound` and the lifts of `src/lifts/` together, reading
+# graph, template and problem at once -- the reason `aggregation.jl` is top-level
+# too (Ninite & Jungers, arXiv:2607.00637).
 #
-# Scoped to `QuadraticTemplate` and `StabilityProblem` on purpose: choosing
-# which node to lift reads the slack of the fitted `P` matrices, which is a
-# quadratic-template notion. Generalising it to another template or problem is
-# future work, not something to fake here.
+# Quadratic and stability because that is what is tested: nothing here reads the
+# template except through `edge_slacks`, and the forward lifts are valid for
+# every template, so widening is a signature and a test rather than mathematics.
 
-import LinearAlgebra
 import Random
 
 """
-    RefinementTrace(graphs, rates, converged)
+    RefinementStatus
 
-The record of one [`refine`](@ref) run: the graphs visited in order (the seed
-first), the joint-spectral-radius bound [`jsr_bound`](@ref) certified on each,
-and whether the loop stopped because no further lift could tighten it.
-
-`graphs` and `rates` have the same length: entry `k` of `rates` is the bound
-certified on entry `k` of `graphs`.
+Why a [`refine`](@ref) run stopped.
 """
-struct RefinementTrace{T <: Real}
-    graphs::Vector{_HS.GraphAutomaton}
-    rates::Vector{T}
-    converged::Bool
+@enum RefinementStatus OPTIMAL STALLED DEPTH_EXHAUSTED STABLE
+
+"""
+    OPTIMAL
+
+The rate is the joint spectral radius, and the run stopped because it had
+nothing left to prove. Reached two ways:
+
+- the certified bracket closed — [`jsr_lower_bound`](@ref) came within `gap_tol`
+  of the rate. Sound whatever `atol` was;
+- [`is_jsr_exact`](@ref) held: every node has at most one tight outgoing edge,
+  which is Theorem 4 of Ninite & Jungers.
+
+`rates(trace)[end]` is then the answer, not merely a bound on it.
+"""
+OPTIMAL
+
+"""
+    STALLED
+
+`stall_max` lifts in a row failed to improve the rate.
+
+Worth its own outcome because a graph already attaining the exact joint spectral
+radius holds *every* edge tight, so it always looks splittable and would
+otherwise be grown forever at a constant bound.
+"""
+STALLED
+
+"""
+    DEPTH_EXHAUSTED
+
+`depth_max` certificates were solved with the search still making progress.
+"""
+DEPTH_EXHAUSTED
+
+"""
+    STABLE
+
+`until_stability` was set and the rate dropped below 1.
+"""
+STABLE
+
+"""
+    RefinementTrace(certificates, status)
+
+One [`StabilityCertificate`](@ref) per graph a [`refine`](@ref) run visited, the
+seed's first, and a [`RefinementStatus`](@ref).
+
+A certificate carries its own graph and rate, so [`graphs`](@ref) and
+[`rates`](@ref) read them off rather than storing them twice.
+"""
+struct RefinementTrace{C <: StabilityCertificate}
+    certificates::Vector{C}
+    status::RefinementStatus
 end
+
+"""
+    certificates(trace)
+
+The certificate solved on each graph a [`refine`](@ref) run visited — the
+Lyapunov functions themselves, so a run can be drawn without re-solving.
+"""
+certificates(trace::RefinementTrace) = trace.certificates
 
 """
     graphs(trace)
 
-The graphs visited by a [`refine`](@ref) run, the seed graph first.
+The graphs visited by a [`refine`](@ref) run, the seed first.
 """
-graphs(trace::RefinementTrace) = trace.graphs
+graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.certificates]
 
 """
     rates(trace)
 
-The joint-spectral-radius bound certified on each of [`graphs`](@ref), in the
-same order.
+The bound certified on each of [`graphs`](@ref), in the same order.
 """
-rates(trace::RefinementTrace) = trace.rates
+rates(trace::RefinementTrace) = [certificate.rate for certificate in trace.certificates]
+
+"""
+    status(trace::RefinementTrace)
+
+Why the run stopped, as a [`RefinementStatus`](@ref).
+"""
+status(trace::RefinementTrace) = trace.status
 
 """
     is_converged(trace) -> Bool
 
-Whether a [`refine`](@ref) run stopped because no node had more than one tight
-outgoing domination constraint -- lifting further could not relax anything.
-`false` means it stopped for another reason: `depth_max` was reached, or
-`until_stability` saw a certified rate below 1.
+Whether the search ended of its own accord rather than on a budget:
+[`OPTIMAL`](@ref) or [`STALLED`](@ref).
+
+Only the first means the answer is certified. Read [`status`](@ref) whenever
+that distinction matters, which is most of the time.
 """
-is_converged(trace::RefinementTrace) = trace.converged
+is_converged(trace::RefinementTrace) = status(trace) in (OPTIMAL, STALLED)
+
+"""
+    lower_bounds(trace)
+
+A certified **lower** bound on the joint spectral radius at each step, from the
+cycles of each certificate's tight subgraph ([`jsr_lower_bound`](@ref)).
+
+Paired with [`rates`](@ref) — the upper bounds — this is the bracket the run
+narrowed. Recomputed from the certificates rather than stored, so it cannot
+fall out of step with them; pass the same `atol` [`refine`](@ref) ran with.
+"""
+lower_bounds(trace::RefinementTrace; atol::Real = 1e-4) =
+    [jsr_lower_bound(certificate; atol = atol) for certificate in trace.certificates]
 
 """
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
-           lifting_function = forward_lift, tol = 1e-4, rtol = 1e-6,
-           rng = Random.default_rng())
+           lift = ForwardEdgeLift(), atol = 1e-4, atol_max = atol, rtol = 1e-6,
+           gap_tol = 1e-6, stall_max = 1, path_complete = true, rng = nothing)
 
-Iteratively lift `graph` to tighten the stability certificate it carries, by
-the greedy strategy of Ninite & Jungers (2026), arXiv:2607.00637.
+Iteratively lift `graph` to tighten the stability certificate it carries, until
+the rate is certified to be the joint spectral radius or the search runs out.
 
-At each step, [`jsr_bound`](@ref) certifies the current graph. A domination
-constraint on edge `(a, b, i)` is *tight* when its slack
+Each step certifies with [`jsr_bound`](@ref) and reads off the active edge
+inequalities with [`tight_edges`](@ref). A node with **two or more** tight
+outgoing edges is serving two futures with one function; splitting it gives each
+its own. The node held at the most is taken.
 
-    rate^rate_exponent(template) * P_a - A_i' * P_b * A_i
+Ties go to the **cheapest** split — fewest outgoing edges, since the lift adds
+one node per edge — and then to the lowest-numbered node. Node count is the
+budget the whole comparison with `de_bruijn` is about, so spending it sparingly
+is the right preference, and the rule needs no seed: a run is identical on every
+machine and Julia version.
 
-has smallest eigenvalue below `tol`: the template has no room left there, so
-lifting elsewhere would not help. The node with the most tight *outgoing*
-constraints is lifted with `lifting_function` -- [`forward_lift`](@ref) (the
-default) or [`forward_edge_lift`](@ref) -- and ties are broken uniformly at
-random via `rng`.
-
-The loop stops early, before `depth_max` steps, once no node has more than one
-tight outgoing constraint: [`is_converged`](@ref) is then `true` on the
-returned trace. Set `until_stability = true` to also stop as soon as the
-certified rate drops below `1 - tol`, i.e. the current graph already proves
-stability.
-
-`rtol` is the bisection tolerance passed to each [`jsr_bound`](@ref) call, kept
-tight (and separate from `tol`) on purpose: a constraint whose true slack is
-zero still measures around `rtol` once bisection stops, so `rtol` must stay
-well below `tol` or a genuinely tight edge is missed and the loop converges
-too early.
+Pass an `rng` to break the remaining ties at random instead. Seeding one does
+*not* make a run reproducible across Julia versions — `rand(rng, ::Vector)` is
+free to sample differently between them.
 
 Returns a [`RefinementTrace`](@ref).
+
+## Stopping
+
+- the bracket closes, `rate - `[`jsr_lower_bound`](@ref)` ≤ gap_tol`, **or** no
+  node is left holding two tight outgoing edges → [`OPTIMAL`](@ref): the rate
+  *is* the joint spectral radius. The second is [`is_jsr_exact`](@ref), Theorem 4
+  of Ninite & Jungers, and it coincides with the search drying up because
+  [`ForwardEdgeLift`](@ref) splits per edge — the theorem and the split rule
+  count the same thing;
+- `stall_max` lifts in a row not improving the rate by more than `rtol` →
+  [`STALLED`](@ref). Raise `stall_max` to cross a plateau, at a bisection a step;
+- `depth_max` certificates solved → [`DEPTH_EXHAUSTED`](@ref);
+- `until_stability` and a rate below 1 → [`STABLE`](@ref), already a proof. Taken
+  before the bracket, being an explicit request to stop early rather than a fact
+  about the graph, so a run that could also have certified optimality reports
+  `STABLE`.
+
+The bracket is checked *every* step, not only when the search runs dry, and that
+is deliberate: the two conditions catch different cases. A graph attaining the
+exact rate with every edge tight is never structurally exhausted — Theorem 4
+cannot fire — but its bracket closes at once.
+
+## The three tolerances
+
+`rtol` is the bisection tolerance of each [`jsr_bound`](@ref) call, `atol`
+decides tightness, `gap_tol` closes the bracket. `atol ≥ 10 rtol` is **enforced**,
+and the decade is not decoration: below it the tight subgraph can come out empty,
+every node then satisfies [`is_jsr_exact`](@ref) vacuously, and the run certifies
+a bound that is not the joint spectral radius.
+
+Bisection stops just *above* the optimum, so an active edge does not measure
+zero — it measures about the bisection gap. On a rotation-and-shear pair over
+`de_bruijn(1, 2)` at `rtol = 1e-6` the three active edges measure `1.3e-7`,
+`6.0e-7` and `2.9e-6` against `0.17` for the slack one. Lower `atol` towards
+`rtol` and active edges are missed; raise it and slack edges are called tight.
+
+Only `atol` is delicate, and [`jsr_lower_bound`](@ref) is why it need not be
+fatal: a cycle of the tight subgraph bounds the joint spectral radius whatever
+`atol` was, so a badly chosen one weakens the bracket without making
+[`OPTIMAL`](@ref) wrong. [`is_jsr_exact`](@ref) has no such protection, which is
+the argument for reading `lower_bounds(trace)` rather than trusting the
+structural test alone.
+
+### Escalating it
+
+`atol_max` is the safeguard, and it is **off by default**, `atol_max == atol`
+meaning never escalate. With the decade above enforced it should not be needed:
+an active edge measures a few times `rtol`, so `atol` clears it. It guards the
+case the ratio cannot — a solution whose accuracy is worse than `rtol` suggests,
+which an ill-conditioned model can produce.
+
+Set it higher and a dead end is not taken at face value: before concluding
+anything, the tolerance is multiplied by ten — up to `atol_max` — and the same
+certificate re-read. An edge that is active in truth but not numerically then
+appears, and the search continues. Nothing is re-solved and nothing restarted,
+because the tolerance decides how a solution is *read*, not what it is; the
+raised value carries to later steps, the bisection residual being of one scale
+throughout.
+
+This is the diagnostic for the one case the bracket cannot settle. Reaching a
+dead end means the bracket did *not* close, so [`is_jsr_exact`](@ref) holding
+there says the structure claims exactness while the cycles disagree — either
+`atol` was too small, or the joint spectral radius is attained by no cycle the
+search found. If escalating makes the dead end go away, it was the first.
+
+`path_complete` decides the **seed** only: a lift of a path-complete graph is
+path-complete, so the loop asserts rather than re-deciding a PSPACE-complete
+question. Set it `false` to assert the seed too.
 """
 function refine(
     template::QuadraticTemplate,
@@ -95,21 +223,48 @@ function refine(
     optimizer,
     depth_max::Integer = 5,
     until_stability::Bool = false,
-    lifting_function::Function = forward_lift,
-    tol::Real = 1e-4,
+    lift::AbstractLift = ForwardEdgeLift(),
+    atol::Real = 1e-4,
+    atol_max::Real = atol,
     rtol::Real = 1e-6,
-    rng::Random.AbstractRNG = Random.default_rng(),
+    gap_tol::Real = 1e-6,
+    stall_max::Integer = 1,
+    path_complete::Bool = true,
+    rng::Union{Nothing, Random.AbstractRNG} = nothing,
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
+    stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
 
-    A = mode_matrices(problem.system)
+    atol_max >= atol ||
+        throw(ArgumentError("atol_max ($atol_max) must be at least atol ($atol)"))
 
-    trace_graphs = _HS.GraphAutomaton[graph]
-    trace_rates = Float64[]
-    converged = false
+    # An active edge measures about the bisection residual, so `atol` has to clear
+    # it with room: measured at `rtol = 1e-6`, active slacks run to 3.5e-6, and a
+    # decade is the least that discriminates. At 2x the tight subgraph comes out
+    # EMPTY, every node then satisfies Theorem 4 vacuously, and the seed's own
+    # bound gets certified as the JSR -- which is why this is an error, not advice.
+    atol >= 10 * rtol || throw(
+        ArgumentError(
+            "atol ($atol) must exceed rtol ($rtol) by at least a decade: a tight " *
+            "edge measures about the bisection gap, not zero, so a smaller " *
+            "margin cannot tell an active edge from a slack one",
+        ),
+    )
+
+    trace = StabilityCertificate[]
+    outcome = DEPTH_EXHAUSTED
+    stalled = 0
+    tolerance = atol
 
     for depth in 1:depth_max
-        certificate = jsr_bound(template, graph, problem; optimizer, rtol = rtol)
+        certificate = jsr_bound(
+            template,
+            graph,
+            problem;
+            optimizer,
+            rtol = rtol,
+            path_complete = path_complete && depth == 1,
+        )
 
         is_feasible(certificate) || throw(
             ArgumentError(
@@ -117,59 +272,94 @@ function refine(
             ),
         )
 
-        push!(trace_rates, certificate.rate)
+        if !isempty(trace)
+            improved = certificate.rate <= last(trace).rate * (1 - rtol)
+            stalled = improved ? 0 : stalled + 1
+        end
 
-        depth == depth_max && break
-        until_stability && certificate.rate < 1 - tol && break
+        push!(trace, certificate)
 
-        tight = _tight_outgoing_count(template, graph, certificate, A; tol = tol)
-
-        max_tight = maximum(values(tight))
-        if max_tight <= 1
-            converged = true
+        # First, because it is an explicit request to stop early rather than a
+        # fact about the graph -- and it spares the cycle search below.
+        if until_stability && certificate.rate < 1
+            outcome = STABLE
             break
         end
 
-        candidates = [node for node in nodes(graph) if tight[node] == max_tight]
-        node = rand(rng, candidates)
+        # Checked every step, because a graph can be optimal long before it is
+        # structurally exhausted -- and the bracket, unlike `is_jsr_exact`, does
+        # not depend on `atol` being right.
+        if certificate.rate - jsr_lower_bound(certificate; atol = tolerance) <= gap_tol
+            outcome = OPTIMAL
+            break
+        end
 
-        graph = lifting_function(graph, node)
-        push!(trace_graphs, graph)
+        if stalled >= stall_max
+            outcome = STALLED
+            break
+        end
+
+        depth == depth_max && break
+
+        node = _node_to_split(lift, certificate; atol = tolerance, rng = rng)
+
+        # A dead end may only mean the tight subgraph is too thin: an active edge
+        # measures about the bisection residual, not zero, so too small a
+        # tolerance hides it. Re-read the SAME solution at a coarser one before
+        # concluding anything -- no restart and no second solve, because the
+        # tolerance changes how a certificate is read, not the certificate.
+        while node === nothing && 10 * tolerance <= atol_max
+            tolerance *= 10
+            node = _node_to_split(lift, certificate; atol = tolerance, rng = rng)
+        end
+
+        if node === nothing
+            # No node held at two tight outgoing edges is exactly Theorem 4's
+            # hypothesis, the lift splitting per edge -- so reaching here IS the
+            # certificate. A coarser lift would break that equivalence and would
+            # have to test `is_jsr_exact` separately before claiming anything.
+            outcome = OPTIMAL
+            break
+        end
+
+        graph = lift(graph, node)
     end
 
-    return RefinementTrace(trace_graphs, trace_rates, converged)
+    return RefinementTrace(identity.(trace), outcome)
 end
 
 """
-    _tight_outgoing_count(template, graph, certificate, A; tol)
+    _node_to_split(lift, certificate; atol, rng)
 
-For each node of `graph`, how many of its outgoing domination constraints are
-tight -- within `tol` of equality -- at the solution `certificate` carries.
+The node `lift` should be applied to next, or `nothing` when there is none.
 
-The slack of edge `(a, b, i)` is `rate^rate_exponent(template) * P_a -
-A_i' * P_b * A_i`, exactly [`add_domination!`](@ref)'s inequality for
-[`QuadraticTemplate`](@ref) evaluated at the fitted matrices; recomputing it
-here is cheaper than plumbing dual values back out of the JuMP model `certify`
-already discarded.
+A node scores its tight outgoing edges, and below two there is nothing to
+separate. `lift` is taken for granted rather than consulted, which holds only
+because it splits per edge: a coarser grain would have to be asked which of
+those edges it can actually tell apart.
 """
-function _tight_outgoing_count(
-    template::QuadraticTemplate,
-    graph::_HS.GraphAutomaton,
-    certificate::StabilityCertificate,
-    A::AbstractVector{<:AbstractMatrix};
-    tol::Real,
+function _node_to_split(
+    lift::AbstractLift,
+    certificate::StabilityCertificate;
+    atol::Real,
+    rng::Union{Nothing, Random.AbstractRNG},
 )
-    V = functions(certificate)
-    scale = certificate.rate^rate_exponent(template)
+    graph_ = graph(certificate)
+    subgraph = tight_subgraph(certificate; atol = atol)
 
-    tight = Dict(node => 0 for node in nodes(graph))
+    held = [outdegree(subgraph, node) for node in nodes(graph_)]
 
-    for edge in edges(graph)
-        α, β, σ = source(edge), dest(edge), label(graph, edge)
+    best = maximum(held)
+    best > 1 || return nothing
 
-        slack = scale * Matrix(V[α]) - A[σ]' * Matrix(V[β]) * A[σ]
-        LinearAlgebra.eigmin(LinearAlgebra.Symmetric(slack)) < tol && (tight[α] += 1)
-    end
+    # Among equally-held nodes, split the cheapest: the lift adds one node per
+    # outgoing edge, and node count is the budget the whole comparison is about.
+    candidates = [node for node in nodes(graph_) if held[node] == best]
+    cheapest = minimum(outdegree(graph_, node) for node in candidates)
+    filter!(node -> outdegree(graph_, node) == cheapest, candidates)
 
-    return tight
+    # Deterministic by default, and not merely seeded: `rand(rng, ::Vector)` is
+    # not guaranteed to pick the same element across Julia versions, so a seed
+    # reproduces a run on one version and silently changes it on the next.
+    return rng === nothing ? first(candidates) : rand(rng, candidates)
 end
