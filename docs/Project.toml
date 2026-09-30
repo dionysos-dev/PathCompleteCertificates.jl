@@ -19,7 +19,7 @@ SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 Documenter = "1"
 DocumenterCitations = "1"
 Literate = "2"
-SumOfSquares = "0.7"
+SumOfSquares = "0.7, 0.8"
 
 [sources]
 PathCompleteCertificates = {path = ".."}

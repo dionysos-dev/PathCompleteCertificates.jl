@@ -147,5 +147,12 @@ deploydocs(;
     repo = "github.com/dionysos-dev/PathCompleteCertificates.jl",
     devbranch = "master",
     # Previews are cleaned up by .github/workflows/doc-preview-cleanup.yml.
-    push_preview = true,
+    #
+    # Guarded because a Dependabot-triggered run gets no repository secrets:
+    # `DOCUMENTER_KEY` arrives set but EMPTY -- so `haskey` is not the test --
+    # and the preview push then fails on a read-only token. Such pull requests
+    # still BUILD the docs, which is what catches breakage; only the push they
+    # cannot make is skipped. Deployment of `devbranch` is deliberately left
+    # unguarded: missing credentials there is a misconfiguration worth failing on.
+    push_preview = !isempty(get(ENV, "DOCUMENTER_KEY", "")),
 )
