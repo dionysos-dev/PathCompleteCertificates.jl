@@ -168,3 +168,17 @@ node_value(
     V::PolyhedralFunction,
     x::AbstractVector{<:Real},
 ) = V(x)
+
+function domination_slack(
+    ::PolyhedralTemplate,
+    V_src::PolyhedralFunction,
+    V_dst::PolyhedralFunction,
+    map::AbstractMatrix;
+    scale = 1,
+)
+    # The destination carries the scale here, exactly as in `add_domination!`:
+    # the weights sit in a denominator.
+    M = abs.(V_dst.G * map * inv(V_src.G))
+
+    return minimum(scale * V_dst.w - M * V_src.w)
+end

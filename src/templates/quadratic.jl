@@ -127,3 +127,15 @@ node_value(
     V::QuadraticFunction,
     x::AbstractVector{<:Real},
 ) = V(x)
+
+function domination_slack(
+    ::QuadraticTemplate,
+    V_src::QuadraticFunction,
+    V_dst::QuadraticFunction,
+    map::AbstractMatrix;
+    scale = 1,
+)
+    residual = scale * V_src.P - transpose(map) * V_dst.P * map
+
+    return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(residual))))
+end

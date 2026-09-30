@@ -14,6 +14,8 @@ const TEST_FILES = [
     ("./graphs/predicates.jl",),
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
+    ("./graphs/cycles.jl",),
+    ("./lifts/forward.jl",),
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
@@ -22,11 +24,13 @@ const TEST_FILES = [
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),
     ("./problems/certify.jl", :slow),
+    ("./problems/tight_edges.jl", :slow),
     ("./problems/stability.jl", :slow),
     ("./problems/safety.jl",),
     ("./problems/optimal_control.jl", :slow),
     ("./problems/certificate.jl", :slow),
     ("./aggregation.jl",),
+    ("./refinement/stability.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]

@@ -85,8 +85,10 @@ Pages whose markdown is not already in `docs/src/generated` are then dropped fro
 rather than breaking the build, so run a full build before opening a pull request.
 
 **Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package exports
-nothing deliberately, so the `checkdocs = :all` setting has no symbol list to work from and checks
-nothing; `test/docstrings.jl` is the real gate. That matters because the tool paper has six pages
+nothing deliberately, so `checkdocs = :all` cannot see a name that carries no docstring at all;
+`test/docstrings.jl` is the gate for that. What `checkdocs` *does* enforce is that every docstring
+appears in an `@autodocs` block under `docs/src/reference/`, and it fails the build otherwise — so
+a new file in `src/` needs a `Pages` entry too. That matters because the tool paper has six pages
 including references, so it cannot explain the package — these docs have to.
 
 ## Continuous integration

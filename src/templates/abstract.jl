@@ -96,3 +96,24 @@ nonnegative orthant. The default is that every template applies.
 function check_dynamics end
 
 check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
+
+"""
+    domination_slack(template, V_src, V_dst, map; scale = 1)
+
+How much slack the domination `scale · V_src(x) ≥ V_dst(map · x)` has, given
+*fitted* node functions.
+
+The mirror of [`add_domination!`](@ref): same arguments, same meaning, but read
+off a solution rather than imposed on variables. Nonnegative when the
+inequality holds, and **zero exactly when it is tight** — which is what tells
+you the edge is limiting the certificate rather than slack in it.
+
+One method per template, because the slack is in the template's own terms: the
+smallest eigenvalue of a matrix pencil for a quadratic, the tightest row for a
+polyhedral one.
+
+The value is in the units of the fitted functions, and a certificate is only
+determined up to scale, so compare slacks within one certificate rather than
+across two.
+"""
+function domination_slack end

@@ -15,6 +15,13 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
+include("graphs/cycles.jl")
+# Transformations of the graph. A lift is a map on graphs preserving
+# path-completeness, so it reads no template and no problem and belongs with the
+# graph foundations it transforms. `refine` is one consumer; ordering two graphs
+# is the other.
+include("lifts/abstract.jl")
+include("lifts/forward.jl")
 include("systems/switched.jl")
 include("systems/trajectory.jl")
 include("systems/simulate.jl")
@@ -49,5 +56,11 @@ include("systems/closed_loop.jl")
 # --- The join: collapsing a certificate's node functions into one -------------
 # Dispatches on the graph, not on the problem, so it sits with neither axis.
 include("aggregation.jl")
+
+# --- The co-design of graph and certificate: iterative lifting ---------------
+# Reads graph, template and problem at once, like aggregation.jl above --
+# except scoped to stability, so it is included once that problem exists
+# rather than claimed as a third generic axis it does not yet have.
+include("refinement/stability.jl")
 
 end # module
