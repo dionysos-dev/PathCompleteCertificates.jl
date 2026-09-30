@@ -52,17 +52,40 @@ collect(zip(sizes, round.(bounds; digits = 5)))
 
 PCC.status(trace)
 
-# The one to watch for is [`STALLED`](@ref) — a lift that buys nothing. It is not
-# a rare case: a graph that already attains the exact joint spectral radius holds
-# *every* edge tight, so it always looks splittable and would otherwise be grown
-# forever at a constant bound.
+# ## How far from the truth?
+#
+# The certified rate is an *upper* bound on the joint spectral radius. Every cycle
+# of the graph gives a **lower** one — a periodic product cannot contract faster
+# than the worst switching sequence — so the two bracket the answer
+# ([`jsr_lower_bound`](@ref)).
+
+collect(zip(sizes, round.(PCC.lower_bounds(trace); digits = 5), round.(bounds; digits = 5)))
+
+# The bracket is what lets [`refine`](@ref) stop with [`OPTIMAL`](@ref) rather
+# than merely out of ideas, and it is sound whatever tolerance decided tightness:
+# a cycle of the tight subgraph is still a cycle of the graph.
+#
+# It also covers the case the structural test cannot. Two opposite rotations of
+# the same magnitude have a joint spectral radius their memoryless quadratic
+# certificate already attains — but *every* edge is then tight, so
+# [`is_jsr_exact`](@ref), which needs at most one tight edge per node, never
+# fires. The bracket closes at the first step instead.
+
+turn(angle) = 0.9 .* [cos(angle) -sin(angle); sin(angle) cos(angle)]
+rotations = PCC.StabilityProblem(PCC.switched_system([turn(pi / 3), turn(-pi / 3)]))
+
+exact = PCC.refine(TEMPLATE, PCC.de_bruijn(1, 2), rotations; optimizer = OPTIMIZER)
+
+PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
 # !!! note "Two lifts, and only one of them refines this graph"
-#     [`ForwardLift`](@ref), the default, splits a node into one copy per
-#     distinct **successor**. The seed's only successor is itself, so it is
-#     unsplittable and `refine` converges immediately — correctly, and
-#     [`is_converged`](@ref) says so. [`ForwardEdgeLift`](@ref) splits per
-#     outgoing **edge** instead, which is why it is the one used here.
+#     [`ForwardEdgeLift`](@ref), the default, splits a node into one copy per
+#     outgoing **edge**. [`ForwardLift`](@ref) — the paper's — splits per distinct
+#     **successor**, and the seed's only successor is itself, so it cannot be
+#     split at all: `refine` would stop at once with [`NOTHING_TO_SPLIT`](@ref).
+#
+#     The edge grain is also what makes the split rule and Theorem 4 agree, since
+#     both then count outgoing edges.
 
 # ## Against De Bruijn
 #

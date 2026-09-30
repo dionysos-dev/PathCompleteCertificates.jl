@@ -32,6 +32,17 @@ add_transition!(TWO_NODES, 2, 1, 1)
 add_transition!(TWO_NODES, 2, 2, 2)
 const TWO_MODE_PROBLEM = PCC.StabilityProblem(PCC.switched_system([ROTATED, ROTATED2]))
 
+# A rotation and a shear, both scaled by 0.69: no quadratic function attains the
+# joint spectral radius of this pair, so the memoryless bound is loose and there
+# is something for refinement to win. Same system as the SOS example.
+const SHEARED = PCC.StabilityProblem(
+    PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
+)
+
+const MEMORYLESS = GraphAutomaton(1)
+add_transition!(MEMORYLESS, 1, 1, 1)
+add_transition!(MEMORYLESS, 1, 1, 2)
+
 @testset "a node with a single outgoing edge always converges immediately" begin
     trace = PCC.refine(
         TEMPLATE,
@@ -66,14 +77,11 @@ end
 end
 
 @testset "depth_max stops the loop without claiming convergence" begin
-    trace = PCC.refine(
-        TEMPLATE,
-        TWO_NODES,
-        TWO_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-        depth_max = 1,
-    )
+    # On a system the seed does not already solve: the rotations are certified
+    # optimal at the first step, so `depth_max` would not be why that run ended.
+    trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 1)
 
+    @test PCC.status(trace) == PCC.DEPTH_EXHAUSTED
     @test !PCC.is_converged(trace)
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
@@ -119,17 +127,6 @@ end
         depth_max = 0,
     )
 end
-
-# A rotation and a shear, both scaled by 0.69: no quadratic function attains the
-# joint spectral radius of this pair, so the memoryless bound is loose and there
-# is something for refinement to win. Same system as the SOS example.
-const SHEARED = PCC.StabilityProblem(
-    PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
-)
-
-const MEMORYLESS = GraphAutomaton(1)
-add_transition!(MEMORYLESS, 1, 1, 1)
-add_transition!(MEMORYLESS, 1, 1, 2)
 
 @testset "the node-grained lift cannot split the memoryless graph, and says so" begin
     # Two tight self-loops, so the tight-edge count selects node 1 -- but
@@ -214,12 +211,14 @@ end
     @test all(c -> c([1.0, 1.0]) > 0, every)
 end
 
-@testset "an exact certificate stalls instead of growing the graph forever" begin
-    # ROTATED and ROTATED2 are rotations scaled by 0.9, so P = I is an EXACT
-    # certificate and the JSR is exactly 0.9 on any graph at all. Every edge is
-    # therefore tight, every node always looks splittable, and NOTHING_TO_SPLIT
-    # can never fire. Measured before this criterion existed: 2, 3, 5, 7, 10
-    # nodes over five identical bounds, reporting no convergence.
+@testset "an exact certificate is certified, not ground down" begin
+    # ROTATED and ROTATED2 are rotations scaled by 0.9, so P = I is EXACT and the
+    # JSR is exactly 0.9 on any graph. Every edge is therefore tight, every node
+    # always looks splittable, and Theorem 4 can never fire -- measured before
+    # the bracket existed: 2, 3, 5, 7, 10 nodes over five identical bounds.
+    #
+    # The cycle bound closes it on the first step instead: both modes are
+    # rotations of norm 0.9, so some cycle attains the rate exactly.
     trace = PCC.refine(
         TEMPLATE,
         TWO_NODES,
@@ -228,10 +227,32 @@ end
         depth_max = 5,
     )
 
-    @test PCC.status(trace) == PCC.STALLED
+    @test PCC.status(trace) == PCC.OPTIMAL
     @test PCC.is_converged(trace)
-    @test length(PCC.graphs(trace)) == 2
+    @test length(PCC.graphs(trace)) == 1     # certified without lifting at all
     @test all(rate -> isapprox(rate, 0.9; atol = 1e-3), PCC.rates(trace))
+
+    # Certified means bracketed: the lower bound meets the rate.
+    @test PCC.rates(trace)[end] - PCC.lower_bounds(trace)[end] < 1e-4
+
+    # And Theorem 4 alone would not have seen it.
+    @test !PCC.is_jsr_exact(PCC.certificates(trace)[end]; atol = 1e-4)
+
+    # With the bracket switched off -- `gap_tol` below zero can never be met --
+    # the same system exercises the stall path on its own, which is how it
+    # behaved before the bracket existed: it grows at a constant bound until
+    # `stall_max` says stop.
+    stalling = PCC.refine(
+        TEMPLATE,
+        TWO_NODES,
+        TWO_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        depth_max = 5,
+        gap_tol = -1.0,
+    )
+
+    @test PCC.status(stalling) == PCC.STALLED
+    @test length(PCC.graphs(stalling)) == 2
 
     # And the knob that lets a greedy search cross a plateau, at one bisection
     # per extra step.
@@ -241,6 +262,7 @@ end
         TWO_MODE_PROBLEM;
         optimizer = OPTIMIZER,
         depth_max = 5,
+        gap_tol = -1.0,
         stall_max = 3,
     )
 
@@ -248,7 +270,9 @@ end
     @test length(PCC.graphs(patient)) == 4
 end
 
-@testset "the status tells the four outcomes apart" begin
+@testset "the status tells the five outcomes apart" begin
+    # One mode, one tight self-loop: Theorem 4's condition holds, and the cycle
+    # through that self-loop meets the rate. Certified either way.
     @test PCC.status(
         PCC.refine(
             TEMPLATE,
@@ -256,6 +280,19 @@ end
             ONE_MODE_PROBLEM;
             optimizer = OPTIMIZER,
             depth_max = 3,
+        ),
+    ) == PCC.OPTIMAL
+
+    # Two tight edges to one successor: the node-grained lift cannot separate
+    # them, so the search dries up with Theorem 4 unsatisfied and nothing proved.
+    @test PCC.status(
+        PCC.refine(
+            TEMPLATE,
+            MEMORYLESS,
+            SHEARED;
+            optimizer = OPTIMIZER,
+            depth_max = 3,
+            lift = PCC.ForwardLift(),
         ),
     ) == PCC.NOTHING_TO_SPLIT
 
