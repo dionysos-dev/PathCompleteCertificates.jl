@@ -33,5 +33,5 @@ Pages   = ["graphs/predicates.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["graphs/de_bruijn.jl", "graphs/observer.jl"]
+Pages   = ["graphs/de_bruijn.jl", "graphs/observer.jl", "graphs/cycles.jl"]
 ```

@@ -15,6 +15,7 @@ include("graphs/queries.jl")
 include("graphs/predicates.jl")
 include("graphs/de_bruijn.jl")
 include("graphs/observer.jl")
+include("graphs/cycles.jl")
 # Transformations of the graph. A lift is a map on graphs preserving
 # path-completeness, so it reads no template and no problem and belongs with the
 # graph foundations it transforms. `refine` is one consumer; ordering two graphs
