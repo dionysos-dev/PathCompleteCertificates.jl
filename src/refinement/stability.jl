@@ -140,8 +140,8 @@ lower_bounds(trace::RefinementTrace; atol::Real = 1e-4) =
 """
     refine(template::QuadraticTemplate, graph, problem::StabilityProblem;
            optimizer, depth_max = 5, until_stability = false,
-           lift = ForwardEdgeLift(), atol = 1e-4, rtol = 1e-6, gap_tol = 1e-6,
-           stall_max = 1, path_complete = true, rng = nothing)
+           lift = ForwardEdgeLift(), atol = 1e-4, atol_max = atol, rtol = 1e-6,
+           gap_tol = 1e-6, stall_max = 1, path_complete = true, rng = nothing)
 
 Iteratively lift `graph` to tighten the stability certificate it carries, until
 the rate is certified to be the joint spectral radius or the search runs out.
@@ -189,7 +189,10 @@ cannot fire — but its bracket closes at once.
 ## The three tolerances
 
 `rtol` is the bisection tolerance of each [`jsr_bound`](@ref) call, `atol`
-decides tightness, `gap_tol` closes the bracket. `rtol ≪ atol ≪ 1` is enforced.
+decides tightness, `gap_tol` closes the bracket. `atol ≥ 10 rtol` is **enforced**,
+and the decade is not decoration: below it the tight subgraph can come out empty,
+every node then satisfies [`is_jsr_exact`](@ref) vacuously, and the run certifies
+a bound that is not the joint spectral radius.
 
 Bisection stops just *above* the optimum, so an active edge does not measure
 zero — it measures about the bisection gap. On a rotation-and-shear pair over
@@ -204,6 +207,28 @@ fatal: a cycle of the tight subgraph bounds the joint spectral radius whatever
 the argument for reading `lower_bounds(trace)` rather than trusting the
 structural test alone.
 
+### Escalating it
+
+`atol_max` is the safeguard, and it is **off by default**, `atol_max == atol`
+meaning never escalate. With the decade above enforced it should not be needed:
+an active edge measures a few times `rtol`, so `atol` clears it. It guards the
+case the ratio cannot — a solution whose accuracy is worse than `rtol` suggests,
+which an ill-conditioned model can produce.
+
+Set it higher and a dead end is no longer taken at face value: before concluding
+anything, the tolerance is multiplied by ten — up to `atol_max` — and the same
+certificate re-read. An edge that is active in truth but not numerically then
+appears, and the search continues. Nothing is re-solved and nothing restarted,
+because the tolerance decides how a solution is *read*, not what it is; the
+raised value carries to later steps, the bisection residual being of one scale
+throughout.
+
+This is the diagnostic for the one case the bracket cannot settle. Reaching a
+dead end means the bracket did *not* close, so [`is_jsr_exact`](@ref) holding
+there says the structure claims exactness while the cycles disagree — either
+`atol` was too small, or the joint spectral radius is attained by no cycle the
+search found. If escalating makes the dead end go away, it was the first.
+
 `path_complete` decides the **seed** only: a lift of a path-complete graph is
 path-complete, so the loop asserts rather than re-deciding a PSPACE-complete
 question. Set it `false` to assert the seed too.
@@ -217,6 +242,7 @@ function refine(
     until_stability::Bool = false,
     lift::AbstractLift = ForwardEdgeLift(),
     atol::Real = 1e-4,
+    atol_max::Real = atol,
     rtol::Real = 1e-6,
     gap_tol::Real = 1e-6,
     stall_max::Integer = 1,
@@ -226,18 +252,27 @@ function refine(
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
 
-    # At `atol <= rtol` the bisection residual alone makes every edge look tight,
-    # so the test never discriminates and the run ends on the first step.
-    atol > rtol || throw(
+    atol_max >= atol ||
+        throw(ArgumentError("atol_max ($atol_max) must be at least atol ($atol)"))
+
+    # An active edge measures about the bisection residual, so `atol` has to clear
+    # it with room. Measured at `rtol = 1e-6`, active slacks run to 3.5e-6 -- 3.5x
+    # -- so a decade of margin is the least that discriminates. This used to
+    # require only `atol > rtol` while the message promised orders of magnitude,
+    # and at 2x the tight subgraph came out EMPTY: every node then satisfies
+    # Theorem 4 vacuously and `refine` certified the seed's bound as the JSR.
+    atol >= 10 * rtol || throw(
         ArgumentError(
-            "atol ($atol) must exceed rtol ($rtol), and by orders of magnitude: " *
-            "a tight edge measures about the bisection gap, not zero",
+            "atol ($atol) must exceed rtol ($rtol) by at least a decade: a tight " *
+            "edge measures about the bisection gap, not zero, so a smaller " *
+            "margin cannot tell an active edge from a slack one",
         ),
     )
 
     trace = StabilityCertificate[]
     outcome = DEPTH_EXHAUSTED
     stalled = 0
+    tolerance = atol
 
     for depth in 1:depth_max
         certificate = jsr_bound(
@@ -272,7 +307,7 @@ function refine(
         # Checked every step, because a graph can be optimal long before it is
         # structurally exhausted -- and the bracket, unlike `is_jsr_exact`, does
         # not depend on `atol` being right.
-        if certificate.rate - jsr_lower_bound(certificate; atol = atol) <= gap_tol
+        if certificate.rate - jsr_lower_bound(certificate; atol = tolerance) <= gap_tol
             outcome = OPTIMAL
             break
         end
@@ -284,13 +319,24 @@ function refine(
 
         depth == depth_max && break
 
-        node = _node_to_split(lift, certificate; atol = atol, rng = rng)
+        node = _node_to_split(lift, certificate; atol = tolerance, rng = rng)
+
+        # A dead end may only mean the tight subgraph is too thin: an active edge
+        # measures about the bisection residual, not zero, so too small a
+        # tolerance hides it. Re-read the SAME solution at a coarser one before
+        # concluding anything -- no restart and no second solve, because the
+        # tolerance changes how a certificate is read, not the certificate.
+        while node === nothing && 10 * tolerance <= atol_max
+            tolerance *= 10
+            node = _node_to_split(lift, certificate; atol = tolerance, rng = rng)
+        end
 
         if node === nothing
             # Theorem 4 counts tight edges per node; the split rule counts the
             # lift's copies. They coincide under `ForwardEdgeLift` and not under
             # `ForwardLift`, so having nothing to split is not on its own a proof.
-            outcome = is_jsr_exact(certificate; atol = atol) ? OPTIMAL : NOTHING_TO_SPLIT
+            outcome =
+                is_jsr_exact(certificate; atol = tolerance) ? OPTIMAL : NOTHING_TO_SPLIT
             break
         end
 

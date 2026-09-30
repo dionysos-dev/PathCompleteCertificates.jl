@@ -366,4 +366,56 @@ end
     @test_throws ArgumentError PCC.refine(TEMPLATE, dead_end, SHEARED; settings...)
 end
 
+@testset "the tightness tolerance must clear the bisection residual by a decade" begin
+    # Below a decade the tight subgraph can come out EMPTY: the seed's two
+    # self-loops measure 2.9e-6 and 3.5e-6 at rtol = 1e-6, so an atol of 2e-6
+    # sees neither. Every node then satisfies Theorem 4 vacuously and the run
+    # certifies the memoryless bound as the joint spectral radius -- measured,
+    # before this guard existed. Rejected up front rather than repaired later.
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        rtol = 1e-6,
+        atol = 2e-6,
+    )
+
+    # Exactly a decade is accepted, and still finds the edges.
+    decade = PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        depth_max = 2,
+        rtol = 1e-6,
+        atol = 1e-5,
+    )
+
+    @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2]
+end
+
+@testset "escalation is off unless asked for, and cannot lower the tolerance" begin
+    settings = (optimizer = OPTIMIZER, depth_max = 3)
+
+    plain = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings...)
+    ceilinged = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., atol_max = 1e-2)
+
+    # With the decade enforced the edges are comfortably visible, so there is no
+    # dead end to escalate out of and the ceiling changes nothing. It guards a
+    # solution whose accuracy is worse than `rtol` suggests, which the ratio
+    # cannot rule out -- not a routine path.
+    @test PCC.rates(plain) == PCC.rates(ceilinged)
+    @test PCC.status(plain) == PCC.status(ceilinged)
+
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        atol = 1e-4,
+        atol_max = 1e-5,
+    )
+end
+
 end # module
