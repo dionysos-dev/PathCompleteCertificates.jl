@@ -91,6 +91,7 @@ const PAGES = Any[
         "Path-complete graphs" => "manual/graphs.md",
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
+        "Refinement" => "manual/refinement.md",
         "What works with what" => "manual/support.md",
     ],
 ]
