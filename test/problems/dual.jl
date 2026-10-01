@@ -48,7 +48,7 @@ const LIFTS = [
     ("backward split", PCC.BackwardEdgeSplit(), TWO, PCC.incoming_edges(TWO, 1)),
     ("forward product", PCC.ForwardEdgeProduct(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
     ("backward product", PCC.BackwardEdgeProduct(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
-    ("memory", PCC.MemoryLift(1), ONE, nothing),
+    ("memory", PCC.PathDependentLift(1), ONE, nothing),
     ("product", PCC.ProductLift(2), ONE, nothing),
     ("composition", PCC.CompositionLift(1), ONE, nothing),
     ("backward composition", PCC.dual(PCC.CompositionLift(1)), ONE, nothing),

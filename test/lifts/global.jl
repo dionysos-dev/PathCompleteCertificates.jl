@@ -113,6 +113,9 @@ end
     # Self-dual (Debauche, Prop. 7.13).
     @test edgeset(PCC.dual(s)) == edgeset(PCC.graph(PCC.SumLift(2)(PCC.dual(g))))
     @test_throws ArgumentError PCC.SumLift(0)
+
+    # The guard is on the lifted graph: eight nodes have 6435 multisets of eight.
+    @test_throws ArgumentError PCC.SumLift(8)(PCC.de_bruijn(3, 2))
 end
 
 @testset "every global lift preserves path-completeness" begin
@@ -124,7 +127,7 @@ end
             PCC.MaxLift(),
             PCC.SumLift(2),
             PCC.ProductLift(2),
-            PCC.MemoryLift(1),
+            PCC.PathDependentLift(1),
         )
 
         @test PCC.is_path_complete(PCC.graph(lift(g)), 1:2)

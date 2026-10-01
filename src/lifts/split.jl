@@ -18,17 +18,18 @@ locus returns from its copy to the node, which still reads it into every copy,
 as the paper's definition has it; when the node does not survive, the copy's
 loop leaves it towards every copy instead. A node whose outgoing edges are all
 in the locus is replaced by its copies — the paper assumes a second outgoing
-edge, and a node left with none would lie on no path. Copies are numbered last.
+edge, and a node left with none lies on no path, as does one that had none to
+begin with; both are deleted. Copies are numbered last.
 
 At one edge this is the paper's lift exactly, and `test/lifts/reference.jl`
-pins it against the authors' reference implementation; a locus of several
+pins it against the reference implementation of Roy's repository; a locus of several
 edges at a surviving node, with at most one self-loop among them, is that lift
 applied edge by edge with the loop last.
 
 On `outgoing_edges(graph, s)` this is the node split of Ninite & Jungers at the
 edge grain, which [`refine`](@ref) uses by default. Its dual,
 [`BackwardEdgeSplit`](@ref), splits destinations along incoming edges, and on
-`edges(graph)` is [`MemoryLift`](@ref)`(1)`.
+`edges(graph)` is [`PathDependentLift`](@ref)`(1)`.
 
 Valid for every template: a copy inherits its origin's function.
 """
@@ -115,7 +116,7 @@ const BackwardEdgeSplit = DualLift{ForwardEdgeSplit}
 BackwardEdgeSplit() = DualLift(ForwardEdgeSplit())
 
 """
-    MemoryLift(k)
+    PathDependentLift(k)
 
 The path-dependent lift of order `k` (Philippe, Essick, Dullerud & Jungers,
 Def. 3): [`BackwardEdgeSplit`](@ref) at every edge, `k` times. Its nodes are
@@ -126,18 +127,18 @@ From the one-node graph it is [`de_bruijn`](@ref)`(k, M)`; from a constraint
 automaton it is the `k`-memory lift of the constrained system. Valid for every
 template. `origins` record the last node of each path.
 """
-struct MemoryLift <: AbstractLift
+struct PathDependentLift <: AbstractLift
     order::Int
 
-    function MemoryLift(order::Integer)
+    function PathDependentLift(order::Integer)
         order >= 1 || throw(ArgumentError("the order must be positive"))
         return new(order)
     end
 end
 
-scope(::MemoryLift) = Global()
+scope(::PathDependentLift) = Global()
 
-function (lift::MemoryLift)(g::CertificateGraph)
+function (lift::PathDependentLift)(g::CertificateGraph)
     current = g
     origins = collect(nodes(g))
 

@@ -200,7 +200,7 @@ src/
 │                                 operation on one of the three things a certificate is
 │   ├── abstract.jl               AbstractLift, scope, Lifted, requirements, is_valid
 │   ├── dual.jl                   DualLift: every backward lift is the dual of a forward one
-│   ├── split.jl                  ForwardEdgeSplit at a locus; MemoryLift
+│   ├── split.jl                  ForwardEdgeSplit at a locus; PathDependentLift
 │   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductLift
 │   ├── composition.jl            CompositionLift
 │   └── subsets.jl                MinLift, MaxLift, SumLift: exhibits, never built to decide
@@ -311,7 +311,7 @@ that test is where an asymmetric declaration shows up.
 The four local lifts — split a node along one edge, fold an edge into its neighbours, each
 forward or backward — need none of it: a copy inherits its origin's function, a product chains
 two inequalities. They are the partial lifts of Athanasopoulos & Jungers edge for edge, and
-`test/lifts/reference.jl` pins them against the authors' reference implementation, self-loops
+`test/lifts/reference.jl` pins them against the reference implementation of Roy's repository, self-loops
 included. Two things the paper's degree assumptions leave open are decided there too: a node
 left without edges is deleted, and a locus of several edges is the lift applied edge by edge
 with the loop last. Applied at every edge they are the classical hierarchies (De Bruijn is the

@@ -402,7 +402,7 @@ end
         TEMPLATE,
         SHEARED;
         optimizer = OPTIMIZER,
-        strategy = PCC.Hierarchy(PCC.MemoryLift(1)),
+        strategy = PCC.Hierarchy(PCC.PathDependentLift(1)),
         depth_max = 3,
     )
 

@@ -138,6 +138,7 @@ end
 # The edges of a locus must belong to the graph.
 function _check_locus(graph::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
     isempty(locus) && throw(ArgumentError("the locus is empty"))
+    allunique(locus) || throw(ArgumentError("the locus lists an edge twice"))
     automaton = _automaton(graph)
 
     for edge in locus

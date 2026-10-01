@@ -1,8 +1,8 @@
 module TestLiftReference
 
 # The four partial lifts of Athanasopoulos & Jungers (CDC 2019, Defs. 4-7),
-# ported line for line from the authors' reference implementation -- Virginie
-# Debauche's Python on edge lists -- and compared with ours at every edge of
+# ported line for line from the reference implementation in Diptarko Roy's
+# repository, Python on edge lists, and compared with ours at every edge of
 # five graphs. Agreement is exact wherever the paper defines the lift. What the
 # paper leaves open is pinned here as well: a node left without edges, which
 # its degree assumptions exclude, is deleted; and a locus of several edges is

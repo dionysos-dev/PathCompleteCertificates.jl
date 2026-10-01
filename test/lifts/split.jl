@@ -128,11 +128,11 @@ end
     @test edgeset(byhand) == edgeset(g)
 end
 
-@testset "the memory lift from the one-node graph is De Bruijn" begin
+@testset "the path-dependent lift from the one-node graph is De Bruijn" begin
     one = PCC.seed(OneStateAutomaton(2))
 
     for k in 1:3
-        lifted = PCC.MemoryLift(k)(one)
+        lifted = PCC.PathDependentLift(k)(one)
         g = PCC.graph(lifted)
         db = PCC.de_bruijn(k, 2)
 
@@ -144,17 +144,17 @@ end
         @test PCC.simulation(g, db) !== nothing && PCC.simulation(db, g) !== nothing
     end
 
-    @test PCC.scope(PCC.MemoryLift(1)) isa PCC.Global
-    @test_throws ArgumentError PCC.MemoryLift(0)
+    @test PCC.scope(PCC.PathDependentLift(1)) isa PCC.Global
+    @test_throws ArgumentError PCC.PathDependentLift(0)
 end
 
-@testset "the memory lift of an automaton is the path-dependent lift" begin
+@testset "the path-dependent lift of an automaton: its nodes are the edges" begin
     a = GraphAutomaton(2)
     add_transition!(a, 1, 1, 1)
     add_transition!(a, 1, 2, 2)
     add_transition!(a, 2, 1, 1)
 
-    lifted = PCC.MemoryLift(1)(a)
+    lifted = PCC.PathDependentLift(1)(a)
     g = PCC.graph(lifted)
 
     # Nodes are the edges, edges the paths of length two.
@@ -173,6 +173,11 @@ end
         HybridSystems.GraphTransition[],
     )
     @test_throws ArgumentError PCC.ForwardEdgeSplit()(graph, PCC.outgoing_edges(other, 3))
+
+    # Listing an edge twice would make two copies own it, one of them with no
+    # outgoing edge.
+    twice = PCC.outgoing_edges(graph, 1)[1:1]
+    @test_throws ArgumentError PCC.ForwardEdgeSplit()(graph, [twice; twice])
 end
 
 @testset "a split is valid for every template" begin
@@ -187,7 +192,7 @@ end
         PCC.LinearCopositiveTemplate(),
     )
         @test PCC.is_valid(PCC.ForwardEdgeSplit(), template, system)
-        @test PCC.is_valid(PCC.MemoryLift(2), template, system)
+        @test PCC.is_valid(PCC.PathDependentLift(2), template, system)
     end
 end
 

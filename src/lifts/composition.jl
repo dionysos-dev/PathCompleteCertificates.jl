@@ -3,7 +3,7 @@
 # modes, and its function is the original one composed with them.
 
 """
-    CompositionLift(T; alphabet = nothing)
+    CompositionLift(T)
 
 The `T`-forward composition lift: a node `(s, j₁, …, j_T)` for every node `s`
 and every `T`-tuple of modes, and for every edge `(a, b, i)` and tuple the edge
@@ -16,18 +16,16 @@ the subset lifts it can strictly improve the bound (Jongeneel & Jungers,
 Ex. IV.4). Its dual, `dual(CompositionLift(T))`, is the backward composition
 lift, requiring [`InverseComposition`](@ref).
 
-`alphabet` is the set of modes the tuples range over; it defaults to the modes
-the graph reads, which is the system's on any path-complete graph. Letter
-graphs only. `origins` are the `(s, [j₁, …, j_T])` pairs.
+The tuples range over the modes the graph reads, which are the system's on any
+path-complete graph. Letter graphs only. `origins` are the `(s, [j₁, …, j_T])`
+pairs.
 """
-struct CompositionLift{A <: Union{Nothing, Vector{Int}}} <: AbstractLift
+struct CompositionLift <: AbstractLift
     length::Int
-    alphabet::A
 
-    function CompositionLift(length::Integer; alphabet = nothing)
+    function CompositionLift(length::Integer)
         length >= 1 || throw(ArgumentError("the length must be positive"))
-        letters = alphabet === nothing ? nothing : collect(Int, alphabet)
-        return new{typeof(letters)}(length, letters)
+        return new(length)
     end
 end
 
@@ -39,7 +37,7 @@ function (lift::CompositionLift)(g::CertificateGraph)
     is_letter_graph(g) ||
         throw(ArgumentError("the composition lift is defined on letter graphs"))
 
-    modes = something(lift.alphabet, sort(alphabet(g)))
+    modes = sort(alphabet(g))
     tuples = vec(collect(Iterators.product(ntuple(_ -> modes, lift.length)...)))
 
     origins = [(node, collect(Int, tuple)) for node in nodes(g) for tuple in tuples]

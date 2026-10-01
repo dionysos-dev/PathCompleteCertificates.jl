@@ -91,7 +91,7 @@ _changes(::AbstractLift, graph, edge) = true
     Hierarchy(lift)
 
 One candidate a step: `lift` applied to the whole graph — a global lift, or a
-local one at every edge. `Hierarchy(MemoryLift(1))` from the one-node graph
+local one at every edge. `Hierarchy(PathDependentLift(1))` from the one-node graph
 walks the De Bruijn hierarchy; `Hierarchy(CompositionLift(1))` is the
 refinement of Jongeneel & Jungers.
 """

@@ -5,16 +5,20 @@
 # decide without building them. Exponential in the number of nodes, and
 # guarded accordingly.
 
-const _SUBSET_LIFT_NODE_LIMIT = 12
+# The bound is on the lifted graph, not the original: the subsets of n nodes
+# number 2^n - 1, the multisets of T of them binomial(n + T - 1, T), and the
+# edges are enumerated over pairs of either.
+const _SUBSET_LIFT_NODE_LIMIT = 1024
 
-function _check_subset_size(g::CertificateGraph, what::AbstractString)
+function _check_subset_size(g::CertificateGraph, what::AbstractString, lifted_nodes)
     is_letter_graph(g) || throw(ArgumentError("the $what is defined on letter graphs"))
 
-    n_nodes(g) <= _SUBSET_LIFT_NODE_LIMIT || throw(
+    lifted_nodes <= _SUBSET_LIFT_NODE_LIMIT || throw(
         ArgumentError(
-            "the $what of a graph with $(n_nodes(g)) nodes has too many nodes to " *
-            "build; the ordering questions it answers are decided without it by " *
-            "`simulation_relation` and `conic_witness`",
+            "the $what of a graph with $(n_nodes(g)) nodes has $lifted_nodes nodes, " *
+            "more than the $_SUBSET_LIFT_NODE_LIMIT this builds; the ordering " *
+            "questions it answers are decided without it by `simulation_relation` " *
+            "and `conic_witness`",
         ),
     )
 
@@ -45,7 +49,7 @@ scope(::MinLift) = Global()
 requirements(::MinLift) = (Minimum(),)
 
 function (::MinLift)(g::CertificateGraph)
-    _check_subset_size(g, "min lift")
+    _check_subset_size(g, "min lift", big(2)^n_nodes(g) - 1)
 
     n = n_nodes(g)
     letters = sort(alphabet(g))
@@ -97,6 +101,13 @@ Requires a template closed under [`Addition`](@ref). Self-dual. Never improves
 the bound; the exhibit of the question [`conic_witness`](@ref) decides by a
 linear program. Built explicitly only for small graphs. `origins` are the
 multisets as sorted vectors.
+
+Definition 8 is the restriction to `T` terms of the sum lift of Abate,
+Debauche, Giacobbe, Myers & Roy (Ex. III.23): multisets of every size, with an
+edge wherever the `i`-edges inject `Q` into `P` — Hall's condition, which at
+equal size is the perfect matching above. The edges between sizes are what let
+their characterisation drop path-completeness; every graph here is
+path-complete, and on those the linear program decides the same order.
 """
 struct SumLift <: AbstractLift
     terms::Int
@@ -112,7 +123,11 @@ scope(::SumLift) = Global()
 requirements(::SumLift) = (Addition(),)
 
 function (lift::SumLift)(g::CertificateGraph)
-    _check_subset_size(g, "sum lift")
+    _check_subset_size(
+        g,
+        "sum lift",
+        binomial(big(n_nodes(g) + lift.terms - 1), lift.terms),
+    )
 
     n = n_nodes(g)
     letters = sort(alphabet(g))
