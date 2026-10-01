@@ -89,6 +89,24 @@ end
     @test PCC.is_path_complete(split, 1:2)
 end
 
+@testset "a self-loop in the locus returns from its copy to the node" begin
+    # The one-node graph split at its mode-1 loop, as Athanasopoulos & Jungers
+    # define it: the copy reads 1 back to the node, the node reads 1 into the
+    # copy, and the node's other loop enters both.
+    one = PCC.seed(OneStateAutomaton(2))
+    loop = only(PCC.outgoing_edges(one, 1, 1))
+    g = PCC.graph(PCC.ForwardEdgeSplit()(one, loop))
+
+    @test PCC.n_nodes(g) == 2
+    @test edgeset(g) == Set([(2, 1, [1]), (1, 2, [1]), (1, 1, [2]), (1, 2, [2])])
+    @test PCC.is_path_complete(g, 1:2)
+
+    # The dual, at the same loop: destinations split, edges reversed.
+    d = PCC.graph(PCC.BackwardEdgeSplit()(one, loop))
+    @test edgeset(d) == Set([(1, 2, [1]), (2, 1, [1]), (1, 1, [2]), (2, 1, [2])])
+    @test PCC.is_path_complete(d, 1:2)
+end
+
 @testset "the backward split is the dual and splits destinations" begin
     graph = PCC.de_bruijn(1, 2)
     lifted = PCC.BackwardEdgeSplit()(graph, PCC.incoming_edges(graph, 1))

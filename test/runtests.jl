@@ -18,6 +18,7 @@ const TEST_FILES = [
     ("./graphs/words.jl",),
     ("./graphs/languages.jl",),
     ("./lifts/split.jl",),
+    ("./lifts/reference.jl",),
     ("./lifts/product.jl", :slow),
     ("./lifts/global.jl",),
     ("./systems/switched.jl",),
