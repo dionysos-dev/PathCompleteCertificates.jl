@@ -55,23 +55,26 @@ function node_value(
 end
 
 """
-    _check_modes(graph, A)
+    _check_modes(graph, system)
 
-Validate the mode matrices against the graph, and return the state dimension.
+Validate the system's mode matrices against the graph, and return the state
+dimension.
 
-Square matrices of one size, edge labels that index them, and a graph that is
-path-complete for the system's alphabet. Anything beyond that is the problem's
-own business.
+Square matrices of one size, edge labels whose every letter indexes one, and a
+graph that is path-complete for the system's [`language`](@ref). Anything
+beyond that is the problem's own business.
 
 `path_complete = false` waives the last test and **asserts** it instead —
 deciding it is PSPACE-complete (see [`is_path_complete`](@ref)). Not the
 default: what it guards against is silent.
 """
 function _check_modes(
-    graph::_HS.GraphAutomaton,
-    A::AbstractVector{<:AbstractMatrix};
+    graph::CertificateGraph,
+    system::_HS.HybridSystem;
     path_complete::Bool = true,
 )
+    A = mode_matrices(system)
+
     isempty(A) && throw(ArgumentError("at least one mode is required"))
 
     dimension = size(first(A), 1)
@@ -86,13 +89,12 @@ function _check_modes(
         )
     end
 
-    for edge in edges(graph)
-        mode = label(graph, edge)
+    for edge in edges(graph), mode in letters(label(graph, edge))
         1 <= mode <= length(A) ||
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    path_complete && _check_path_complete(graph, length(A))
+    path_complete && _check_path_complete(graph, language(system))
 
     return dimension
 end
@@ -251,4 +253,71 @@ came to claim `QuadraticFunction` for templates that are nothing of the kind.
 """
 function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
     return CertificateData(problem, template, graph, Any[], status, false)
+end
+
+"""
+    best_certificate(template, graph, problem; optimizer, kwargs...)
+
+The certificate [`refine`](@ref) repeats on each graph: the problem's own driver.
+The default is [`certify`](@ref); stability's is [`jsr_bound`](@ref), which
+bisects on the rate, so `rtol` is accepted here and ignored by problems that do
+not bisect.
+"""
+function best_certificate(
+    template::AbstractTemplate,
+    graph::CertificateGraph,
+    problem::AbstractProblem;
+    optimizer,
+    rtol = nothing,
+    kwargs...,
+)
+    return certify(template, graph, problem; optimizer, kwargs...)
+end
+
+"""
+    objective(certificate) -> Real
+
+What a problem minimises across graphs, smaller being better: the rate for
+stability, minus the margin for safety. [`refine`](@ref) compares steps on it.
+"""
+function objective end
+
+"""
+    optimality_gap(certificate; kwargs...) -> Real
+
+How far the certificate is known to be from the best any graph could do —
+zero when it is proved optimal, `Inf` when the problem has no lower bound, which
+is the default. [`refine`](@ref) stops with [`OPTIMAL`](@ref) when it closes.
+
+Stability supplies the cycle bracket of [`jsr_lower_bound`](@ref) and the
+structural test of [`is_jsr_exact`](@ref).
+"""
+optimality_gap(::AbstractCertificate; kwargs...) = Inf
+
+"""
+    edge_slacks(certificate)
+
+The slack of every edge inequality, in `edges(graph(certificate))` order.
+
+Zero means the edge is tight: the certificate is held at exactly that
+inequality. A large value means the edge is not what limits the bound. One
+method per problem, each through [`domination_slack`](@ref) with the edge's
+own map and scale; a problem whose edge does not factor through
+[`add_domination!`](@ref) throws.
+
+Throws on an infeasible certificate, which has no fitted functions to measure.
+"""
+function edge_slacks end
+
+# Problems whose edge inequality reads the state at every step cannot take a
+# word graph: nothing constrains the states inside a word.
+function _require_letters(graph::CertificateGraph, what::AbstractString)
+    is_letter_graph(graph) || throw(
+        ArgumentError(
+            "$what needs one mode per edge; expand the word graph with " *
+            "`expanded_form` first",
+        ),
+    )
+
+    return nothing
 end

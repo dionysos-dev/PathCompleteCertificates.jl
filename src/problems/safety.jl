@@ -98,7 +98,7 @@ Construct the path-complete barrier optimization model.
 """
 function optimization_model(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
     path_complete::Bool = true,
@@ -185,7 +185,7 @@ the barrier certifies anything; `initial_multipliers` and
 """
 function certify(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
     path_complete::Bool = true,
@@ -271,12 +271,13 @@ function _homogeneous_dynamics(A::AbstractMatrix)
 end
 
 function _check_safety_data(
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     A::AbstractVector{<:AbstractMatrix},
     problem::SafetyProblem;
     path_complete::Bool = true,
 )
-    _check_modes(graph, A; path_complete = path_complete)
+    _require_letters(graph, "SafetyProblem")
+    _check_modes(graph, problem.system; path_complete = path_complete)
 
     return nothing
 end

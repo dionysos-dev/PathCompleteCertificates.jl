@@ -10,7 +10,7 @@ safety, or an upper bound on the value function for optimal control.
 """
 function common(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::AbstractProblem,
     Ps::AbstractVector,
     x::AbstractVector{<:Real},
@@ -35,4 +35,16 @@ function common(
         maximum(node_value(template, problem, Ps[node], x) for node in state) for
         state in observer_states
     )
+end
+
+# A word graph has no state at the silent steps inside a word, so no observer
+# and no common function; expand it first.
+function common(
+    ::AbstractTemplate,
+    graph::WordGraph,
+    ::AbstractProblem,
+    ::AbstractVector,
+    ::AbstractVector{<:Real},
+)
+    return _require_letters(graph, "common")
 end
