@@ -79,3 +79,25 @@ function domination_slack(
 )
     return minimum(scale * c_src - transpose(map) * c_dst)
 end
+
+# Closed under addition (Debauche, Della Rossa & Jungers, Prop. 6). Under
+# composition, cᵀAx = (Aᵀc)ᵀx stays strictly positive on the orthant when A is
+# nonnegative with no zero column; under the inverse, when A⁻¹ is nonnegative.
+is_closed_under(::LinearCopositiveTemplate, ::Addition, system) = true
+
+function is_closed_under(::LinearCopositiveTemplate, ::Composition, system)
+    return all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
+end
+
+function is_closed_under(::LinearCopositiveTemplate, ::InverseComposition, system)
+    is_invertible(system) || return false
+    return all(A -> all(>=(0), inv(A)), mode_matrices(system))
+end
+
+dual(::LinearCopositiveTemplate) = DualCopositiveTemplate()
+
+# Valid without closure: the template is not closed under the pointwise minimum
+# as a set of functions, yet G ≤ G_min holds for it on positive linear systems
+# by a different construction (Debauche, Thm. 7.43, through Cor. 2.36) -- the
+# one documented override of the closure rule.
+is_valid(::MinLift, ::LinearCopositiveTemplate, system) = is_nonnegative(system)
