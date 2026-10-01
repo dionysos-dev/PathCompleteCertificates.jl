@@ -148,4 +148,6 @@ is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = is_invertib
 
 # The dual norm of x ↦ xᵀPx is x ↦ xᵀP⁻¹x: the family is its own dual, and so
 # is the conditioning box.
+has_dual(::QuadraticTemplate) = true
 dual(template::QuadraticTemplate) = template
+dual(::QuadraticTemplate, V::QuadraticFunction) = QuadraticFunction(inv(V.P))

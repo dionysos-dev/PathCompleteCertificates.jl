@@ -176,5 +176,24 @@ function _reindexed_data(
     end
 end
 
+"""
+    has_dual(template) -> Bool
+
+Whether `dual(template)` and `dual(template, V)` are defined: whether the dual
+norms of the family form a family the package has (Debauche, Def. 1.32). The
+default is `false`; a template with a dual declares both.
+"""
+has_dual(::AbstractTemplate) = false
+
 dual(template::AbstractTemplate) =
     throw(ArgumentError("no dual template is defined for $(nameof(typeof(template)))"))
+
+"""
+    dual(template, V)
+
+The dual norm of a fitted node function `V` of `template`, as a member of
+`dual(template)`: the node function the certificate on the dual graph carries at
+the same node (Debauche, Lemma 6.25). Required by `dual(certificate)`.
+"""
+dual(template::AbstractTemplate, V) =
+    throw(ArgumentError("no dual node function is defined for $(nameof(typeof(template)))"))

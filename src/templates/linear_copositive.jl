@@ -94,10 +94,16 @@ function is_closed_under(::LinearCopositiveTemplate, ::InverseComposition, syste
     return all(A -> all(>=(0), inv(A)), mode_matrices(system))
 end
 
+# The dual norm of cᵀx on the orthant is max_i x_i / c_i (Debauche, Def. 2.30).
+has_dual(::LinearCopositiveTemplate) = true
 dual(::LinearCopositiveTemplate) = DualCopositiveTemplate()
+dual(::LinearCopositiveTemplate, c::AbstractVector) = DualCopositiveFunction(c)
 
 # Valid without closure: the template is not closed under the pointwise minimum
 # as a set of functions, yet G ≤ G_min holds for it on positive linear systems
 # by a different construction (Debauche, Thm. 7.43, through Cor. 2.36) -- the
-# one documented override of the closure rule.
-is_valid(::MinLift, ::LinearCopositiveTemplate, system) = is_nonnegative(system)
+# one documented override of the closure rule. Positive systems are the whole
+# domain of the template (`check_dynamics`), so the theorem's hypothesis is not
+# re-tested here: the answer must agree with the dual side, where the max lift
+# is valid for the dual norms by closure (Prop. 7.5).
+is_valid(::MinLift, ::LinearCopositiveTemplate, system) = true

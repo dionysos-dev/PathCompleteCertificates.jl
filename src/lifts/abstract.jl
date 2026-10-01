@@ -105,15 +105,31 @@ Whether `lift` is guaranteed not to make the bound worse for `template` on
 ``G ≤_V L(G)`` for every path-complete ``G``.
 
 Written once: the template is closed under every operation the lift requires
-([`requirements`](@ref), [`is_closed_under`](@ref)). A few methods override it
-where the literature proves validity without closure, and say which theorem.
+([`requirements`](@ref), [`is_closed_under`](@ref)), or — when the template
+[`has_dual`](@ref) — the dual template is closed under what the dual lift
+requires, on the transposed system. The two questions are the same one
+(Debauche, Prop. 7.5), so a closure declared on either of a dual pair of
+templates serves both: [`SumLift`](@ref) is valid for
+[`DualCopositiveTemplate`](@ref) because the primal norms add. A few methods
+override it where the literature proves validity without closure, and say
+which theorem.
 
 `false` never means unsound. Every lift preserves path-completeness, so a
 certificate on the lifted graph certifies the system regardless; it only
 carries no guarantee of improvement.
 """
 function is_valid(lift::AbstractLift, template, system)
-    return all(op -> is_closed_under(template, op, system), requirements(lift))
+    all(op -> is_closed_under(template, op, system), requirements(lift)) && return true
+
+    has_dual(template) && !has_input(system) || return false
+
+    dual_template = dual(template)
+    dual_system = dual(system)
+
+    return all(
+        op -> is_closed_under(dual_template, op, dual_system),
+        requirements(dual(lift)),
+    )
 end
 
 (lift::AbstractLift)(graph::CertificateGraph, edge::_HS.GraphTransition) =

@@ -208,6 +208,23 @@ function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
 end
 
 """
+    dual(problem)
+    dual(certificate)
+
+The problem on the dual system, and the certificate it has on the dual graph in
+the dual template, made of the dual norms of the node functions at the same
+nodes — nothing is solved (Debauche, Lemma 6.25).
+
+Stability defines both; a problem whose edge inequality is not a norm
+inequality has no dual, and these throw.
+"""
+dual(problem::AbstractProblem) =
+    throw(ArgumentError("no dual is defined for $(nameof(typeof(problem)))"))
+
+dual(certificate::AbstractCertificate) =
+    throw(ArgumentError("no dual is defined for $(nameof(typeof(certificate)))"))
+
+"""
     optimization_model(template, graph, problem; optimizer, kwargs...)
 
 Build the JuMP model this problem and template induce on `graph`, without

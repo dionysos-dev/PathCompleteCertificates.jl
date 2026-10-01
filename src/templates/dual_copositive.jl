@@ -127,4 +127,6 @@ end
 # the dual norm of the componentwise minimum.
 is_closed_under(::DualCopositiveTemplate, ::Maximum, system) = true
 
+has_dual(::DualCopositiveTemplate) = true
 dual(::DualCopositiveTemplate) = LinearCopositiveTemplate()
+dual(::DualCopositiveTemplate, V::DualCopositiveFunction) = V.v

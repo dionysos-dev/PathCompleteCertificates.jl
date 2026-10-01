@@ -20,6 +20,8 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
+dual(problem::StabilityProblem) = StabilityProblem(dual(problem.system))
+
 """
     StabilityCertificate
 
@@ -260,6 +262,45 @@ function certify(
     return StabilityCertificate(
         CertificateData(problem, template, graph, V, status, true),
         rate,
+    )
+end
+
+"""
+    dual(certificate::StabilityCertificate)
+
+The certificate on `dual(graph)` for `dual(problem)` in `dual(template)` made of
+the dual norms of the node functions, at the same rate (Debauche, Lemma 6.25).
+
+Each edge inequality `V_d(A_i x) ≤ γ V_s(x)` is, by duality of norms,
+`V_s*(A_iᵀ x) ≤ γ V_d*(x)`: the inequality of the reversed edge. Nothing is
+solved, and an edge of the result is tight exactly when its reverse was. An
+infeasible certificate dualises to an infeasible one with the same status.
+
+Requires a template that [`has_dual`](@ref).
+"""
+function dual(certificate::StabilityCertificate)
+    template_ = template(certificate)
+    dual_problem = dual(problem(certificate))
+    dual_template = dual(template_)
+    dual_graph = dual(graph(certificate))
+
+    is_feasible(certificate) || return StabilityCertificate(
+        _failed(dual_problem, dual_template, dual_graph, status(certificate)),
+        certificate.rate,
+    )
+
+    V = [dual(template_, v) for v in functions(certificate)]
+
+    return StabilityCertificate(
+        CertificateData(
+            dual_problem,
+            dual_template,
+            dual_graph,
+            V,
+            status(certificate),
+            true,
+        ),
+        certificate.rate,
     )
 end
 

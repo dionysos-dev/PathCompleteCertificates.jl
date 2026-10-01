@@ -301,6 +301,13 @@ One documented override exists, `is_valid(::MinLift, ::LinearCopositiveTemplate,
 because the literature proves validity there without closure (Debauche, Thm. 7.43). Add
 another only with a theorem to cite. Use the papers' word: **valid**, not "admissible".
 
+`is_valid` also reads the dual side (Debauche, Prop. 7.5): a lift is valid for a template
+whenever its dual is valid for `dual(template)` on `dual(system)`, so a closure declared on
+either of a dual pair of templates serves both. `dual(certificate)` is the constructive form
+of the same duality (Lemma 6.25), and `test/problems/dual.jl` asserts it on every lift — a
+new template with a dual declares `has_dual`, `dual(template)` and `dual(template, V)`, and
+that test is where an asymmetric declaration shows up.
+
 The four local lifts — split a node along one edge, fold an edge into its neighbours, each
 forward or backward — need none of it: a copy inherits its origin's function, a product chains
 two inequalities. Applied at every edge they are the classical hierarchies (De Bruijn is the

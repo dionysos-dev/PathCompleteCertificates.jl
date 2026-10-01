@@ -75,10 +75,15 @@ linear systems (Debauche, Thm. 7.43); one documented override of `is_valid`.
 
 `dual` is an involution on the whole problem: reverse the graph's edges and
 words, transpose the system, take the dual template, and a certificate for one
-is a certificate for the other. On a lift it is conjugation,
+is a certificate for the other — `dual(certificate)` builds it from the dual
+norms of the node functions, at the same rate, without solving
+([debauche2021comparison](@cite), Lemma 6.25 of the thesis). On a lift it is conjugation,
 `dual(L)(G) = dual(L(dual(G)))`, which is how every backward lift and
 [`MaxLift`](@ref) come from their forward counterparts with no code of their
-own.
+own. Validity crosses over with it (Prop. 7.5), so [`is_valid`](@ref) also
+accepts a lift whose dual is valid for the dual template: [`SumLift`](@ref) on
+[`DualCopositiveTemplate`](@ref), whose primal norms add. A template with a
+dual answers [`has_dual`](@ref).
 
 ## Three lifts that never move the bound
 
