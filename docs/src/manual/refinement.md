@@ -57,7 +57,7 @@ the template — which is why the forward lifts are sound for all of them.
 
 ## The lift
 
-[`ForwardEdgeLift`](@ref) splits a node into one copy per outgoing **edge**.
+[`ForwardEdgeSplit`](@ref) on the out-star of a node splits it into one copy per outgoing **edge**.
 
 Ninite & Jungers split per distinct **successor**. That grain cannot separate two
 edges to the same successor, so a node held at exactly those stays held however
@@ -93,7 +93,8 @@ things happened.
 | [`OPTIMAL`](@ref) | the rate **is** the joint spectral radius |
 | [`STALLED`](@ref) | `stall_max` lifts in a row bought nothing |
 | [`DEPTH_EXHAUSTED`](@ref) | `depth_max` reached with the bound still falling |
-| [`STABLE`](@ref) | `until_stability` was set and the rate fell below 1 |
+| [`STOPPED`](@ref) | the `stop` predicate held, `c -> c.rate < 1` being the usual one |
+| [`EXHAUSTED`](@ref) | the strategy proposed nothing, and the gap had not closed |
 
 ## Two certificates of optimality
 

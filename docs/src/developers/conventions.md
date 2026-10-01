@@ -170,10 +170,7 @@ Deciding it is PSPACE-complete, so it is checked once per solve rather than once
 caller whose graph is large or whose construction already guarantees it. It must not become the
 default: the failure it guards against is silent and unsound.
 
-## 5. Rules for work that is not here yet
-
-Two designs are settled but unimplemented. They are recorded so that the first implementation does
-not have to rediscover them.
+## 5. Lifts, ordering, and the two things that are not axes
 
 **A lift is sound by definition; the template decides whether it *improves*.** Debauche, Della
 Rossa and Jungers define a lift (Def. 5) as any map on graphs with `L(G)` path-complete whenever
@@ -186,14 +183,42 @@ Validity is answered through **properties**, never by dispatching on the concret
 which would need one method per (lift, template) pair: the *n × m* explosion §1 exists to avoid.
 
 ```julia
-is_closed_under(template, ⋆)        # the template declares what it is closed under
-operation(lift)                     # the lift names the operation it needs
-is_valid(lift, template)            # written ONCE, against the two
+# --- src/operations.jl: the vocabulary both axes and the lifts share.
+Addition(), Maximum(), Minimum(), Composition(), InverseComposition()   # <: Operation; `dual` pairs them
+
+# --- Template axis: what it is closed under, and how its per-node data follows a lift.
+is_closed_under(template, ::Operation, system)   # default false; composition reads the system
+reindex(template, origins)                       # default identity; polyhedral templates index their data
+
+# --- A lift: one struct, its scope, its call, what it requires.
+scope(lift)                                      # Global() or Local()
+(lift)(graph)  /  (lift)(graph, edges)           # returns a Lifted: the graph and the origin of every node
+requirements(lift)                               # a tuple of operations; () for the four local lifts
+is_valid(lift, template, system)                 # written ONCE against the two; one cited override exists
+dual(lift)                                       # DualLift: conjugation by the dual graph; every backward lift
+
+# --- Problem axis: what `refine` reads, generic in the problem.
+best_certificate(template, graph, problem; optimizer, kwargs...)   # default certify; stability: jsr_bound
+objective(certificate)                                              # smaller is better
+optimality_gap(certificate; kwargs...)                              # default Inf; stability: the bracket and Theorem 4
+edge_slacks(certificate)                                            # one method per problem, through domination_slack
 ```
 
-Use the papers' word: **valid**, not "admissible". The forward node-splitting lift `refine` uses
-needs no closure property — every copy of the split node inherits its function, so no two are
-ever combined.
+Use the papers' word: **valid**, not "admissible". A new lift is one file in `src/lifts/` and
+touches neither axis; a new operation is one struct in `operations.jl`; a strategy for `refine`
+is any callable `(certificate; atol) -> Vector{Lifted}`. The subset lifts (`MinLift`, `MaxLift`,
+`SumLift`) never move the bound; the orders they stand for are decided in `src/ordering.jl` by a
+relation, a map or a linear program, never by building them.
+
+**Words on edges are a stability feature.** A `WordGraph` edge reads several modes and imposes
+one inequality on their product; it bounds the growth rate and says nothing about the states
+inside the word. Safety, optimal control and `common` require a letter graph and name
+`expanded_form` in their error.
+
+**The graph adapter is the only door.** `graphs/queries.jl` is the one file that touches
+`HybridSystems` graph internals — `empty_graph`, `add_edge!`, `label`, `successors` and the
+rest. Keep it that way: it is what let words in without the rest of the package noticing, and
+what lets the backing store change.
 
 **`refute` will not be `certify`.** A refutation routine samples looking for a violation: it is a
 cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves for the

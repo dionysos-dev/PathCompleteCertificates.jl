@@ -92,6 +92,8 @@ const PAGES = Any[
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
         "Refinement" => "manual/refinement.md",
+        "Lifts" => "manual/lifts.md",
+        "Comparing graphs" => "manual/ordering.md",
         "What works with what" => "manual/support.md",
     ],
 ]
@@ -107,6 +109,7 @@ push!(
         "Problems" => "reference/problems.md",
         "Lifts" => "reference/lifts.md",
         "Refinement" => "reference/refinement.md",
+        "Ordering" => "reference/ordering.md",
     ],
 )
 push!(

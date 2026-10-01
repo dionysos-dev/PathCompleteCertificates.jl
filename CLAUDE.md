@@ -164,36 +164,52 @@ architecture before you read a line.
 ```
 src/
 ├── PathCompleteCertificates.jl   include order, grouped and commented
+├── operations.jl                 Addition, Maximum, Minimum, Composition, InverseComposition,
+│                                 and `dual`: what a template is closed under and a lift requires
 ├── systems/                      the input to every problem, and runs of it
-│   ├── switched.jl               switched linear systems, with and without an input
+│   ├── switched.jl               switched linear systems; mode_matrix on a word; language; dual
 │   ├── trajectory.jl             one run: states, switching sequence, inputs
 │   ├── simulate.jl               sampling runs -- the substrate for `refute`
 │   └── closed_loop.jl            the one simulation that needs a certificate
 ├── graphs/
-│   ├── queries.jl                the adapter over HybridSystems.GraphAutomaton
+│   ├── queries.jl                THE ADAPTER over HybridSystems.GraphAutomaton and WordGraph;
+│   │                             nothing outside it touches a graph's internals
+│   ├── words.jl                  expanded_form: a word graph as a letter graph
 │   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
+│   ├── languages.jl              is_path_complete against an automaton; seed(system)
+│   ├── dual.jl                   the dual graph: edges and words reversed
+│   ├── simulation.jl             simulation (a map), simulation_relation, closed_subgraph
 │   ├── de_bruijn.jl              the De Bruijn family, primal and dual
-│   └── observer.jl               the subset construction
+│   ├── observer.jl               the subset construction
+│   └── cycles.jl                 simple cycles, for the lower bound
 ├── templates/                    AXIS 1 — what the node functions are
-│   ├── abstract.jl               AbstractTemplate and the primitives it must supply
+│   ├── abstract.jl               AbstractTemplate, its primitives, is_closed_under, reindex
 │   ├── linear_copositive.jl
+│   ├── dual_copositive.jl        max_i x_i / v_i, the dual of the one above
 │   ├── quadratic.jl
 │   ├── polyhedral.jl             symmetric 2n-face, fixed facets
 │   ├── conic_polyhedral.jl       free facets, plus the partition that linearises them
 │   └── sum_of_squares.jl         the type only -- its methods are in ext/
 ├── problems/                     AXIS 2 — what the edge inequality says
-│   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses
+│   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses, and
+│   │                             what refine reads: best_certificate, objective, optimality_gap
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
 ├── lifts/                        transformations of the graph — not a third axis, an
 │                                 operation on one of the three things a certificate is
-│   ├── abstract.jl               AbstractLift; a lift preserves path-completeness, and
-│   │                             that is its whole definition (Debauche et al., Def. 5)
-│   └── forward.jl                the node-splitting lift, valid for every template
+│   ├── abstract.jl               AbstractLift, scope, Lifted, requirements, is_valid
+│   ├── dual.jl                   DualLift: every backward lift is the dual of a forward one
+│   ├── split.jl                  ForwardEdgeSplit at a locus; MemoryLift
+│   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductLift
+│   ├── composition.jl            CompositionLift
+│   └── subsets.jl                MinLift, MaxLift, SumLift: exhibits, never built to decide
 ├── refinement/                   designing the graph, rather than solving on a given one
-│   └── stability.jl              `refine`, the greedy loop; reads all three, like
+│   ├── strategies.jl             SplitTightNode, LiftTightEdges, Hierarchy
+│   └── loop.jl                   `refine`; generic in the problem, reads all three like
 │                                 aggregation.jl, so it is filed under neither axis
+├── ordering.jl                   is one graph no worse than another for a template:
+│                                 conic_witness (an LP), order_witness, simplify
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
@@ -276,16 +292,40 @@ Validity is answered through **properties**, never by dispatching on the concret
 avoid:
 
 ```julia
-is_closed_under(template, ⋆)        # the template declares
-operation(lift)                     # the lift names what it needs
-is_valid(lift, template)            # written ONCE, against the two
+is_closed_under(template, ::Operation, system)   # the template declares; default false
+requirements(lift)                               # the lift names what it needs; () for the atoms
+is_valid(lift, template, system)                 # written ONCE, against the two
 ```
 
-Use the papers' word: **valid**, not "admissible".
+One documented override exists, `is_valid(::MinLift, ::LinearCopositiveTemplate, system)`,
+because the literature proves validity there without closure (Debauche, Thm. 7.43). Add
+another only with a theorem to cite. Use the papers' word: **valid**, not "admissible".
 
-The forward node-splitting lift needs none of it: give every copy of the split node the same
-`V_α` and each edge of `L(G)` descends from an edge of `G` between the same two functions, so
-no functions are combined. It is valid for every template.
+The four local lifts — split a node along one edge, fold an edge into its neighbours, each
+forward or backward — need none of it: a copy inherits its origin's function, a product chains
+two inequalities. Applied at every edge they are the classical hierarchies (De Bruijn is the
+backward split at every edge, iterated); applied where a certificate is tight they are
+`refine`. The subset lifts never move the bound and are never built to decide an ordering:
+`simulation_relation` and `conic_witness` decide those in polynomial time.
+
+**A word graph is sound for stability only.** An edge reading a word imposes one inequality on
+the product of its modes and nothing on the states inside; the joint spectral radius is still
+bounded, a barrier is not. Safety, optimal control and `common` throw on a `WordGraph` and name
+`expanded_form`.
+
+**The adapter invariant.** Nothing outside `graphs/queries.jl` calls `_HS.GraphAutomaton`,
+`_HS.add_transition!` or reads a graph's fields — `grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v graphs/queries.jl`
+is empty. It is what lets a graph carry words, and what lets the backing store change in one
+file. Build graphs with `empty_graph(n)` (a `GraphAutomaton`), `WordGraph(n)`, or
+`_empty_like(graph, n)` for one of the same kind as `graph`.
+
+**Keep the graph constructors type-stable.** `empty_graph(n; words = false)` returning either a
+`GraphAutomaton` or a `WordGraph` made every construction routed through it infer as a union of a
+mutable and an immutable struct. On Julia 1.12.5 a closure that called `certify` through a
+non-const global on such a graph and then read the result crashed with an access violation —
+not an error, a crash — while master and the test suite, where the types are static, were fine.
+That is why the kind of graph is chosen by dispatch (`_empty_like`), never by a keyword, and why
+`Base.return_types(de_bruijn, (Int, Int))` must stay a single concrete type.
 
 **`refute` and `certify` are not the same thing.** `refute` samples looking for a violation:
 it is a cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves
@@ -403,8 +443,11 @@ many candidate graphs with this predicate, so measure here first if a loop gets 
 **Index adjacency before scanning it.** `is_complete` used to call `outgoing_edges(graph, node,
 letter)` per pair, each a full scan of the edge list — `O(|V|·|Σ|·|E|)`. On `M = 4, k = 4` that
 was 46 ms, **50× slower than the PSPACE-complete predicate it was supposed to be a cheap
-substitute for**. Building the index once made it 0.1 ms. The graph queries in
-`graphs/queries.jl` are still linear scans; if any of them lands in a hot loop, do the same.
+substitute for**. Building the index once made it 0.1 ms. `successors(graph)` and
+`predecessors(graph)` are that index, built once and shared by the predicates, the observer,
+the simulation relation and the subset lifts; `outgoing_edges` and `incoming_edges` go through
+the backing graph's adjacency and cost the degree. Build the index rather than calling the
+star queries in a loop over letters.
 
 Two consequences of that cost, both already in the code:
 

@@ -28,6 +28,13 @@ Modules = [PathCompleteCertificates]
 Pages   = ["templates/linear_copositive.jl"]
 ```
 
+## Dual copositive
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/dual_copositive.jl"]
+```
+
 ## Polyhedral, fixed facets
 
 ```@autodocs

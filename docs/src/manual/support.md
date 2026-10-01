@@ -11,6 +11,7 @@ three problems are still quadratic-only.
 | :----------------------------- | :------------------------: | :---------------------: | :-----------------------------: |
 | [`QuadraticTemplate`](@ref)         | ✓ | ✓ | ✓ |
 | [`LinearCopositiveTemplate`](@ref)  | ✓ ¹ | ✗ | ✗ |
+| [`DualCopositiveTemplate`](@ref)    | ✓ ¹ | ✗ | ✗ |
 | [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
 | [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
@@ -22,21 +23,32 @@ not defined.
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control
 additionally requires a **complete** graph, not merely a path-complete one.
+Stability accepts a [`WordGraph`](@ref); safety and optimal control need one
+mode per edge and say so.
 
-## And one cell for refinement
+## And the stability column for refinement
 
 [`refine`](@ref) designs the graph rather than taking one, so it is not a column
-of the table above — it sits on top of a cell of it, and only on one:
+of the table above — it sits on top of the stability column, for every template
+that answers [`domination_slack`](@ref):
 
 | | [`StabilityProblem`](@ref) |
 | :-- | :-: |
 | [`QuadraticTemplate`](@ref) | ✓ |
+| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ |
+| [`DualCopositiveTemplate`](@ref) | ✓ ¹ |
+| [`PolyhedralTemplate`](@ref) | ✓ |
+| [`ConicPolyhedralTemplate`](@ref) | ✓ |
+| [`SumOfSquaresTemplate`](@ref) | ✗ ³ |
 
-The scope is **what is tested**, not a mathematical obstacle: a lift preserves
-path-completeness, which is the soundness condition, and the forward lift needs
-nothing from the template besides. Everything inside `refine` goes through
-[`edge_slacks`](@ref), which every template answers, so this cell is one
-signature and a test away from being a column.
+³ No `domination_slack` yet, so the loop cannot read where that template is
+tight.
+
+The lifts it applies preserve path-completeness, which is the soundness
+condition, and need nothing from the template besides; a template with per-node
+data follows the graph through [`reindex`](@ref). Safety refines on its margin
+with no optimality gap. Optimal control does not refine: its edge inequality
+does not factor through [`add_domination!`](@ref), so it has no slacks to read.
 
 ## The two gaps are different
 
