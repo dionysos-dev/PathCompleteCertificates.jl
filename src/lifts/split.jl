@@ -13,9 +13,17 @@ partial P\\*-lift).
 
 Applied simultaneously at a locus. Every incoming edge of a split node, a
 self-loop included, enters every copy; an outgoing edge leaves the copy that
-owns it, or the node itself when it is not in the locus; a self-loop owned by a
-copy leaves it towards every copy. A node whose outgoing edges are all in the
-locus is replaced by its copies. Copies are numbered last.
+owns it, or the node itself when it is not in the locus. A self-loop in the
+locus returns from its copy to the node, which still reads it into every copy,
+as the paper's definition has it; when the node does not survive, the copy's
+loop leaves it towards every copy instead. A node whose outgoing edges are all
+in the locus is replaced by its copies — the paper assumes a second outgoing
+edge, and a node left with none would lie on no path. Copies are numbered last.
+
+At one edge this is the paper's lift exactly, and `test/lifts/reference.jl`
+pins it against the authors' reference implementation; a locus of several
+edges at a surviving node, with at most one self-loop among them, is that lift
+applied edge by edge with the loop last.
 
 On `outgoing_edges(graph, s)` this is the node split of Ninite & Jungers at the
 edge grain, which [`refine`](@ref) uses by default. Its dual,
@@ -59,19 +67,34 @@ function (::ForwardEdgeSplit)(
 
     # Every image of a node: itself if it survives, and its copies.
     images = [Int[] for _ in nodes(g)]
+    copies = [Int[] for _ in nodes(g)]
     for node in nodes(g)
         keeps[node] && push!(images[node], survivor[node])
     end
     for edge in locus
         push!(images[source(edge)], copy_of[edge])
+        push!(copies[source(edge)], copy_of[edge])
     end
 
     lifted = _empty_like(g, length(origins))
 
     for edge in edges(g)
-        from = edge in chosen ? copy_of[edge] : survivor[source(edge)]
-        for to in images[dest(edge)]
-            add_edge!(lifted, from, to, label(g, edge))
+        s, d, word = source(edge), dest(edge), label(g, edge)
+
+        if edge in chosen && s == d && keeps[s]
+            # A self-loop of the locus at a node that survives, as the paper
+            # defines it: the copy that owns it returns to the node, and the
+            # node -- which the loop also enters -- reads it into every copy.
+            add_edge!(lifted, copy_of[edge], survivor[s], word)
+            for copy in copies[s]
+                add_edge!(lifted, survivor[s], copy, word)
+            end
+            continue
+        end
+
+        from = edge in chosen ? copy_of[edge] : survivor[s]
+        for to in images[d]
+            add_edge!(lifted, from, to, word)
         end
     end
 

@@ -310,7 +310,11 @@ that test is where an asymmetric declaration shows up.
 
 The four local lifts — split a node along one edge, fold an edge into its neighbours, each
 forward or backward — need none of it: a copy inherits its origin's function, a product chains
-two inequalities. Applied at every edge they are the classical hierarchies (De Bruijn is the
+two inequalities. They are the partial lifts of Athanasopoulos & Jungers edge for edge, and
+`test/lifts/reference.jl` pins them against the authors' reference implementation, self-loops
+included. Two things the paper's degree assumptions leave open are decided there too: a node
+left without edges is deleted, and a locus of several edges is the lift applied edge by edge
+with the loop last. Applied at every edge they are the classical hierarchies (De Bruijn is the
 backward split at every edge, iterated); applied where a certificate is tight they are
 `refine`. The subset lifts never move the bound and are never built to decide an ordering:
 `simulation_relation` and `conic_witness` decide those in polynomial time.
