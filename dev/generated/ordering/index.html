@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Comparing graphs: which one is better? · PathCompleteCertificates.jl</title><meta name="title" content="Comparing graphs: which one is better? · PathCompleteCertificates.jl"/><meta property="og:title" content="Comparing graphs: which one is better? · PathCompleteCertificates.jl"/><meta property="twitter:title" content="Comparing graphs: which one is better? · PathCompleteCertificates.jl"/><meta name="description" content="Documentation for PathCompleteCertificates.jl."/><meta property="og:description" content="Documentation for PathCompleteCertificates.jl."/><meta property="twitter:description" content="Documentation for PathCompleteCertificates.jl."/><meta property="og:url" content="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/ordering/"/><meta property="twitter:url" content="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/ordering/"/><link rel="canonical" href="https://dionysos-dev.github.io/PathCompleteCertificates.jl/generated/ordering/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/documentercitations/citations-hover.css" rel="stylesheet" type="text/css"/><link href="../../assets/documentercitations/citations.css" rel="stylesheet" type="text/css"/><script src="../../assets/documentercitations/citations-data.js"></script><script src="../../assets/documentercitations/citations-hover.js"></script><script src="../../assets/documentercitations/citations-backlinks.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.svg" alt="PathCompleteCertificates.jl logo"/><img class="docs-dark-only" src="../../assets/logo-dark.svg" alt="PathCompleteCertificates.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">PathCompleteCertificates.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../manual/systems/">Switched systems</a></li><li><a class="tocitem" href="../../manual/graphs/">Path-complete graphs</a></li><li><a class="tocitem" href="../../manual/templates/">Templates</a></li><li><a class="tocitem" href="../../manual/problems/">Problems</a></li><li><a class="tocitem" href="../../manual/support/">What works with what</a></li><li><a class="tocitem" href="../../manual/lifts/">Lifts</a></li><li><a class="tocitem" href="../../manual/ordering/">Comparing graphs</a></li><li><a class="tocitem" href="../../manual/refinement/">Refinement</a></li><li><a class="tocitem" href="../../manual/duality/">Duality</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../switched_systems/">Switched systems: the four kinds</a></li><li><a class="tocitem" href="../simulate/">Simulating: what a run looks like</a></li><li><a class="tocitem" href="../stability/">Stability: a first certificate</a></li><li><a class="tocitem" href="../safety/">Safety: a barrier certificate</a></li><li><a class="tocitem" href="../optimal_control/">Optimal control: bounding the value function</a></li><li><a class="tocitem" href="../two_axes/">The two axes, drawn</a></li><li><a class="tocitem" href="../sum_of_squares/">The sum-of-squares hierarchy</a></li><li><a class="tocitem" href="../refinement/">Refinement: letting the graph design itself</a></li><li class="is-active"><a class="tocitem" href>Comparing graphs: which one is better?</a><ul class="internal"><li><a class="tocitem" href="#Five-graphs-on-two-modes"><span>Five graphs on two modes</span></a></li><li><a class="tocitem" href="#For-every-template:-a-map"><span>For every template: a map</span></a></li><li><a class="tocitem" href="#Closed-under-addition:-a-matrix"><span>Closed under addition: a matrix</span></a></li><li><a class="tocitem" href="#A-graph-that-buys-nothing"><span>A graph that buys nothing</span></a></li><li><a class="tocitem" href="#The-same-two-graphs,-ordered-differently-by-the-template"><span>The same two graphs, ordered differently by the template</span></a></li><li><a class="tocitem" href="#The-rates-agree"><span>The rates agree</span></a></li><li><a class="tocitem" href="#The-lifts,-as-exhibits"><span>The lifts, as exhibits</span></a></li></ul></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../reference/systems/">Systems and aggregation</a></li><li><a class="tocitem" href="../../reference/graphs/">Graphs</a></li><li><a class="tocitem" href="../../reference/templates/">Templates</a></li><li><a class="tocitem" href="../../reference/problems/">Problems</a></li><li><a class="tocitem" href="../../reference/lifts/">Lifts</a></li><li><a class="tocitem" href="../../reference/refinement/">Refinement</a></li><li><a class="tocitem" href="../../reference/ordering/">Ordering</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../developers/setup/">Set up</a></li><li><a class="tocitem" href="../../developers/conventions/">Conventions</a></li><li><a class="tocitem" href="../../developers/examples/">Adding an example</a></li><li><a class="tocitem" href="../../developers/git/">Git</a></li></ul></li><li><a class="tocitem" href="../../bibliography/">Bibliography</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Comparing graphs: which one is better?</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Comparing graphs: which one is better?</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/dionysos-dev/PathCompleteCertificates.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/dionysos-dev/PathCompleteCertificates.jl/blob/master/docs/src/examples/ordering.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Comparing-graphs:-which-one-is-better?"><a class="docs-heading-anchor" href="#Comparing-graphs:-which-one-is-better?">Comparing graphs: which one is better?</a><a id="Comparing-graphs:-which-one-is-better?-1"></a><a class="docs-heading-anchor-permalink" href="#Comparing-graphs:-which-one-is-better?" title="Permalink"></a></h1><p>Two path-complete graphs and one template: is a certificate on the first guaranteed to give one on the second, whatever the system? That ordering is the question the package is built around — the graph is the object of study, not a device for a bound — and its answer depends on what the template is closed under. This example decides it on the five graphs of (<a href="../../bibliography/#debauche2023ordering" id="debauche2023ordering-cite-3">Debauche <em>et al.</em>, 2023</a>) and its repeatability package, hands back a witness for every verdict, and confirms each with certified rates.</p><p>No exponential lift is built to decide anything. Two are built at the end, as exhibits.</p><pre><code class="language-julia hljs">import PathCompleteCertificates as PCC
+import Clarabel
+using HybridSystems
+using Plots
+
+const OPTIMIZER = Clarabel.Optimizer</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Clarabel.MOIwrapper.Optimizer</code></pre><h2 id="Five-graphs-on-two-modes"><a class="docs-heading-anchor" href="#Five-graphs-on-two-modes">Five graphs on two modes</a><a id="Five-graphs-on-two-modes-1"></a><a class="docs-heading-anchor-permalink" href="#Five-graphs-on-two-modes" title="Permalink"></a></h2><p>A certificate graph is a <code>GraphAutomaton</code> with a mode on every edge. Its nodes are numbered; the paper names them <code>a</code> to <code>e</code>, and so does everything printed below.</p><pre><code class="language-julia hljs">function graph(edges, n_nodes)
+    g = GraphAutomaton(n_nodes)
+    for (s, d, mode) in edges
+        add_transition!(g, s, d, mode)
+    end
+    return g
+end
+
+node_name(k) = string(&#39;a&#39; + k - 1)
+
+G0 = graph([(1, 1, 1), (1, 1, 2)], 1)
+G1 = graph(
+    [
+        (1, 2, 1),
+        (2, 1, 1),
+        (1, 3, 1),
+        (3, 1, 2),
+        (1, 4, 2),
+        (4, 1, 1),
+        (1, 5, 2),
+        (5, 1, 2),
+    ],
+    5,
+)
+G2 = graph(
+    [
+        (1, 3, 2),
+        (1, 4, 2),
+        (2, 1, 1),
+        (2, 2, 1),
+        (3, 3, 2),
+        (3, 4, 2),
+        (4, 2, 1),
+        (4, 1, 1),
+    ],
+    4,
+)
+G3 = graph(
+    [
+        (1, 2, 1),
+        (1, 5, 2),
+        (1, 4, 1),
+        (2, 3, 1),
+        (2, 4, 2),
+        (3, 4, 1),
+        (3, 4, 2),
+        (4, 3, 2),
+        (4, 2, 2),
+        (4, 5, 1),
+        (5, 1, 1),
+        (5, 1, 2),
+    ],
+    5,
+)
+G4 = graph(
+    [
+        (1, 2, 1),
+        (2, 4, 1),
+        (3, 2, 1),
+        (4, 3, 1),
+        (4, 5, 1),
+        (5, 1, 1),
+        (1, 4, 2),
+        (1, 3, 2),
+        (2, 1, 2),
+        (3, 2, 2),
+        (4, 5, 2),
+        (5, 1, 2),
+    ],
+    5,
+)
+
+GRAPHS = [G0, G1, G2, G3, G4]
+NAMES = [&quot;G0&quot;, &quot;G1&quot;, &quot;G2&quot;, &quot;G3&quot;, &quot;G4&quot;]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{String}:
+ &quot;G0&quot;
+ &quot;G1&quot;
+ &quot;G2&quot;
+ &quot;G3&quot;
+ &quot;G4&quot;</code></pre><p><code>G0</code> is the one-node graph: a common Lyapunov function. All five read every word over the two modes, which is the soundness condition and all that a certificate on any of them needs.</p><pre><code class="language-julia hljs">all(g -&gt; PCC.is_path_complete(g, 1:2), GRAPHS)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>They differ in how they read them. A graph is <em>complete</em> when every node has an outgoing edge for every mode, <em>co-complete</em> when every node has an incoming one. <code>G0</code>, <code>G3</code> and <code>G4</code> are both; <code>G1</code> and <code>G2</code> are neither.</p><pre><code class="language-julia hljs">[
+    (name, PCC.is_complete(g, 1:2), PCC.is_co_complete(g, 1:2)) for
+    (name, g) in zip(NAMES, GRAPHS)
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Tuple{String, Bool, Bool}}:
+ (&quot;G0&quot;, 1, 1)
+ (&quot;G1&quot;, 0, 0)
+ (&quot;G2&quot;, 0, 0)
+ (&quot;G3&quot;, 1, 1)
+ (&quot;G4&quot;, 1, 1)</code></pre><h2 id="For-every-template:-a-map"><a class="docs-heading-anchor" href="#For-every-template:-a-map">For every template: a map</a><a id="For-every-template:-a-map-1"></a><a class="docs-heading-anchor-permalink" href="#For-every-template:-a-map" title="Permalink"></a></h2><p>The order that holds whatever the template is a labelled graph homomorphism ((<a href="../../bibliography/#philippe2017path" id="philippe2017path-cite-8">Philippe <em>et al.</em>, 2017</a>)): a map from the nodes of <code>G2</code> to those of <code>G1</code> carrying every edge of <code>G2</code> onto an edge of <code>G1</code> with the same mode. Any certificate on <code>G1</code>, read through the map, is then one on <code>G2</code>. Here none exists: <code>G2</code> has a self-loop and <code>G1</code> has none — the paper&#39;s Example 1.</p><pre><code class="language-julia hljs">PCC.simulation(G1, G2) === nothing</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="Closed-under-addition:-a-matrix"><a class="docs-heading-anchor" href="#Closed-under-addition:-a-matrix">Closed under addition: a matrix</a><a id="Closed-under-addition:-a-matrix-1"></a><a class="docs-heading-anchor-permalink" href="#Closed-under-addition:-a-matrix" title="Permalink"></a></h2><p>For a template closed under addition — quadratic forms, say — a <em>sum</em> of node functions is a candidate too, and the paper builds a certificate on <code>G2</code> from one on <code>G1</code> by hand: <span>$W_a = V_a + V_c$</span>, <span>$W_b = V_a + V_b$</span>, and so on. The package writes such a construction as a nonnegative integer matrix <span>$C$</span> with <span>$W = C\,V$</span> and finds it by a linear program, <a href="../../reference/ordering/#PathCompleteCertificates.conic_witness-Tuple{HybridSystems.GraphAutomaton, HybridSystems.GraphAutomaton}"><code>conic_witness</code></a>. The program is <strong>complete</strong> for this order: it is feasible exactly when some sum lift of <code>G1</code> simulates <code>G2</code> ((<a href="../../bibliography/#debauche2023ordering" id="debauche2023ordering-cite-4">Debauche <em>et al.</em>, 2023</a>), Thm. 2). Rows are the nodes of <code>G2</code>, columns those of <code>G1</code>.</p><pre><code class="language-julia hljs">C = PCC.conic_witness(G1, G2; optimizer = OPTIMIZER)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4×5 Matrix{Int64}:
+ 1  0  1  0  0
+ 1  1  0  0  0
+ 1  0  0  0  1
+ 1  0  0  1  0</code></pre><p>Read off, it is the paper&#39;s construction. The program has several solutions, and this is one of them.</p><pre><code class="language-julia hljs">combination(row) = join(
+    [(c == 1 ? &quot;&quot; : &quot;$c·&quot;) * &quot;V_&quot; * node_name(g) for (g, c) in enumerate(row) if c &gt; 0],
+    &quot; + &quot;,
+)
+
+[&quot;W_&quot; * node_name(h) * &quot; = &quot; * combination(C[h, :]) for h in 1:PCC.n_nodes(G2)]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{String}:
+ &quot;W_a = V_a + V_c&quot;
+ &quot;W_b = V_a + V_b&quot;
+ &quot;W_c = V_a + V_e&quot;
+ &quot;W_d = V_a + V_d&quot;</code></pre><p>A matrix is what you check by hand. Take a quadratic certificate on <code>G1</code> for the paper&#39;s system, combine its node matrices with <span>$C$</span>, and every edge inequality of <code>G2</code> holds at the same rate: the slack of each is nonnegative.</p><pre><code class="language-julia hljs">A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
+system = PCC.switched_system(A)
+problem = PCC.StabilityProblem(system)
+QUADRATIC = PCC.QuadraticTemplate()
+
+bound(template, g) = PCC.jsr_bound(
+    template,
+    g,
+    problem;
+    optimizer = OPTIMIZER,
+    rtol = 1e-6,
+    initial_upper = 100.0,
+)
+
+on_G1 = bound(QUADRATIC, G1)
+V = PCC.functions(on_G1)
+W = [
+    PCC.QuadraticFunction(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))) for
+    h in 1:PCC.n_nodes(G2)
+]
+scale = on_G1.rate^PCC.rate_exponent(QUADRATIC)
+
+slacks = [
+    PCC.domination_slack(
+        QUADRATIC,
+        W[PCC.source(e)],
+        W[PCC.dest(e)],
+        A[PCC.label(G2, e)];
+        scale,
+    ) for e in PCC.edges(G2)
+]
+
+all(&gt;=(-1e-6), slacks)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p><a href="../../reference/ordering/#PathCompleteCertificates.order_witness-Tuple{HybridSystems.GraphAutomaton, HybridSystems.GraphAutomaton}"><code>order_witness</code></a> is the one entry point. It reads the template&#39;s closures on the system and runs only the procedures they entitle it to — the map always, the linear program here — and names the one that answered. <a href="../../reference/ordering/#PathCompleteCertificates.is_no_worse-Tuple{HybridSystems.GraphAutomaton, HybridSystems.GraphAutomaton}"><code>is_no_worse</code></a> is its Boolean, in the literature&#39;s reading <span>$G_1 \le_V G_2$</span>: <code>G2</code> is no worse than <code>G1</code>.</p><pre><code class="language-julia hljs">witness = PCC.order_witness(G1, G2; template = QUADRATIC, system, optimizer = OPTIMIZER)
+witness.kind</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">:addition</code></pre><pre><code class="language-julia hljs">PCC.is_no_worse(G2, G1; template = QUADRATIC, system, optimizer = OPTIMIZER)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="A-graph-that-buys-nothing"><a class="docs-heading-anchor" href="#A-graph-that-buys-nothing">A graph that buys nothing</a><a id="A-graph-that-buys-nothing-1"></a><a class="docs-heading-anchor-permalink" href="#A-graph-that-buys-nothing" title="Permalink"></a></h2><p><code>G3</code> has five nodes and twelve edges. For any template closed under addition it certifies nothing that the one-node graph would not: the program between <code>G3</code> and <code>G0</code> has a solution, a single row.</p><pre><code class="language-julia hljs">C3 = PCC.conic_witness(G3, G0; optimizer = OPTIMIZER)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×5 Matrix{Int64}:
+ 2  1  1  2  2</code></pre><p>Whenever <span>$V$</span> certifies <code>G3</code>, <span>$2V_a + V_b + V_c + 2V_d + 2V_e$</span> is a common Lyapunov function. The paper proves this through the 8-sum lift of <code>G3</code>, whose nodes are the 495 multisets of eight of its nodes; the program never builds it.</p><p><code>G4</code>, also five nodes and twelve edges, is different. The program has no solution, and since it is complete, <code>nothing</code> is a proof: no sum lift of <code>G4</code> simulates <code>G0</code>, so for some addition-closed template and some system <code>G4</code> is strictly better than a common function.</p><pre><code class="language-julia hljs">PCC.conic_witness(G4, G0; optimizer = OPTIMIZER) === nothing</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="The-same-two-graphs,-ordered-differently-by-the-template"><a class="docs-heading-anchor" href="#The-same-two-graphs,-ordered-differently-by-the-template">The same two graphs, ordered differently by the template</a><a id="The-same-two-graphs,-ordered-differently-by-the-template-1"></a><a class="docs-heading-anchor-permalink" href="#The-same-two-graphs,-ordered-differently-by-the-template" title="Permalink"></a></h2><p>For a template closed under maximum, <code>G4</code> cannot beat <code>G0</code>. It is co-complete, so the maximum of its node functions is a common Lyapunov function, and that maximum is in the template. <a href="../../reference/graphs/#PathCompleteCertificates.closed_subgraph-Tuple{HybridSystems.GraphAutomaton, Any}"><code>closed_subgraph</code></a> finds the largest set of nodes with this property; here it is all of them.</p><pre><code class="language-julia hljs">PCC.closed_subgraph(G4, 1:2; direction = :in)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Int64}:
+ 1
+ 2
+ 3
+ 4
+ 5</code></pre><p>The dual copositive norms <span>$\max_i x_i / v_i$</span> are closed under maximum, and for them <a href="../../reference/ordering/#PathCompleteCertificates.order_witness-Tuple{HybridSystems.GraphAutomaton, HybridSystems.GraphAutomaton}"><code>order_witness</code></a> decides the order between <code>G4</code> and <code>G0</code> in the other direction — <code>G0</code> is no worse than <code>G4</code> — by a relation on the dual graphs rather than by the linear program. The relation pairs the single node of <code>G0</code> with every node of <code>G4</code>.</p><pre><code class="language-julia hljs">witness = PCC.order_witness(G4, G0; template = PCC.DualCopositiveTemplate(), system)
+witness.kind, witness.data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:maximum, [[1, 2, 3, 4, 5]])</code></pre><p><a href="../../reference/ordering/#PathCompleteCertificates.simplify-Tuple{HybridSystems.GraphAutomaton}"><code>simplify</code></a> draws the conclusion. For that template <code>G4</code> is the one-node graph; for the quadratic one, it stays as it is.</p><pre><code class="language-julia hljs">(
+    PCC.n_nodes(PCC.simplify(G4; template = PCC.DualCopositiveTemplate(), system)),
+    PCC.n_nodes(PCC.simplify(G4; template = QUADRATIC, system)),
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(1, 5)</code></pre><h2 id="The-rates-agree"><a class="docs-heading-anchor" href="#The-rates-agree">The rates agree</a><a id="The-rates-agree-1"></a><a class="docs-heading-anchor-permalink" href="#The-rates-agree" title="Permalink"></a></h2><p>Every verdict above holds for every system. On the paper&#39;s system — a positive one, so the copositive templates apply too — the certified rates say the same thing. The quadratic row falls from <code>G1</code> to <code>G2</code>, is equal on <code>G3</code> and <code>G0</code>, and is strictly lower on <code>G4</code> than on <code>G0</code>. The dual copositive row is equal on <code>G0</code>, <code>G3</code> and <code>G4</code>, which is the collapse.</p><pre><code class="language-julia hljs">TEMPLATES = [
+    (&quot;quadratic&quot;, QUADRATIC),
+    (&quot;copositive&quot;, PCC.LinearCopositiveTemplate()),
+    (&quot;dual copositive&quot;, PCC.DualCopositiveTemplate()),
+]
+
+RATES =
+    [(name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in TEMPLATES]
+
+rows = [hcat(name, round.(rates; digits = 4)&#39;) for (name, rates) in RATES]
+
+vcat(reshape([&quot;template&quot;; NAMES], 1, :), rows...)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4×6 Matrix{Any}:
+ &quot;template&quot;           &quot;G0&quot;     &quot;G1&quot;    &quot;G2&quot;     &quot;G3&quot;     &quot;G4&quot;
+ &quot;quadratic&quot;         9.5868   9.0161  8.6881   9.5868   9.4886
+ &quot;copositive&quot;        9.2696   9.1711  8.7019   9.2696   9.2696
+ &quot;dual copositive&quot;  13.048   11.5823  9.2334  13.048   13.048</code></pre><p>The primal copositive norms <span>$c^\top x$</span> are not closed under minimum, yet their row collapses on <code>G3</code> and <code>G4</code> as well. On positive systems the min lift is valid for them without closure (Debauche, Thm. 7.43), one theorem the package records as an override of <a href="../../reference/lifts/#PathCompleteCertificates.is_valid-Tuple{PathCompleteCertificates.AbstractLift, Any, Any}"><code>is_valid</code></a>:</p><pre><code class="language-julia hljs">PCC.is_valid(PCC.MinLift(), PCC.LinearCopositiveTemplate(), system)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Drawn, the dependence on the template is one picture: <code>G4</code> sits below <code>G0</code> for the quadratic template and on it for the two copositive ones, while <code>G2</code> is the best of the five for all three.</p><pre><code class="language-julia hljs">figure = plot(;
+    xticks = (1:5, NAMES),
+    ylabel = &quot;certified rate&quot;,
+    legend = :bottomleft,
+    title = &quot;five graphs, three templates&quot;,
+)
+for (name, rates) in RATES
+    plot!(figure, 1:5, rates; marker = :circle, markersize = 6, lw = 2, label = name)
+end
+figure</code></pre><img src="fa64af08.svg" alt="Example block output"/><h2 id="The-lifts,-as-exhibits"><a class="docs-heading-anchor" href="#The-lifts,-as-exhibits">The lifts, as exhibits</a><a id="The-lifts,-as-exhibits-1"></a><a class="docs-heading-anchor-permalink" href="#The-lifts,-as-exhibits" title="Permalink"></a></h2><p>The theory speaks of lifts: the 2-sum lift of <code>G1</code>, whose nodes are the multisets of two of its nodes, simulates <code>G2</code>; the min lift of <code>G4</code>, whose nodes are the subsets, simulates <code>G0</code>. Both can be built, and they do — this is what the repeatability package prints. Nothing above needed them, which is the point: the relation and the linear program decide in polynomial time what the lifts exhibit in exponential size.</p><pre><code class="language-julia hljs">sum_lift = PCC.SumLift(2)(G1)
+R_sum = PCC.simulation(PCC.graph(sum_lift), G2)
+
+[
+    node_name(h) *
+    &quot;₂ ↦ {&quot; *
+    join(node_name.(PCC.origins(sum_lift)[R_sum[h]]) .* &quot;₁&quot;, &quot;, &quot;) *
+    &quot;}&quot; for h in 1:PCC.n_nodes(G2)
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{String}:
+ &quot;a₂ ↦ {a₁, c₁}&quot;
+ &quot;b₂ ↦ {a₁, b₁}&quot;
+ &quot;c₂ ↦ {a₁, e₁}&quot;
+ &quot;d₂ ↦ {a₁, d₁}&quot;</code></pre><pre><code class="language-julia hljs">min_lift = PCC.MinLift()(G4)
+R = PCC.simulation(PCC.graph(min_lift), G0)
+
+&quot;a₀ ↦ {&quot; * join(node_name.(PCC.origins(min_lift)[R[1]]) .* &quot;₄&quot;, &quot;, &quot;) * &quot;}&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;a₀ ↦ {a₄, b₄, d₄, e₄}&quot;</code></pre><p>Fifteen and thirty-one nodes, for a question the relation answered on five.</p><pre><code class="language-julia hljs">PCC.n_nodes(PCC.graph(sum_lift)), PCC.n_nodes(PCC.graph(min_lift))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(15, 31)</code></pre><div class="admonition is-info" id="Where-this-sits-d60fff3a508e3e2d"><header class="admonition-header">Where this sits<a class="admonition-anchor" href="#Where-this-sits-d60fff3a508e3e2d" title="Permalink"></a></header><div class="admonition-body"><p><a href="../../reference/ordering/#PathCompleteCertificates.order_witness-Tuple{HybridSystems.GraphAutomaton, HybridSystems.GraphAutomaton}"><code>order_witness</code></a> answers <em>is this graph no worse than that one</em>, for a template, whatever the system. <a href="../../manual/refinement/#PathCompleteCertificates.refine-manual-refinement"><code>refine</code></a> is the other direction: start from a graph and build a better one where the certificate is tight. <a href="../../manual/lifts/#Lifts">Lifts</a> explains what connects them — a lift is valid for a template exactly when the lifted graph is no worse, and that is read from the same closures.</p></div></div><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../refinement/">« Refinement: letting the graph design itself</a><a class="docs-footer-nextpage" href="../../reference/systems/">Systems and aggregation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 1 October 2026 13:25">Thursday 1 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
