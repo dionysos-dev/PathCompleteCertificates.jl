@@ -13,34 +13,45 @@ What a lift *buys* is a different question, and it has two answers.
 
 ## Every lift, at a glance
 
-The lifts of the literature, what each one is here, and what it asks of the
-template. *Scope* is whether a lift rebuilds the whole graph or acts at a locus
-of edges; *valid when* is the condition under which the lifted graph is
-guaranteed no worse, which is what [`is_valid`](@ref) answers; *moves the
-bound* is whether it can strictly improve a certificate at all.
+The lifts of the literature, what each one is here, and what makes it valid.
+*Scope* is whether a lift rebuilds the whole graph or acts at a locus of
+edges. *Validity* is the condition under which the lifted graph is guaranteed
+no worse, which [`is_valid`](@ref) answers; *depends on* says what that
+condition reads — nothing, the template's closures, or the template's closures
+on the system's dynamics.
 
-| Lift | Here | Scope | Valid when | Moves the bound | Source |
+| Lift | Here | Scope | Validity | Depends on | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| Partial T-lift | [`ForwardEdgeProduct`](@ref) at an edge | local | always | yes | [athanasopoulos2019polyhedral](@cite), Def. 4 |
-| Partial T\*-lift | [`BackwardEdgeProduct`](@ref) at an edge | local | always | yes | Def. 5 |
-| Partial P-lift | [`BackwardEdgeSplit`](@ref) at an edge | local | always | yes | Def. 6 |
-| Partial P\*-lift | [`ForwardEdgeSplit`](@ref) at an edge | local | always | yes | Def. 7 |
-| Forward lift at a node | [`ForwardEdgeSplit`](@ref) on `outgoing_edges(graph, v)` | local | always | yes | [ninite2026lifting](@cite), Def. 3 |
-| T-product lift | [`ProductLift`](@ref)`(T)`; either edge product on `edges(graph)` is `T = 2` | global | always | yes | [philippe2016stability](@cite), Def. 2 |
-| M-path-dependent lift | [`PathDependentLift`](@ref)`(M)`; [`BackwardEdgeSplit`](@ref) on `edges(graph)` is `M = 1`; from the one-node graph it is [`de_bruijn`](@ref) | global | always | yes | [philippe2016stability](@cite), Def. 3 |
-| Min lift | [`MinLift`](@ref) | global | closed under `min` ¹ | never | [debauche2021comparison](@cite), Def. 9 |
-| Max lift | [`MaxLift`](@ref), which is `dual(MinLift())` | global | closed under `max` | never | Def. 9; [debauche2024thesis](@cite), Lemma 7.45 |
-| T-sum lift | [`SumLift`](@ref)`(T)` | global | closed under `+` | never | Def. 8; [debauche2024thesis](@cite), Prop. 7.16 ² |
-| T-forward composition lift | [`CompositionLift`](@ref)`(T)` | global | template and system closed under `∘ A` | yes | Def. 10; [debauche2024thesis](@cite), Def. 7.58; [jongeneel2025ordering](@cite), Def. III.1 ³ |
-| T-backward composition lift | `dual(CompositionLift(T))` | global | closed under `∘ A⁻¹` | yes | [debauche2024thesis](@cite), Def. 7.61 ³ |
+| Partial T-lift | [`ForwardEdgeProduct`](@ref) at an edge | local | always | nothing | [athanasopoulos2019polyhedral](@cite), Def. 4 |
+| Partial T\*-lift | [`BackwardEdgeProduct`](@ref) at an edge | local | always | nothing | [athanasopoulos2019polyhedral](@cite), Def. 5 |
+| Partial P-lift | [`BackwardEdgeSplit`](@ref) at an edge | local | always | nothing | [athanasopoulos2019polyhedral](@cite), Def. 6 |
+| Partial P\*-lift | [`ForwardEdgeSplit`](@ref) at an edge | local | always | nothing | [athanasopoulos2019polyhedral](@cite), Def. 7 |
+| Forward lift at a node | [`ForwardEdgeSplit`](@ref) on `outgoing_edges(graph, v)` | local | always | nothing | [ninite2026lifting](@cite), Def. 3 |
+| T-product lift | [`ProductLift`](@ref)`(T)` | global | always | nothing | [philippe2016stability](@cite), Def. 2 |
+| M-path-dependent lift | [`PathDependentLift`](@ref)`(M)` | global | always | nothing | [philippe2016stability](@cite), Def. 3 |
+| Min lift | [`MinLift`](@ref)`()` | global | closed under `min` ¹ | template | [debauche2021comparison](@cite), Def. 9 |
+| Max lift | [`MaxLift`](@ref)`()` | global | closed under `max` | template | [debauche2021comparison](@cite), Def. 9; [debauche2024thesis](@cite), Lemma 7.45 |
+| T-sum lift | [`SumLift`](@ref)`(T)` | global | closed under `+` | template | [debauche2021comparison](@cite), Def. 8; [debauche2024thesis](@cite), Prop. 7.16; [abate2026categorical](@cite), Ex. III.23 ² |
+| T-forward composition lift | [`CompositionLift`](@ref)`(T)` | global | closed under `∘ A` | template and system | [debauche2021comparison](@cite), Def. 10; [debauche2024thesis](@cite), Def. 7.58; [jongeneel2025ordering](@cite), Def. III.1 ³ |
+| T-backward composition lift | `dual(CompositionLift(T))` | global | closed under `∘ A⁻¹` | template and system | [debauche2024thesis](@cite), Def. 7.61 ³ |
 | Dual of a lift | [`dual`](@ref)`(lift)` | as the lift | the dual template | as the lift | [debauche2024thesis](@cite), Def. 7.4 and Prop. 7.5 |
 
-"Always" is an argument rather than a theorem: a copy inherits its origin's
-function and a product of two edges chains their two inequalities, so no new
-function is formed and no closure is needed. "Never" is because the original
-graph is a path-complete component of each subset lift: these three are
-exhibits of an ordering question, decided without them in
-[Comparing graphs](@ref).
+Three remarks the columns compress.
+
+- **Where a lift comes from.** `ProductLift(2)` is either edge product on
+  `edges(graph)`; `PathDependentLift(1)` is `BackwardEdgeSplit` on
+  `edges(graph)`, and from the one-node graph the path-dependent lift is
+  [`de_bruijn`](@ref); `MaxLift()` is `dual(MinLift())`, and the backward
+  composition lift the dual of the forward one. The package builds each from
+  the smaller piece rather than keeping two implementations.
+- **"Always"** is an argument rather than a theorem: a copy inherits its
+  origin's function and a product of two edges chains their two inequalities,
+  so no new function is formed and no closure is needed.
+- **Which lifts can move the bound.** All of them except the min, max and sum
+  lifts, which never do: the original graph is a path-complete component of
+  each, so they are exhibits of an ordering question, decided without building
+  them in [Comparing graphs](@ref). The composition lifts are the one global
+  family that can strictly improve a certificate.
 
 ¹ The copositive template is not closed under `min`, yet the min lift is valid
 for it on positive systems ([debauche2024thesis](@cite), Thm. 7.43), the one
@@ -67,9 +78,9 @@ applied somewhere, or its dual.
 | Operation | At one edge `(s, d, w)` | Source |
 | :-- | :-- | :-- |
 | [`ForwardEdgeSplit`](@ref) | a copy of `s` owning that outgoing edge and every incoming one | [athanasopoulos2019polyhedral](@cite), Def. 7 |
-| [`BackwardEdgeSplit`](@ref) | a copy of `d` owning that incoming edge and every outgoing one | Def. 6 |
-| [`ForwardEdgeProduct`](@ref) | replace it by `(s, d′, w·u)` for every `(d, d′, u)` | Def. 4 |
-| [`BackwardEdgeProduct`](@ref) | replace it by `(s′, d, u·w)` for every `(s′, s, u)` | Def. 5 |
+| [`BackwardEdgeSplit`](@ref) | a copy of `d` owning that incoming edge and every outgoing one | [athanasopoulos2019polyhedral](@cite), Def. 6 |
+| [`ForwardEdgeProduct`](@ref) | replace it by `(s, d′, w·u)` for every `(d, d′, u)` | [athanasopoulos2019polyhedral](@cite), Def. 4 |
+| [`BackwardEdgeProduct`](@ref) | replace it by `(s′, d, u·w)` for every `(s′, s, u)` | [athanasopoulos2019polyhedral](@cite), Def. 5 |
 
 All four are valid for every template: a copy inherits its origin's function, a
 product chains two edge inequalities.
@@ -80,8 +91,8 @@ atoms at the full locus:
 - `ForwardEdgeSplit` on `outgoing_edges(graph, s)` is the node split of
   [ninite2026lifting](@cite), which [`refine`](@ref) uses by default;
 - `BackwardEdgeSplit` on `edges(graph)` is the path-dependent lift of
-  Philippe, Essick, Dullerud & Jungers, [`PathDependentLift`](@ref)`(1)`; iterated from
-  the one-node graph it is [`de_bruijn`](@ref);
+  [philippe2016stability](@cite), [`PathDependentLift`](@ref)`(1)`; iterated
+  from the one-node graph it is [`de_bruijn`](@ref);
 - either edge product on `edges(graph)` is [`ProductLift`](@ref)`(2)`, the
   product lift, which is self-dual.
 
@@ -119,19 +130,16 @@ answers whether the lift is guaranteed not to make the bound **worse**
 linear systems ([debauche2024thesis](@cite), Thm. 7.43); one documented override
 of `is_valid`.
 
-## Duality
+## Every backward lift is a dual
 
-`dual` is an involution on the whole problem: reverse the graph's edges and
-words, transpose the system, take the dual template, and a certificate for one
-is a certificate for the other — `dual(certificate)` builds it from the dual
-norms of the node functions, at the same rate, without solving
-([debauche2024thesis](@cite), Lemma 6.25). On a lift it is conjugation,
-`dual(L)(G) = dual(L(dual(G)))`, which is how every backward lift and
-[`MaxLift`](@ref) come from their forward counterparts with no code of their
-own. Validity crosses over with it (Prop. 7.5), so [`is_valid`](@ref) also
-accepts a lift whose dual is valid for the dual template: [`SumLift`](@ref) on
-[`DualCopositiveTemplate`](@ref), whose primal norms add. A template with a
-dual answers [`has_dual`](@ref).
+Every backward lift here is the dual of a forward one, `dual(L)(G) =
+dual(L(dual(G)))`, and a lift valid for a template has a dual valid for the
+dual template. [Duality](@ref) is the account of that involution across
+graphs, systems, templates, certificates and lifts; what it means for this
+page is that [`BackwardEdgeSplit`](@ref), [`BackwardEdgeProduct`](@ref),
+[`MaxLift`](@ref) and the backward composition lift have no code of their own,
+and that [`is_valid`](@ref) reads the dual side when the primal one declares
+nothing.
 
 ## Three lifts that never move the bound
 

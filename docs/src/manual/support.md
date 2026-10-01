@@ -26,34 +26,36 @@ additionally requires a **complete** graph, not merely a path-complete one.
 Stability accepts a [`WordGraph`](@ref); safety and optimal control need one
 mode per edge and say so.
 
-## And the stability column for refinement
+## The graph layer
 
-[`refine`](@ref) designs the graph rather than taking one, so it is not a column
-of the table above — it sits on top of the stability column, for every template
-that answers [`domination_slack`](@ref):
+Lifting, comparing, refining and words on edges are written for stability,
+where the theory is. [`refine`](@ref) is generic in the problem, reading only
+[`best_certificate`](@ref), [`objective`](@ref) and
+[`optimality_gap`](@ref), but today only [`StabilityProblem`](@ref) answers
+them. Within stability it runs for every template that answers
+[`domination_slack`](@ref), which is how the loop reads where a certificate is
+tight:
 
-| | [`StabilityProblem`](@ref) |
-| :-- | :-: |
-| [`QuadraticTemplate`](@ref) | ✓ |
-| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ |
-| [`DualCopositiveTemplate`](@ref) | ✓ ¹ |
-| [`PolyhedralTemplate`](@ref) | ✓ |
-| [`ConicPolyhedralTemplate`](@ref) | ✓ |
-| [`SumOfSquaresTemplate`](@ref) | ✗ ³ |
+| | [`refine`](@ref) | [`order_witness`](@ref) |
+| :-- | :-: | :-: |
+| [`QuadraticTemplate`](@ref) | ✓ | map, linear program |
+| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ | map, linear program; min lift valid without closure |
+| [`DualCopositiveTemplate`](@ref) | ✓ ¹ | map, relation on the duals |
+| [`PolyhedralTemplate`](@ref) | ✓ | map; relation on the duals when the node matrices coincide |
+| [`ConicPolyhedralTemplate`](@ref) | ✓ | map |
+| [`SumOfSquaresTemplate`](@ref) | ✗ ³ | map, linear program |
 
 ³ No `domination_slack` yet, so the loop cannot read where that template is
 tight.
 
-The lifts it applies preserve path-completeness, which is the soundness
-condition, and need nothing from the template besides; a template with per-node
-data follows the graph through [`reindex`](@ref). Safety refines on its margin
-with no optimality gap. Optimal control does not refine: its edge inequality
-does not factor through [`add_domination!`](@ref), so it has no slacks to read.
+The second column is what the template's closures entitle
+[`order_witness`](@ref) to run; see [Comparing graphs](@ref). A template with
+per-node data follows a lifted graph through [`reindex`](@ref).
 
 ## The two gaps are different
 
 **Safety** imposes its inequality on the homogeneous lift, which the polyhedral
-templates could support — the construction is sound, the plumbing is not
+templates could support: the construction is sound, the plumbing is not
 written. Expect this gap to close.
 
 **Optimal control** is convex only after the substitution ``S = P^{-1}``,

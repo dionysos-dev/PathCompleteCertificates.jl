@@ -7,7 +7,7 @@ CurrentModule = PathCompleteCertificates
 Neither of these belongs to an axis. A switched system is the input to every
 problem, and [`common`](@ref) reads all three of graph, template and problem.
 
-## Switched systems
+## Systems
 
 ```@autodocs
 Modules = [PathCompleteCertificates]

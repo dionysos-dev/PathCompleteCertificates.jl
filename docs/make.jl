@@ -89,13 +89,15 @@ DocMeta.setdocmeta!(
 const PAGES = Any[
     "Home" => "index.md",
     "Manual" => [
+        "Switched systems" => "manual/systems.md",
         "Path-complete graphs" => "manual/graphs.md",
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
-        "Refinement" => "manual/refinement.md",
+        "What works with what" => "manual/support.md",
         "Lifts" => "manual/lifts.md",
         "Comparing graphs" => "manual/ordering.md",
-        "What works with what" => "manual/support.md",
+        "Refinement" => "manual/refinement.md",
+        "Duality" => "manual/duality.md",
     ],
 ]
 

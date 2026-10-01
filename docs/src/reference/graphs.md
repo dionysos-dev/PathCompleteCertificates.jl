@@ -24,7 +24,7 @@ Modules = [PathCompleteCertificates]
 Pages   = ["graphs/queries.jl"]
 ```
 
-## Words on edges
+## Word graphs
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
@@ -45,7 +45,7 @@ Modules = [PathCompleteCertificates]
 Pages   = ["graphs/languages.jl"]
 ```
 
-## Duality
+## Dual graphs
 
 ```@autodocs
 Modules = [PathCompleteCertificates]

@@ -27,9 +27,9 @@ row summing to at least one.
 
 The relation is exactly the question *does the [`MinLift`](@ref) of `G`
 simulate `H`?* read off the relation rather than the exponential lift
-(Debauche, Thm. 8.1); the matrix is exactly *does some [`SumLift`](@ref) of `G`
+([debauche2024thesis](@cite), Thm. 8.1, and Thm. 8.5 for `max`); the matrix is exactly *does some [`SumLift`](@ref) of `G`
 simulate `H`?* decided by the linear program of
-[philippe2017path](@cite), Thm. IV.4 (Debauche, Thm. 7.35). Neither subset lift
+[philippe2017path](@cite), Thm. IV.4, proved complete for every template closed under addition by [debauche2023ordering](@cite), Thm. 2. Neither subset lift
 is built to decide anything.
 
 ## When a graph buys nothing
@@ -52,6 +52,14 @@ better rates on the two without.
 ## The template-free order
 
 A map — [`simulation`](@ref) — decides the order that holds for every template
-and every system ([philippe2017path](@cite); Philippe & Jungers, HSCC 2019). It
+and every system ([philippe2019complete](@cite), Def. 3.1 and Thm. 3.5). It
 is a labelled graph homomorphism, NP-hard in general, searched by backtracking
 inside the relation above, which is a necessary condition for it.
+
+## Under duality
+
+``G \le_V H`` holds exactly when ``\mathrm{dual}(G) \le_{V^*} \mathrm{dual}(H)``
+([debauche2024thesis](@cite), Prop. 6.27). That is why the `max`-closed case
+above is the `min`-closed one on the dual graphs, and why a question asked of
+the dual copositive template can be asked of the primal one on the transposed
+system. See [Duality](@ref).

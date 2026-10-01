@@ -33,7 +33,7 @@ Modules = [PathCompleteCertificates]
 Pages   = ["operations.jl"]
 ```
 
-## Duality
+## The dual of a lift
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
