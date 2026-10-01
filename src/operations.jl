@@ -61,8 +61,10 @@ certificate; `dual(template, V)` is the dual of one node function.
 Duality is an involution on the whole problem: a certificate on `graph` for
 `template` and `system` is one on `dual(graph)` for `dual(template)` and
 `dual(system)` (Debauche, Lemma 6.25), and `dual(certificate)` constructs it.
-On an operation it is the correspondence of Lemma 1.27: minimum and maximum
-exchange, addition is fixed, composition becomes composition with the inverse.
+On an operation it is what the dual lift requires: minimum and maximum
+exchange (Lemma 7.45), addition is fixed because the sum lift is self-dual
+(Prop. 7.13), and composition becomes composition with the inverse
+(Prop. 7.64).
 """
 function dual end
 
