@@ -10,6 +10,8 @@ same template? That is the ordering of [debauche2021comparison](@cite), Def. 4,
 and the answer depends on what the template is closed under. The package
 decides it with three procedures, each a relaxation of graph homomorphism and
 each complete for the closure it serves.
+[Comparing graphs: which one is better?](@ref) runs all three on the five
+graphs of [debauche2023ordering](@cite) and confirms every verdict with rates.
 
 | Templates | Procedure | Witness | Cost |
 | :-- | :-- | :-- | :-- |

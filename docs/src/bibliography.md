@@ -46,17 +46,34 @@ implemented here.
 
 [`StabilityProblem`](@ref) is [ahmadi2014joint](@cite) directly.
 
-## Designed, not implemented
-
-Both are about *comparing* path-complete graphs rather than certifying with one.
+## Comparing, lifting and refining graphs
 
 [debauche2021comparison](@cite) — a lift is any map on graphs preserving
-path-completeness, so it is sound whatever the template. What the template's
-closure properties decide is *validity*: whether the lifted graph is guaranteed
-no worse than the one it came from.
+path-completeness ([`AbstractLift`](@ref)), so it is sound whatever the
+template. What the template's closure properties decide is *validity*
+([`is_valid`](@ref)): whether the lifted graph is guaranteed no worse. Its sum,
+min and max lifts are [`SumLift`](@ref), [`MinLift`](@ref) and
+[`MaxLift`](@ref); the thesis behind it supplies the dual lift
+([`DualLift`](@ref)) and the dual certificate.
 
-[jongeneel2025ordering](@cite) — ordering and refining path-complete Lyapunov
-functions through composition lifts. The work named in [Status](@ref).
+[debauche2023ordering](@cite) — the linear program deciding the ordering for
+templates closed under addition, [`conic_witness`](@ref). Its five graphs are
+[Comparing graphs: which one is better?](@ref).
+
+[philippe2017path](@cite) — the template-free ordering by simulation,
+[`simulation`](@ref), and the ordering by relation that [`order_witness`](@ref)
+runs for `min`- and `max`-closed templates.
+
+[athanasopoulos2019polyhedral](@cite) — the four partial lifts,
+[`ForwardEdgeSplit`](@ref), [`BackwardEdgeSplit`](@ref),
+[`ForwardEdgeProduct`](@ref) and [`BackwardEdgeProduct`](@ref).
+
+[jongeneel2025ordering](@cite) — [`CompositionLift`](@ref), and the reason it
+needs invertible dynamics.
+
+[ninite2026lifting](@cite) — [`refine`](@ref): split the node where the
+certificate is tight, and stop when [`is_jsr_exact`](@ref) says the rate is the
+joint spectral radius.
 
 ## All references
 

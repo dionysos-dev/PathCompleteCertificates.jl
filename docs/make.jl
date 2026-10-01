@@ -26,6 +26,7 @@ const ORDER = [
     "two_axes",
     "sum_of_squares",
     "refinement",
+    "ordering",
 ]
 
 function example_stems()

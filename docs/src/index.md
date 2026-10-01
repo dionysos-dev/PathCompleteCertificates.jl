@@ -40,6 +40,9 @@ They compose as a product. Not every pair is wired up yet:
   [Stability: a first certificate](@ref).
 - **What do the axes buy?** [The two axes, drawn](@ref) — three templates on one
   graph, one template on four graphs.
+- **Which graph is better?** [Comparing graphs: which one is better?](@ref) —
+  five graphs, three templates, a witness for every verdict; then
+  [Refinement: letting the graph design itself](@ref) builds the graph instead.
 - **Looking for a function?** [Graph reference](@ref),
   [Template reference](@ref), [Problem reference](@ref),
   [Systems and aggregation](@ref).
@@ -56,8 +59,9 @@ They compose as a product. Not every pair is wired up yet:
 ## Status
 
 Early. Stability, safety and optimal control work for the templates above. The
-differentiating work — comparing, ordering and refining path-complete graphs —
-is not here yet.
+differentiating work is in for stability: comparing two graphs for a template
+([Comparing graphs](@ref)), lifting a graph ([Lifts](@ref)) and refining one
+against its own certificate ([Refinement: designing the graph](@ref)).
 
 ## How it relates to the other tools
 
