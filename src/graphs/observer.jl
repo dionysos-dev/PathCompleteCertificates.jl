@@ -77,9 +77,9 @@ function observer_graph(graph::_HS.GraphAutomaton)
         end
     end
 
-    observer = _HS.GraphAutomaton(length(states))
+    observer = empty_graph(length(states))
     for (src, dst, edge_label) in graph_edges
-        _HS.add_transition!(observer, src, dst, edge_label)
+        add_edge!(observer, src, dst, edge_label)
     end
 
     return observer, states
