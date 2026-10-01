@@ -15,7 +15,12 @@ const TEST_FILES = [
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
     ("./graphs/cycles.jl",),
-    ("./lifts/forward.jl",),
+    ("./graphs/words.jl",),
+    ("./graphs/languages.jl",),
+    ("./lifts/split.jl",),
+    ("./lifts/reference.jl",),
+    ("./lifts/product.jl", :slow),
+    ("./lifts/global.jl",),
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
@@ -29,8 +34,10 @@ const TEST_FILES = [
     ("./problems/safety.jl",),
     ("./problems/optimal_control.jl", :slow),
     ("./problems/certificate.jl", :slow),
+    ("./problems/dual.jl", :slow),
     ("./aggregation.jl",),
-    ("./refinement/stability.jl", :slow),
+    ("./ordering.jl", :slow),
+    ("./refinement/loop.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]

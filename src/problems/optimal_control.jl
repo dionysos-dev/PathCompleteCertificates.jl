@@ -121,7 +121,7 @@ Supports complete graphs and `QuadraticTemplate` only; see
 """
 function optimization_model(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
@@ -133,7 +133,7 @@ function optimization_model(
 
     A = mode_matrices(problem.system)
     B = input_matrices(problem.system)
-    _check_optimal_control_data(graph, A, B; path_complete = path_complete)
+    _check_optimal_control_data(graph, problem; path_complete = path_complete)
 
     node_list = collect(nodes(graph))
     n = size(first(A), 1)
@@ -203,7 +203,7 @@ Returns an [`OptimalControlCertificate`](@ref):
 """
 function certify(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
@@ -241,8 +241,11 @@ function certify(
     )
 end
 
-function _check_optimal_control_data(graph, A, B; path_complete::Bool = true)
-    n = _check_modes(graph, A; path_complete = path_complete)
+function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
+    _require_letters(graph, "OptimalControlProblem")
+    n = _check_modes(graph, problem.system; path_complete = path_complete)
+    A = mode_matrices(problem.system)
+    B = input_matrices(problem.system)
 
     length(A) == length(B) ||
         throw(ArgumentError("A and B must have the same number of modes"))

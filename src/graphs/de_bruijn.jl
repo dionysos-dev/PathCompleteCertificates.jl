@@ -45,9 +45,9 @@ function de_bruijn(order::Integer, n_modes::Integer; orientation::Symbol = :comp
         end
     end
 
-    graph = _HS.GraphAutomaton(length(tuples))
+    graph = empty_graph(length(tuples))
     for (src, dst, edge_label) in graph_edges
-        _HS.add_transition!(graph, src, dst, edge_label)
+        add_edge!(graph, src, dst, edge_label)
     end
     return graph
 end

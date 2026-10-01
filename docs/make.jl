@@ -26,6 +26,7 @@ const ORDER = [
     "two_axes",
     "sum_of_squares",
     "refinement",
+    "ordering",
 ]
 
 function example_stems()
@@ -88,11 +89,15 @@ DocMeta.setdocmeta!(
 const PAGES = Any[
     "Home" => "index.md",
     "Manual" => [
+        "Switched systems" => "manual/systems.md",
         "Path-complete graphs" => "manual/graphs.md",
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
-        "Refinement" => "manual/refinement.md",
         "What works with what" => "manual/support.md",
+        "Lifts" => "manual/lifts.md",
+        "Comparing graphs" => "manual/ordering.md",
+        "Refinement" => "manual/refinement.md",
+        "Duality" => "manual/duality.md",
     ],
 ]
 
@@ -107,6 +112,7 @@ push!(
         "Problems" => "reference/problems.md",
         "Lifts" => "reference/lifts.md",
         "Refinement" => "reference/refinement.md",
+        "Ordering" => "reference/ordering.md",
     ],
 )
 push!(

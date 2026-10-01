@@ -261,3 +261,9 @@ function domination_slack(
 
     return worst
 end
+
+reindex(template::ConicPolyhedralTemplate, origins::AbstractVector) =
+    ConicPolyhedralTemplate(
+        _reindexed_data(template.cones, origins, "partitions");
+        min_scale = template.min_scale,
+    )

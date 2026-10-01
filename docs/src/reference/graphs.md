@@ -5,8 +5,10 @@ CurrentModule = PathCompleteCertificates
 # Graph reference
 
 The path-complete graph is a `HybridSystems.GraphAutomaton` — the same type as
-the system's own automaton. The package owns no graph type; these are the
-queries, predicates and constructions layered over it.
+the system's own automaton — or a [`WordGraph`](@ref) when its edges read words.
+The package owns no graph algorithms of its own beyond these: the queries,
+predicates and constructions layered over the backing store, all of them
+reachable through the adapter in `graphs/queries.jl` and nothing else.
 
 See [Path-complete graphs](@ref) for what they mean and what they license.
 
@@ -22,11 +24,39 @@ Modules = [PathCompleteCertificates]
 Pages   = ["graphs/queries.jl"]
 ```
 
+## Word graphs
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["graphs/words.jl"]
+```
+
 ## Predicates
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
 Pages   = ["graphs/predicates.jl"]
+```
+
+## Languages
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["graphs/languages.jl"]
+```
+
+## Dual graphs
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["graphs/dual.jl"]
+```
+
+## Simulation
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["graphs/simulation.jl"]
 ```
 
 ## Constructions

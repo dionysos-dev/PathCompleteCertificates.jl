@@ -139,3 +139,15 @@ function domination_slack(
 
     return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(residual))))
 end
+
+# Closed under addition, and under composition with a map that keeps a form
+# positive definite, which is an invertible one: AᵀPA ⊁ 0 when A is singular.
+is_closed_under(::QuadraticTemplate, ::Addition, system) = true
+is_closed_under(::QuadraticTemplate, ::Composition, system) = is_invertible(system)
+is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = is_invertible(system)
+
+# The dual norm of x ↦ xᵀPx is x ↦ xᵀP⁻¹x: the family is its own dual, and so
+# is the conditioning box.
+has_dual(::QuadraticTemplate) = true
+dual(template::QuadraticTemplate) = template
+dual(::QuadraticTemplate, V::QuadraticFunction) = QuadraticFunction(inv(V.P))

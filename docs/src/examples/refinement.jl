@@ -72,7 +72,7 @@ exact = PCC.refine(TEMPLATE, PCC.de_bruijn(1, 2), rotations; optimizer = OPTIMIZ
 PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
 # !!! note "Why the lift splits per edge"
-#     [`ForwardEdgeLift`](@ref) makes one copy per outgoing **edge**. The paper
+#     [`ForwardEdgeSplit`](@ref) makes one copy per outgoing **edge**. The paper
 #     splits per distinct **successor** — and the seed's only successor is itself,
 #     so that grain could not take a single step here.
 #

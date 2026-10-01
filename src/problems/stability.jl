@@ -20,6 +20,8 @@ struct StabilityProblem{S} <: AbstractProblem
     end
 end
 
+dual(problem::StabilityProblem) = StabilityProblem(dual(problem.system))
+
 """
     StabilityCertificate
 
@@ -61,9 +63,11 @@ end
 
 Create the feasibility problem for the Lyapunov inequalities
 
-    V_b(A_i x) <= gamma^2 * V_a(x)
+    V_b(A_w x) <= gamma^(d |w|) * V_a(x)
 
-for every edge `(a, b, i)` of `graph`.
+for every edge `(a, b, w)` of `graph`, `d` the template's degree and `|w|` the
+number of modes the edge reads — one on a letter graph, the product of the
+modes along the word on a [`WordGraph`](@ref).
 
 The returned model has no objective. Use [`is_stable`](@ref) or
 [`jsr_bound`](@ref) to solve it.
@@ -74,7 +78,7 @@ solver for `QuadraticTemplate`.
 """
 function optimization_model(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
@@ -84,7 +88,7 @@ function optimization_model(
 
     A = mode_matrices(problem.system)
 
-    _check_stability_data(template, graph, A; path_complete = path_complete)
+    _check_stability_data(template, graph, problem; path_complete = path_complete)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
@@ -99,19 +103,22 @@ function optimization_model(
     end
 
     # The template's degree of homogeneity, not a hard-coded square: `gamma` is
-    # the contraction rate for every template, so `jsr_bound` means the same
-    # thing whichever one is in use.
-    rate = gamma^rate_exponent(template)
+    # the contraction rate per step for every template, so `jsr_bound` means
+    # the same thing whichever one is in use -- and a word edge spans as many
+    # steps as it reads.
+    degree = rate_exponent(template)
 
     for edge in edges(graph)
+        word = letters(label(graph, edge))
+
         add_edge_constraint!(
             model,
             problem,
             template,
             Vs[source(edge)],
             Vs[dest(edge)],
-            A[label(graph, edge)];
-            rate = rate,
+            _product(A, word);
+            rate = gamma^(degree * length(word)),
         )
     end
 
@@ -128,7 +135,7 @@ to a feasible termination status.
 """
 function is_stable(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::StabilityProblem,
     gamma::Real;
     optimizer,
@@ -163,7 +170,7 @@ node Lyapunov functions, and `certificate(x)` evaluates the common one.
 """
 function jsr_bound(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
     rtol::Real = 1e-3,
@@ -177,12 +184,10 @@ function jsr_bound(
 
     initial_upper > 0 || throw(ArgumentError("initial_upper must be positive"))
 
-    A = mode_matrices(problem.system)
-
     # Once, here. The bisection below builds a model per step and each build
     # revalidates, so leaving this on would run a PSPACE-complete test a dozen
     # times over on a graph that cannot have changed.
-    _check_stability_data(template, graph, A; path_complete = path_complete)
+    _check_stability_data(template, graph, problem; path_complete = path_complete)
 
     lower = zero(initial_upper)
     upper = initial_upper
@@ -231,7 +236,7 @@ and [`is_stable`](@ref) asks only whether a given rate is feasible.
 """
 function certify(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
     rate::Real = 1,
@@ -261,13 +266,52 @@ function certify(
 end
 
 """
+    dual(certificate::StabilityCertificate)
+
+The certificate on `dual(graph)` for `dual(problem)` in `dual(template)` made of
+the dual norms of the node functions, at the same rate (Debauche, Lemma 6.25).
+
+Each edge inequality `V_d(A_i x) ≤ γ V_s(x)` is, by duality of norms,
+`V_s*(A_iᵀ x) ≤ γ V_d*(x)`: the inequality of the reversed edge. Nothing is
+solved, and an edge of the result is tight exactly when its reverse was. An
+infeasible certificate dualises to an infeasible one with the same status.
+
+Requires a template that [`has_dual`](@ref).
+"""
+function dual(certificate::StabilityCertificate)
+    template_ = template(certificate)
+    dual_problem = dual(problem(certificate))
+    dual_template = dual(template_)
+    dual_graph = dual(graph(certificate))
+
+    is_feasible(certificate) || return StabilityCertificate(
+        _failed(dual_problem, dual_template, dual_graph, status(certificate)),
+        certificate.rate,
+    )
+
+    V = [dual(template_, v) for v in functions(certificate)]
+
+    return StabilityCertificate(
+        CertificateData(
+            dual_problem,
+            dual_template,
+            dual_graph,
+            V,
+            status(certificate),
+            true,
+        ),
+        certificate.rate,
+    )
+end
+
+"""
     jsr_bound(template, graph, system; kwargs...)
 
 Estimate a joint-spectral-radius bound for an input-free switched system.
 """
 function jsr_bound(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     system::_HS.HybridSystem;
     kwargs...,
 )
@@ -278,27 +322,57 @@ end
 
 function _check_stability_data(
     template::AbstractTemplate,
-    graph::_HS.GraphAutomaton,
-    A::AbstractVector{<:AbstractMatrix};
+    graph::CertificateGraph,
+    problem::StabilityProblem;
     path_complete::Bool = true,
 )
-    _check_modes(graph, A; path_complete = path_complete)
-    check_dynamics(template, A)
+    _check_modes(graph, problem.system; path_complete = path_complete)
+    check_dynamics(template, mode_matrices(problem.system))
 
     return nothing
 end
 
+# --- What refine reads: the driver, the objective and the optimality gap ------
+
+function best_certificate(
+    template::AbstractTemplate,
+    graph::CertificateGraph,
+    problem::StabilityProblem;
+    optimizer,
+    rtol::Real = 1e-6,
+    kwargs...,
+)
+    return jsr_bound(template, graph, problem; optimizer, rtol = rtol, kwargs...)
+end
+
+objective(certificate::StabilityCertificate) = certificate.rate
+
 """
-    edge_slacks(certificate)
+    optimality_gap(certificate::StabilityCertificate; atol = 1e-4, max_length = nothing)
 
-The slack of every edge inequality, in `edges(graph(certificate))` order.
+How far the rate is known to be from the joint spectral radius: `0` when
+[`is_jsr_exact`](@ref) holds, and otherwise the rate minus
+[`jsr_lower_bound`](@ref), the cycle bracket. `atol` reads tightness and
+`max_length` bounds the cycle search, as in those two.
 
-Zero means the edge is tight: the certificate is held at exactly that
-inequality, and no smaller rate is available without changing the graph or the
-template. A large value means the edge is not what limits the bound.
-
-Throws on an infeasible certificate, which has no fitted functions to measure.
+The bracket is sound whatever `atol` was; the structural test is not, and it is
+skipped on a [`WordGraph`](@ref), where it is not yet proved.
 """
+function optimality_gap(
+    certificate::StabilityCertificate;
+    atol::Real = 1e-4,
+    max_length::Union{Nothing, Integer} = nothing,
+)
+    is_letter_graph(graph(certificate)) &&
+        is_jsr_exact(certificate; atol = atol) &&
+        return zero(certificate.rate)
+
+    return certificate.rate -
+           jsr_lower_bound(certificate; atol = atol, max_length = max_length)
+end
+
+# --- Reading a solved certificate: where it is tight --------------------------
+
 function edge_slacks(certificate::StabilityCertificate)
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no functions to measure"))
@@ -307,26 +381,35 @@ function edge_slacks(certificate::StabilityCertificate)
     template_ = template(certificate)
     V = functions(certificate)
     A = mode_matrices(problem(certificate).system)
+    degree = rate_exponent(template_)
 
     # The certificate stores gamma; the edge inequality is imposed at
-    # gamma^d, exactly as `optimization_model` builds it.
-    scale = certificate.rate^rate_exponent(template_)
+    # gamma^(d |w|), exactly as `optimization_model` builds it.
+    return map(edges(graph_)) do edge
+        word = letters(label(graph_, edge))
 
-    return [
-        domination_slack(
+        return domination_slack(
             template_,
             V[source(edge)],
             V[dest(edge)],
-            A[label(graph_, edge)];
-            scale = scale,
-        ) for edge in edges(graph_)
-    ]
+            _product(A, word);
+            scale = certificate.rate^(degree * length(word)),
+        )
+    end
+end
+
+# The edges whose inequality is active, as transitions of the graph.
+function _tight_transitions(certificate::StabilityCertificate; atol::Real)
+    graph_ = graph(certificate)
+    slacks = edge_slacks(certificate)
+
+    return [edge for (edge, slack) in zip(edges(graph_), slacks) if slack <= atol]
 end
 
 """
     tight_edges(certificate; atol = 1e-6)
 
-The edges whose inequality is active, as `(source, destination, mode)` tuples.
+The edges whose inequality is active, as `(source, destination, label)` tuples.
 
 These are the edges that hold the bound up. A node with **two or more** tight
 outgoing edges is the one a refinement step splits: it is being asked to serve
@@ -339,11 +422,10 @@ whose normalisation you have not checked.
 """
 function tight_edges(certificate::StabilityCertificate; atol::Real = 1e-6)
     graph_ = graph(certificate)
-    slacks = edge_slacks(certificate)
 
     return [
         (source(edge), dest(edge), label(graph_, edge)) for
-        (edge, slack) in zip(edges(graph_), slacks) if slack <= atol
+        edge in _tight_transitions(certificate; atol = atol)
     ]
 end
 
@@ -362,10 +444,10 @@ reads its out-degrees and [`jsr_lower_bound`](@ref) its cycles.
 """
 function tight_subgraph(certificate::StabilityCertificate; atol::Real = 1e-6)
     graph_ = graph(certificate)
-    subgraph = _HS.GraphAutomaton(n_nodes(graph_))
+    subgraph = _empty_like(graph_, n_nodes(graph_))
 
-    for (source_node, destination, mode) in tight_edges(certificate; atol = atol)
-        _HS.add_transition!(subgraph, source_node, destination, mode)
+    for edge in _tight_transitions(certificate; atol = atol)
+        add_edge!(subgraph, source(edge), dest(edge), label(graph_, edge))
     end
 
     return subgraph
@@ -378,6 +460,11 @@ Whether the certificate's rate is the **exact** joint spectral radius, by the
 optimality certificate of Ninite & Jungers (Theorem 4): if every node has at
 most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
 
+The constrained precedent is Theorem 3.8 of Philippe, Essick, Dullerud &
+Jungers, where the tight edges form a simple cycle. Letter graphs only: the
+theorem is not proved with words on the edges, and [`jsr_lower_bound`](@ref)
+needs no such proof.
+
 !!! warning "Sufficient, not necessary — and `atol`-dependent"
     `false` means *unknown*, never "inexact". A graph can attain the exact rate
     with every edge tight, where the condition cannot hold: two opposite
@@ -389,6 +476,8 @@ most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
     brackets the answer instead of asserting it.
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
+    _require_letters(graph(certificate), "is_jsr_exact")
+
     subgraph = tight_subgraph(certificate; atol = atol)
 
     return all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph))
@@ -400,10 +489,11 @@ end
 A **lower** bound on the joint spectral radius, from the cycles of the
 [`tight_subgraph`](@ref).
 
-A cycle `(a₁,a₂,i₁) … (a_k,a₁,i_k)` of the graph forces
-`γ ≥ ρ(A_{i_k} ⋯ A_{i_1})^{1/k}`, and any product of modes bounds the joint
-spectral radius from below (Ninite & Jungers, Lemma 1). The largest such value
-over the cycles found is returned; `0` when there are none.
+A cycle `(a₁,a₂,w₁) … (a_k,a₁,w_k)` of the graph forces
+`γ ≥ ρ(A_{w_k} ⋯ A_{w_1})^{1/ℓ}` with `ℓ` the number of modes read along it,
+and any product of modes bounds the joint spectral radius from below (Ninite &
+Jungers, Lemma 1; Philippe, Essick, Dullerud & Jungers, Lemma 3.7). The largest
+such value over the cycles found is returned; `0` when there are none.
 
 Together with the certificate's own rate — an *upper* bound — this brackets the
 answer, and **the bracket holds whatever `atol` was**: a cycle of the tight
@@ -432,15 +522,19 @@ function jsr_lower_bound(
 
     for cycle in simple_cycles(subgraph; max_length = length_bound)
         # Composing the edge inequalities along the cycle puts the last mode
-        # leftmost, which is also the order in which they act: A_{i_1} first.
+        # leftmost, which is also the order in which they act: the first read
+        # is applied first. A word edge reads several.
         product = LinearAlgebra.I
+        steps = 0
 
         for edge in cycle
-            product = A[label(subgraph, edge)] * product
+            word = letters(label(subgraph, edge))
+            product = _product(A, word) * product
+            steps += length(word)
         end
 
         radius = maximum(abs, LinearAlgebra.eigvals(Matrix(product)))
-        best = max(best, radius^(1 / length(cycle)))
+        best = max(best, radius^(1 / steps))
     end
 
     return best

@@ -117,3 +117,83 @@ determined up to scale, so compare slacks within one certificate rather than
 across two.
 """
 function domination_slack end
+
+"""
+    is_closed_under(template, operation, system) -> Bool
+
+Whether the family of node functions is closed under an [`Operation`](@ref):
+whether combining members of it gives a member (Debauche, Della Rossa &
+Jungers, Def. 7). The template declares; the default is `false`, which claims
+nothing.
+
+`system` is read by [`Composition`](@ref) and [`InverseComposition`](@ref)
+only — "closed under composition with the dynamics" is a statement about the
+maps composed with — and ignored by the three pointwise operations.
+
+What it decides is [`is_valid`](@ref): whether a lift is guaranteed not to make
+the bound worse for this template. A template that is closed under nothing can
+still be lifted; it just carries no such guarantee.
+"""
+is_closed_under(::AbstractTemplate, ::Operation, system) = false
+
+"""
+    reindex(template, origins)
+
+The template for a lifted graph, given where each of its nodes came from — the
+`origins` of a [`Lifted`](@ref).
+
+A template that carries no per-node data returns itself. One that does, such as
+[`PolyhedralTemplate`](@ref), gives every new node the data of its origin; a
+node that merges several origins takes their data when it coincides and throws
+otherwise.
+"""
+reindex(template::AbstractTemplate, ::AbstractVector) = template
+
+# The original nodes an origin refers to, whatever a lift recorded: a copy, a
+# subset, or a node paired with a word.
+_origin_nodes(origin::Integer) = (origin,)
+_origin_nodes(origin::AbstractVector{<:Integer}) = origin
+_origin_nodes(origin::Tuple{<:Integer, <:Any}) = (first(origin),)
+
+# One datum per new node, when its origins agree on it.
+function _reindexed_data(
+    data::AbstractVector,
+    origins::AbstractVector,
+    what::AbstractString,
+)
+    return map(origins) do origin
+        members = _origin_nodes(origin)
+        value = data[first(members)]
+
+        all(member -> data[member] == value, members) || throw(
+            ArgumentError(
+                "the lift merges nodes $(collect(members)) whose $what differ; the " *
+                "template carries one per node and cannot follow it",
+            ),
+        )
+
+        return value
+    end
+end
+
+"""
+    has_dual(template) -> Bool
+
+Whether `dual(template)` and `dual(template, V)` are defined: whether the dual
+norms of the family form a family the package has (Debauche, Def. 1.32). The
+default is `false`; a template with a dual declares both.
+"""
+has_dual(::AbstractTemplate) = false
+
+dual(template::AbstractTemplate) =
+    throw(ArgumentError("no dual template is defined for $(nameof(typeof(template)))"))
+
+"""
+    dual(template, V)
+
+The dual norm of a fitted node function `V` of `template`, as a member of
+`dual(template)`: the node function the certificate on the dual graph carries at
+the same node (Debauche, Lemma 6.25). Required by `dual(certificate)`.
+"""
+dual(template::AbstractTemplate, V) =
+    throw(ArgumentError("no dual node function is defined for $(nameof(typeof(template)))"))

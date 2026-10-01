@@ -182,3 +182,13 @@ function domination_slack(
 
     return minimum(scale * V_dst.w - M * V_src.w)
 end
+
+# The maximum of two weighted infinity norms in the same coordinates is one
+# again, with the smaller weights: closed under `max` exactly when every node
+# shares the matrix.
+is_closed_under(template::PolyhedralTemplate, ::Maximum, system) = allequal(template.G)
+
+reindex(template::PolyhedralTemplate, origins::AbstractVector) = PolyhedralTemplate(
+    _reindexed_data(template.G, origins, "node matrices");
+    min_weight = template.min_weight,
+)

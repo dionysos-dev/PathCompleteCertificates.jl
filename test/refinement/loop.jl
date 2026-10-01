@@ -65,7 +65,7 @@ end
         ONE_MODE_PROBLEM;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        until_stability = true,
+        stop = c -> c.rate < 1,
     )
 
     # The certified rate is already < 1, so this exits through the
@@ -159,7 +159,7 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        rng = MersenneTwister(1),
+        strategy = PCC.SplitTightNode(; rng = MersenneTwister(1)),
     )
 
     @test all(<(0), diff(PCC.rates(random)))
@@ -263,9 +263,9 @@ end
             ONE_MODE_PROBLEM;
             optimizer = OPTIMIZER,
             depth_max = 3,
-            until_stability = true,
+            stop = c -> c.rate < 1,
         ),
-    ) == PCC.STABLE
+    ) == PCC.STOPPED
 
     @test PCC.status(
         PCC.refine(
@@ -274,7 +274,7 @@ end
             SHEARED;
             optimizer = OPTIMIZER,
             depth_max = 2,
-            lift = PCC.ForwardEdgeLift(),
+            strategy = PCC.SplitTightNode(),
         ),
     ) == PCC.DEPTH_EXHAUSTED
 end
@@ -301,7 +301,7 @@ end
 end
 
 @testset "path_complete decides the seed, and the lifts are trusted after it" begin
-    settings = (optimizer = OPTIMIZER, depth_max = 3, lift = PCC.ForwardEdgeLift())
+    settings = (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.SplitTightNode())
 
     # Waiving the check cannot change the answer on a graph that has the
     # property -- it only skips deciding it.
@@ -353,6 +353,94 @@ end
     )
 
     @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2]
+end
+
+@testset "every local lift at every tight edge, best candidate, polyhedral template" begin
+    # Athanasopoulos & Jungers, Example 2, on the plane: the four partial lifts
+    # at every tight edge, each candidate solved, the best kept. The products
+    # write words on the edges, so the graph gains edges rather than nodes.
+    problem = SHEARED
+    template = PCC.PolyhedralTemplate(1, 2)
+
+    trace = PCC.refine(
+        template,
+        MEMORYLESS,
+        problem;
+        optimizer = OPTIMIZER,
+        strategy = PCC.LiftTightEdges(),
+        select = :best,
+        depth_max = 4,
+        atol = 1e-4,
+    )
+
+    bounds = PCC.objectives(trace)
+    @test length(bounds) >= 2
+    @test issorted(bounds; rev = true)
+    @test bounds[end] < bounds[1]
+
+    # Each step is recorded with its provenance, and the template followed it.
+    @test length(PCC.steps(trace)) == length(bounds) - 1
+    @test all(
+        step -> length(PCC.origins(step)) == PCC.n_nodes(PCC.graph(step)),
+        PCC.steps(trace),
+    )
+    @test all(
+        c -> length(PCC.functions(c)) == PCC.n_nodes(PCC.graph(c)),
+        PCC.certificates(trace),
+    )
+
+    # The final certificate stands on its own, on whatever graph was reached.
+    final = PCC.certificates(trace)[end]
+    @test PCC.is_feasible(final)
+    @test PCC.is_path_complete(PCC.graph(final), 1:2)
+end
+
+@testset "a global lift as the strategy walks a hierarchy" begin
+    # Memory lift each step from the one-node graph: De Bruijn of growing order,
+    # so the rates are those of de_bruijn(k, 2).
+    trace = PCC.refine(
+        TEMPLATE,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        strategy = PCC.Hierarchy(PCC.PathDependentLift(1)),
+        depth_max = 3,
+    )
+
+    @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 4]
+    for (k, certificate) in enumerate(PCC.certificates(trace)[2:end])
+        db = PCC.jsr_bound(
+            TEMPLATE,
+            PCC.de_bruijn(k, 2),
+            SHEARED;
+            optimizer = OPTIMIZER,
+            rtol = 1e-6,
+        )
+        @test isapprox(certificate.rate, db.rate; rtol = 1e-4)
+    end
+end
+
+@testset "a constrained system is refined from its automaton" begin
+    # Mode 2 may never follow itself. The seed is the automaton; every graph of
+    # the run reads its language, and the bound is below the unconstrained one.
+    constraint = GraphAutomaton(2)
+    add_transition!(constraint, 1, 1, 1)
+    add_transition!(constraint, 1, 2, 2)
+    add_transition!(constraint, 2, 1, 1)
+
+    A = [0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]
+    constrained = PCC.StabilityProblem(PCC.switched_system(A; automaton = constraint))
+
+    trace = PCC.refine(TEMPLATE, constrained; optimizer = OPTIMIZER, depth_max = 3)
+
+    @test PCC.n_nodes(PCC.graphs(trace)[1]) == 2
+    @test all(
+        g -> PCC.is_path_complete(g, PCC.language(constrained.system)),
+        PCC.graphs(trace),
+    )
+    @test issorted(PCC.rates(trace); rev = true)
+
+    unconstrained = PCC.refine(TEMPLATE, SHEARED; optimizer = OPTIMIZER, depth_max = 3)
+    @test PCC.rates(trace)[end] <= PCC.rates(unconstrained)[end] + 1e-6
 end
 
 @testset "escalation is off unless asked for, and cannot lower the tolerance" begin

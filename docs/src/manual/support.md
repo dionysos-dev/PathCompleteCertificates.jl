@@ -11,6 +11,7 @@ three problems are still quadratic-only.
 | :----------------------------- | :------------------------: | :---------------------: | :-----------------------------: |
 | [`QuadraticTemplate`](@ref)         | ✓ | ✓ | ✓ |
 | [`LinearCopositiveTemplate`](@ref)  | ✓ ¹ | ✗ | ✗ |
+| [`DualCopositiveTemplate`](@ref)    | ✓ ¹ | ✗ | ✗ |
 | [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
 | [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
@@ -22,26 +23,39 @@ not defined.
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control
 additionally requires a **complete** graph, not merely a path-complete one.
+Stability accepts a [`WordGraph`](@ref); safety and optimal control need one
+mode per edge and say so.
 
-## And one cell for refinement
+## The graph layer
 
-[`refine`](@ref) designs the graph rather than taking one, so it is not a column
-of the table above — it sits on top of a cell of it, and only on one:
+Lifting, comparing, refining and words on edges are written for stability,
+where the theory is. [`refine`](@ref) is generic in the problem, reading only
+[`best_certificate`](@ref), [`objective`](@ref) and
+[`optimality_gap`](@ref), but today only [`StabilityProblem`](@ref) answers
+them. Within stability it runs for every template that answers
+[`domination_slack`](@ref), which is how the loop reads where a certificate is
+tight:
 
-| | [`StabilityProblem`](@ref) |
-| :-- | :-: |
-| [`QuadraticTemplate`](@ref) | ✓ |
+| | [`refine`](@ref) | [`order_witness`](@ref) |
+| :-- | :-: | :-: |
+| [`QuadraticTemplate`](@ref) | ✓ | map, linear program |
+| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ | map, linear program; min lift valid without closure |
+| [`DualCopositiveTemplate`](@ref) | ✓ ¹ | map, relation on the duals |
+| [`PolyhedralTemplate`](@ref) | ✓ | map; relation on the duals when the node matrices coincide |
+| [`ConicPolyhedralTemplate`](@ref) | ✓ | map |
+| [`SumOfSquaresTemplate`](@ref) | ✗ ³ | map, linear program |
 
-The scope is **what is tested**, not a mathematical obstacle: a lift preserves
-path-completeness, which is the soundness condition, and the forward lift needs
-nothing from the template besides. Everything inside `refine` goes through
-[`edge_slacks`](@ref), which every template answers, so this cell is one
-signature and a test away from being a column.
+³ No `domination_slack` yet, so the loop cannot read where that template is
+tight.
+
+The second column is what the template's closures entitle
+[`order_witness`](@ref) to run; see [Comparing graphs](@ref). A template with
+per-node data follows a lifted graph through [`reindex`](@ref).
 
 ## The two gaps are different
 
 **Safety** imposes its inequality on the homogeneous lift, which the polyhedral
-templates could support — the construction is sound, the plumbing is not
+templates could support: the construction is sound, the plumbing is not
 written. Expect this gap to close.
 
 **Optimal control** is convex only after the substitution ``S = P^{-1}``,

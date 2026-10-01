@@ -1,4 +1,5 @@
 import HybridSystems
+import LinearAlgebra
 import MathematicalSystems
 
 const _HS = HybridSystems
@@ -157,4 +158,69 @@ function _check_dimensions(A, B)
     end
 
     return n
+end
+
+"""
+    mode_matrix(system, mode)
+    mode_matrix(system, word)
+
+The state matrix of one mode, or the product ``A_{i_k} ⋯ A_{i_1}`` along a word
+`(i_1, …, i_k)` — the dynamics an edge of a [`WordGraph`](@ref) imposes its
+inequality on.
+"""
+mode_matrix(system::_HS.HybridSystem, mode::Integer) = mode_matrices(system)[mode]
+
+mode_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
+    _product(mode_matrices(system), word)
+
+# The product along a word, on matrices already extracted: the model builders
+# call this per edge and must not rebuild the mode table each time.
+function _product(A::AbstractVector{<:AbstractMatrix}, word)
+    isempty(word) && throw(ArgumentError("a word must read at least one mode"))
+
+    product = A[first(word)]
+
+    for mode in Iterators.drop(word, 1)
+        product = A[mode] * product
+    end
+
+    return product
+end
+
+"""
+    is_invertible(system) -> Bool
+
+Whether every mode matrix has full rank. Composition with the dynamics keeps a
+node function positive definite only then, which is what the composition lifts
+require.
+"""
+is_invertible(system::_HS.HybridSystem) =
+    all(A -> LinearAlgebra.rank(A) == size(A, 1), mode_matrices(system))
+
+"""
+    is_nonnegative(system) -> Bool
+
+Whether every mode matrix is entrywise nonnegative — a positive system, the
+setting of the copositive templates.
+"""
+is_nonnegative(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(system))
+
+"""
+    dual(system)
+
+The system with every mode matrix transposed and, when switching is
+constrained, the automaton reversed. A certificate for it on the dual graph in
+the dual template is a certificate for `system` (Debauche, Lemma 6.25).
+
+Defined for input-free systems only.
+"""
+function dual(system::_HS.HybridSystem)
+    has_input(system) &&
+        throw(ArgumentError("the dual of a controlled system is not defined"))
+
+    A = [collect(transpose(A_mode)) for A_mode in mode_matrices(system)]
+    automaton = language(system)
+
+    return automaton isa _HS.OneStateAutomaton ? switched_system(A) :
+           switched_system(A; automaton = dual(automaton))
 end

@@ -64,3 +64,10 @@ node_value(
     V::SumOfSquaresFunction,
     x::AbstractVector{<:Real},
 ) = V(x)
+
+# Sums of squares add to sums of squares, and compose with an invertible linear
+# map to sums of squares of the same degree.
+is_closed_under(::SumOfSquaresTemplate, ::Addition, system) = true
+is_closed_under(::SumOfSquaresTemplate, ::Composition, system) = is_invertible(system)
+is_closed_under(::SumOfSquaresTemplate, ::InverseComposition, system) =
+    is_invertible(system)

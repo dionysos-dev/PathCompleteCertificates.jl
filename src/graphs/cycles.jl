@@ -24,7 +24,7 @@ node — the same cycle is not repeated in its `k` rotations.
     enumeration — reading one cycle as evidence on its own, rather than the set
     as a complete answer.
 """
-function simple_cycles(graph::_HS.GraphAutomaton; max_length::Integer = n_nodes(graph))
+function simple_cycles(graph::CertificateGraph; max_length::Integer = n_nodes(graph))
     max_length > 0 || throw(ArgumentError("max_length must be positive"))
 
     cycles = Vector{Vector{_HS.GraphTransition}}()
@@ -43,7 +43,7 @@ end
 # only on the pass that begins at its smallest node.
 function _extend_cycles!(
     cycles::Vector{Vector{_HS.GraphTransition}},
-    graph::_HS.GraphAutomaton,
+    graph::CertificateGraph,
     start::Integer,
     current::Integer,
     path::Vector{_HS.GraphTransition},
