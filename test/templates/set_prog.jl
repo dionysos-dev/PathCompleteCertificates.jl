@@ -171,6 +171,27 @@ end
     end
 end
 
+@testset "the template follows a lift" begin
+    shared = PCC.SetProgTemplate(Ellipsoid(symmetric = true))
+    @test PCC.reindex(shared, [1, 1, 1]) === shared
+
+    square = Ellipsoid(symmetric = true, piecewise = SQUARE)
+    octagon = Ellipsoid(symmetric = true, piecewise = OCTAGON)
+    per_node = PCC.SetProgTemplate([square, octagon])
+
+    # Each new node gets the variable of its origin.
+    lifted = PCC.reindex(per_node, [2, 1, 2])
+    @test lifted.variables[1] === octagon
+    @test lifted.variables[2] === square
+    @test lifted.variables[3] === octagon
+    @test !lifted.shared
+
+    # Merging nodes is fine when they carry the same variable, not otherwise.
+    @test only(PCC.reindex(PCC.SetProgTemplate([square, square]), [[1, 2]]).variables) ===
+          square
+    @test_throws ArgumentError PCC.reindex(per_node, [[1, 2]])
+end
+
 @testset "what the template does not support" begin
     @test_throws ArgumentError rate(PCC.SetProgTemplate(Ellipsoid(dimension = 2)))
     @test_throws ArgumentError rate(

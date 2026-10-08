@@ -64,6 +64,12 @@ struct SetProgFunction{S}
     set::S
 end
 
+# A shared variable follows any lift. One per node gives each new node the
+# variable of its origin.
+reindex(template::SetProgTemplate, origins::AbstractVector) =
+    template.shared ? template :
+    SetProgTemplate(_reindexed_data(template.variables, origins, "set variables"))
+
 # The sets are constructed in their cone (PSD matrices, SOS polynomials), and
 # the normalization keeps them positive, so there is nothing to add.
 add_nonnegativity!(::JuMP.Model, ::SetProgTemplate, _) = nothing
