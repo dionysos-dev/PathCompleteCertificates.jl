@@ -40,11 +40,13 @@ end
 # A word graph has no state at the silent steps inside a word, so no observer
 # and no common function; expand it first.
 function common(
-    ::AbstractTemplate,
+    template::AbstractTemplate,
     graph::WordGraph,
-    ::AbstractProblem,
-    ::AbstractVector,
-    ::AbstractVector{<:Real},
+    problem::AbstractProblem,
+    Ps::AbstractVector,
+    x::AbstractVector{<:Real},
 )
-    return _require_one_mode_per_edge(graph, "common")
+    _require_one_mode_per_edge(graph, "common")
+
+    return common(template, _letter_graph(graph), problem, Ps, x)
 end

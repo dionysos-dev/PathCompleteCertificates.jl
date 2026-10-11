@@ -156,7 +156,7 @@ function optimization_model(
     for edge in edges(graph)
         source_index = source(edge)
         destination_index = dest(edge)
-        mode = label(graph, edge)
+        mode = only(letters(label(graph, edge)))
         _add_edge_lmi!(
             model,
             problem,

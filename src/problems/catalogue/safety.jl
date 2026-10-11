@@ -153,7 +153,14 @@ function optimization_model(
         i = source(edge)
         j = dest(edge)
 
-        add_edge_constraint!(model, problem, template, Ps[i], Ps[j], A[label(graph, edge)])
+        add_edge_constraint!(
+            model,
+            problem,
+            template,
+            Ps[i],
+            Ps[j],
+            A[only(letters(label(graph, edge)))],
+        )
     end
 
     JuMP.@objective(model, Max, eps)
@@ -306,7 +313,7 @@ function edge_slacks(certificate::SafetyCertificate)
             template_,
             B[source(edge)],
             B[dest(edge)],
-            _homogeneous_dynamics(A[label(graph_, edge)]),
+            _homogeneous_dynamics(A[only(letters(label(graph_, edge)))]),
         )
     end
 end
