@@ -150,6 +150,24 @@ end
     @test_throws ArgumentError PCC.PathDependentRefinement(0)
 end
 
+@testset "the dual of the path-dependent lift is the dual De Bruijn hierarchy" begin
+    one = PCC.common_graph(OneStateAutomaton(2))
+
+    for k in 1:2
+        lifted = PCC.refine(PCC.dual(PCC.PathDependentRefinement(k)), one)
+        g = PCC.graph(lifted)
+        db = PCC.dual(PCC.de_bruijn(k, 2))
+
+        @test PCC.n_nodes(g) == PCC.n_nodes(db)
+        @test PCC.n_edges(g) == PCC.n_edges(db)
+        @test PCC.is_co_complete(g, 1:2)
+        @test PCC.simulation(g, db) !== nothing && PCC.simulation(db, g) !== nothing
+    end
+
+    @test PCC.dual(PCC.dual(PCC.PathDependentRefinement(1))) ==
+          PCC.PathDependentRefinement(1)
+end
+
 @testset "the path-dependent lift of an automaton: its nodes are the edges" begin
     a = GraphAutomaton(2)
     add_transition!(a, 1, 1, 1)

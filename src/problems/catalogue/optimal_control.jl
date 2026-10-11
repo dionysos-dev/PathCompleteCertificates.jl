@@ -2,11 +2,11 @@ import JuMP
 import LinearAlgebra
 
 """
-	OptimalControlProblem(system, Q, R)
+    OptimalControlProblem(system, Q, R)
 
-Quadratic optimal-control problem for an input-enabled switched linear system.
-The stage cost is `x'Q*x + u'R*u`, with `Q` and `R` symmetric positive
-definite.
+Quadratic optimal-control problem for a switched linear system with an input
+(Ninite, Banse, Berger & Jungers). The stage cost is `x'Q*x + u'R*u`, with `Q`
+and `R` symmetric positive definite.
 """
 struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
        AbstractProblem
@@ -51,31 +51,26 @@ comes with.
 
 `gains` is one feedback matrix per node: at node `a` the policy is
 `u = gains[a] * x`. The bound on the closed-loop value function is
-`certificate(x)` — a function of the state, not a scalar.
-
-`objective` is the solved log-determinant objective `Sum_i log det inv(P_i)`,
-the volume heuristic that selects among the feasible certificates. It is a
-solver diagnostic and **not** a bound on anything: it is routinely negative,
-whereas the value function is nonnegative whenever `Q, R` are positive definite.
+`certificate(x)`, a function of the state, and `functions(certificate)` are the
+quadratic forms it is the minimum of.
 """
-struct OptimalControlCertificate{D <: CertificateData, K, T} <: AbstractCertificate
+struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
     gains::K
-    objective::T
 end
 
-# The one edge condition that does not factor through `add_domination!`.
+# The one edge condition that does not factor through `add_domination!`, so it
+# is not an `add_edge_constraint!` method: that signature takes two node
+# functions, and this inequality,
 #
-#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK)
+#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK),
 #
-# is not convex in (P, K) jointly, and becomes convex only under S = P^-1,
-# Y = K S. So this problem uses the template's variables as the *inverse* of
-# the node function and cannot be stated against V_src and V_dst at all --
-# which is why only the quadratic template supports it.
-function add_edge_constraint!(
+# is convex only under S = P^-1, Y = K S. It is written on the quadratic
+# template's variables as the *inverse* of the node function, which is why only
+# that template supports it.
+function _add_edge_lmi!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
-    ::QuadraticTemplate,
     S_src,
     Y_src,
     S_dst,
@@ -162,10 +157,9 @@ function optimization_model(
         source_index = source(edge)
         destination_index = dest(edge)
         mode = label(graph, edge)
-        add_edge_constraint!(
+        _add_edge_lmi!(
             model,
             problem,
-            template,
             S[source_index],
             Y[source_index],
             S[destination_index],
@@ -189,17 +183,11 @@ Synthesize a quadratic state-feedback policy and an upper bound on the closed-lo
 value function for `problem`. This first implementation supports complete graphs
 and `QuadraticTemplate` only.
 
-Returns an [`OptimalControlCertificate`](@ref):
-
-  * `functions(certificate)` are the node matrices and
-    `gains` the feedback gains, one of each per node;
-  * the value-function bound itself is `certificate(x)` — a function of the
-    state, not a scalar;
-  * `objective` is the solved log-determinant objective
-    `Σᵢ log det Pᵢ⁻¹`, the volume heuristic that selects among the feasible
-    certificates. It is a solver diagnostic, **not** a bound on the value
-    function — it is routinely negative, whereas the value function is
-    nonnegative whenever `Q, R ≻ 0`.
+Returns an [`OptimalControlCertificate`](@ref): `functions(certificate)` are
+the node matrices and `gains` the feedback gains, one of each per node, and the
+value-function bound is `certificate(x)`, a function of the state. Among the
+feasible certificates the solver picks the one of largest volume, by the
+log-determinant objective `Σᵢ log det Pᵢ⁻¹`.
 """
 function certify(
     template::AbstractTemplate,
@@ -221,11 +209,8 @@ function certify(
     JuMP.optimize!(model)
     status = JuMP.termination_status(model)
 
-    status in _FEASIBLE_TERMINATION_STATUSES || return OptimalControlCertificate(
-        _failed(problem, template, graph, status),
-        nothing,
-        nothing,
-    )
+    status in _FEASIBLE_TERMINATION_STATUSES ||
+        return OptimalControlCertificate(_failed(problem, template, graph, status), nothing)
 
     S = model[:optimal_control_S]
     Y = model[:optimal_control_Y]
@@ -237,7 +222,6 @@ function certify(
     return OptimalControlCertificate(
         CertificateData(problem, template, graph, P, status, true),
         K,
-        JuMP.objective_value(model),
     )
 end
 

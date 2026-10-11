@@ -28,11 +28,11 @@ a **complete** graph, not merely a path-complete one. Stability accepts a
 
 ## Comparing and refining
 
-Both are written for stability, where the theory is. [`refine`](@ref) runs
-for every template that answers [`domination_slack`](@ref), which is how the
-loop reads where a certificate is tight. [`compare`](@ref) asks a question
-about graphs, and which of its verdicts hold for a template is read from the
-template's closure properties:
+[`compare`](@ref) is written for stability, where the theory is; it asks a
+question about graphs, and which of its verdicts hold for a template is read
+from the template's closure properties. [`refine`](@ref) runs on stability and
+safety, for every template that answers [`domination_slack`](@ref), which is
+how the loop reads where a certificate is tight:
 
 | | [`refine`](@ref) | lifts valid for [`compare`](@ref) |
 | :-- | :-: | :-- |

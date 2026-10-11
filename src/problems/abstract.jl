@@ -9,15 +9,16 @@ the node functions are drawn from.
 abstract type AbstractProblem end
 
 """
-    add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
+    add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
 
-Add this problem's certificate inequality for one labelled graph edge.
+Add this problem's certificate inequality for one edge, `dynamics` being the
+matrix the edge reads: the product along its word.
 
 One method per problem, generic in the template: compose the template's
-primitives rather than dispatching on a template here.
-
-`rate` is the per-solve scalar a driver varies, such as the contraction rate
-stability bisects on. A problem with no such scalar ignores it.
+primitives rather than dispatching on a template here. `scale` is the factor
+on the source side a driver varies, already raised to the template's degree
+and the word's length; stability passes `rate^(d·|w|)`. A problem with no such
+factor ignores it.
 """
 function add_edge_constraint! end
 
@@ -320,11 +321,58 @@ Zero means the edge is tight: the certificate is held at exactly that
 inequality. A large value means the edge is not what limits the bound. One
 method per problem, each through [`domination_slack`](@ref) with the edge's
 own map and scale; a problem whose edge does not factor through
-[`add_domination!`](@ref) throws.
+[`add_domination!`](@ref) has none.
 
 Throws on an infeasible certificate, which has no fitted functions to measure.
 """
 function edge_slacks end
+
+# The edges whose inequality is active, as transitions of the graph.
+function _tight_transitions(certificate::AbstractCertificate; atol::Real)
+    graph_ = graph(certificate)
+    slacks = edge_slacks(certificate)
+
+    return [edge for (edge, slack) in zip(edges(graph_), slacks) if slack <= atol]
+end
+
+"""
+    tight_edges(certificate; atol = 1e-6)
+
+The edges whose inequality is active, as `(source, destination, label)` tuples:
+the edges that hold the certificate up. A node with two or more tight outgoing
+edges is the one a refinement step splits, since it serves two futures with a
+single function. `atol` is absolute, and a certificate is only determined up to
+scale, so read it against [`edge_slacks`](@ref).
+"""
+function tight_edges(certificate::AbstractCertificate; atol::Real = 1e-6)
+    graph_ = graph(certificate)
+
+    return [
+        (source(edge), dest(edge), label(graph_, edge)) for
+        edge in _tight_transitions(certificate; atol = atol)
+    ]
+end
+
+"""
+    tight_subgraph(certificate; atol = 1e-6)
+
+The subgraph of the edges whose inequality is active, on the same nodes, so
+node numbers carry over. For stability it is Definition 4 of Ninite & Jungers,
+`Ē = {(a,b,i) ∈ E : λ_min(γ²P_a − Aᵢᵀ P_b A_i) = 0}`, the object
+[`is_jsr_exact`](@ref) reads the out-degrees of and [`jsr_lower_bound`](@ref)
+the cycles. `atol` stands in for the exact zero, which a bisected solution
+never reaches; see [`refine`](@ref) on choosing it.
+"""
+function tight_subgraph(certificate::AbstractCertificate; atol::Real = 1e-6)
+    graph_ = graph(certificate)
+    subgraph = _empty_like(graph_, n_nodes(graph_))
+
+    for edge in _tight_transitions(certificate; atol = atol)
+        add_edge!(subgraph, source(edge), dest(edge), label(graph_, edge))
+    end
+
+    return subgraph
+end
 
 # Problems whose edge inequality reads the state at every step cannot take a
 # word graph: nothing constrains the states inside a word.

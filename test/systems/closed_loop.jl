@@ -43,9 +43,17 @@ const CERTIFICATE =
     @test length(PCC.states(trajectory)) == 21
 end
 
+@testset "the run starts where the bound is attained" begin
+    x0 = [1.0, 1.0]
+    values = [V(x0) for V in PCC.functions(CERTIFICATE)]
+    trajectory = PCC.simulate(CERTIFICATE, x0, 1; rng = Random.MersenneTwister(1))
+
+    @test first(PCC.inputs(trajectory)) ≈ CERTIFICATE.gains[argmin(values)] * x0
+end
+
 @testset "the gain follows the graph, not the step" begin
     rng = Random.MersenneTwister(3)
-    trajectory = PCC.simulate(CERTIFICATE, [1.0, 1.0], 20; rng = rng)
+    trajectory = PCC.simulate(CERTIFICATE, [1.0, 1.0], 20; rng = rng, node = 1)
 
     xs = PCC.states(trajectory)
     us = PCC.inputs(trajectory)
@@ -92,7 +100,6 @@ end
             true,
         ),
         CERTIFICATE.gains,
-        CERTIFICATE.objective,
     )
 
     @test_throws ArgumentError PCC.simulate(

@@ -75,10 +75,6 @@ substitution ``S = P^{-1}``, ``Y = KS``, and it needs a **complete** graph.
 certify
 ```
 
-!!! danger "`objective` is not the bound"
-    It is a volume heuristic for choosing among feasible certificates, and is
-    routinely negative. The bound is `certificate(x)`.
-
 ## Reading a certificate
 
 Every entry point returns a certificate object, feasible or not, so that "no
@@ -93,13 +89,14 @@ this order:
 | [`functions`](@ref)`(c)` | the fitted node functions, one per node, each callable |
 | `c(x)` | the [`common`](@ref) function, what graph and template certify together |
 
-A stability certificate says more than its rate, and the graph layer is built
-on what it says:
+A certificate says more than its number, and the graph layer is built on what
+it says. The first two rows are read on stability and safety certificates, the
+rest on stability's:
 
 | | |
 | :-- | :-- |
 | [`edge_slacks`](@ref) | how far each edge inequality is from being active |
-| [`tight_edges`](@ref), [`tight_subgraph`](@ref) | the edges that hold the bound up ([ninite2026lifting](@cite), Def. 4) |
+| [`tight_edges`](@ref), [`tight_subgraph`](@ref) | the edges that hold the certificate up ([ninite2026lifting](@cite), Def. 4) |
 | [`is_jsr_exact`](@ref) | the rate **is** the joint spectral radius when every node has at most one tight outgoing edge ([ninite2026lifting](@cite), Thm. 4) |
 | [`jsr_lower_bound`](@ref) | the bound from below given by the cycles of the tight subgraph, bracketing the rate |
 | [`dual`](@ref)`(c)` | the same certificate on the dual graph, for the transposed system, in the dual template ([debauche2024thesis](@cite), Lemma 6.25) |

@@ -186,10 +186,13 @@ radius. [`refine`](@ref) therefore enforces `atol ≥ 10 rtol`.
 ## Generic in the problem
 
 The loop names no problem. It reads [`best_certificate`](@ref) to solve a
-step, [`objective`](@ref) to compare two steps and [`optimality_gap`](@ref) to
-stop; a problem that answers the three joins the loop with the strategies and
-the trace unchanged. Stability answers them today, and
-[What works with what](@ref) says which templates it runs on.
+step, [`objective`](@ref) to compare two steps, [`edge_slacks`](@ref) to see
+where a certificate is held and [`optimality_gap`](@ref) to stop; a problem
+that answers them joins the loop with the strategies and the trace unchanged.
+Stability and safety do. Safety has no lower bound, so its runs end on a stall
+or the depth budget rather than [`OPTIMAL`](@ref), with the margin read as
+`c.margin` on each certificate of the trace.
+[What works with what](@ref) says which templates the loop runs on.
 
 ```@docs; canonical=false
 refine

@@ -37,7 +37,7 @@ reindex(template, origins)                                 # per-node data follo
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads

@@ -1,4 +1,3 @@
-
 """
     StabilityProblem(system)
 
@@ -11,12 +10,10 @@ struct StabilityProblem{S} <: AbstractProblem
     system::S
 
     function StabilityProblem(system::S) where {S}
-        # Without this, `mode_matrices` returns the (A, B) pair and the failure
-        # surfaces much later as a MethodError inside the model builder.
         has_input(system) &&
             throw(ArgumentError("StabilityProblem requires an input-free system"))
 
-        return new{typeof(system)}(system)
+        return new{S}(system)
     end
 end
 
@@ -41,19 +38,19 @@ struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertific
     rate::T
 end
 
-# One method, generic over templates. `rate` is gamma^homogeneity_degree(template),
-# and the whole edge condition of this problem is the template's domination
-# primitive with that scale -- so a new template needs nothing here.
+# One method, generic over templates: the whole edge condition of this problem
+# is the template's domination primitive at the scale the driver passes, so a
+# new template needs nothing here.
 function add_edge_constraint!(
     model::JuMP.Model,
-    problem::StabilityProblem,
+    ::StabilityProblem,
     template::AbstractTemplate,
     V_src,
     V_dst,
     A::AbstractMatrix;
-    rate::Real = 1,
+    scale::Real = 1,
 )
-    add_domination!(model, template, V_src, V_dst, A; scale = rate)
+    add_domination!(model, template, V_src, V_dst, A; scale)
 
     return nothing
 end
@@ -112,7 +109,7 @@ function optimization_model(
             Vs[source(edge)],
             Vs[dest(edge)],
             _product(A, word);
-            rate = rate^(degree * length(word)),
+            scale = rate^(degree * length(word)),
         )
     end
 
@@ -350,61 +347,6 @@ function edge_slacks(certificate::StabilityCertificate)
             scale = certificate.rate^(degree * length(word)),
         )
     end
-end
-
-# The edges whose inequality is active, as transitions of the graph.
-function _tight_transitions(certificate::StabilityCertificate; atol::Real)
-    graph_ = graph(certificate)
-    slacks = edge_slacks(certificate)
-
-    return [edge for (edge, slack) in zip(edges(graph_), slacks) if slack <= atol]
-end
-
-"""
-    tight_edges(certificate; atol = 1e-6)
-
-The edges whose inequality is active, as `(source, destination, label)` tuples.
-
-These are the edges that hold the bound up. A node with **two or more** tight
-outgoing edges is the one a refinement step splits: it is being asked to serve
-two futures with a single function, and giving it one copy per successor is
-what buys a tighter rate.
-
-`atol` is absolute, and a certificate is only determined up to scale — so read
-it against [`edge_slacks`](@ref) rather than trusting a default on a template
-whose normalisation you have not checked.
-"""
-function tight_edges(certificate::StabilityCertificate; atol::Real = 1e-6)
-    graph_ = graph(certificate)
-
-    return [
-        (source(edge), dest(edge), label(graph_, edge)) for
-        edge in _tight_transitions(certificate; atol = atol)
-    ]
-end
-
-"""
-    tight_subgraph(certificate; atol = 1e-6)
-
-The subgraph of the edges whose inequality is active — Definition 4 of Ninite &
-Jungers, `Ē = {(a,b,i) ∈ E : λ_min(γ²P_a − Aᵢᵀ P_b A_i) = 0}`.
-
-Same nodes as the certificate's graph, so node numbers carry over; only edges
-are dropped. `atol` stands in for the exact zero, which a bisected solution
-never reaches — see [`refine`](@ref) on choosing it.
-
-This is the object the optimality theory is stated on: [`is_jsr_exact`](@ref)
-reads its out-degrees and [`jsr_lower_bound`](@ref) its cycles.
-"""
-function tight_subgraph(certificate::StabilityCertificate; atol::Real = 1e-6)
-    graph_ = graph(certificate)
-    subgraph = _empty_like(graph_, n_nodes(graph_))
-
-    for edge in _tight_transitions(certificate; atol = atol)
-        add_edge!(subgraph, source(edge), dest(edge), label(graph_, edge))
-    end
-
-    return subgraph
 end
 
 """

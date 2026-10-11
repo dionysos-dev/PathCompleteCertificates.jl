@@ -1,23 +1,18 @@
-# Reference for path-complete barrier functions for safety of switched linear systems:
-# M. Anand, R. Jungers, M. Zamani, and F. Allgöwer,
-# "Path-Complete Barrier Functions for Safety of Switched Linear Systems", CDC 2024
-
 import JuMP
 import LinearAlgebra
 
 """
     SafetyProblem(system, S0, Su)
 
-Path-complete safety problem for an input-free switched linear system.
+Path-complete safety problem for an input-free switched linear system (Anand,
+Jungers, Zamani & Allgöwer, CDC 2024).
 
-S0 and Su describe the initial and unsafe sets in homogeneous
-coordinates.
-
-The candidate barrier functions are
+`S0` and `Su` describe the initial and unsafe sets in homogeneous coordinates,
+as `{x : [x; 1]' S [x; 1] ≥ 0}`. The candidate barrier functions are
 
     B_v(x) = [x; 1]' * P_v * [x; 1]
 
-where P_v is symmetric but not necessarily positive semidefinite.
+where `P_v` is symmetric but not necessarily positive semidefinite.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem
     system::S
@@ -70,7 +65,7 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     unsafe_multipliers::M
 end
 
-# `B_dst(A x) <= B_src(x)`: non-increasing, with no margin.
+# `B_dst(A x) <= B_src(x)`: non-increasing, with no margin and no scale.
 #
 # A margin here is unsatisfiable, not merely unnecessary. The constant direction
 # e = [0, ..., 0, 1] is fixed by every lifted map, so reading the condition at e
@@ -79,14 +74,14 @@ end
 # belongs on the set separation, and the model builder puts it there.
 function add_edge_constraint!(
     model::JuMP.Model,
-    problem::SafetyProblem,
+    ::SafetyProblem,
     template::AbstractTemplate,
     P_src,
     P_dst,
     A::AbstractMatrix;
-    rate::Real = 1,
+    scale::Real = 1,
 )
-    add_domination!(model, template, P_src, P_dst, _homogeneous_dynamics(A); scale = 1)
+    add_domination!(model, template, P_src, P_dst, _homogeneous_dynamics(A))
 
     return nothing
 end
@@ -290,7 +285,28 @@ function node_value(
     V::QuadraticFunction,
     x::AbstractVector{<:Real},
 )
-    z = [x; one(eltype(x))]
+    return V([x; one(eltype(x))])
+end
 
-    return LinearAlgebra.dot(z, V.P * z)
+# --- What refine reads: smaller is better, and where the barrier is held -----
+
+objective(certificate::SafetyCertificate) = -certificate.margin
+
+function edge_slacks(certificate::SafetyCertificate)
+    is_feasible(certificate) ||
+        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+
+    graph_ = graph(certificate)
+    template_ = template(certificate)
+    B = functions(certificate)
+    A = mode_matrices(problem(certificate).system)
+
+    return map(edges(graph_)) do edge
+        return domination_slack(
+            template_,
+            B[source(edge)],
+            B[dest(edge)],
+            _homogeneous_dynamics(A[label(graph_, edge)]),
+        )
+    end
 end

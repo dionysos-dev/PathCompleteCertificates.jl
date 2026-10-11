@@ -18,9 +18,11 @@ integer matrix `C`, every row summing to at least one, such that `C·V` is a
 certificate on `H` whenever `V` is one on `G` (Philippe, Athanasopoulos,
 Angeli & Jungers, Def. IV.2 and Thm. IV.4). It is complete: feasible exactly
 when some `T`-sum lift of `G` simulates `H` (Debauche, Thm. 7.35 and
-Cor. 8.11). `simulation(SumLift(T), G, H)` builds the `T`-th level and returns
-a map into multisets, which exists for some `T` whenever the program is
-feasible (HSCC 2023, Lemma 3). `origins` are the multisets as sorted vectors.
+Cor. 8.11). The solver's matrix is rounded to integers and checked against the
+program again before it is returned. `simulation(SumLift(T), G, H)` builds the
+`T`-th level and returns a map into multisets, which exists for some `T`
+whenever the program is feasible (HSCC 2023, Lemma 3). `origins` are the
+multisets as sorted vectors.
 """
 struct SumLift{T <: Union{Nothing, Int}} <: AbstractLift
     terms::T
@@ -100,19 +102,46 @@ end
 
 function simulation(
     ::SumLift{Nothing},
-    G::_HS.GraphAutomaton,
-    H::_HS.GraphAutomaton;
+    G::CertificateGraph,
+    H::CertificateGraph;
     optimizer = nothing,
 )
     optimizer === nothing && throw(
         ArgumentError("the sum lift is decided by a linear program and needs an optimizer"),
     )
+    G, H = _letter_graph(G), _letter_graph(H)
 
+    program = _sum_program(G, H, optimizer, nothing)
+    program === nothing && return nothing
+
+    model, C = program
+    JuMP.optimize!(model)
+    JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES || return nothing
+
+    # What is returned is the rounded matrix, so it is the rounded matrix that
+    # is checked against the program.
+    integers = _integerise(JuMP.value.(C))
+    check, _ = _sum_program(G, H, optimizer, integers)
+    JuMP.optimize!(check)
+    JuMP.termination_status(check) in _FEASIBLE_TERMINATION_STATUSES || error(
+        "the linear program is feasible, but its solution did not round to an " *
+        "integer matrix that still satisfies it",
+    )
+
+    return integers
+end
+
+# The program of Philippe et al., Def. IV.2: over the matrix `C` when `nothing`
+# is given, over the multipliers alone when `C` is. `nothing` when some mode of
+# `H` is read nowhere in `G`.
+function _sum_program(G, H, optimizer, C)
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    C = JuMP.@variable(model, [1:n_nodes(H), 1:n_nodes(G)], lower_bound = 0)
-    JuMP.@constraint(model, [h in 1:n_nodes(H)], sum(C[h, :]) >= 1)
+    if C === nothing
+        C = JuMP.@variable(model, [1:n_nodes(H), 1:n_nodes(G)], lower_bound = 0)
+        JuMP.@constraint(model, [h in 1:n_nodes(H)], sum(C[h, :]) >= 1)
+    end
 
     for letter in union(alphabet(G), alphabet(H))
         edges_G = [e for e in edges(G) if label(G, e) == letter]
@@ -129,10 +158,7 @@ function simulation(
         JuMP.@constraint(model, D_H * C .<= K * D_G)
     end
 
-    JuMP.optimize!(model)
-    JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES || return nothing
-
-    return _integerise(JuMP.value.(C))
+    return model, C
 end
 
 function _incidences(g, edge_list)
