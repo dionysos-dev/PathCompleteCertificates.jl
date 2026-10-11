@@ -58,10 +58,7 @@ refine(refinement::AbstractRefinement, g::CertificateGraph) =
 function _check_locus(g::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
     isempty(locus) && throw(ArgumentError("the locus is empty"))
     allunique(locus) || throw(ArgumentError("the locus lists an edge twice"))
-    automaton = _automaton(g)
-    for edge in locus
-        _HS.has_transition(automaton, edge) ||
-            throw(ArgumentError("the locus contains an edge that is not in the graph"))
-    end
+    all(edge -> has_edge(g, edge), locus) ||
+        throw(ArgumentError("the locus contains an edge that is not in the graph"))
     return nothing
 end

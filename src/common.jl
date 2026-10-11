@@ -29,7 +29,7 @@ function common(
 
     # Each observer node is a *set* of nodes of `graph`, so the common function is
     # a maximum within each set and a minimum across them.
-    _, observer_states = observer_graph(graph)
+    _, observer_states = observer_graph(graph, alphabet)
 
     return minimum(
         maximum(node_value(template, problem, Ps[node], x) for node in state) for

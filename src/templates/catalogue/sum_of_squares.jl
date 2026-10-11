@@ -58,13 +58,6 @@ homogeneity_degree(template::SumOfSquaresTemplate) = 2 * template.degree
 # the node function is nonnegative by construction and there is nothing to add.
 add_nonnegativity!(::JuMP.Model, ::SumOfSquaresTemplate, _) = nothing
 
-node_value(
-    ::SumOfSquaresTemplate,
-    ::AbstractProblem,
-    V::SumOfSquaresFunction,
-    x::AbstractVector{<:Real},
-) = V(x)
-
 # Sums of squares add to sums of squares, and compose with an invertible linear
 # map to sums of squares of the same degree.
 is_closed_under(::SumOfSquaresTemplate, ::Addition, system) = true

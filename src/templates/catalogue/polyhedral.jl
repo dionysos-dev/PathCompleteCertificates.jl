@@ -162,13 +162,6 @@ function add_domination!(
     return nothing
 end
 
-node_value(
-    ::PolyhedralTemplate,
-    ::AbstractProblem,
-    V::PolyhedralFunction,
-    x::AbstractVector{<:Real},
-) = V(x)
-
 function domination_slack(
     ::PolyhedralTemplate,
     V_src::PolyhedralFunction,

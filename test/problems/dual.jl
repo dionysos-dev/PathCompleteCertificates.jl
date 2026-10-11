@@ -22,7 +22,7 @@ edgeset(g) = Set(
 # The numbers a fitted node function is made of, whatever the template.
 coefficients(V::PCC.QuadraticFunction) = Matrix(V)
 coefficients(V::PCC.DualCopositiveFunction) = V.v
-coefficients(c::AbstractVector) = c
+coefficients(V::PCC.LinearCopositiveFunction) = V.c
 
 # A positive system for the copositive pair, a general one for the quadratic
 # template; both invertible, so the composition lifts are valid somewhere.

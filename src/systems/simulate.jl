@@ -2,7 +2,7 @@ import Random
 
 """
     simulate(system, x0, modes; u = nothing)
-    simulate(system, x0, horizon::Integer; u = nothing, node = 1, rng = Random.default_rng())
+    simulate(system, x0, horizon::Integer; u = nothing, discrete_state = 1, rng = Random.default_rng())
 
 Run `system` from `x0` along a switching sequence and return a
 [`Trajectory`](@ref): `x[k+1] = A_{modes[k]} x[k]`, or, once `system` has an
@@ -12,10 +12,10 @@ Given `modes` explicitly, that sequence is taken. Prefer this in a test —
 Julia's default random stream is not stable across releases.
 
 Given a `horizon` instead, a sequence of that length is drawn: a random walk on
-`system`'s automaton, starting at discrete state `node` and, at each step,
-picking uniformly among the transitions leaving the current state. A system
-built with a restricted `automaton` therefore only ever produces a sequence
-that automaton admits, never an inadmissible one.
+`system`'s automaton, starting at `discrete_state` and, at each step, picking
+uniformly among the transitions leaving the current state. A system built with
+a restricted `automaton` therefore only ever produces a sequence that automaton
+admits, never an inadmissible one.
 
 Both return the same type, so the drawn sequence is read back off the result
 with [`switching`](@ref) rather than returned alongside it.
@@ -81,10 +81,12 @@ function simulate(
     x0::AbstractVector,
     horizon::Integer;
     u = nothing,
-    node::Integer = 1,
+    discrete_state::Integer = 1,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
-    return simulate(system, x0, _random_modes(system.automaton, node, horizon, rng); u = u)
+    modes = _random_modes(system.automaton, discrete_state, horizon, rng)
+
+    return simulate(system, x0, modes; u = u)
 end
 
 _input_at(u::AbstractVector, k, x) = u[k]

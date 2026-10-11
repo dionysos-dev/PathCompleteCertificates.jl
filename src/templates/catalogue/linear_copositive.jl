@@ -10,6 +10,17 @@ into itself.
 """
 struct LinearCopositiveTemplate <: AbstractTemplate end
 
+"""
+    LinearCopositiveFunction(c)
+
+One fitted node function of a [`LinearCopositiveTemplate`](@ref), `V(x) = c'x`.
+"""
+struct LinearCopositiveFunction{C <: AbstractVector}
+    c::C
+end
+
+(V::LinearCopositiveFunction)(x::AbstractVector{<:Real}) = LinearAlgebra.dot(V.c, x)
+
 function add_function_variables!(
     model::JuMP.Model,
     ::LinearCopositiveTemplate,
@@ -29,7 +40,7 @@ function add_nonnegativity!(
     return nothing
 end
 
-solution_value(::LinearCopositiveTemplate, c) = JuMP.value.(c)
+solution_value(::LinearCopositiveTemplate, c) = LinearCopositiveFunction(JuMP.value.(c))
 
 homogeneity_degree(::LinearCopositiveTemplate) = 1
 
@@ -55,9 +66,6 @@ function add_domination!(
     return nothing
 end
 
-node_value(::LinearCopositiveTemplate, ::AbstractProblem, c, x::AbstractVector{<:Real}) =
-    LinearAlgebra.dot(c, x)
-
 function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
     any(A_i -> any(<(0), A_i), A) && throw(
         ArgumentError(
@@ -72,12 +80,12 @@ end
 
 function domination_slack(
     ::LinearCopositiveTemplate,
-    c_src::AbstractVector,
-    c_dst::AbstractVector,
+    V_src::LinearCopositiveFunction,
+    V_dst::LinearCopositiveFunction,
     map::AbstractMatrix;
     scale = 1,
 )
-    return minimum(scale * c_src - transpose(map) * c_dst)
+    return minimum(scale * V_src.c - transpose(map) * V_dst.c)
 end
 
 # Closed under addition (Debauche, Della Rossa & Jungers, Prop. 6). Under
@@ -97,7 +105,7 @@ end
 # The dual norm of cᵀx on the orthant is max_i x_i / c_i (Debauche, Def. 2.30).
 has_dual(::LinearCopositiveTemplate) = true
 dual(::LinearCopositiveTemplate) = DualCopositiveTemplate()
-dual(::LinearCopositiveTemplate, c::AbstractVector) = DualCopositiveFunction(c)
+dual(::LinearCopositiveTemplate, V::LinearCopositiveFunction) = DualCopositiveFunction(V.c)
 
 # Valid without closure: the template is not closed under the pointwise minimum
 # as a set of functions, yet G ≤ G_min holds for it on positive linear systems

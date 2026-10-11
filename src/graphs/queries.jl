@@ -137,6 +137,15 @@ Return the edges of `graph`.
 edges(graph::CertificateGraph) = _HS.transitions(_automaton(graph))
 
 """
+    has_edge(graph, edge) -> Bool
+
+Whether `edge`, a transition handed out by [`edges`](@ref) or
+[`add_edge!`](@ref), belongs to `graph`.
+"""
+has_edge(graph::CertificateGraph, edge::_HS.GraphTransition) =
+    _HS.has_transition(_automaton(graph), edge)
+
+"""
     source(edge)
 
 Return the source node of an edge.

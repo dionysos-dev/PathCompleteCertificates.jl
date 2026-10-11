@@ -121,13 +121,6 @@ function add_domination!(
     return nothing
 end
 
-node_value(
-    ::QuadraticTemplate,
-    ::AbstractProblem,
-    V::QuadraticFunction,
-    x::AbstractVector{<:Real},
-) = V(x)
-
 function domination_slack(
     ::QuadraticTemplate,
     V_src::QuadraticFunction,

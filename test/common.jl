@@ -56,10 +56,10 @@ end
     # axis, every template that defines it combines -- nothing in `common`
     # mentions a template by name.
     graph = PCC.de_bruijn(1, 2)
-    coefficients = [[1.0, 1.0], [2.0, 2.0]]
+    linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, coefficients, X) ≈
-          minimum(LinearAlgebra.dot(c, X) for c in coefficients)
+    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, linear, X) ≈
+          minimum(V(X) for V in linear)
 
     weights = [
         PCC.PolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), [1.0, 1.0]),
@@ -68,18 +68,6 @@ end
 
     @test PCC.common(PCC.PolyhedralTemplate(2, 2), graph, PROBLEM, weights, X) ≈
           minimum(V(X) for V in weights)
-end
-
-struct UnsupportedTemplate <: PCC.AbstractTemplate end
-
-@testset "a template with no node value says which pair is missing" begin
-    @test_throws ArgumentError PCC.common(
-        UnsupportedTemplate(),
-        PCC.de_bruijn(1, 2),
-        PROBLEM,
-        PS,
-        X,
-    )
 end
 
 end

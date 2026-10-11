@@ -33,27 +33,12 @@ _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 """
     node_value(template, problem, V, x)
 
-Evaluate one node function at `x`.
-
-On the problem axis because a problem may lift the value into other coordinates:
-`SafetyProblem` evaluates its barriers at `[x; 1]`, and that is the only pair
-where it matters.
+Evaluate one fitted node function at `x`. Node functions are callable, so the
+default is `V(x)`. It is on the problem axis because a problem may lift the
+value into other coordinates: `SafetyProblem` evaluates its barriers at
+`[x; 1]`, the one pair with a method of its own.
 """
-function node_value end
-
-function node_value(
-    template::AbstractTemplate,
-    problem::AbstractProblem,
-    V,
-    ::AbstractVector{<:Real},
-)
-    return throw(
-        ArgumentError(
-            "no node-function evaluation for $(typeof(template)) on " *
-            "$(nameof(typeof(problem))); define `node_value` for that pair",
-        ),
-    )
-end
+node_value(::AbstractTemplate, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 
 """
     _check_modes(graph, system)

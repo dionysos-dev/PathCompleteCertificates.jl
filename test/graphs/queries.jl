@@ -30,6 +30,10 @@ import PathCompleteCertificates as PCC
 
     @test PCC.outdegree(graph, 1) == 2
     @test PCC.indegree(graph, 1) == 1
+
+    @test all(edge -> PCC.has_edge(graph, edge), PCC.edges(graph))
+    other = PCC.empty_graph(3)
+    @test !PCC.has_edge(graph, PCC.add_edge!(other, 2, 1, 1))
 end
 
 @testset "Graph validation" begin

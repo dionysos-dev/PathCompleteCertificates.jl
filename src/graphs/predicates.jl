@@ -49,52 +49,15 @@ function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
     # them before paying for the subset construction.
     (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
 
-    index = _successors(graph)
+    # The observer drops empty subsets, so a word some reachable subset cannot
+    # read is a missing edge of it.
+    observer, _ = observer_graph(graph, alphabet)
 
-    # `observer_graph` runs the same search but drops empty states, which is
-    # exactly what this predicate needs to see.
-    start = Set(nodes(graph))
-
-    # Variable-length tuples as immutable keys. The element type must be
-    # written out: inferring it from the first subset pins the arity.
-    seen = Set{Tuple{Vararg{Int}}}()
-    push!(seen, Tuple(sort!(collect(start))))
-    pending = [start]
-
-    while !isempty(pending)
-        subset = pop!(pending)
-
-        for letter in alphabet
-            reachable = _step(index, subset, letter)
-
-            # Some word is unreadable: the graph certifies nothing about it.
-            isempty(reachable) && return false
-
-            key = Tuple(sort!(collect(reachable)))
-            if !(key in seen)
-                push!(seen, key)
-                push!(pending, reachable)
-            end
-        end
-    end
-
-    return true
+    return is_complete(observer, alphabet)
 end
 
 is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_path_complete(first(expanded_form(graph)), alphabet)
-
-# The nodes reachable from `subset` by one edge reading `letter`.
-function _step(index, subset, letter::Integer)
-    reachable = Set{Int}()
-
-    for node in subset
-        targets = get(index, (node, letter), nothing)
-        targets === nothing || union!(reachable, targets)
-    end
-
-    return reachable
-end
 
 """
     is_complete(graph)

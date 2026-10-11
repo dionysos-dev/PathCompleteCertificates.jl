@@ -94,13 +94,6 @@ function add_domination!(
     return nothing
 end
 
-node_value(
-    ::DualCopositiveTemplate,
-    ::AbstractProblem,
-    V::DualCopositiveFunction,
-    x::AbstractVector{<:Real},
-) = V(x)
-
 function check_dynamics(::DualCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
     any(A_i -> any(<(0), A_i), A) && throw(
         ArgumentError(
@@ -129,4 +122,4 @@ is_closed_under(::DualCopositiveTemplate, ::Maximum, system) = true
 
 has_dual(::DualCopositiveTemplate) = true
 dual(::DualCopositiveTemplate) = LinearCopositiveTemplate()
-dual(::DualCopositiveTemplate, V::DualCopositiveFunction) = V.v
+dual(::DualCopositiveTemplate, V::DualCopositiveFunction) = LinearCopositiveFunction(V.v)
