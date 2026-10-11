@@ -74,8 +74,7 @@ One fitted node function of a [`ConicPolyhedralTemplate`](@ref),
 
 It carries the node's `cones` because the edge condition is imposed on their
 extreme rays, and `scale` because the positivity condition is stated against
-it. As with [`PolyhedralFunction`](@ref), the fixed data travels with the
-variables — the decision variables alone do not determine the constraints.
+it.
 """
 struct ConicPolyhedralFunction{C, M, S}
     cones::C

@@ -68,9 +68,8 @@ where ``d`` is [`homogeneity_degree`](@ref). `scale` and `margin` may be JuMP
 expressions.
 
 Quantifying over all `x` needs a lifting into a cone, which is template-specific
-but problem-agnostic — so this is the method that keeps the interface at
-templates + problems rather than templates × problems. A template that cannot
-express `margin` should accept `margin = 0` and throw otherwise.
+but problem-agnostic. A template that cannot express `margin` should accept
+`margin = 0` and throw otherwise.
 """
 function add_domination! end
 

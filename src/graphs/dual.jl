@@ -9,11 +9,8 @@ dual(graph::CertificateGraph) = first(_dual_with_images(graph))
 """
     dual(graph, edges) -> (dual_graph, dual_edges)
 
-The dual graph together with the edges of it that `edges` became, in order.
-
-The edges of a rebuilt graph are new objects, and the backing store lists them
-in no particular order, so a lift applied at a locus of the dual graph needs
-the correspondence recorded as the dual is built.
+The dual graph together with the edges of it that `edges` became, in order:
+what applying a refinement at a locus of the dual graph needs.
 """
 function dual(graph::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
     dualised, image = _dual_with_images(graph)

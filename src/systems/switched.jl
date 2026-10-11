@@ -13,12 +13,11 @@ A discrete-time switched linear system, `x⁺ = A_σ x` or `x⁺ = A_σ x + B_σ
 as a `HybridSystems.HybridSystem`.
 
 `A` and `B` are indexed by mode. `automaton` restricts which switching sequences
-are admissible; the default admits every sequence.
+are admissible; the default admits every sequence. The switching signal is
+never chosen; the input `u`, when there is one, is.
 
-Switching is autonomous — the *mode* is not ours to choose, the *input* is.
-
-The matrices sit on the transitions, keyed by mode, and the modes themselves
-carry no dynamics — use [`mode_matrices`](@ref) rather than `system.modes`.
+Read the matrices back with [`mode_matrices`](@ref) and
+[`input_matrices`](@ref).
 
 ```julia
 A = [[1.0 0.0; 0.0 0.5], [0.5 0.0; 0.0 1.0]]
@@ -52,14 +51,7 @@ end
 """
     mode_matrices(system)
 
-The state matrices `A`, indexed by mode.
-
-Needed because the matrices live on the transitions, keyed by event — reading
-`system.resetmaps` works only while those happen to be ordered by label.
-
-Always `A`, never the pair — use [`input_matrices`](@ref) for `B`. Returning
-one or the other on a runtime check would be type-unstable, and would let
-`A, B = mode_matrices(sys)` silently destructure a two-mode autonomous system.
+The state matrices `A`, indexed by mode; [`input_matrices`](@ref) gives `B`.
 """
 function mode_matrices(system::_HS.HybridSystem)
     maps = _maps_by_mode(system)
@@ -70,11 +62,7 @@ end
 """
     input_matrices(system)
 
-The input matrices `B`, indexed by mode.
-
-Throws if the system has no input, rather than returning something empty: a
-caller asking for `B` on an autonomous system has made a mistake worth hearing
-about.
+The input matrices `B`, indexed by mode. Throws if the system has no input.
 """
 function input_matrices(system::_HS.HybridSystem)
     has_input(system) ||
@@ -88,11 +76,7 @@ end
 """
     has_input(system) -> Bool
 
-Whether the reset maps of `system` carry a control input.
-
-`MathematicalSystems.iscontrolled` asks the same question, but extending it for
-`HybridSystem` would be type piracy — their function on their type — so this one
-is ours.
+Whether `system` has an input, `x⁺ = A_σ x + B_σ u`.
 """
 function has_input(system::_HS.HybridSystem)
     return all(
@@ -101,7 +85,7 @@ function has_input(system::_HS.HybridSystem)
     )
 end
 
-"Reset maps keyed by mode, i.e. by the transition's event."
+# Reset maps keyed by mode, i.e. by the transition's event.
 function _maps_by_mode(system::_HS.HybridSystem)
     maps = Dict{Int, Any}()
     for t in _HS.transitions(system.automaton)
@@ -110,7 +94,7 @@ function _maps_by_mode(system::_HS.HybridSystem)
     return maps
 end
 
-"Validate the mode data and return the shared state dimension."
+# Validate the mode data and return the shared state dimension.
 function _check_dimensions(A, B)
     isempty(A) && throw(ArgumentError("at least one mode is required"))
     length(A) == length(B) ||

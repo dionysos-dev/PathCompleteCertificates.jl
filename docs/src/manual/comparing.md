@@ -51,7 +51,7 @@ anything exponential where the theory allows.
 
 | Lift | Decides ``G \le_{\mathcal V} H`` for | How | Simulation | Complete | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| [`IdentityLift`](@ref)`()` | every template, every system | a labelled graph homomorphism ``H \to G``, NP-hard, searched inside the relation below | a map | yes | [philippe2019complete](@cite), Thm. 3.5 |
+| [`IdentityLift`](@ref)`()` | every template, every system | a map found by backtracking inside the relation below | a map | yes | [philippe2019complete](@cite), Thm. 3.5 |
 | [`MinLift`](@ref)`()` | templates closed under `min` ¹ | the greatest simulation relation between the nodes, a map into subsets, polynomial | a relation | yes | [debauche2022necessary](@cite), Thm. 3; [debauche2024thesis](@cite), Thm. 8.1 |
 | [`MaxLift`](@ref)`()` | templates closed under `max` | the same on the dual graphs | a relation | yes | [debauche2022necessary](@cite), Thm. 4; [debauche2024thesis](@cite), Thm. 8.5 |
 | [`SumLift`](@ref)`()` | templates closed under `+` | a linear program over nonnegative matrices ``C`` with ``S_H C \ge K S_G`` and ``D_H C \le K D_G`` | an integer matrix | yes | [philippe2017path](@cite), Thm. IV.4; [debauche2023ordering](@cite), Thm. 2 |
@@ -100,9 +100,10 @@ The one-node graph, [`common_graph`](@ref) of the system, simulates every
 graph, so ``G_0 \le_{\mathcal V} G`` always. The other direction,
 `compare(G, common_graph(system))`, asks whether ``G`` is worth its nodes. For
 a `min`-closed template it holds exactly when the min lift simulates the
-one-node graph: when some set of nodes of ``G`` has, from each of its nodes
-and for each mode, an edge reading that mode back into the set, so that the
-minimum of their functions is a common function
+one-node graph ([debauche2024thesis](@cite), Thm. 8.1): when some set of nodes
+of ``G`` has, from each of its nodes and for each mode, an edge reading that
+mode back into the set, so that the minimum of their functions is a common
+function. A complete graph always has one, the whole graph
 ([debauche2021comparison](@cite), Prop. 3; [debauche2024thesis](@cite),
 Cor. 7.53). The relation of the min lift finds the largest such set, and the
 max lift asks the same of the reversed edges for `max`-closed templates.

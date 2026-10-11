@@ -1,11 +1,12 @@
 """
     de_bruijn(order, n_modes)
 
-The primal De Bruijn graph of order `order` on `n_modes` modes (Debauche,
-Def. 6.10): a node per tuple of `order` modes, the last ones read, and from
-`(i₁, …, iₗ)` an edge reading `σ` to `(σ, i₁, …, iₗ₋₁)`. It is complete, with
-`n_modes^order` nodes, and path-complete. The dual De Bruijn graph, co-complete,
-is [`dual`](@ref)`(de_bruijn(order, n_modes))`.
+The primal De Bruijn graph of order `order` on `n_modes` modes: a node per
+tuple of `order` modes, the last ones read, newest first, and from
+`(i₁, …, iₗ)` an edge reading `σ` to `(σ, i₁, …, iₗ₋₁)` (Ninite & Jungers,
+Def. 6; Debauche, Def. 6.10, which writes the tuple oldest first). It is
+complete, with `n_modes^order` nodes, and path-complete. The dual De Bruijn
+graph, co-complete, is [`dual`](@ref)`(de_bruijn(order, n_modes))`.
 """
 function de_bruijn(order::Integer, n_modes::Integer)
     order >= 1 || throw(ArgumentError("the order must be positive"))

@@ -22,12 +22,8 @@ factor ignores it.
 """
 function add_edge_constraint! end
 
-"""
-    _n_modes(problem)
-
-The size of the system's alphabet — which is what completeness must be judged
-against, not the labels the graph happens to carry.
-"""
+# The size of the system's alphabet, which is what completeness is judged
+# against, not the labels the graph happens to carry.
 _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 
 """
@@ -40,20 +36,10 @@ value into other coordinates: `SafetyProblem` evaluates its barriers at
 """
 node_value(::AbstractTemplate, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 
-"""
-    _check_modes(graph, system)
-
-Validate the system's mode matrices against the graph, and return the state
-dimension.
-
-Square matrices of one size, edge labels whose every letter indexes one, and a
-graph that is path-complete for the system's [`language`](@ref). Anything
-beyond that is the problem's own business.
-
-`path_complete = false` waives the last test and **asserts** it instead —
-deciding it is PSPACE-complete (see [`is_path_complete`](@ref)). Not the
-default: what it guards against is silent.
-"""
+# Validate the mode matrices against the graph and return the state dimension:
+# square matrices of one size, edge labels that index a mode, and a graph that
+# is path-complete for the system's language. `path_complete = false` waives
+# the last test, which is expensive to decide, and asserts it instead.
 function _check_modes(
     graph::CertificateGraph,
     system::_HS.HybridSystem;
@@ -85,11 +71,7 @@ function _check_modes(
     return dimension
 end
 
-"""
-    _FEASIBLE_TERMINATION_STATUSES
-
-Termination statuses a driver treats as "the solver found something".
-"""
+# Termination statuses a driver treats as "the solver found something".
 const _FEASIBLE_TERMINATION_STATUSES = (
     JuMP.MOI.OPTIMAL,
     JuMP.MOI.LOCALLY_SOLVED,
@@ -101,12 +83,8 @@ const _FEASIBLE_TERMINATION_STATUSES = (
     AbstractCertificate
 
 What a problem hands back: the fitted node functions, plus whatever that
-problem certifies.
-
-One certificate type per problem, declared in the problem's own file, with what
-it certifies as typed fields. What they all share lives once in
-[`CertificateData`](@ref), held in a field named `data` and read by the
-accessors below.
+problem certifies as a field of its own, `rate`, `margin` or `gains`. The
+shared part is a [`CertificateData`](@ref), read by the accessors below.
 
 A certificate is **callable**: `certificate(x)` is [`common`](@ref) at `x`.
 """
@@ -115,8 +93,7 @@ abstract type AbstractCertificate end
 """
     CertificateData(problem, template, graph, functions, status, feasible)
 
-The part of a certificate that does not depend on which problem produced it,
-declared once rather than repeated in each problem's type.
+The part of a certificate that does not depend on which problem produced it.
 """
 struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     problem::P
@@ -127,12 +104,8 @@ struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     feasible::Bool
 end
 
-"""
-    _data(certificate)
-
-The shared [`CertificateData`](@ref). Override this one method and a
-certificate inherits every accessor.
-"""
+# The shared CertificateData; a certificate holding it in a field named `data`
+# inherits every accessor.
 _data(certificate::AbstractCertificate) = certificate.data
 
 """
@@ -145,10 +118,8 @@ functions(certificate::AbstractCertificate) = _data(certificate).functions
 """
     status(certificate)
 
-The solver's termination status.
-
-Distinct from [`is_feasible`](@ref): a solver can terminate happily on a model
-whose solution fails the conditions when re-checked, and the problems re-check.
+The solver's termination status. Distinct from [`is_feasible`](@ref), which a
+problem may decide on the returned numbers.
 """
 status(certificate::AbstractCertificate) = _data(certificate).status
 
@@ -219,10 +190,6 @@ solving it.
 One method per problem. Use it to inspect the program, add your own
 constraints, or change the objective before handing it to `JuMP.optimize!`;
 [`certify`](@ref) is this plus the solve and the extraction.
-
-The name avoids `model`, which is the first argument of every template
-primitive and would be shadowed inside each of them, and avoids `program`,
-which reads a letter away from `problem`.
 """
 function optimization_model end
 
@@ -239,21 +206,11 @@ Check [`is_feasible`](@ref) before reading anything else. An infeasible result
 is still a certificate object, carrying the solver [`status`](@ref) so that "no
 certificate exists in this template on this graph" is distinguishable from "the
 solver gave up".
-
-Not to be confused with refutation, when that lands: sampling for a violation
-is a cheap way to learn you are wrong, and finding none proves nothing.
 """
 function certify end
 
-"""
-    _failed(problem, template, graph, status)
-
-The [`CertificateData`](@ref) of a solve that produced nothing.
-
-`functions` is empty, and its element type is deliberately unconstrained: there
-is no fitted function to name a type after, and naming one anyway is how this
-came to claim `QuadraticFunction` for templates that are nothing of the kind.
-"""
+# The CertificateData of a solve that produced nothing: no functions, so no
+# element type to name.
 function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
     return CertificateData(problem, template, graph, Any[], status, false)
 end

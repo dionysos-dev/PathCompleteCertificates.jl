@@ -10,12 +10,13 @@ copy to the node. A node whose outgoing edges are all in the locus is replaced
 by its copies, and a node left without edges is deleted. Copies are numbered
 last.
 
-At one edge this is the paper's lift, pinned against the reference
-implementation of Roy's repository in `test/refinements/reference.jl`; a locus
-of several edges at one node is that lift applied edge by edge, the loop last.
-On `outgoing_edges(graph, s)` it is the forward lift of Ninite & Jungers
-(Def. 3), the default step of [`refine`](@ref). Its dual,
-[`BackwardEdgeSplit`](@ref), splits destinations along incoming edges.
+At one edge this is the paper's lift; a locus of several edges at one node is
+that lift applied edge by edge, the loop last. On `outgoing_edges(graph, s)`,
+the default step of [`refine`](@ref), it gives `s` one copy per outgoing edge,
+which is the forward lift of Ninite & Jungers (Def. 3) whenever no two edges
+of `s` share a destination; their lift gives one copy per successor instead.
+Its dual, [`BackwardEdgeSplit`](@ref), splits destinations along incoming
+edges.
 """
 struct ForwardEdgeSplit <: AbstractRefinement end
 

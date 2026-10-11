@@ -387,23 +387,21 @@ A **lower** bound on the joint spectral radius, from the cycles of the
 
 A cycle `(a₁,a₂,w₁) … (a_k,a₁,w_k)` of the graph forces
 `γ ≥ ρ(A_{w_k} ⋯ A_{w_1})^{1/ℓ}` with `ℓ` the number of modes read along it,
-and any product of modes bounds the joint spectral radius from below (Ninite &
-Jungers, Lemma 1; Philippe, Essick, Dullerud & Jungers, Lemma 3.7). The largest
-such value over the cycles found is returned; `0` when there are none.
+and any product of modes bounds the joint spectral radius from below (Philippe,
+Essick, Dullerud & Jungers, Lemma 3.7; Ninite & Jungers, Lemma 1 and its
+proof). The largest such value over the cycles found is returned; `0` when
+there are none.
 
 Together with the certificate's own rate — an *upper* bound — this brackets the
 answer, and **the bracket holds whatever `atol` was**: a cycle of the tight
 subgraph is still a cycle of the graph, so its bound is valid even if the tight
 set was identified badly. `atol` only decides where to look for good cycles, and
 `max_length` how far; both affect how tight the bound is, neither whether it is
-true. That is what makes this the honest companion to [`is_jsr_exact`](@ref).
+true.
 
 `max_length` defaults to the number of nodes, which enumerates every simple
-cycle. That is affordable at the sizes refinement reaches — measured against the
-bisection it accompanies, on a graph whose edges are *all* tight, it costs 0.02%
-at 4 nodes, 0.04% at 8 and 0.6% at 16 — but the cycle count over those sizes runs
-6, 19, 179, so lower `max_length` before the graph is much larger. A truncated
-search weakens the bound without making it wrong.
+cycle; the count grows quickly with the graph, so lower it on a large one. A
+truncated search weakens the bound without making it wrong.
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;

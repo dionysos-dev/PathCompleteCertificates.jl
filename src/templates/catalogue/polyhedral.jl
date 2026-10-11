@@ -72,10 +72,8 @@ end
 
 One fitted node function of a [`PolyhedralTemplate`](@ref), `V(x) = max_k |(Gx)_k| / w_k`.
 
-It bundles the node's fixed `G` with its weights `w`, because the edge
-condition on `(src, dst)` needs ``|G_{dst} A G_{src}^{-1}|`` and so cannot be
-written from the decision variables alone. `w` holds JuMP variables while the
-model is being built and numbers after the solve.
+It carries the node's fixed `G` with its weights `w`, since the edge condition
+needs both.
 """
 struct PolyhedralFunction{M <: AbstractMatrix, W <: AbstractVector}
     G::M

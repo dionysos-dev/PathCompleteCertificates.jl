@@ -31,11 +31,10 @@ EXHAUSTED
 """
     STALLED
 
-`stall_max` steps in a row failed to improve the objective.
-
-Worth its own outcome because a graph already attaining the exact joint spectral
-radius holds *every* edge tight, so it always looks splittable and would
-otherwise be grown forever at a constant bound.
+`stall_max` steps in a row failed to improve the objective. A graph already
+attaining the exact joint spectral radius holds *every* edge tight, so it
+always looks splittable and would otherwise be grown forever at a constant
+bound.
 """
 STALLED
 
@@ -60,9 +59,6 @@ STOPPED
 One certificate per graph a [`refine`](@ref) run visited, the starting graph's first;
 the [`Refined`](@ref) that produced each graph after the start, so a run's steps
 can be read back; and a [`RefinementStatus`](@ref).
-
-A certificate carries its own graph and objective, so [`graphs`](@ref) and
-`objective` read them off rather than storing them twice.
 """
 struct RefinementTrace{C <: AbstractCertificate}
     certificates::Vector{C}
@@ -148,25 +144,23 @@ Returns a [`RefinementTrace`](@ref).
 - `stall_max` steps in a row not improving the objective by more than `rtol`
   → [`STALLED`](@ref). Raise `stall_max` to cross a plateau;
 - `depth_max` certificates solved → [`DEPTH_REACHED`](@ref);
-- no candidate → [`EXHAUSTED`](@ref). With the default strategy on a letter
-  graph this coincides with `OPTIMAL`, since "no node holds two tight outgoing
-  edges" is Theorem 4's hypothesis, and the gap is tested first.
+- no candidate → [`EXHAUSTED`](@ref). With the default strategy and one mode
+  per edge this coincides with `OPTIMAL`, since "no node holds two tight
+  outgoing edges" is Theorem 4's hypothesis, and the gap is tested first.
 
 ## The tolerances
 
 `rtol` is the solve tolerance forwarded to [`best_certificate`](@ref) — the
 bisection tolerance of each [`jsr_bound`](@ref) call — and `atol` decides
 tightness. `atol ≥ 10 rtol` is **enforced**: bisection stops just *above* the
-optimum, so an active edge measures about the bisection gap, not zero. On a
-rotation-and-shear pair over `de_bruijn(1, 2)` at `rtol = 1e-6` the three active
-edges measure `1.3e-7`, `6.0e-7` and `2.9e-6` against `0.17` for the slack one.
-Below a decade the tight subgraph can come out empty, every node then satisfies
+optimum, so an active edge measures about the bisection gap, not zero. Below a
+decade the tight subgraph can come out empty, every node then satisfies
 [`is_jsr_exact`](@ref) vacuously, and the run certifies a bound that is not the
 joint spectral radius.
 
-`path_complete` decides the **starting graph** only: a refinement of a path-complete
-graph is path-complete, so the loop asserts rather than re-deciding a
-PSPACE-complete question. Other keywords go to [`best_certificate`](@ref).
+`path_complete` decides the **starting graph** only: a refinement of a
+path-complete graph is path-complete, so the loop does not re-decide it. Other
+keywords go to [`best_certificate`](@ref).
 """
 function refine(template::AbstractTemplate, problem::AbstractProblem; optimizer, kwargs...)
     return refine(template, common_graph(problem.system), problem; optimizer, kwargs...)

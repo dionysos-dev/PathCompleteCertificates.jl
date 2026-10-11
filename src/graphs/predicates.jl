@@ -18,8 +18,9 @@ Definition II.1 of Philippe, Athanasopoulos, Angeli & Jungers: for any ``k ≥ 1
 and any ``σ_1 … σ_k`` over the alphabet there is a path
 ``(s_i, s_{i+1}, σ_i)_{i=1..k}`` in the graph.
 
-**This is the soundness condition.** Without it the edge inequalities certify
-nothing, whatever the solver reports.
+This is what makes a certificate speak for the whole system: the edge
+inequalities certify the property over the language the graph reads, which is
+every admissible sequence exactly when the graph is path-complete.
 
 It is *not* graph-theoretic completeness, where every pair of vertices is
 adjacent, and it is strictly weaker than [`is_complete`](@ref) — see that
@@ -68,10 +69,9 @@ Whether every node has an *outgoing* edge for every letter of `alphabet` —
 Definition III.2 of Philippe et al.
 
 This is **sufficient but not necessary** for [`is_path_complete`](@ref): a
-graph can read every word without every node reading every letter. Use this
-one only when the stronger structure is what is needed — it is what licenses
-the plain minimum of Corollary III.3, which is why
-[`common`](@ref) dispatches on it.
+graph can read every word without every node reading every letter. It is what
+licenses the plain minimum of Corollary III.3, which is how [`common`](@ref)
+combines on a complete graph.
 
 A statement about letters, so a [`WordGraph`](@ref) with a longer word is never
 complete.
@@ -111,23 +111,14 @@ function _covers_every_letter(graph::_HS.GraphAutomaton, alphabet, index)
     return true
 end
 
-"""
-    _check_path_complete(graph, language)
-
-Throw unless `graph` certifies something for `language` — an alphabet or a
-system's automaton, see [`language`](@ref).
-
-Called by every problem's data check. Path-completeness is the soundness
-condition, so a graph that fails it must not reach a solver — and it is the
-*general* condition, so a graph that is neither complete nor co-complete is
-accepted whenever it can still read every word.
-"""
+# Throw unless `graph` is path-complete for `language`, an alphabet or a
+# system's automaton. Every problem's data check calls it.
 function _check_path_complete(graph::CertificateGraph, language)
     is_path_complete(graph, language) || throw(
         ArgumentError(
             "the graph is not path-complete for the system's switching language, " *
-            "so its edge inequalities certify nothing; the graph reads the modes " *
-            "$(sort(alphabet(graph)))",
+            "so its edge inequalities would certify the property for part of it " *
+            "only; the graph reads the modes $(sort(alphabet(graph)))",
         ),
     )
 

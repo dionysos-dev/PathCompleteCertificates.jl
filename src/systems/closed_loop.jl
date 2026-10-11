@@ -71,7 +71,7 @@ function simulate(
     return Trajectory(xs, modes, us)
 end
 
-"The node the certificate graph moves to when `mode` is observed at `node`."
+# The node the certificate graph moves to when `mode` is observed at `node`.
 function _successor(certificate_graph, node::Integer, mode::Integer)
     candidates = outgoing_edges(certificate_graph, node, mode)
 

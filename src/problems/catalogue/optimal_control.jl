@@ -180,8 +180,8 @@ end
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
 Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
-value function for `problem`. This first implementation supports complete graphs
-and `QuadraticTemplate` only.
+value function for `problem`. Supports complete graphs and `QuadraticTemplate`
+only.
 
 Returns an [`OptimalControlCertificate`](@ref): `functions(certificate)` are
 the node matrices and `gains` the feedback gains, one of each per node, and the

@@ -56,7 +56,7 @@ scale-normalised, so it is comparable between graphs rather than an arbitrary
 number.
 
 `initial_multipliers` and `unsafe_multipliers` are the S-procedure multipliers,
-one per node, kept because re-checking the conditions needs them.
+one per node.
 """
 struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     data::D
@@ -247,22 +247,12 @@ function certify(
     )
 end
 
-"""
-    _SAFETY_MARGIN_TOLERANCE
-
-How positive the separation margin has to be before a barrier counts as one.
-
-Not a numerical fudge: `eps` is a genuine quantity now that the barriers are
-scale-normalised, so a value at solver noise means the initial and unsafe sets
-were not separated.
-"""
+# How positive the separation margin has to be before a barrier counts as one.
+# The barriers are scale-normalised, so a margin at solver noise means the sets
+# were not separated.
 const _SAFETY_MARGIN_TOLERANCE = 1e-8
 
-"""
-    _homogeneous_dynamics(A)
-
-Return the homogeneous-coordinate representation of x⁺ = A*x.
-"""
+# The map x⁺ = A x in homogeneous coordinates.
 function _homogeneous_dynamics(A::AbstractMatrix)
     n = size(A, 1)
 

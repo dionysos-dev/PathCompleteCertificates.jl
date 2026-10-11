@@ -37,9 +37,9 @@ WordGraph(n_nodes::Integer) =
 The graph types a certificate is built on: a `HybridSystems.GraphAutomaton`,
 whose labels are modes, or a [`WordGraph`](@ref), whose labels are words.
 
-The certificate graph and the system's own automaton share the first type on
-purpose — one vocabulary — so the argument name says which is wanted: `graph`
-is the certificate's, `system` carries its own.
+A certificate graph and a system's automaton share the first type; the
+argument name says which is wanted: `graph` is the certificate's, `system`
+carries its own.
 """
 const CertificateGraph = Union{_HS.GraphAutomaton, WordGraph}
 
@@ -215,9 +215,6 @@ end
     outgoing_edges(graph, node, mode)
 
 The edges leaving `node`, optionally only those reading exactly `mode`.
-
-Indexed through the backing graph's adjacency, so the cost is the degree, not
-the edge count.
 """
 function outgoing_edges(graph::CertificateGraph, node::Integer)
     _check_node(graph, node)

@@ -8,9 +8,8 @@ The `T`-sum lift: nodes are the multisets of `T` original nodes, `(P, Q, i)`
 is an edge when the `i`-edges from `P` to `Q` admit a perfect matching
 (Debauche, Della Rossa & Jungers, Def. 8; Debauche, Prop. 7.16), and the node
 function is the sum over the multiset. Without `T` it is the sum lift over
-every size (Debauche, Della Rossa & Jungers, HSCC 2023, Def. 8; Abate,
-Debauche, Giacobbe, Myers & Roy, Ex. III.23), which cannot be built but whose
-simulation is decided by a linear program.
+every size (Debauche, Della Rossa & Jungers, HSCC 2023, Def. 8), which cannot
+be built but whose simulation is decided by a linear program.
 
 Valid for templates closed under [`Addition`](@ref); self-dual (Debauche,
 Prop. 7.13). `simulation(SumLift(), G, H; optimizer)` returns a nonnegative

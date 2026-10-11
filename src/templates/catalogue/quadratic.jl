@@ -36,17 +36,10 @@ end
 """
     QuadraticFunction(P)
 
-One fitted node function of a [`QuadraticTemplate`](@ref), `V(x) = x'Px`.
-
-Only the *fitted* function is wrapped; while the model is being built the
-template hands out the bare `Symmetric` matrix of variables, because problems do
-matrix arithmetic with it — and because optimal control deliberately uses those
-variables as the **inverse** of the node function, where calling the container a
-`QuadraticFunction` would be a lie.
-
-Wrapping the result is what makes node functions uniformly callable across
-templates, so `node_value` is `V(x)` for all of them and the common function in
-[`common`](@ref) needs to know nothing about which template it has.
+One fitted node function of a [`QuadraticTemplate`](@ref), `V(x) = x'Px`,
+callable like every node function; `Matrix(V)` is `P`. While a model is being
+built the template hands out the bare `Symmetric` matrix of variables instead,
+since the problems do matrix arithmetic with it.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M

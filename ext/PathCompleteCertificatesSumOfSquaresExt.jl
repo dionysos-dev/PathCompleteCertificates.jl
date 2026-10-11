@@ -1,14 +1,5 @@
-# The sum-of-squares template, as a package extension.
-#
-# SumOfSquares pulls a large polynomial stack -- MultivariatePolynomials,
-# MultivariateMoments, SemialgebraicSets and the rest -- and two of the three
-# synthesis paths in this package are linear programs. Loading that stack in
-# order to solve an LP is the cost the conventions refuse, so it stays weak.
-#
-# SwitchOnSafety.jl reaches sum-of-squares through SetProg, which is the right
-# abstraction for the invariant sets it computes and the wrong one here: we need
-# one SOS polynomial per node and one SOS constraint per edge, which is
-# SumOfSquares directly.
+# The sum-of-squares template, as a package extension: SumOfSquares pulls a
+# large polynomial stack, and most of the package solves linear programs.
 module PathCompleteCertificatesSumOfSquaresExt
 
 import JuMP
@@ -72,8 +63,7 @@ function PCC.add_domination!(
     # degree 2d and scale is gamma^(2d), so
     #     scale * V_src(x) - V_dst(A x)  =  gamma^(2d) * (V_src(x) - V_dst((A/gamma) x))
     # and the two constraints are equivalent. The second is far better
-    # conditioned when gamma is not near 1 -- the lesson SwitchOnSafety records
-    # in `sos.jl`, where it is pushed onto the caller as a scaled system.
+    # conditioned when gamma is not near 1.
     #
     # `scale` is allowed to be a JuMP expression, and a fractional root of one
     # is not expressible. Then there is nothing to fold into the map and the

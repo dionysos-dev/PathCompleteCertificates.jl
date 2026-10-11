@@ -13,9 +13,8 @@ Applicable to positive switched systems only, like its dual. The edge condition
 ``V_{dst}(Ax) ≤ γ V_{src}(x)`` on the orthant is ``A v_{src} ≤ γ v_{dst}``
 componentwise (their Prop. 5), so every program stays linear.
 
-Closed under pointwise maximum — ``\\max(V_v, V_w) = V_{\\min(v, w)}`` — which the
-primal template is not; the two are the cheapest pair on which a lift is valid
-for one template and not the other.
+Closed under pointwise maximum, ``\\max(V_v, V_w) = V_{\\min(v, w)}``, which the
+primal template is not.
 
 `min_weight` floors the weights, which sit in a denominator; it also normalises,
 the edge conditions being homogeneous.

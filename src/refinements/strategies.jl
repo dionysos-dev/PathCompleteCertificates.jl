@@ -3,18 +3,16 @@ import Random
 """
     SplitTightNode(refinement = ForwardEdgeSplit(); rng = nothing)
 
-The rule of Ninite & Jungers: split the node held at the **most** tight
-outgoing edges, with `refinement` on its out-star. One candidate, or none when
-no node holds two — which with one mode per edge is exactly the hypothesis of
-[`is_jsr_exact`](@ref), so the search drying up is itself the certificate.
+The rule of Ninite & Jungers (Algorithm 1): split the node held at the
+**most** tight outgoing edges, with `refinement` on its out-star. One
+candidate, or none when no node holds two — which with one mode per edge is
+exactly the hypothesis of [`is_jsr_exact`](@ref), so the search drying up is
+itself the certificate.
 
-Ties go to the **cheapest** split — fewest outgoing edges, since the split adds
-one node per edge and node count is the budget the comparison with
-[`de_bruijn`](@ref) is about — and then to the lowest-numbered node, so a run is
-identical on every machine and Julia version. Pass an `rng` to break the
-remaining ties at random instead; seeding one does *not* make a run
-reproducible across Julia versions, `rand(rng, ::Vector)` being free to sample
-differently between them.
+Ties go to the **cheapest** split, the node with the fewest outgoing edges,
+since the split adds one node per edge, and then to the lowest-numbered node,
+so a run is deterministic. Pass an `rng` to break the remaining ties at random
+instead.
 """
 struct SplitTightNode{R <: AbstractRefinement, G <: Union{Nothing, Random.AbstractRNG}}
     refinement::R

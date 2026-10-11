@@ -70,8 +70,8 @@ the question for every template and stops the search; the min and max lifts,
 by a relation; the sum lift, by a linear program, tried only when an
 `optimizer` is given; the two composition lifts of length one. A template of
 `templates` is proved when some lift with a simulation [`is_valid`](@ref) for it on
-`system`, which is required with them. Returns a [`Comparison`](@ref). Letter
-graphs only.
+`system`, which is required with them. Returns a [`Comparison`](@ref). One
+mode per edge.
 """
 function compare(
     G::CertificateGraph,

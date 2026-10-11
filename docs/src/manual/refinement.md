@@ -61,8 +61,10 @@ graph with fewer variables ([debauche2024thesis](@cite), Prop. 7.70).
 Each backward atom is the [`dual`](@ref) of the forward one, and the classical
 hierarchies are the atoms at every edge:
 
-- `ForwardEdgeSplit` on `outgoing_edges(graph, s)` is the forward lift at a
-  node of [ninite2026lifting](@cite), Def. 3, the default step of the loop;
+- `ForwardEdgeSplit` on `outgoing_edges(graph, s)`, the default step of the
+  loop, gives `s` one copy per outgoing edge: the forward lift at a node of
+  [ninite2026lifting](@cite), Def. 3, whenever no two edges of `s` share a
+  destination, which gives one copy per successor;
 - `BackwardEdgeSplit` on `edges(graph)` is the path-dependent lift of
   [philippe2016stability](@cite), Def. 3, [`PathDependentRefinement`](@ref)`(1)`;
   iterated from the one-node graph it is [`de_bruijn`](@ref);
