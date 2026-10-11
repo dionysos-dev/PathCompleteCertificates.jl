@@ -5,7 +5,7 @@ import Random
 
 The rule of Ninite & Jungers: split the node held at the **most** tight
 outgoing edges, with `refinement` on its out-star. One candidate, or none when
-no node holds two — which on a letter graph is exactly the hypothesis of
+no node holds two — which with one mode per edge is exactly the hypothesis of
 [`is_jsr_exact`](@ref), so the search drying up is itself the certificate.
 
 Ties go to the **cheapest** split — fewest outgoing edges, since the split adds

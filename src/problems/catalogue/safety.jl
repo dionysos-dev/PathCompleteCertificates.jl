@@ -271,7 +271,7 @@ function _check_safety_data(
     problem::SafetyProblem;
     path_complete::Bool = true,
 )
-    _require_letters(graph, "SafetyProblem")
+    _require_one_mode_per_edge(graph, "SafetyProblem")
     _check_modes(graph, problem.system; path_complete = path_complete)
 
     return nothing

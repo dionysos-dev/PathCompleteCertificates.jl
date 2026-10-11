@@ -63,8 +63,8 @@ The feasibility problem of the Lyapunov inequalities
     V_b(A_w x) <= rate^(d |w|) * V_a(x)
 
 for every edge `(a, b, w)` of `graph`, `d` the template's degree of homogeneity
-and `|w|` the number of modes the edge reads — one on a letter graph, the
-product of the modes along the word on a [`WordGraph`](@ref).
+and `|w|` the number of modes the edge reads: one as a rule, the product of
+the modes along the word on a [`WordGraph`](@ref).
 
 The model has no objective: [`certify`](@ref) solves it once at a rate and
 [`jsr_bound`](@ref) bisects on the rate. `optimizer` must be an LP solver for
@@ -314,7 +314,7 @@ function optimality_gap(
     atol::Real = 1e-4,
     max_length::Union{Nothing, Integer} = nothing,
 )
-    is_letter_graph(graph(certificate)) &&
+    !has_words(graph(certificate)) &&
         is_jsr_exact(certificate; atol = atol) &&
         return zero(certificate.rate)
 
@@ -357,7 +357,7 @@ optimality certificate of Ninite & Jungers (Theorem 4): if every node has at
 most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
 
 The constrained precedent is Theorem 3.8 of Philippe, Essick, Dullerud &
-Jungers, where the tight edges form a simple cycle. Letter graphs only: the
+Jungers, where the tight edges form a simple cycle. One mode per edge: the
 theorem is not proved with words on the edges, and [`jsr_lower_bound`](@ref)
 needs no such proof.
 
@@ -372,7 +372,7 @@ needs no such proof.
     brackets the answer instead of asserting it.
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
-    _require_letters(graph(certificate), "is_jsr_exact")
+    _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
 
     subgraph = tight_subgraph(certificate; atol = atol)
 

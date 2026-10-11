@@ -10,7 +10,7 @@ system (their Theorem 3.5): `H` is no worse than `G` for all of them exactly
 when `G` simulates `H`. Deciding it is a labelled graph homomorphism, NP-hard in
 general; the search here is backtracking inside the greatest simulation
 relation between the nodes, the one [`MinLift`](@ref) decides with, which is a
-necessary condition. Letter graphs only.
+necessary condition. One mode per edge.
 """
 function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     relation = _simulation_relation(G, H)

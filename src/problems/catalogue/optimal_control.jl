@@ -226,7 +226,7 @@ function certify(
 end
 
 function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
-    _require_letters(graph, "OptimalControlProblem")
+    _require_one_mode_per_edge(graph, "OptimalControlProblem")
     n = _check_modes(graph, problem.system; path_complete = path_complete)
     A = mode_matrices(problem.system)
     B = input_matrices(problem.system)

@@ -358,16 +358,3 @@ function tight_subgraph(certificate::AbstractCertificate; atol::Real = 1e-6)
 
     return subgraph
 end
-
-# Problems whose edge inequality reads the state at every step cannot take a
-# word graph: nothing constrains the states inside a word.
-function _require_letters(graph::CertificateGraph, what::AbstractString)
-    is_letter_graph(graph) || throw(
-        ArgumentError(
-            "$what needs one mode per edge; expand the word graph with " *
-            "`expanded_form` first",
-        ),
-    )
-
-    return nothing
-end

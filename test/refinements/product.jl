@@ -62,7 +62,7 @@ const G4 = graph(
     @test edgeset(w) ==
           Set([(1, 1, [1, 1]), (1, 2, [1, 2]), (1, 2, [2]), (2, 1, [1]), (2, 2, [2])])
     @test PCC.is_path_complete(w, 1:2)
-    @test !PCC.is_letter_graph(w)
+    @test PCC.has_words(w)
 end
 
 @testset "forward and backward products at every edge are the 2-product lift" begin
@@ -146,7 +146,7 @@ end
     # The structural test is not proved with words, and says so.
     @test_throws ArgumentError PCC.is_jsr_exact(on_words)
 
-    # Safety and the common function need a letter graph, and say so.
+    # Safety and the common function need a graph with one mode per edge, and say so.
     @test_throws ArgumentError on_words([1.0, 0.0])
 end
 

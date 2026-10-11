@@ -120,7 +120,7 @@ const BASE_RATES = Dict(
     @test isapprox(fresh.rate, primal.rate; rtol = 1e-3)
 
     # The common function of the dual certificate is a function.
-    if PCC.is_letter_graph(g)
+    if !PCC.has_words(g)
         @test dualised(ones(size(first(PCC.mode_matrices(system)), 1))) > 0
     end
 

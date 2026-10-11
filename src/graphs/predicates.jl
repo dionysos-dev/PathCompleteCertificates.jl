@@ -31,13 +31,14 @@ path-complete iff the subset construction started from *all* nodes never
 reaches the empty set. That is a finite search, since there are finitely many
 subsets.
 
-The language is an `alphabet`, every word over it, or an `automaton`, the words
-it accepts from any state — the constrained case, decided by the same
-construction run in product with the automaton. Pass [`language`](@ref) of the
-system whenever the question is about a certificate: `alphabet` defaults to the
-modes `graph` happens to use, which answers the weaker question. A graph that
-never mentions a mode is trivially path-complete for its own labels and **not**
-path-complete for a system that has that mode.
+The second argument says which switching sequences must be readable. Under
+arbitrary switching it is the alphabet, and every sequence of modes over it
+must be; under constrained switching it is the system's automaton, and every
+path of the automaton must be, which the same construction decides in product
+with it. Pass [`language`](@ref) of the system whenever the question is about a
+certificate: without a second argument the alphabet is the modes `graph`
+happens to use, so a graph that never mentions a mode passes for its own labels
+and is **not** path-complete for a system that has that mode.
 
 A [`WordGraph`](@ref) is path-complete when its [`expanded_form`](@ref) is:
 every word of the language is then a *factor* of the label of some path.
@@ -81,7 +82,7 @@ is_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
     _covers_every_letter(graph, alphabet, _successors(graph))
 
 is_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_complete(_letter_graph(graph), alphabet)
+    !has_words(graph) && is_complete(_letter_graph(graph), alphabet)
 
 """
     is_co_complete(graph)
@@ -98,7 +99,7 @@ is_co_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
     _covers_every_letter(graph, alphabet, _predecessors(graph))
 
 is_co_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_co_complete(_letter_graph(graph), alphabet)
+    !has_words(graph) && is_co_complete(_letter_graph(graph), alphabet)
 
 # Whether every node has, in `index`, an entry for every letter. O(|V|·|Σ|) on
 # top of the index, which is built once.

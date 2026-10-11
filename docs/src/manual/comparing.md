@@ -20,6 +20,12 @@ from the closures a template declares which verdicts apply to it.
 [Comparing graphs: which one is better?](@ref) does this on the five graphs of
 [debauche2023ordering](@cite).
 
+The theory is stated for arbitrary switching. [`compare`](@ref) reads graphs
+only, so a simulation it finds holds whatever the language, and a certificate
+on ``G`` read through it is one on ``H`` for every system both graphs are
+path-complete for; that no order holds without a simulation is proved for
+arbitrary switching.
+
 ## The template-free order
 
 ``G`` **simulates** ``H`` when there is a map ``R`` from the nodes of ``H`` to
@@ -91,21 +97,17 @@ Read without templates, a [`Comparison`](@ref) is the literature's statement:
 ## When a graph buys nothing
 
 The one-node graph, [`common_graph`](@ref) of the system, simulates every
-graph, so ``G_0 \le_{\mathcal V} G`` always. The other direction is
-`compare(G, common_graph(system))`: it holds for `min`-closed templates exactly
-when ``G`` has a nonempty complete induced subgraph, every node of it having,
-for every mode, an edge reading that mode into the subgraph, since the minimum
-of the node functions over that subgraph is then a common function; dually for
-`max` and a co-complete one ([debauche2021comparison](@cite), Prop. 3;
-[debauche2024thesis](@cite), Cor. 7.53). The relation of the min lift finds
-that subgraph.
-
-Measured: with the fixed-facet polyhedral template, which is `max`-closed, every
-dual De Bruijn graph certifies exactly the one-node rate, at any order, while
-the primal one improves; and on the positive system of
-[debauche2023ordering](@cite) the copositive template gives the one-node rate
-on the two graphs with a complete induced subgraph and strictly better rates on
-the two without.
+graph, so ``G_0 \le_{\mathcal V} G`` always. The other direction,
+`compare(G, common_graph(system))`, asks whether ``G`` is worth its nodes. For
+a `min`-closed template it holds exactly when the min lift simulates the
+one-node graph: when some set of nodes of ``G`` has, from each of its nodes
+and for each mode, an edge reading that mode back into the set, so that the
+minimum of their functions is a common function
+([debauche2021comparison](@cite), Prop. 3; [debauche2024thesis](@cite),
+Cor. 7.53). The relation of the min lift finds the largest such set, and the
+max lift asks the same of the reversed edges for `max`-closed templates.
+[Comparing graphs: which one is better?](@ref) shows both answers on the five
+graphs.
 
 ## Under duality
 

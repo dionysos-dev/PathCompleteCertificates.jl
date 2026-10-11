@@ -21,7 +21,7 @@ OPTIMAL
     EXHAUSTED
 
 The strategy proposed no candidate — nothing was left to refine — and the gap
-had not closed. With the default strategy and a letter graph this cannot
+had not closed. With the default strategy and one mode per edge this cannot
 happen without [`OPTIMAL`](@ref): no node held at two tight outgoing edges is
 Theorem 4's hypothesis. With another strategy it is a genuine outcome, a dead
 end that proves nothing.

@@ -81,8 +81,8 @@ function compare(
     optimizer = nothing,
     lifts = _LIFTS,
 )
-    _require_letters(G, "compare")
-    _require_letters(H, "compare")
+    _require_one_mode_per_edge(G, "compare")
+    _require_one_mode_per_edge(H, "compare")
     isempty(templates) ||
         system !== nothing ||
         throw(ArgumentError("reading the templates' closures needs the system"))

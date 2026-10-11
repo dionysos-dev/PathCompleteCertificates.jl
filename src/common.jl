@@ -46,5 +46,5 @@ function common(
     ::AbstractVector,
     ::AbstractVector{<:Real},
 )
-    return _require_letters(graph, "common")
+    return _require_one_mode_per_edge(graph, "common")
 end

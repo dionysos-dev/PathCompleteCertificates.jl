@@ -4,7 +4,7 @@ using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
 
-@testset "a word graph reads words and a letter graph reads letters" begin
+@testset "a word graph reads words and a graph with one mode per edge reads modes" begin
     g = PCC.WordGraph(2)
     e1 = PCC.add_edge!(g, 1, 2, [1, 2])
     e2 = PCC.add_edge!(g, 2, 1, 1)
@@ -14,14 +14,14 @@ import PathCompleteCertificates as PCC
     @test PCC.label(g, e2) == [1]
     @test PCC._word_length(g, e1) == 2
     @test PCC._word_length(g, e2) == 1
-    @test !PCC.is_letter_graph(g)
+    @test PCC.has_words(g)
     @test sort(PCC.alphabet(g)) == [1, 2]
 
     letter = PCC.de_bruijn(1, 2)
-    @test PCC.is_letter_graph(letter)
+    @test !PCC.has_words(letter)
     @test PCC.letters(PCC.label(letter, first(PCC.edges(letter)))) isa Tuple
 
-    # A letter graph refuses a longer word, and accepts one of length one.
+    # A graph with one mode per edge refuses a longer word, and accepts one of length one.
     @test_throws ArgumentError PCC.add_edge!(letter, 1, 1, [1, 2])
     @test PCC.label(letter, PCC.add_edge!(letter, 1, 1, [2])) == 2
 end
@@ -37,7 +37,7 @@ end
     @test PCC.n_nodes(expanded) == 2            # one silent node for the two-letter word
     @test PCC.n_edges(expanded) == 3
     @test origins == [1, 0]
-    @test PCC.is_letter_graph(expanded)
+    @test !PCC.has_words(expanded)
 
     # Factor sense: "2" is a factor of the path label "12", but "22" is a factor
     # of no path label -- every 2 is followed by a 1 -- so the graph reads the
@@ -50,19 +50,19 @@ end
     @test PCC.is_path_complete(g, 1:2)
     @test PCC.is_path_complete(first(PCC.expanded_form(g)), 1:2)
 
-    # A letter graph expands to itself.
+    # A graph with one mode per edge expands to itself.
     letter = PCC.de_bruijn(1, 2)
     same, ids = PCC.expanded_form(letter)
     @test same === letter
     @test ids == [1, 2]
 end
 
-@testset "a word graph is complete or co-complete only as a letter graph" begin
+@testset "a word graph is complete or co-complete only as a graph with one mode per edge" begin
     g = PCC.WordGraph(1)
     PCC.add_edge!(g, 1, 1, [1])
     PCC.add_edge!(g, 1, 1, [2])
 
-    @test PCC.is_letter_graph(g)
+    @test !PCC.has_words(g)
     @test PCC.is_complete(g, 1:2)
     @test PCC.is_co_complete(g, 1:2)
     @test PCC._letter_graph(g) isa GraphAutomaton
@@ -87,7 +87,7 @@ end
     @test Set((PCC.source(e), PCC.dest(e), PCC.label(dd, e)) for e in PCC.edges(dd)) ==
           Set((PCC.source(e), PCC.dest(e), PCC.label(g, e)) for e in PCC.edges(g))
 
-    # On a letter graph, the dual De Bruijn graph is the dual of the primal one.
+    # On a graph with one mode per edge, the dual De Bruijn graph is the dual of the primal one.
     for k in 1:2
         primal = PCC.de_bruijn(k, 2)
         co = PCC.dual(PCC.de_bruijn(k, 2))

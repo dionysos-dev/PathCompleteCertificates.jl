@@ -33,7 +33,7 @@ origins(lifted::Lifted) = lifted.origins
 """
     lift(L, graph) -> Lifted
 
-The lifted graph. Letter graphs only; every lift preserves path-completeness.
+The lifted graph. One mode per edge; every lift preserves path-completeness.
 """
 function lift end
 
@@ -106,7 +106,7 @@ end
 const _LIFT_NODE_LIMIT = 1024
 
 function _check_lift_size(g::CertificateGraph, what::AbstractString, lifted_nodes)
-    is_letter_graph(g) || throw(ArgumentError("the $what is defined on letter graphs"))
+    _require_one_mode_per_edge(g, "the $what")
 
     lifted_nodes <= _LIFT_NODE_LIMIT || throw(
         ArgumentError(

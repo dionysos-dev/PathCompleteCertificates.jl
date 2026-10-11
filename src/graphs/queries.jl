@@ -174,7 +174,7 @@ label(graph::WordGraph, edge::_HS.GraphTransition) = graph.words[edge.id]
     letters(label)
 
 The modes a label reads, in order: `(i,)` for a mode `i`, the word itself for a
-word. What makes a letter graph and a word graph answer the same code.
+word. What lets a mode and a word answer the same code.
 """
 letters(mode::Integer) = (mode,)
 letters(word::AbstractVector{<:Integer}) = word
@@ -183,13 +183,27 @@ _word_length(graph::CertificateGraph, edge::_HS.GraphTransition) =
     length(letters(label(graph, edge)))
 
 """
-    is_letter_graph(graph) -> Bool
+    has_words(graph) -> Bool
 
-Whether every edge of `graph` reads exactly one mode. Always true of a
-`GraphAutomaton`; true of a [`WordGraph`](@ref) whose words all have length one.
+Whether some edge of `graph` reads a word of two or more modes. Never true of
+a `GraphAutomaton`; false of a [`WordGraph`](@ref) whose words all have length
+one.
 """
-is_letter_graph(::_HS.GraphAutomaton) = true
-is_letter_graph(graph::WordGraph) = all(word -> length(word) == 1, values(graph.words))
+has_words(::_HS.GraphAutomaton) = false
+has_words(graph::WordGraph) = any(word -> length(word) > 1, values(graph.words))
+
+# What reads the state at every step cannot take a word: nothing constrains the
+# states inside one.
+function _require_one_mode_per_edge(graph::CertificateGraph, what::AbstractString)
+    has_words(graph) && throw(
+        ArgumentError(
+            "$what needs one mode per edge; expand the word graph with " *
+            "`expanded_form` first",
+        ),
+    )
+
+    return nothing
+end
 
 function _check_node(graph::CertificateGraph, node::Integer)
     1 <= node <= n_nodes(graph) || throw(ArgumentError("Node $node is outside the graph."))
@@ -293,7 +307,7 @@ end
 _letter_graph(graph::_HS.GraphAutomaton) = graph
 
 function _letter_graph(graph::WordGraph)
-    is_letter_graph(graph) ||
+    has_words(graph) &&
         throw(ArgumentError("the graph carries words longer than one mode; expand it"))
 
     result = _HS.GraphAutomaton(n_nodes(graph))

@@ -27,8 +27,7 @@ end
 requirements(::CompositionLift) = (Composition(),)
 
 function lift(L::CompositionLift, g::CertificateGraph)
-    is_letter_graph(g) ||
-        throw(ArgumentError("the composition lift is defined on letter graphs"))
+    _require_one_mode_per_edge(g, "the composition lift")
 
     modes = sort(alphabet(g))
     tuples = vec(collect(Iterators.product(ntuple(_ -> modes, L.length)...)))
