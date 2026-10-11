@@ -1,74 +1,60 @@
 # # Refinement: letting the graph design itself
 #
 # Every other example hands `certify` a graph you chose. This one does not:
-# [`refine`](@ref) starts from the memoryless graph and grows it, reading off
-# which edge inequalities the solver is held at and splitting the node that is
-# being asked to do too much ([ninite2026lifting](@cite)).
-#
-# The result beats a De Bruijn graph of the same size, which is the point — the
-# graph axis of [The two axes, drawn](@ref) stops being something you guess at.
+# [`refine`](@ref) starts from the common Lyapunov function graph and grows it,
+# reading off which edge inequalities the solver is held at and splitting the
+# node that is asked to do too much ([ninite2026lifting](@cite)). The result
+# beats a De Bruijn graph of the same size.
 
 import PathCompleteCertificates as PCC
 import Clarabel
-using HybridSystems
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
 const TEMPLATE = PCC.QuadraticTemplate()
 
-# A rotation and a shear. No single quadratic attains the joint spectral radius
-# of this pair, so the memoryless bound is loose and there is something to win.
+# A rotation and a shear. No single quadratic function attains the joint
+# spectral radius of this pair, so the one-node bound is loose and there is
+# something to win.
 
 A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 
-# The starting graph: one node, one self-loop per mode.
-
-start = GraphAutomaton(1)
-add_transition!(start, 1, 1, 1)
-add_transition!(start, 1, 1, 2)
-
 # ## Running the loop
+#
+# Each step solves [`jsr_bound`](@ref), reads the tight edges, and applies a
+# refinement; the default strategy splits the node held at the most tight
+# outgoing edges. The run is deterministic: ties go to the cheapest split.
 
-trace = PCC.refine(TEMPLATE, start, problem; optimizer = OPTIMIZER, depth_max = 4)
-
-# No seed, and none needed: ties go to the **cheapest** split — the one adding
-# fewest nodes — so this run is identical on every machine and Julia version.
+trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 4)
 
 sizes = PCC.n_nodes.(PCC.graphs(trace))
 bounds = PCC.rates(trace)
 
 collect(zip(sizes, round.(bounds; digits = 5)))
 
-# Why it stopped is part of the answer, so it is a [`RefinementStatus`](@ref) and
-# not a flag. Here the budget ran out with the bound still falling.
+# Why it stopped is part of the answer, a [`RefinementStatus`](@ref). Here the
+# budget ran out with the bound still falling.
 
 PCC.status(trace)
 
 # ## How far from the truth?
 #
-# The certified rate is an *upper* bound on the joint spectral radius. Every cycle
-# of the graph gives a **lower** one — a periodic product cannot contract faster
-# than the worst switching sequence — so the two bracket the answer
-# ([`jsr_lower_bound`](@ref)).
+# The certified rate is an upper bound on the joint spectral radius. Every
+# cycle of the tight subgraph gives a lower one, since a periodic product
+# cannot contract faster than the worst switching sequence, so the two bracket
+# the answer ([`jsr_lower_bound`](@ref)).
 
-collect(
-    zip(
-        sizes,
-        round.(PCC.jsr_lower_bound.(PCC.certificates(trace)); digits = 5),
-        round.(bounds; digits = 5),
-    ),
-)
+lower = PCC.jsr_lower_bound.(PCC.certificates(trace))
 
-# The bracket is what lets [`refine`](@ref) stop with [`OPTIMAL`](@ref) rather
-# than merely out of ideas, and it is sound whatever tolerance decided tightness:
-# a cycle of the tight subgraph is still a cycle of the graph.
-#
-# It also covers the case the structural test cannot. Two opposite rotations of
-# the same magnitude have a joint spectral radius their memoryless quadratic
-# certificate already attains — but *every* edge is then tight, so
-# [`is_jsr_exact`](@ref), which needs at most one tight edge per node, never
-# fires. The bracket closes at the first step instead.
+collect(zip(sizes, round.(lower; digits = 5), round.(bounds; digits = 5)))
+
+# The bracket is what lets the loop stop with [`OPTIMAL`](@ref) rather than
+# merely out of ideas, and it covers a case the structural test of
+# [`is_jsr_exact`](@ref) cannot. Two opposite rotations of the same magnitude
+# have a joint spectral radius their one-node quadratic certificate already
+# attains, but every edge is then tight, so no node has a single tight
+# outgoing edge; the bracket closes at the first step instead.
 
 turn(angle) = 0.9 .* [cos(angle) -sin(angle); sin(angle) cos(angle)]
 rotations = PCC.StabilityProblem(PCC.switched_system([turn(pi / 3), turn(-pi / 3)]))
@@ -76,14 +62,6 @@ rotations = PCC.StabilityProblem(PCC.switched_system([turn(pi / 3), turn(-pi / 3
 exact = PCC.refine(TEMPLATE, PCC.de_bruijn(1, 2), rotations; optimizer = OPTIMIZER)
 
 PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
-
-# !!! note "Why the split is per edge"
-#     [`ForwardEdgeSplit`](@ref) makes one copy per outgoing **edge**. The paper
-#     splits per distinct **successor** — and the starting graph's only successor is itself,
-#     so that grain could not take a single step here.
-#
-#     It is also what makes the split rule and Theorem 4 the same test, since both
-#     then count outgoing edges.
 
 # ## Against De Bruijn
 #
@@ -120,62 +98,17 @@ plot!(
     label = "de_bruijn",
 )
 
-# At two nodes the bounds coincide: the edge-grained split of the memoryless graph
-# is the *transpose* of `de_bruijn(1, 2)` — co-complete where that one is
-# complete — and on this system the two certify the same rate. At four nodes they
-# part: refinement reaches `0.9043` where `de_bruijn(2, 2)` stops at `0.9055`.
-# De Bruijn spends its nodes on remembering the last two modes whether or not
-# that is where the certificate was tight; refinement spends them where the
-# solver said it hurt.
-
-# ## What the certificate looks like
-#
-# `RefinementTrace` carries the certificates themselves, not only the bounds, so
-# the shapes come for free. Each is positively homogeneous of degree
-# [`homogeneity_degree`](@ref), so the radius of ``\{V \le 1\}`` in direction ``u``
-# is ``V(u)^{-1/d}`` — the trick [The sum-of-squares hierarchy](@ref) uses.
-
-function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.homogeneity_degree(PCC.template(certificate))
-    angles = range(0, 2pi; length = samples)
-    radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
-    radii ./= maximum(radii)
-
-    return radii .* cos.(angles), radii .* sin.(angles)
-end
-
-shapes = plot(;
-    title = "one ellipse per node, intersected\n(shape only — scale is arbitrary)",
-    aspect_ratio = :equal,
-    legend = :outerbottom,
-    framestyle = :origin,
-)
-
-for (n, certificate) in zip(sizes, PCC.certificates(trace))
-    xs, ys = sublevel_boundary(certificate)
-    plot!(shapes, xs, ys; lw = 2, label = "$n node(s)")
-end
-
-shapes
-
-# Every graph the loop visits here is **co-complete**, so [`common`](@ref)
-# combines the node functions with a maximum and the unit ball is their
-# *intersection* — convex, and gaining a facet per node. That is the opposite of
-# the primal De Bruijn case, where the common function is a minimum and the ball is a
-# non-convex union; the split builds the dual family.
-
-PCC.is_co_complete.(PCC.graphs(trace))
+# At two nodes the bounds coincide: the split of the one-node graph is the
+# dual of `de_bruijn(1, 2)`, and on this system the two certify the same rate.
+# At four nodes they part. De Bruijn spends its nodes on remembering the last
+# two modes whether or not that is where the certificate was tight; refinement
+# spends them where the solver said it hurt.
 
 # ## Soundness
 #
-# A refinement that lost path-completeness would produce certificates that
-# certify nothing, silently. It does not, and this is checkable rather than
-# asserted:
+# Every graph the loop visits is path-complete, which is checkable rather than
+# asserted, and it is the whole soundness argument: a refinement is a map on
+# graphs preserving path-completeness, and being no worse needs nothing from
+# the template either, since each copy inherits the split node's function.
 
 all(graph -> PCC.is_path_complete(graph, 1:length(A)), PCC.graphs(trace))
-
-# !!! note "Path-completeness *is* the whole soundness argument"
-#     A refinement is a map on graphs preserving it, so the check above is the
-#     guarantee. Being no **worse** needs nothing from the template either: each
-#     copy inherits the split node's function. [`refine`](@ref) takes a
-#     [`QuadraticTemplate`](@ref) because that is what is tested.

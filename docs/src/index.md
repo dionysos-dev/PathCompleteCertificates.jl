@@ -52,20 +52,19 @@ certifying, then [Graph comparison via lifts](@ref) and
 
 In reading order:
 
-1. [Switched systems: the four kinds](@ref), arbitrary or constrained
-   switching, with or without an input.
+1. [Switched systems: building and running one](@ref), the four kinds of
+   system and a run of one.
 2. [Stability: a first certificate](@ref), one system, one graph, one bound.
-3. [The two axes, drawn](@ref), three templates on one graph and one template
-   on four graphs.
+3. [Templates and graphs: the two axes](@ref), three templates on one graph,
+   one template on four graphs, and a third template past degree two.
 4. [Comparing graphs: which one is better?](@ref), five graphs, three
    templates, a simulation for every verdict.
 5. [Refinement: letting the graph design itself](@ref), the graph grown from
    its certificate, against De Bruijn at equal size.
 
-The other examples cover [safety](@ref "Safety: a barrier certificate"),
-[optimal control](@ref "Optimal control: bounding the value function"),
-[simulation](@ref "Simulating: what a run looks like") and
-[the sum-of-squares hierarchy](@ref "The sum-of-squares hierarchy").
+The two other problems have an example each:
+[Safety: a barrier certificate](@ref) and
+[Optimal control: a feedback per node](@ref).
 
 ## Scope
 

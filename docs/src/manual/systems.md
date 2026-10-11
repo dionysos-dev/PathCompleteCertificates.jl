@@ -9,8 +9,8 @@ The input to every problem is a discrete-time switched linear system,
 when there is an input to design. The switching signal ``\sigma`` is never
 chosen by the user: it ranges over every sequence of modes under **arbitrary
 switching**, and over the paths of an automaton under **constrained
-switching**. [Switched systems: the four kinds](@ref) builds all four
-combinations.
+switching**. [Switched systems: building and running one](@ref) builds all
+four combinations.
 
 ## Defining one
 
@@ -35,9 +35,9 @@ nonnegative matrices, is the setting of the copositive templates.
 ## The language
 
 A certificate graph must be able to read every admissible switching sequence.
-[`language`](@ref)`(system)` returns what it must read: the alphabet `1:M`,
-standing for every word over the modes, under arbitrary switching, and the
-automaton under constrained switching ([philippe2016stability](@cite)).
+[`language`](@ref)`(system)` returns what it must read, as the system's own
+automaton: one state reading every mode under arbitrary switching, the
+constraint automaton otherwise ([philippe2016stability](@cite)).
 `is_path_complete(graph, language(system))` is the check, and every problem
 runs it before solving.
 
@@ -54,7 +54,7 @@ state and returns a [`Trajectory`](@ref): [`states`](@ref),
 `simulate(certificate, x0, steps)` closes the loop with the feedback of an
 optimal-control certificate under a random switching sequence. A trajectory
 has a plot recipe, available once Plots is loaded;
-[Simulating: what a run looks like](@ref) draws both.
+[Switched systems: building and running one](@ref) draws one.
 
 A run is a sample, never a proof. It can show that a bound is loose or that a
 trajectory leaves a set; it cannot show that none does. The proofs are the

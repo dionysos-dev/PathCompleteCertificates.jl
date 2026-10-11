@@ -19,14 +19,12 @@ const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"
 # while the reading order stays curated.
 const ORDER = [
     "switched_systems",
-    "simulate",
     "stability",
+    "templates_and_graphs",
     "safety",
     "optimal_control",
-    "two_axes",
-    "sum_of_squares",
+    "comparing",
     "refinement",
-    "ordering",
 ]
 
 function example_stems()
@@ -62,6 +60,15 @@ function with_current_module(content)
     occursin(marker, content) &&
         return replace(content, marker => marker * CURRENT_MODULE; count = 1)
     return marker * CURRENT_MODULE * "```\n\n" * content
+end
+
+# Documenter builds every markdown file under `src/`, listed in the nav or not,
+# so a page generated from an example that no longer exists would still be
+# built, and its title would clash with that of the example that replaced it.
+if !SKIP_LITERATE && isdir(OUTPUT_DIR)
+    for file in readdir(OUTPUT_DIR)
+        first(splitext(file)) in example_stems() || rm(joinpath(OUTPUT_DIR, file))
+    end
 end
 
 if !SKIP_LITERATE
