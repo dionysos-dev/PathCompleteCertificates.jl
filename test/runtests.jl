@@ -21,7 +21,7 @@ const TEST_FILES = [
     ("./refinements/reference.jl",),
     ("./refinements/product.jl", :slow),
     ("./lifts/identity.jl",),
-    ("./lifts/subsets.jl",),
+    ("./lifts/min.jl",),
     ("./lifts/sum.jl", :slow),
     ("./lifts/composition.jl",),
     ("./systems/switched.jl",),
@@ -40,7 +40,7 @@ const TEST_FILES = [
     ("./problems/dual.jl", :slow),
     ("./aggregation.jl",),
     ("./lifts/compare.jl", :slow),
-    ("./refinements/loop.jl", :slow),
+    ("./refinements/refine.jl", :slow),
 ]
 
 const _timings = Tuple{String, Float64}[]

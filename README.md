@@ -79,9 +79,8 @@ discuss a feature, and see the Developer Docs for the setup, conventions and Git
 
 One thing to read before writing code: the package is organised along **two independent axes**,
 *template* (what the node functions are) and *problem* (what the edge inequality says), with the
-graph cutting across both. A new template is one file under `src/templates/`, a new problem one
-file under `src/problems/`, a new lift one file under `src/lifts/`, a new refinement one
-file under `src/refinements/`. The
+graph cutting across both. A new template, problem, lift or refinement is one file in the
+`catalogue/` of its directory under `src/`. The
 [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
 page explains why, and what goes wrong when the structure is ignored.
 

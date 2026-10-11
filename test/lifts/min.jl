@@ -1,4 +1,4 @@
-module TestLiftSubsets
+module TestLiftMin
 
 using Test
 using HybridSystems

@@ -29,7 +29,7 @@ axis names the other. Every one of these is public — a user implements them, s
 `_`-prefixed.
 
 ```julia
-# --- Template axis (src/templates/). One file per template, answering all of it.
+# --- Template axis (src/templates/catalogue/). One file per template, answering all of it.
 rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
@@ -39,7 +39,7 @@ add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
 solution_value(template, V)                          # variables -> a callable node function
 check_dynamics(template, A)                          # is this template applicable at all?
 
-# --- Problem axis (src/problems/). One file per problem, composing the above.
+# --- Problem axis (src/problems/catalogue/). One file per problem, composing the above.
 add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
 
@@ -48,10 +48,12 @@ common(template, graph, problem, Vs, x)
 #   complete → min over nodes; co-complete → max; otherwise min-of-max over the observer.
 ```
 
-**A new template is one file in `src/templates/`. A new problem is one file in `src/problems/`.
-Neither requires editing the other directory.** That is the contract, and counting
-`add_edge_constraint!` definitions per file in `src/problems/` — one everywhere — is how you check
-it still holds.
+**A new template is one file in `src/templates/catalogue/`. A new problem is one file in
+`src/problems/catalogue/`. Neither requires editing the other directory.** That is the contract,
+and counting `add_edge_constraint!` definitions per file in `src/problems/catalogue/` — one
+everywhere — is how you check it still holds. Every directory with an interface has the same
+shape: `abstract.jl` and the other interface files at the top, one file per inhabitant under
+`catalogue/`, named after the type without the directory's suffix.
 
 `add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
 lifting into a cone, and that lifting is template-specific, which is why it cannot be written once
@@ -193,7 +195,7 @@ Addition(), Maximum(), Minimum(), Composition(), InverseComposition()   # <: Ope
 is_closed_under(template, ::Operation, system)   # default false; composition reads the system
 reindex(template, origins)                       # default identity; polyhedral templates index their data
 
-# --- A lift (src/lifts/): two methods to implement, two inherited.
+# --- A lift (src/lifts/catalogue/): two methods to implement, two inherited.
 lift(L, graph)                                   # returns a Lifted: the graph and what every node stands for
 requirements(L)                                  # a tuple of operations; () for the identity lift
 simulation(L, G, H; optimizer)                   # the witness that lift(L, G) simulates H; overridden where cheaper
@@ -201,7 +203,7 @@ is_valid(L, template, system)                    # written ONCE against the two;
 dual(L)                                          # DualLift: conjugation by the dual graph; simulation on the duals
 compare(G, H; templates, system, optimizer)      # the one entry point: every lift, a Comparison
 
-# --- A refinement (src/refinements/): two methods to implement.
+# --- A refinement (src/refinements/catalogue/): two methods to implement.
 scope(R)                                         # Global() or Local()
 refine(R, graph, edges) / refine(R, graph)       # returns a Refined: the graph and the origin of every node
 dual(R)                                          # DualRefinement; every backward atom
@@ -214,8 +216,9 @@ optimality_gap(certificate; kwargs...)                              # default In
 edge_slacks(certificate)                                            # one method per problem, through domination_slack
 ```
 
-Use the papers' word: **valid**, not "admissible". A new lift is one file in `src/lifts/`, a new
-refinement one file in `src/refinements/`, and neither touches an axis; a new operation is one
+Use the papers' word: **valid**, not "admissible". A new lift is one file in
+`src/lifts/catalogue/`, a new refinement one file in `src/refinements/catalogue/`, and neither
+touches an axis; a new operation is one
 struct in `operations.jl`; a strategy for `refine` is any callable `(certificate; atol) ->
 Vector{Refined}`. The min and max lifts are never built to decide anything: a relation decides in
 polynomial time what they exhibit in exponential size, and the sum lift over every size is a

@@ -57,7 +57,7 @@ Every one of these is **public**. They are what a user implements, so none of th
 `_`-prefixed — a hidden extension point is a contradiction.
 
 ```julia
-# --- Template axis (src/templates/). One file per template, answering all of it.
+# --- Template axis (src/templates/catalogue/). One file per template, answering all of it.
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                      # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
@@ -71,7 +71,7 @@ solution_value(template, V)                          # variables -> a callable n
 node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
 check_dynamics(template, A)                          # is this template applicable at all?
 
-# --- Problem axis (src/problems/). One file per problem, composing the above.
+# --- Problem axis (src/problems/catalogue/). One file per problem, composing the above.
 add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 optimization_model(template, graph, problem; optimizer, ...)  # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
@@ -104,10 +104,10 @@ add_edge_constraint!(model, ::StabilityProblem, template, V_src, V_dst, A, rate)
     add_domination!(model, template, V_src, V_dst, A; scale = rate)
 ```
 
-**A new template is one file in `src/templates/`. A new problem is one file in
-`src/problems/`. Neither requires editing the other directory.** That is the contract, and
-`grep -c '^function add_edge_constraint!' src/problems/*.jl` returning 1 everywhere is how you
-check it still holds.
+**A new template is one file in `src/templates/catalogue/`. A new problem is one file in
+`src/problems/catalogue/`. Neither requires editing the other directory.** That is the
+contract, and `grep -c '^function add_edge_constraint!' src/problems/catalogue/*.jl` returning
+1 everywhere is how you check it still holds.
 
 ### How this was arrived at, so it is not undone
 
@@ -156,10 +156,12 @@ axes — you would write `QuadraticStabilityCertificate`,
 
 What exists today. The package is young, so this is short.
 
-**The two axes of §2 are the directory layout.** `templates/` and `problems/` have the same
-shape on purpose — an `abstract.jl` holding the interface, then one file per inhabitant that
-answers all of it. Adding a template or a problem is adding a file, and `ls src/` tells you the
-architecture before you read a line.
+**The two axes of §2 are the directory layout, and the lifts and refinements follow the same
+shape.** Each of the four directories holds its interface at the top — `abstract.jl`, and for
+lifts and refinements the dual wrapper and the one user-facing verb — and one file per
+inhabitant under `catalogue/`, named after the type without the directory's suffix. Adding a
+template, a problem, a lift or a refinement is adding a file to a catalogue, and `ls src/`
+tells you the architecture before you read a line.
 
 ```
 src/
@@ -185,44 +187,54 @@ src/
 │   └── cycles.jl                 simple cycles, for the lower bound
 ├── templates/                    AXIS 1 — what the node functions are
 │   ├── abstract.jl               AbstractTemplate, its primitives, is_closed_under, reindex
-│   ├── linear_copositive.jl
-│   ├── dual_copositive.jl        max_i x_i / v_i, the dual of the one above
-│   ├── quadratic.jl
-│   ├── polyhedral.jl             symmetric 2n-face, fixed facets
-│   ├── conic_polyhedral.jl       free facets, plus the partition that linearises them
-│   └── sum_of_squares.jl         the type only -- its methods are in ext/
+│   └── catalogue/                one file per template
+│       ├── linear_copositive.jl
+│       ├── dual_copositive.jl    max_i x_i / v_i, the dual of the one above
+│       ├── quadratic.jl
+│       ├── polyhedral.jl         symmetric 2n-face, fixed facets
+│       ├── conic_polyhedral.jl   free facets, plus the partition that linearises them
+│       └── sum_of_squares.jl     the type only -- its methods are in ext/
 ├── problems/                     AXIS 2 — what the edge inequality says
 │   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses, and
 │   │                             what refine reads: best_certificate, objective, optimality_gap
-│   ├── stability.jl
-│   ├── safety.jl
-│   └── optimal_control.jl
+│   └── catalogue/                one file per problem
+│       ├── stability.jl
+│       ├── safety.jl
+│       └── optimal_control.jl
 ├── lifts/                        COMPARING graphs: the lift of an operation; the lifted G
 │                                 simulating H proves G ≤_V H for templates closed under it
 │   ├── abstract.jl               AbstractLift, Lifted, lift, requirements, simulation, is_valid
 │   ├── dual.jl                   DualLift: its simulation is the primal's on the dual graphs
-│   ├── identity.jl               IdentityLift: the order that holds for every template
-│   ├── subsets.jl                MinLift, decided by the relation; MaxLift, its dual
-│   ├── sum.jl                    SumLift(T) by matching; SumLift() by the linear program
-│   ├── composition.jl            CompositionLift, BackwardCompositionLift: sufficient only
-│   └── compare.jl                `compare`: every lift on a pair of graphs, a Comparison
+│   ├── compare.jl                `compare`: every lift on a pair of graphs, a Comparison
+│   └── catalogue/                one file per lift
+│       ├── identity.jl           the order that holds for every template
+│       ├── min.jl                decided by the relation, never built
+│       ├── max.jl                the dual of min
+│       ├── sum.jl                SumLift(T) by matching; SumLift() by the linear program
+│       ├── composition.jl        sufficient only, and the one lift that can refine
+│       └── backward_composition.jl
 ├── refinements/                  IMPROVING a graph: no worse for every template, applied
 │                                 where a certificate is tight
 │   ├── abstract.jl               AbstractRefinement, Refined, scope, refine(R, graph[, edges])
 │   ├── dual.jl                   DualRefinement: every backward atom
-│   ├── split.jl                  ForwardEdgeSplit at a locus; PathDependentRefinement
-│   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductRefinement
-│   ├── strategies.jl             SplitTightNode, RefineTightEdges, Hierarchy
-│   └── loop.jl                   `refine`; generic in the problem, reads all three like
-│                                 aggregation.jl, so it is filed under neither axis
+│   ├── strategies.jl             SplitTightNode, RefineTightEdges, Hierarchy: where to refine
+│   ├── refine.jl                 `refine`; generic in the problem, reads all three like
+│   │                             aggregation.jl, so it is filed under neither axis
+│   └── catalogue/                one file per refinement
+│       ├── forward_edge_split.jl
+│       ├── backward_edge_split.jl
+│       ├── forward_edge_product.jl   writes words on the edges
+│       ├── backward_edge_product.jl
+│       ├── path_dependent.jl     the backward split at every edge, iterated
+│       └── product.jl            one edge per path of length T
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
 
 | Path | What it is |
 | :--- | :--- |
-| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory` behind `RecipesBase`, and the sum-of-squares template behind `SumOfSquares`. **A template may be split this way** — type in `src/templates/`, primitives in `ext/` — when its stack is too heavy to load for an LP |
-| `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
+| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory` behind `RecipesBase`, and the sum-of-squares template behind `SumOfSquares`. **A template may be split this way** — type in `src/templates/catalogue/`, primitives in `ext/` — when its stack is too heavy to load for an LP |
+| `test/` | Mirrors `src/` at the level of its directories, without the `catalogue/` level: a dual's tests are its primal's on the dual graphs, so a pair shares a file. Entry point `test/runtests.jl`; every file is standalone-runnable |
 | `docs/` | The manual, the examples and these developer docs |
 | `docs/src/examples/` | Runnable scripts, **executed by the docs build** via Literate. Run one with `--project=docs`, which is where `Clarabel` and `Plots` live — never a dependency of the package or of the environment CI instantiates. There is no top-level `examples/`: it was folded in here so an example cannot go stale unnoticed |
 
