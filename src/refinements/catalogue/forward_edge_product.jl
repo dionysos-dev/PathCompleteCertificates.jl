@@ -11,8 +11,6 @@ source.
 """
 struct ForwardEdgeProduct <: AbstractRefinement end
 
-scope(::ForwardEdgeProduct) = Local()
-
 function refine(
     ::ForwardEdgeProduct,
     g::CertificateGraph,

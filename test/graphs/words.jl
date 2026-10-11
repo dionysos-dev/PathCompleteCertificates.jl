@@ -12,16 +12,14 @@ import PathCompleteCertificates as PCC
     @test g isa PCC.WordGraph
     @test PCC.label(g, e1) == [1, 2]
     @test PCC.label(g, e2) == [1]
-    @test PCC.word_length(g, e1) == 2
-    @test PCC.word_length(g, e2) == 1
+    @test PCC._word_length(g, e1) == 2
+    @test PCC._word_length(g, e2) == 1
     @test !PCC.is_letter_graph(g)
     @test sort(PCC.alphabet(g)) == [1, 2]
-    @test sort(PCC.words(g)) == [[1], [1, 2]]
 
     letter = PCC.de_bruijn(1, 2)
     @test PCC.is_letter_graph(letter)
     @test PCC.letters(PCC.label(letter, first(PCC.edges(letter)))) isa Tuple
-    @test PCC.words(letter) == [[1], [2]] || PCC.words(letter) == [[2], [1]]
 
     # A letter graph refuses a longer word, and accepts one of length one.
     @test_throws ArgumentError PCC.add_edge!(letter, 1, 1, [1, 2])
@@ -67,13 +65,13 @@ end
     @test PCC.is_letter_graph(g)
     @test PCC.is_complete(g, 1:2)
     @test PCC.is_co_complete(g, 1:2)
-    @test PCC.letter_graph(g) isa GraphAutomaton
-    @test PCC.n_edges(PCC.letter_graph(g)) == 2
+    @test PCC._letter_graph(g) isa GraphAutomaton
+    @test PCC.n_edges(PCC._letter_graph(g)) == 2
 
     PCC.add_edge!(g, 1, 1, [1, 2])
     @test !PCC.is_complete(g, 1:2)
     @test PCC.is_path_complete(g, 1:2)
-    @test_throws ArgumentError PCC.letter_graph(g)
+    @test_throws ArgumentError PCC._letter_graph(g)
 end
 
 @testset "the dual reverses edges and words" begin
@@ -114,8 +112,8 @@ end
 
 @testset "the adjacency index agrees with the queries" begin
     g = PCC.de_bruijn(2, 2)
-    index = PCC.successors(g)
-    back = PCC.predecessors(g)
+    index = PCC._successors(g)
+    back = PCC._predecessors(g)
 
     for node in PCC.nodes(g), letter in 1:2
         @test sort(get(index, (node, letter), Int[])) ==

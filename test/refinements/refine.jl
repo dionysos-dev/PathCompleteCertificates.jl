@@ -52,8 +52,8 @@ add_transition!(MEMORYLESS, 1, 1, 2)
         depth_max = 3,
     )
 
-    @test PCC.is_converged(trace)
-    @test length(PCC.graphs(trace)) == 1     # nothing to lift, so no lift happened
+    @test PCC.status(trace) == PCC.OPTIMAL
+    @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
     @test isapprox(PCC.rates(trace)[1], 0.9; atol = 1e-3)
 end
@@ -70,8 +70,8 @@ end
 
     # The certified rate is already < 1, so this exits through the
     # `until_stability` branch rather than the "nothing left to tighten"
-    # branch -- `is_converged` tells the two apart.
-    @test !PCC.is_converged(trace)
+    # branch -- the status tells the two apart.
+    @test PCC.status(trace) == PCC.STOPPED
     @test length(PCC.graphs(trace)) == 1
     @test PCC.rates(trace)[1] < 1
 end
@@ -81,8 +81,7 @@ end
     # optimal at the first step, so `depth_max` would not be why that run ended.
     trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 1)
 
-    @test PCC.status(trace) == PCC.DEPTH_EXHAUSTED
-    @test !PCC.is_converged(trace)
+    @test PCC.status(trace) == PCC.DEPTH_REACHED
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
 end
@@ -96,7 +95,6 @@ end
         depth_max = 3,
     )
 
-    @test PCC.is_converged(trace) isa Bool
     @test length(PCC.graphs(trace)) == length(PCC.rates(trace))
 
     # Never below the true JSR, and lifting never makes the bound worse: any
@@ -201,12 +199,12 @@ end
     )
 
     @test PCC.status(trace) == PCC.OPTIMAL
-    @test PCC.is_converged(trace)
     @test length(PCC.graphs(trace)) == 1     # certified without lifting at all
     @test all(rate -> isapprox(rate, 0.9; atol = 1e-3), PCC.rates(trace))
 
     # Certified means bracketed: the lower bound meets the rate.
-    @test PCC.rates(trace)[end] - PCC.lower_bounds(trace)[end] < 1e-4
+    @test PCC.rates(trace)[end] -
+          PCC.jsr_lower_bound(PCC.certificates(trace)[end]; atol = 1e-4) < 1e-4
 
     # And Theorem 4 alone would not have seen it.
     @test !PCC.is_jsr_exact(PCC.certificates(trace)[end]; atol = 1e-4)
@@ -276,7 +274,7 @@ end
             depth_max = 2,
             strategy = PCC.SplitTightNode(),
         ),
-    ) == PCC.DEPTH_EXHAUSTED
+    ) == PCC.DEPTH_REACHED
 end
 
 @testset "the two tolerances must be orders apart, and it is enforced" begin
@@ -373,7 +371,7 @@ end
         atol = 1e-4,
     )
 
-    bounds = PCC.objectives(trace)
+    bounds = PCC.objective.(PCC.certificates(trace))
     @test length(bounds) >= 2
     @test issorted(bounds; rev = true)
     @test bounds[end] < bounds[1]
@@ -471,29 +469,6 @@ end
 
     unconstrained = PCC.refine(TEMPLATE, SHEARED; optimizer = OPTIMIZER, depth_max = 3)
     @test PCC.rates(trace)[end] <= PCC.rates(unconstrained)[end] + 1e-6
-end
-
-@testset "escalation is off unless asked for, and cannot lower the tolerance" begin
-    settings = (optimizer = OPTIMIZER, depth_max = 3)
-
-    plain = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings...)
-    ceilinged = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., atol_max = 1e-2)
-
-    # With the decade enforced the edges are comfortably visible, so there is no
-    # dead end to escalate out of and the ceiling changes nothing. It guards a
-    # solution whose accuracy is worse than `rtol` suggests, which the ratio
-    # cannot rule out -- not a routine path.
-    @test PCC.rates(plain) == PCC.rates(ceilinged)
-    @test PCC.status(plain) == PCC.status(ceilinged)
-
-    @test_throws ArgumentError PCC.refine(
-        TEMPLATE,
-        MEMORYLESS,
-        SHEARED;
-        optimizer = OPTIMIZER,
-        atol = 1e-4,
-        atol_max = 1e-5,
-    )
 end
 
 end # module

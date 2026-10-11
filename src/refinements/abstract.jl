@@ -7,43 +7,12 @@ a product chains two edge inequalities (Athanasopoulos & Jungers, Thm. 1;
 Ninite & Jungers, Thm. 3). Applied where a certificate is tight it is the step
 of [`refine`](@ref); applied everywhere it is one of the classical hierarchies.
 
-A refinement is an instance. [`scope`](@ref) says how it is applied: a
-[`Local`](@ref) one at a locus of edges, `refine(refinement, graph, edges)`; a
-[`Global`](@ref) one to the whole graph, `refine(refinement, graph)`. Both
-return a [`Refined`](@ref). A new refinement is one file answering `scope` and
-`refine`.
+A refinement is an instance, applied by [`refine`](@ref): a local one at a
+locus of edges, `refine(refinement, graph, edges)`, or at every edge when none
+is given; a global one to the whole graph, `refine(refinement, graph)`. Both
+return a [`Refined`](@ref). A new refinement is one file answering `refine`.
 """
 abstract type AbstractRefinement end
-
-"""
-    Scope
-
-How a refinement is applied, [`Local`](@ref) or [`Global`](@ref); read with
-[`scope`](@ref).
-"""
-abstract type Scope end
-
-"""
-    Global()
-
-Applied to the whole graph: `refine(refinement, graph)`.
-"""
-struct Global <: Scope end
-
-"""
-    Local()
-
-Applied at a locus, `refine(refinement, graph, edges)`: one edge, several, or
-every edge of the graph, simultaneously.
-"""
-struct Local <: Scope end
-
-"""
-    scope(refinement) -> Scope
-
-Whether `refinement` acts on the whole graph or at a locus of edges.
-"""
-function scope end
 
 """
     Refined(graph, origins)
@@ -73,10 +42,10 @@ origins(refined::Refined) = refined.origins
     refine(refinement, graph, edges) -> Refined
     refine(refinement, graph) -> Refined
 
-Apply one refinement: at a locus of edges for a [`Local`](@ref) one, to the
-whole graph for a [`Global`](@ref) one. A local refinement given no locus is
-applied at every edge. The iterated form, driven by a certificate, is
-`refine(template, graph, problem)`.
+Apply one refinement: at a locus of edges for a local one, to the whole graph
+for a global one. A local refinement given no locus is applied at every edge.
+The iterated form, driven by a certificate, is `refine(template, graph,
+problem)`.
 """
 function refine end
 

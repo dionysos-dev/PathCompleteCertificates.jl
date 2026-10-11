@@ -49,7 +49,7 @@ function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
     # them before paying for the subset construction.
     (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
 
-    index = successors(graph)
+    index = _successors(graph)
 
     # `observer_graph` runs the same search but drops empty states, which is
     # exactly what this predicate needs to see.
@@ -115,10 +115,10 @@ complete.
 is_complete(graph::CertificateGraph) = is_complete(graph, alphabet(graph))
 
 is_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
-    _covers_every_letter(graph, alphabet, successors(graph))
+    _covers_every_letter(graph, alphabet, _successors(graph))
 
 is_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_complete(letter_graph(graph), alphabet)
+    is_letter_graph(graph) && is_complete(_letter_graph(graph), alphabet)
 
 """
     is_co_complete(graph)
@@ -132,10 +132,10 @@ graph is co-complete.
 is_co_complete(graph::CertificateGraph) = is_co_complete(graph, alphabet(graph))
 
 is_co_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
-    _covers_every_letter(graph, alphabet, predecessors(graph))
+    _covers_every_letter(graph, alphabet, _predecessors(graph))
 
 is_co_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_co_complete(letter_graph(graph), alphabet)
+    is_letter_graph(graph) && is_co_complete(_letter_graph(graph), alphabet)
 
 # Whether every node has, in `index`, an entry for every letter. O(|V|·|Σ|) on
 # top of the index, which is built once.

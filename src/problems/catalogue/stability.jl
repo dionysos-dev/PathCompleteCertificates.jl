@@ -59,32 +59,30 @@ function add_edge_constraint!(
 end
 
 """
-    optimization_model(template, graph, problem, gamma; optimizer)
+    optimization_model(template, graph, problem; optimizer, rate = 1)
 
-Create the feasibility problem for the Lyapunov inequalities
+The feasibility problem of the Lyapunov inequalities
 
-    V_b(A_w x) <= gamma^(d |w|) * V_a(x)
+    V_b(A_w x) <= rate^(d |w|) * V_a(x)
 
-for every edge `(a, b, w)` of `graph`, `d` the template's degree and `|w|` the
-number of modes the edge reads — one on a letter graph, the product of the
-modes along the word on a [`WordGraph`](@ref).
+for every edge `(a, b, w)` of `graph`, `d` the template's degree of homogeneity
+and `|w|` the number of modes the edge reads — one on a letter graph, the
+product of the modes along the word on a [`WordGraph`](@ref).
 
-The returned model has no objective. Use [`is_stable`](@ref) or
-[`jsr_bound`](@ref) to solve it.
-
-`LinearCopositiveTemplate` requires entrywise nonnegative matrices.
-`optimizer` must be an LP solver for that template and an SDP-capable
-solver for `QuadraticTemplate`.
+The model has no objective: [`certify`](@ref) solves it once at a rate and
+[`jsr_bound`](@ref) bisects on the rate. `optimizer` must be an LP solver for
+the copositive and polyhedral templates and an SDP solver for the quadratic
+one.
 """
 function optimization_model(
     template::AbstractTemplate,
     graph::CertificateGraph,
-    problem::StabilityProblem,
-    gamma::Real;
+    problem::StabilityProblem;
     optimizer,
+    rate::Real = 1,
     path_complete::Bool = true,
 )
-    gamma >= 0 || throw(ArgumentError("gamma must be nonnegative"))
+    rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
     A = mode_matrices(problem.system)
 
@@ -102,10 +100,6 @@ function optimization_model(
         add_normalization!(model, template, V)
     end
 
-    # The template's degree of homogeneity, not a hard-coded square: `gamma` is
-    # the contraction rate per step for every template, so `jsr_bound` means
-    # the same thing whichever one is in use -- and a word edge spans as many
-    # steps as it reads.
     degree = homogeneity_degree(template)
 
     for edge in edges(graph)
@@ -118,41 +112,13 @@ function optimization_model(
             Vs[source(edge)],
             Vs[dest(edge)],
             _product(A, word);
-            rate = gamma^(degree * length(word)),
+            rate = rate^(degree * length(word)),
         )
     end
 
     model[:stability_V] = Vs
 
     return model
-end
-
-"""
-    is_stable(template, graph, problem, gamma; optimizer) -> Bool
-
-Return whether the fixed-`gamma` Lyapunov feasibility problem is solved
-to a feasible termination status.
-"""
-function is_stable(
-    template::AbstractTemplate,
-    graph::CertificateGraph,
-    problem::StabilityProblem,
-    gamma::Real;
-    optimizer,
-    path_complete::Bool = true,
-)
-    model = optimization_model(
-        template,
-        graph,
-        problem,
-        gamma;
-        optimizer,
-        path_complete = path_complete,
-    )
-
-    JuMP.optimize!(model)
-
-    return JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES
 end
 
 """
@@ -189,10 +155,23 @@ function jsr_bound(
     # times over on a graph that cannot have changed.
     _check_stability_data(template, graph, problem; path_complete = path_complete)
 
+    function feasible(rate)
+        model = optimization_model(
+            template,
+            graph,
+            problem;
+            optimizer,
+            rate,
+            path_complete = false,
+        )
+        JuMP.optimize!(model)
+        return JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES
+    end
+
     lower = zero(initial_upper)
     upper = initial_upper
 
-    while !is_stable(template, graph, problem, upper; optimizer, path_complete = false)
+    while !feasible(upper)
         upper *= 2
 
         isfinite(upper) ||
@@ -204,7 +183,7 @@ function jsr_bound(
 
         candidate = (lower + upper) / 2
 
-        if is_stable(template, graph, problem, candidate; optimizer, path_complete = false)
+        if feasible(candidate)
             upper = candidate
         else
             lower = candidate
@@ -229,10 +208,9 @@ end
 """
     certify(template, graph, problem::StabilityProblem; optimizer, rate = 1)
 
-Solve the fixed-`rate` Lyapunov feasibility problem once.
-
-This is the single solve; [`jsr_bound`](@ref) bisects on `rate` on top of it,
-and [`is_stable`](@ref) asks only whether a given rate is feasible.
+Solve the fixed-`rate` Lyapunov feasibility problem once; `is_feasible` of the
+result says whether the system contracts at that rate on this graph in this
+template. [`jsr_bound`](@ref) bisects on `rate` on top of it.
 """
 function certify(
     template::AbstractTemplate,
@@ -242,14 +220,7 @@ function certify(
     rate::Real = 1,
     path_complete::Bool = true,
 )
-    model = optimization_model(
-        template,
-        graph,
-        problem,
-        rate;
-        optimizer = optimizer,
-        path_complete = path_complete,
-    )
+    model = optimization_model(template, graph, problem; optimizer, rate, path_complete)
 
     JuMP.optimize!(model)
     status = JuMP.termination_status(model)
@@ -302,22 +273,6 @@ function dual(certificate::StabilityCertificate)
         ),
         certificate.rate,
     )
-end
-
-"""
-    jsr_bound(template, graph, system; kwargs...)
-
-Estimate a joint-spectral-radius bound for an input-free switched system.
-"""
-function jsr_bound(
-    template::AbstractTemplate,
-    graph::CertificateGraph,
-    system::_HS.HybridSystem;
-    kwargs...,
-)
-    problem = StabilityProblem(system)
-
-    return jsr_bound(template, graph, problem; kwargs...)
 end
 
 function _check_stability_data(

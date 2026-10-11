@@ -12,7 +12,7 @@ free — the edge conditions are homogeneous in ``P``, so ``P \\succeq I`` is on
 a choice of scale — but **the cap is not**: it excludes certificates rather
 than normalising them. A system whose only quadratic certificate needs
 ``\\operatorname{cond}(P)`` above the cap is then reported as having none, and
-`is_stable` returns `false` for a stable system.
+`certify` returns an infeasible certificate for a stable system.
 
 The default is therefore `Inf`, which imposes nothing. Set it only to help a
 solver that is struggling, and read a negative answer as "no certificate within

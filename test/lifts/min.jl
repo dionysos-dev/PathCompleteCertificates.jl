@@ -81,7 +81,7 @@ const GRAPHS = (G0, G1, G2, G4)
 
     # Max lift written out against the definition: ∀ b ∈ B ∃ a ∈ A (a, b, i).
     x = PCC.graph(PCC.lift(PCC.MaxLift(), g))
-    index = PCC.successors(g)
+    index = PCC._successors(g)
     subsets = PCC.origins(lifted)
     for (a, A) in enumerate(subsets), (b, B) in enumerate(subsets), i in 1:2
         expected = all(bb -> any(bb in get(index, (aa, i), Int[]) for aa in A), B)

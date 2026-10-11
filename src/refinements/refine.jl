@@ -3,7 +3,7 @@
 
 Why a [`refine`](@ref) run stopped.
 """
-@enum RefinementStatus OPTIMAL EXHAUSTED STALLED DEPTH_EXHAUSTED STOPPED
+@enum RefinementStatus OPTIMAL EXHAUSTED STALLED DEPTH_REACHED STOPPED
 
 """
     OPTIMAL
@@ -40,11 +40,11 @@ otherwise be grown forever at a constant bound.
 STALLED
 
 """
-    DEPTH_EXHAUSTED
+    DEPTH_REACHED
 
 `depth_max` certificates were solved with the search still making progress.
 """
-DEPTH_EXHAUSTED
+DEPTH_REACHED
 
 """
     STOPPED
@@ -62,7 +62,7 @@ the [`Refined`](@ref) that produced each graph after the start, so a run's steps
 can be read back; and a [`RefinementStatus`](@ref).
 
 A certificate carries its own graph and objective, so [`graphs`](@ref) and
-[`objectives`](@ref) read them off rather than storing them twice.
+`objective` read them off rather than storing them twice.
 """
 struct RefinementTrace{C <: AbstractCertificate}
     certificates::Vector{C}
@@ -95,19 +95,10 @@ previous graph each node came from.
 steps(trace::RefinementTrace) = trace.steps
 
 """
-    objectives(trace)
-
-The [`objective`](@ref) of the certificate on each of [`graphs`](@ref), in the
-same order.
-"""
-objectives(trace::RefinementTrace) =
-    [objective(certificate) for certificate in trace.certificates]
-
-"""
     rates(trace)
 
 The rate certified on each of [`graphs`](@ref) of a stability run, in the same
-order. [`objectives`](@ref) is the same for any problem.
+order; the matching lower bounds are `jsr_lower_bound.(certificates(trace))`.
 """
 rates(trace::RefinementTrace{<:StabilityCertificate}) =
     [certificate.rate for certificate in trace.certificates]
@@ -115,41 +106,17 @@ rates(trace::RefinementTrace{<:StabilityCertificate}) =
 """
     status(trace::RefinementTrace)
 
-Why the run stopped, as a [`RefinementStatus`](@ref).
+Why the run stopped, as a [`RefinementStatus`](@ref). Only [`OPTIMAL`](@ref)
+means the answer is certified.
 """
 status(trace::RefinementTrace) = trace.status
-
-"""
-    is_converged(trace) -> Bool
-
-Whether the search ended of its own accord rather than on a budget or a
-request: [`OPTIMAL`](@ref), [`STALLED`](@ref) or [`EXHAUSTED`](@ref).
-
-Only the first means the answer is certified. Read [`status`](@ref) whenever
-that distinction matters, which is most of the time.
-"""
-is_converged(trace::RefinementTrace) = status(trace) in (OPTIMAL, STALLED, EXHAUSTED)
-
-"""
-    lower_bounds(trace)
-
-A certified **lower** bound on the joint spectral radius at each step of a
-stability run, from the cycles of each certificate's tight subgraph
-([`jsr_lower_bound`](@ref)).
-
-Paired with [`rates`](@ref) — the upper bounds — this is the bracket the run
-narrowed. Recomputed from the certificates rather than stored, so it cannot
-fall out of step with them; pass the same `atol` [`refine`](@ref) ran with.
-"""
-lower_bounds(trace::RefinementTrace{<:StabilityCertificate}; atol::Real = 1e-4) =
-    [jsr_lower_bound(certificate; atol = atol) for certificate in trace.certificates]
 
 """
     refine(template, problem; optimizer, kwargs...)
     refine(template, graph, problem; optimizer, strategy = SplitTightNode(),
            select = :first, stop = Returns(false), depth_max = 5, stall_max = 1,
-           atol = 1e-4, atol_max = atol, gap_tol = 1e-6, rtol = 1e-6,
-           path_complete = true, kwargs...)
+           atol = 1e-4, gap_tol = 1e-6, rtol = 1e-6, path_complete = true,
+           kwargs...)
 
 Iteratively refine `graph` to tighten the certificate it carries, until the
 problem's [`optimality_gap`](@ref) closes or the search runs out.
@@ -180,7 +147,7 @@ Returns a [`RefinementTrace`](@ref).
   gap; `c -> c.rate < 1` stops a stability run at the first proof of stability;
 - `stall_max` steps in a row not improving the objective by more than `rtol`
   → [`STALLED`](@ref). Raise `stall_max` to cross a plateau;
-- `depth_max` certificates solved → [`DEPTH_EXHAUSTED`](@ref);
+- `depth_max` certificates solved → [`DEPTH_REACHED`](@ref);
 - no candidate → [`EXHAUSTED`](@ref). With the default strategy on a letter
   graph this coincides with `OPTIMAL`, since "no node holds two tight outgoing
   edges" is Theorem 4's hypothesis, and the gap is tested first.
@@ -196,13 +163,6 @@ edges measure `1.3e-7`, `6.0e-7` and `2.9e-6` against `0.17` for the slack one.
 Below a decade the tight subgraph can come out empty, every node then satisfies
 [`is_jsr_exact`](@ref) vacuously, and the run certifies a bound that is not the
 joint spectral radius.
-
-`atol_max` is the safeguard, **off by default** (`atol_max == atol`). Set it
-higher and a dead end is not taken at face value: the tolerance is multiplied
-by ten, up to the ceiling, and the same certificate re-read. Nothing is
-re-solved, because the tolerance decides how a solution is *read*, not what it
-is. Its remaining purpose is a solution whose accuracy is worse than `rtol`
-suggests.
 
 `path_complete` decides the **starting graph** only: a refinement of a path-complete
 graph is path-complete, so the loop asserts rather than re-deciding a
@@ -223,7 +183,6 @@ function refine(
     depth_max::Integer = 5,
     stall_max::Integer = 1,
     atol::Real = 1e-4,
-    atol_max::Real = atol,
     gap_tol::Real = 1e-6,
     rtol::Real = 1e-6,
     path_complete::Bool = true,
@@ -232,9 +191,6 @@ function refine(
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
     select in (:first, :best) || throw(ArgumentError("select must be :first or :best"))
-
-    atol_max >= atol ||
-        throw(ArgumentError("atol_max ($atol_max) must be at least atol ($atol)"))
 
     atol >= 10 * rtol || throw(
         ArgumentError(
@@ -256,9 +212,8 @@ function refine(
 
     trace = AbstractCertificate[]
     taken = Refined[]
-    outcome = DEPTH_EXHAUSTED
+    outcome = DEPTH_REACHED
     stalled = 0
-    tolerance = atol
 
     pending = nothing
     current = start
@@ -286,7 +241,7 @@ function refine(
             break
         end
 
-        if optimality_gap(certificate; atol = tolerance) <= gap_tol
+        if optimality_gap(certificate; atol) <= gap_tol
             outcome = OPTIMAL
             break
         end
@@ -298,12 +253,7 @@ function refine(
 
         depth == depth_max && break
 
-        candidates = strategy(certificate; atol = tolerance)
-
-        while isempty(candidates) && 10 * tolerance <= atol_max
-            tolerance *= 10
-            candidates = strategy(certificate; atol = tolerance)
-        end
+        candidates = strategy(certificate; atol)
 
         if isempty(candidates)
             outcome = EXHAUSTED

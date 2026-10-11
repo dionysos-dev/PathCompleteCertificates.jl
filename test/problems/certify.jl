@@ -88,8 +88,8 @@ end
     model = PCC.optimization_model(
         PCC.QuadraticTemplate(),
         GRAPH,
-        PROBLEM,
-        0.9;
+        PROBLEM;
+        rate = 0.9,
         optimizer = OPTIMIZER,
     )
 

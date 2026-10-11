@@ -15,8 +15,6 @@ struct ProductRefinement <: AbstractRefinement
     end
 end
 
-scope(::ProductRefinement) = Global()
-
 dual(refinement::ProductRefinement) = refinement
 
 function refine(refinement::ProductRefinement, g::CertificateGraph)

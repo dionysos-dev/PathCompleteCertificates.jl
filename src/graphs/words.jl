@@ -19,7 +19,7 @@ expanded_form(graph::_HS.GraphAutomaton) = (graph, collect(nodes(graph)))
 
 function expanded_form(graph::WordGraph)
     n = n_nodes(graph)
-    fresh = sum(edge -> word_length(graph, edge) - 1, edges(graph); init = 0)
+    fresh = sum(edge -> _word_length(graph, edge) - 1, edges(graph); init = 0)
 
     expanded = empty_graph(n + fresh)
     origins = [collect(nodes(graph)); zeros(Int, fresh)]

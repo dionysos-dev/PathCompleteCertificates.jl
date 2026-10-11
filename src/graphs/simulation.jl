@@ -17,7 +17,7 @@ function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     relation === nothing && return nothing
 
     edges_H = [(source(e), dest(e), label(H, e)) for e in edges(H)]
-    index = successors(G)
+    index = _successors(G)
     assignment = zeros(Int, n_nodes(H))
 
     adjacent(a, b, letter) = b in get(index, (a, letter), Int[])
@@ -49,7 +49,7 @@ end
 # point, polynomial, and read as a map into subsets it is the simulation of H
 # by the min lift of G (Debauche, Thm. 8.1).
 function _simulation_relation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
-    index = successors(G)
+    index = _successors(G)
     edges_H = [(source(e), dest(e), label(H, e)) for e in edges(H)]
 
     relation = [Set(nodes(G)) for _ in nodes(H)]

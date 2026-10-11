@@ -47,7 +47,7 @@ function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
     letters = sort(alphabet(g))
-    index = successors(letter_graph(g))
+    index = _successors(_letter_graph(g))
     multisets = _multisets(n_nodes(g), L.terms)
 
     lifted = empty_graph(length(multisets))

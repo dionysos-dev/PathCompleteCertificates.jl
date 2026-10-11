@@ -17,7 +17,6 @@ edgeset(g) = Set(
     lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, out)
     g = PCC.graph(lifted)
 
-    @test PCC.scope(PCC.ForwardEdgeSplit()) isa PCC.Local
     @test PCC.n_nodes(g) == PCC.n_nodes(graph) - 1 + length(out)
     @test sort(PCC.alphabet(g)) == sort(PCC.alphabet(graph))
     @test PCC.is_path_complete(g, PCC.alphabet(graph))
@@ -148,7 +147,6 @@ end
         @test PCC.simulation(g, db) !== nothing && PCC.simulation(db, g) !== nothing
     end
 
-    @test PCC.scope(PCC.PathDependentRefinement(1)) isa PCC.Global
     @test_throws ArgumentError PCC.PathDependentRefinement(0)
 end
 

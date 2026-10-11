@@ -9,14 +9,14 @@ common function are the same across all three.
 
 | Problem | Edge inequality on ``(s, d, i)`` | Entry points |
 | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` | [`certify`](@ref), [`is_stable`](@ref), [`jsr_bound`](@ref) |
+| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` | [`certify`](@ref), [`jsr_bound`](@ref) |
 | [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)``, plus set separation | [`certify`](@ref) |
 | [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | [`certify`](@ref) |
 
 ## Stability
 
-[ahmadi2014joint](@cite). [`certify`](@ref) solves once at a given rate;
-[`is_stable`](@ref) asks only whether that rate is feasible, and
+[ahmadi2014joint](@cite). [`certify`](@ref) solves once at a given rate, and
+[`is_feasible`](@ref) of the result says whether that rate is certified;
 [`jsr_bound`](@ref) bisects for the best one. Every template works here. The
 exponent ``d`` is the template's [`homogeneity_degree`](@ref), so ``\gamma`` means
 the same contraction per step whichever template is in use, and an edge

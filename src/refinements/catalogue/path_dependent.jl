@@ -17,8 +17,6 @@ struct PathDependentRefinement <: AbstractRefinement
     end
 end
 
-scope(::PathDependentRefinement) = Global()
-
 function refine(refinement::PathDependentRefinement, g::CertificateGraph)
     current = g
     origin = collect(nodes(g))

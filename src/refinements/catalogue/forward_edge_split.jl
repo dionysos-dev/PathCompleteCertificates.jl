@@ -19,8 +19,6 @@ On `outgoing_edges(graph, s)` it is the forward lift of Ninite & Jungers
 """
 struct ForwardEdgeSplit <: AbstractRefinement end
 
-scope(::ForwardEdgeSplit) = Local()
-
 function refine(
     ::ForwardEdgeSplit,
     g::CertificateGraph,

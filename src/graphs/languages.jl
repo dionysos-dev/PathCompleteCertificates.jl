@@ -24,7 +24,7 @@ function is_path_complete(graph::_HS.GraphAutomaton, constraint::_HS.GraphAutoma
     # A graph reading every word reads any language over the same letters.
     (is_complete(graph, letters) || is_co_complete(graph, letters)) && return true
 
-    index = successors(graph)
+    index = _successors(graph)
 
     # The subset construction in product with the constraint: a state is a node
     # of the constraint and the set of graph nodes that can have read the same

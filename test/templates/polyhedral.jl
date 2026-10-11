@@ -57,8 +57,12 @@ end
 @testset "synthesis recovers the rate" begin
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
 
-    @test PCC.is_stable(template, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
-    @test !PCC.is_stable(template, GRAPH, PROBLEM, 0.4; optimizer = OPTIMIZER)
+    @test PCC.is_feasible(
+        PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.6),
+    )
+    @test !PCC.is_feasible(
+        PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.4),
+    )
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 

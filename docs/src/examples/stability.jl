@@ -54,7 +54,7 @@ PCC.common(PCC.QuadraticTemplate(), graph, problem, PCC.functions(result), x)
 result(x)
 
 # !!! warning "A bound is an upper bound"
-#     `is_stable` returning `false` means no certificate was found in this
+#     An infeasible result, `is_feasible` false, means no certificate was found in this
 #     template on this graph — not that the system is unstable. See
 #     [What works with what](@ref) for which templates are available, and
 #     [`two_axes.jl`](@ref "The two axes, drawn") for how much the choice

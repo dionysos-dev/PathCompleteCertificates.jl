@@ -11,7 +11,7 @@ belongs to neither axis, and it names no problem: what it needs from one are
 [`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
 [`optimality_gap`](@ref). See [Refinement: designing the graph](@ref) for the
 picture. A new refinement is one file in `src/refinements/catalogue/`
-answering [`scope`](@ref) and [`refine`](@ref).
+answering [`refine`](@ref).
 
 ## The interface
 

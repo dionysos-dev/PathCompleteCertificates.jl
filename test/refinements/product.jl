@@ -55,7 +55,6 @@ const G4 = graph(
     w = PCC.graph(lifted)
 
     @test w isa PCC.WordGraph
-    @test PCC.scope(PCC.ForwardEdgeProduct()) isa PCC.Local
     @test PCC.n_nodes(w) == 2
     @test PCC.origins(lifted) == [1, 2]
 
@@ -74,7 +73,7 @@ end
         product = PCC.graph(PCC.refine(PCC.ProductRefinement(2), g))
 
         @test edgeset(forward) == edgeset(backward) == edgeset(product)
-        @test all(e -> PCC.word_length(product, e) == 2, PCC.edges(product))
+        @test all(e -> PCC._word_length(product, e) == 2, PCC.edges(product))
         @test PCC.is_path_complete(product, 1:2)
 
         # Self-dual.
@@ -93,11 +92,10 @@ end
         w = PCC.graph(lifted)
         @test PCC.n_nodes(w) == 1
         @test PCC.n_edges(w) == 2^T
-        @test all(e -> PCC.word_length(w, e) == T, PCC.edges(w))
+        @test all(e -> PCC._word_length(w, e) == T, PCC.edges(w))
         @test PCC.is_path_complete(w, 1:2)
     end
 
-    @test PCC.scope(PCC.ProductRefinement(2)) isa PCC.Global
     @test_throws ArgumentError PCC.ProductRefinement(0)
 end
 

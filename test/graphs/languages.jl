@@ -91,8 +91,8 @@ end
     model = PCC.optimization_model(
         PCC.QuadraticTemplate(),
         PCC.common_graph(constrained),
-        problem,
-        1.0;
+        problem;
+        rate = 1.0,
         optimizer = nothing,
     )
     @test model isa PCC.JuMP.Model
@@ -105,8 +105,8 @@ end
     @test_throws ArgumentError PCC.optimization_model(
         PCC.QuadraticTemplate(),
         partial,
-        problem,
-        1.0;
+        problem;
+        rate = 1.0,
         optimizer = nothing,
     )
 end

@@ -52,7 +52,13 @@ PCC.status(trace)
 # than the worst switching sequence — so the two bracket the answer
 # ([`jsr_lower_bound`](@ref)).
 
-collect(zip(sizes, round.(PCC.lower_bounds(trace); digits = 5), round.(bounds; digits = 5)))
+collect(
+    zip(
+        sizes,
+        round.(PCC.jsr_lower_bound.(PCC.certificates(trace)); digits = 5),
+        round.(bounds; digits = 5),
+    ),
+)
 
 # The bracket is what lets [`refine`](@ref) stop with [`OPTIMAL`](@ref) rather
 # than merely out of ideas, and it is sound whatever tolerance decided tightness:
