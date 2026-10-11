@@ -2,7 +2,7 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Refinement: designing the graph
+# Graph improvement via refinements
 
 Every other part of this package takes a graph you chose and solves on it.
 [`refine`](@ref) does the opposite: it starts from a graph you do not care
@@ -13,7 +13,7 @@ under strain ([ninite2026lifting](@cite)).
 A **refinement** is a transformation of a path-complete graph that is no worse
 for every template: a copy inherits its origin's function, a product chains
 two edge inequalities. The literature calls these lifts too; here the word
-*lift* is kept for the [lifts that compare graphs](@ref "Comparing graphs"),
+*lift* is kept for the [lifts that compare graphs](@ref "Graph comparison via lifts"),
 and the transformations that improve one are refinements.
 
 ## The four atoms

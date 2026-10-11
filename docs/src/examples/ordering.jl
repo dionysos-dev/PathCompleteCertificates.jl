@@ -310,5 +310,5 @@ PCC.n_nodes(PCC.graph(PCC.lift(PCC.MinLift(), G4)))
 #     [`compare`](@ref) answers *is this graph no worse than that one*, for
 #     which templates, whatever the system. [`refine`](@ref) is the other
 #     direction: start from a graph and build a better one where the certificate
-#     is tight. [Comparing graphs](@ref) explains the lifts and what each one
-#     decides; [Refinement: designing the graph](@ref) the steps that improve.
+#     is tight. [Graph comparison via lifts](@ref) explains the lifts and what each one
+#     decides; [Graph improvement via refinements](@ref) the steps that improve.

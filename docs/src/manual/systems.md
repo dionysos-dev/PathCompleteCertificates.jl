@@ -4,44 +4,47 @@ CurrentModule = PathCompleteCertificates
 
 # Switched systems
 
-The input to every problem: a discrete-time switched linear system, with or
-without an input you control, under arbitrary or constrained switching.
-[Switched systems: the four kinds](@ref) builds all four.
+The input to every problem is a discrete-time switched linear system,
+``x_{k+1} = A_{\sigma(k)}\, x_k``, or ``x_{k+1} = A_{\sigma(k)}\, x_k + B_{\sigma(k)}\, u_k``
+when there is an input to design. The switching signal ``\sigma`` is never
+chosen by the user: it ranges over every sequence of modes under **arbitrary
+switching**, and over the paths of an automaton under **constrained
+switching**. [Switched systems: the four kinds](@ref) builds all four
+combinations.
 
 ## Defining one
 
-[`switched_system`](@ref)`(A)` is ``x_{k+1} = A_{\sigma(k)}\, x_k`` over the
-mode matrices `A[1], …, A[M]`, and [`switched_system`](@ref)`(A, B)` is
-``x_{k+1} = A_{\sigma(k)}\, x_k + B_{\sigma(k)}\, u_k``. Switching is
-**autonomous** in both: the mode is not yours to choose, the input is. Both
-are a `HybridSystem` of HybridSystems.jl; [`mode_matrices`](@ref),
-[`input_matrices`](@ref) and [`has_input`](@ref) read them back, and
-[`mode_matrix`](@ref)`(system, word)` is the product along a sequence of
-modes.
+[`switched_system`](@ref)`(A)` takes the mode matrices `A[1], …, A[M]`, and
+`switched_system(A, B)` the input matrices as well; `automaton = ` restricts
+the switching to the paths of a `GraphAutomaton` over the same modes. The
+result is a `HybridSystem` of HybridSystems.jl, read back with
+[`mode_matrices`](@ref), [`input_matrices`](@ref) and [`has_input`](@ref);
+[`mode_matrix`](@ref)`(system, word)` is the product of the matrices along a
+sequence of modes.
 
 ```@docs; canonical=false
 switched_system
 ```
 
-Two properties of the dynamics decide what the graph layer may do with a
-system. [`is_invertible`](@ref) is what composition with the dynamics needs to
-keep a quadratic form positive definite, so it gates the composition lifts.
-[`is_positive`](@ref) is a positive system, the setting of the copositive
-templates.
+Two properties of the dynamics matter to the graph layer. [`is_invertible`](@ref):
+composition with the dynamics keeps a quadratic form positive definite only
+for invertible matrices, which is what the composition lifts need.
+[`is_positive`](@ref): a positive switched system, one with entrywise
+nonnegative matrices, is the setting of the copositive templates.
 
 ## The language
 
-Under **arbitrary switching** every sequence of modes is admissible. Under
-**constrained switching** the admissible sequences are the paths of an
-automaton over the same alphabet, passed as `automaton =`
-([philippe2016stability](@cite)); the automaton of the example forbids mode 2
-twice in a row. [`language`](@ref)`(system)` returns what a certificate graph
-must read in either case, and every problem checks the graph against it.
+A certificate graph must be able to read every admissible switching sequence.
+[`language`](@ref)`(system)` returns what it must read: the alphabet `1:M`,
+standing for every word over the modes, under arbitrary switching, and the
+automaton under constrained switching ([philippe2016stability](@cite)).
+`is_path_complete(graph, language(system))` is the check, and every problem
+runs it before solving.
 
-[`common_graph`](@ref)`(system)` is the first graph that reads it: one node with a
-loop per mode when switching is arbitrary, the automaton itself otherwise. It
-is where [`refine`](@ref) starts, and every refinement preserves what it
-reads.
+[`common_graph`](@ref)`(system)` is the smallest graph that reads it: the
+common Lyapunov function graph ``G_0``, one node with a loop per mode, under
+arbitrary switching, and the automaton itself otherwise. Every path-complete
+graph is at least as good, and it is where [`refine`](@ref) starts.
 
 ## Runs
 
@@ -50,16 +53,9 @@ state and returns a [`Trajectory`](@ref): [`states`](@ref),
 [`switching`](@ref) and, when there is an input, [`inputs`](@ref).
 `simulate(certificate, x0, steps)` closes the loop with the feedback of an
 optimal-control certificate under a random switching sequence. A trajectory
-has a plot recipe, available once Plots is loaded.
+has a plot recipe, available once Plots is loaded;
 [Simulating: what a run looks like](@ref) draws both.
 
 A run is a sample, never a proof. It can show that a bound is loose or that a
 trajectory leaves a set; it cannot show that none does. The proofs are the
 certificates.
-
-## The dual system
-
-[`dual`](@ref)`(system)` transposes every mode matrix and reverses the
-automaton. A certificate for it on the dual graph, in the dual template, is a
-certificate for the system ([debauche2024thesis](@cite), Lemma 6.25); see
-[Duality](@ref).

@@ -23,18 +23,19 @@
        registry, so the badge renders empty until then.
      Add both at registration (plan P7), not before. -->
 
-Certificates for switched systems, built on **path-complete graphs**, with the graph as the
-object you work on.
+Tools for constructing, comparing and refining certificates for switched systems within the
+**path-complete framework**, with the two components of a certificate, the template and the
+graph, both explicit.
 
 ## What it does
 
 A path-complete certificate is three things: a **labelled graph** whose labels are the modes
 of a switched system, a function at each node drawn from a **template**, and one **inequality
-along each edge**, fixed by the **problem**. When every switching sequence can be read as a
-path in the graph, the local inequalities imply a property of the whole system. Only the
-inequality changes between stability, safety and optimal control.
+along each edge**, fixed by the **problem**. When every admissible switching sequence can be
+read as a path in the graph, the local inequalities imply a property of the whole system. Only
+the inequality changes between stability, safety and optimal control.
 
-What the package adds to that framework is the graph as a first-class object:
+What the package adds to that framework is the graph as an object in its own right:
 
 | | |
 | :-- | :-- |

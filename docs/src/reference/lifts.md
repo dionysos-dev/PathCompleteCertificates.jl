@@ -9,7 +9,7 @@ path-complete graphs whose nodes stand for combinations of the original nodes
 ([debauche2021comparison](@cite), Defs. 5 and 7). It exists to compare graphs:
 when the lifted `G` simulates `H`, `H` is no worse than `G` for every template
 closed under the operation. [`compare`](@ref) runs every lift on a pair of
-graphs; see [Comparing graphs](@ref) for the picture. A new lift is one file in
+graphs; see [Graph comparison via lifts](@ref) for the picture. A new lift is one file in
 `src/lifts/catalogue/` answering [`lift`](@ref) and [`requirements`](@ref).
 
 ## The interface

@@ -9,7 +9,7 @@ for every template; [`refine`](@ref) applies one where a certificate is tight
 and repeats. The loop reads the graph, a template and a problem at once, so it
 belongs to neither axis, and it names no problem: what it needs from one are
 [`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref). See [Refinement: designing the graph](@ref) for the
+[`optimality_gap`](@ref). See [Graph improvement via refinements](@ref) for the
 picture. A new refinement is one file in `src/refinements/catalogue/`
 answering [`refine`](@ref).
 

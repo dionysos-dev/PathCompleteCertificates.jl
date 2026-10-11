@@ -2,7 +2,7 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Comparing graphs
+# Graph comparison via lifts
 
 Given two path-complete graphs ``G`` and ``H``, we say that ``H`` is at least
 as good as ``G`` for a template ``\mathcal V``, written ``G \le_{\mathcal V} H``,
@@ -46,7 +46,7 @@ anything exponential where the theory allows.
 | Lift | Decides ``G \le_{\mathcal V} H`` for | How | Simulation | Complete | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
 | [`IdentityLift`](@ref)`()` | every template, every system | a labelled graph homomorphism ``H \to G``, NP-hard, searched inside the relation below | a map | yes | [philippe2019complete](@cite), Thm. 3.5 |
-| [`MinLift`](@ref)`()` | templates closed under `min` ¹ | the greatest simulation relation, a map into subsets, polynomial | a relation | yes | [debauche2022necessary](@cite), Thm. 3; [debauche2024thesis](@cite), Thm. 8.1 |
+| [`MinLift`](@ref)`()` | templates closed under `min` ¹ | the greatest simulation relation between the nodes, a map into subsets, polynomial | a relation | yes | [debauche2022necessary](@cite), Thm. 3; [debauche2024thesis](@cite), Thm. 8.1 |
 | [`MaxLift`](@ref)`()` | templates closed under `max` | the same on the dual graphs | a relation | yes | [debauche2022necessary](@cite), Thm. 4; [debauche2024thesis](@cite), Thm. 8.5 |
 | [`SumLift`](@ref)`()` | templates closed under `+` | a linear program over nonnegative matrices ``C`` with ``S_H C \ge K S_G`` and ``D_H C \le K D_G`` | an integer matrix | yes | [philippe2017path](@cite), Thm. IV.4; [debauche2023ordering](@cite), Thm. 2 |
 | [`SumLift`](@ref)`(T)` | templates closed under `+` | the ``T``-sum lift is built and the map searched | a map into multisets | some ``T`` works whenever the program is feasible | [debauche2021comparison](@cite), Def. 8; [debauche2023ordering](@cite), Lemma 3 |
@@ -73,7 +73,7 @@ either of a dual pair of templates serves both ([Duality](@ref)).
 ```julia
 c = compare(G, H; templates = (QuadraticTemplate(),), system, optimizer)
 lifts(c)        # the lifts tried, in order
-simulations(c)    # lift => simulation, for each lift whose lifted G simulates H
+simulations(c)  # lift => simulation, for each lift whose lifted G simulates H
 templates(c)    # the templates given for which H is proved no worse than G
 ```
 
@@ -81,8 +81,8 @@ The lifts are tried cheapest and strongest first: the identity lift, whose
 map settles the question for every template and stops the search; the min and
 max lifts, by a relation; the sum lift, by the linear program, only when an
 `optimizer` is given; the two composition lifts of length one. Pass your own
-`lifts` to go further. A template is proved when some lift with a simulation is valid
-for it on the `system`, which is required with `templates`.
+`lifts` to go further. A template is proved when some lift with a simulation
+is valid for it on the `system`, which is required with `templates`.
 
 Read without templates, a [`Comparison`](@ref) is the literature's statement:
 ``H`` is no worse than ``G`` for every template closed under the
@@ -90,18 +90,19 @@ Read without templates, a [`Comparison`](@ref) is the literature's statement:
 
 ## When a graph buys nothing
 
-The one-node graph, [`common_graph`](@ref) of the system, simulates every graph, so
-``G_0 \le_{\mathcal V} G`` always. The other direction is `compare(G, common_graph(system))`:
-it holds for `min`-closed templates exactly when ``G`` has a nonempty complete
-induced subgraph — every node of it has, for every mode, an edge reading that
-mode into the subgraph — since the minimum of the node functions over that
-subgraph is then a common function, and dually for `max` and a co-complete one
-([debauche2021comparison](@cite), Prop. 3; [debauche2024thesis](@cite),
-Cor. 7.53). The relation of the min lift finds that subgraph.
+The one-node graph, [`common_graph`](@ref) of the system, simulates every
+graph, so ``G_0 \le_{\mathcal V} G`` always. The other direction is
+`compare(G, common_graph(system))`: it holds for `min`-closed templates exactly
+when ``G`` has a nonempty complete induced subgraph, every node of it having,
+for every mode, an edge reading that mode into the subgraph, since the minimum
+of the node functions over that subgraph is then a common function; dually for
+`max` and a co-complete one ([debauche2021comparison](@cite), Prop. 3;
+[debauche2024thesis](@cite), Cor. 7.53). The relation of the min lift finds
+that subgraph.
 
 Measured: with the fixed-facet polyhedral template, which is `max`-closed, every
-co-complete De Bruijn graph certifies exactly the one-node rate, at any order,
-while the primal one improves; and on the positive system of
+dual De Bruijn graph certifies exactly the one-node rate, at any order, while
+the primal one improves; and on the positive system of
 [debauche2023ordering](@cite) the copositive template gives the one-node rate
 on the two graphs with a complete induced subgraph and strictly better rates on
 the two without.

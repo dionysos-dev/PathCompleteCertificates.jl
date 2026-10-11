@@ -6,9 +6,11 @@ CurrentModule = PathCompleteCertificates
 
 Reverse every edge, transpose every matrix and take the dual norm of every
 node function: a certificate becomes a certificate again, at the same rate.
-The package carries that involution through every object it has. It is how
-every backward construction is obtained from a forward one without code of
-its own, and how a declaration made on one template serves its dual.
+The package carries that involution through every object it has. It is mostly
+a mechanism: it is how every backward construction is obtained from a forward
+one without code of its own, and how a declaration made on one template
+serves its dual. This page is the account of it, for a reader who wants to
+know what `dual` does to what.
 
 ## What `dual` does to each object
 
@@ -32,14 +34,11 @@ give the same bound ([ahmadi2014joint](@cite), Thm. 5.1).
 - **Every backward construction for free.** [`BackwardEdgeSplit`](@ref),
   [`BackwardEdgeProduct`](@ref), [`MaxLift`](@ref) and
   [`BackwardCompositionLift`](@ref) are `dual` of their forward counterparts,
-  and the sum and product constructions are self-dual. Two wrappers,
-  [`DualLift`](@ref) and [`DualRefinement`](@ref), replace four
-  implementations and the transposition bookkeeping that goes wrong by hand.
+  and the sum and product constructions are self-dual.
 - **Validity crosses over.** A lift valid for a template has a dual valid for
-  the dual template ([debauche2024thesis](@cite), Prop. 7.5).
-  [`is_valid`](@ref) therefore reads the dual side when the primal declares
-  nothing: the sum lift is valid for the dual copositive norms because the
-  primal ones add.
+  the dual template ([debauche2024thesis](@cite), Prop. 7.5), so
+  [`is_valid`](@ref) reads the dual side when the primal declares nothing: the
+  sum lift is valid for the dual copositive norms because the primal ones add.
 - **Ordering crosses over.** ``G \le_V H`` exactly when
   ``\mathrm{dual}(G) \le_{V^*} \mathrm{dual}(H)`` ([debauche2024thesis](@cite),
   Prop. 6.27), which is why [`MaxLift`](@ref) decides the `max`-closed case by

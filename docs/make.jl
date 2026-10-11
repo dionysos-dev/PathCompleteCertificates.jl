@@ -93,10 +93,10 @@ const PAGES = Any[
         "Path-complete graphs" => "manual/graphs.md",
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
-        "What works with what" => "manual/support.md",
-        "Comparing graphs" => "manual/comparing.md",
-        "Refinement" => "manual/refinement.md",
+        "Graph comparison via lifts" => "manual/comparing.md",
+        "Graph improvement via refinements" => "manual/refinement.md",
         "Duality" => "manual/duality.md",
+        "What works with what" => "manual/support.md",
     ],
 ]
 
@@ -105,12 +105,12 @@ isempty(EXAMPLE_PAGES) || push!(PAGES, "Examples" => EXAMPLE_PAGES)
 push!(
     PAGES,
     "API Reference" => [
-        "Systems and aggregation" => "reference/systems.md",
+        "Systems and the common function" => "reference/systems.md",
         "Graphs" => "reference/graphs.md",
         "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",
         "Lifts" => "reference/lifts.md",
-        "Refinement" => "reference/refinement.md",
+        "Refinements" => "reference/refinement.md",
     ],
 )
 push!(

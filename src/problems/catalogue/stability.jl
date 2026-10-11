@@ -4,8 +4,8 @@
 
 Stability problem for an input-free switched linear system.
 
-The problem stores the system only. The decay rate `gamma` is specified
-when constructing the feasibility model.
+The problem stores the system only; the rate is given to [`certify`](@ref) or
+bisected on by [`jsr_bound`](@ref).
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -127,8 +127,7 @@ end
 
 Estimate an upper bound on the joint spectral radius by bisection.
 
-At each candidate `gamma`, solve the fixed-`gamma` feasibility problem
-over every edge `(a, b, i)`.
+At each candidate rate, solve the fixed-rate feasibility problem.
 
 Returns a [`StabilityCertificate`](@ref). Its `rate` is the smallest feasible
 bound found to relative tolerance `rtol`; `functions(certificate)` are the
