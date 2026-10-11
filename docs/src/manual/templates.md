@@ -30,7 +30,7 @@ member.
 Raising `d` tightens the bound monotonically, and `d = 1` is exactly
 [`QuadraticTemplate`](@ref), a useful thing to check a change against.
 
-The degree is [`rate_exponent`](@ref): ``V(cx) = c^d V(x)``. It is accounted
+The degree is [`homogeneity_degree`](@ref): ``V(cx) = c^d V(x)``. It is accounted
 for when rates are computed, so bounds from different templates are
 comparable.
 

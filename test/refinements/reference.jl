@@ -153,7 +153,7 @@ const G4 = graph(
 )
 const LOOPS =
     graph([(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (2, 3, 1), (3, 1, 2), (3, 3, 2)], 3)
-const ONE = PCC.seed(OneStateAutomaton(2))
+const ONE = PCC.common_graph(OneStateAutomaton(2))
 const WORDS = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G2))
 
 const GRAPHS = [("G1", G1), ("G2", G2), ("G4", G4), ("loops", LOOPS), ("one", ONE)]

@@ -79,7 +79,7 @@ function PCC.add_domination!(
     # is not expressible. Then there is nothing to fold into the map and the
     # inequality is imposed as written, conditioning and all.
     residual = if scale isa Real
-        gamma = scale^(1 / PCC.rate_exponent(template))
+        gamma = scale^(1 / PCC.homogeneity_degree(template))
         V_src - subs(V_dst, x => (map ./ gamma) * x)
     else
         scale * V_src - subs(V_dst, x => map * x)

@@ -31,7 +31,7 @@ end
 
 solution_value(::LinearCopositiveTemplate, c) = JuMP.value.(c)
 
-rate_exponent(::LinearCopositiveTemplate) = 1
+homogeneity_degree(::LinearCopositiveTemplate) = 1
 
 function add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
     JuMP.@constraint(model, c .>= 1)

@@ -52,7 +52,7 @@ end
 (V::SumOfSquaresFunction)(x::AbstractVector{<:Real}) =
     V.polynomial(V.variables => collect(x))
 
-rate_exponent(template::SumOfSquaresTemplate) = 2 * template.degree
+homogeneity_degree(template::SumOfSquaresTemplate) = 2 * template.degree
 
 # A `SOSPoly` variable is a Gram matrix constrained positive semidefinite, so
 # the node function is nonnegative by construction and there is nothing to add.

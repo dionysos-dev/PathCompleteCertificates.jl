@@ -41,7 +41,7 @@ problem = PCC.OptimalControlProblem(system, Q, R)
 # Optimal control requires a **complete** graph, not merely a path-complete one:
 # the bound is read off the plain minimum of Corollary III.3.
 
-graph = PCC.de_bruijn(1, 2; orientation = :complete)
+graph = PCC.de_bruijn(1, 2)
 
 certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 

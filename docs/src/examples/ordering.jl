@@ -6,7 +6,7 @@
 # not a device for a bound — and its answer depends on what the template is
 # closed under. This example decides it on the five graphs of
 # [debauche2023ordering](@cite) and its repeatability package with one call,
-# reads the witness behind every verdict, and confirms each with certified
+# reads the simulation behind every verdict, and confirms each with certified
 # rates.
 
 import PathCompleteCertificates as PCC
@@ -139,7 +139,7 @@ PCC.lifts(c12)
 # None exists, since `G2` has a self-loop and `G1` has none — the paper's
 # Example 1. Three lifts did find one:
 
-first.(PCC.witnesses(c12))
+first.(PCC.simulations(c12))
 
 # The sum lift's is the verdict the paper is about, and it carries the other
 # two with it: whenever a sum lift of `G1` simulates `G2`, so do its min and
@@ -149,18 +149,18 @@ first.(PCC.witnesses(c12))
 
 PCC.templates(c12)
 
-# ## Reading the witness: a matrix
+# ## Reading a simulation: the matrix
 #
 # For a template closed under addition a *sum* of node functions is a candidate
 # too, and the paper builds a certificate on `G2` from one on `G1` by hand:
-# ``W_a = V_a + V_c``, ``W_b = V_a + V_b``, and so on. The sum lift's witness is
+# ``W_a = V_a + V_c``, ``W_b = V_a + V_b``, and so on. The sum lift's simulation is
 # that construction as a nonnegative integer matrix ``C`` with ``W = C\,V``,
 # found by a linear program that is **complete** for the order: feasible
 # exactly when some sum lift of `G1` simulates `G2`
 # ([debauche2023ordering](@cite), Thm. 2). Rows are the nodes of `G2`, columns
 # those of `G1`.
 
-C = Dict(PCC.witnesses(c12))[PCC.SumLift()]
+C = Dict(PCC.simulations(c12))[PCC.SumLift()]
 
 # Read off, it is the paper's construction; the program has several solutions
 # and this is one of them.
@@ -191,7 +191,7 @@ W = [
     PCC.QuadraticFunction(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))) for
     h in 1:PCC.n_nodes(G2)
 ]
-scale = on_G1.rate^PCC.rate_exponent(QUADRATIC)
+scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
 
 slacks = [
     PCC.domination_slack(
@@ -213,11 +213,11 @@ all(>=(-1e-6), slacks)
 # does, and the linear program says so.
 
 c40 = PCC.compare(G4, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
-first.(PCC.witnesses(c40))
+first.(PCC.simulations(c40))
 
 #-
 
-Dict(PCC.witnesses(c40))[PCC.MaxLift()]
+Dict(PCC.simulations(c40))[PCC.MaxLift()]
 
 # So `G4` buys nothing over a common function for the copositive templates —
 # the primal norms by the min lift, valid for them on positive systems without
@@ -235,7 +235,7 @@ PCC.templates(c40)
 # of eight of its nodes; the program never builds it.
 
 c30 = PCC.compare(G3, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
-Dict(PCC.witnesses(c30))[PCC.SumLift()]
+Dict(PCC.simulations(c30))[PCC.SumLift()]
 
 # The other way round needs no lift at all: the one-node graph simulates every
 # graph, so the identity lift answers and nothing else is tried.

@@ -48,9 +48,10 @@ requirements(::AbstractLift) = ()
 """
     simulation(L, G, H; optimizer = nothing)
 
-The witness that `lift(L, G)` simulates `H`, or `nothing`. It proves
-`G ≤_V H` for every template closed under `requirements(L)` (Philippe &
-Jungers, Thm. 3.5; Debauche, Thms. 7.18, 7.55, 7.56, 7.65 and 7.66).
+The simulation of `H` by `lift(L, G)`, or `nothing` when there is none. It
+proves `G ≤_V H` for every template closed under `requirements(L)` (Philippe &
+Jungers, Thm. 3.5; Debauche, Thms. 7.18, 7.55, 7.56, 7.65 and 7.66), and it is
+the recipe for a certificate on `H` from one on `G`.
 
 The default builds the lifted graph and returns the [`simulation`](@ref) map
 from the nodes of `H`, read through `origins`: subsets, multisets or

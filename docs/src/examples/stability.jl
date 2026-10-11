@@ -15,11 +15,11 @@ const OPTIMIZER = Clarabel.Optimizer
 A = [[0.5 0.0; 0.0 0.25]]
 
 # The graph is a De Bruijn graph of order 1 over 1 mode — a single node with a
-# self-loop, the smallest path-complete graph there is. `:complete` orientation
-# means every node has an outgoing edge for every mode, which is what lets
-# [`common`](@ref) aggregate with a minimum.
+# self-loop, the smallest path-complete graph there is. It is complete, every
+# node having an outgoing edge for every mode, which is what lets
+# [`common`](@ref) combine with a minimum.
 
-graph = PCC.de_bruijn(1, 1; orientation = :complete)
+graph = PCC.de_bruijn(1, 1)
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 
 # `jsr_bound` bisects on the rate, solving one feasibility problem per step,
@@ -41,9 +41,9 @@ result.rate
 V = PCC.functions(result)
 length(V), V[1]([1.0, 1.0])
 
-# The single function that certifies the system is their aggregate. Which
-# aggregate is correct depends on the graph, and `common` dispatches on that —
-# a minimum here, because the graph is complete.
+# The single function that certifies the system is the common function they
+# combine into. How they combine depends on the graph, and `common` dispatches
+# on that — a minimum here, because the graph is complete.
 
 x = [1.0, 1.0]
 PCC.common(PCC.QuadraticTemplate(), graph, problem, PCC.functions(result), x)

@@ -93,7 +93,7 @@ end
     # The one-node graph split at its mode-1 loop, as Athanasopoulos & Jungers
     # define it: the copy reads 1 back to the node, the node reads 1 into the
     # copy, and the node's other loop enters both.
-    one = PCC.seed(OneStateAutomaton(2))
+    one = PCC.common_graph(OneStateAutomaton(2))
     loop = only(PCC.outgoing_edges(one, 1, 1))
     g = PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), one, loop))
 
@@ -133,7 +133,7 @@ end
 end
 
 @testset "the path-dependent lift from the one-node graph is De Bruijn" begin
-    one = PCC.seed(OneStateAutomaton(2))
+    one = PCC.common_graph(OneStateAutomaton(2))
 
     for k in 1:3
         lifted = PCC.refine(PCC.PathDependentRefinement(k), one)
@@ -208,7 +208,7 @@ end
         PCC.edges(PCC.graph(refined)),
     )
 
-    for g in (PCC.de_bruijn(2, 2), loops, PCC.seed(OneStateAutomaton(2)))
+    for g in (PCC.de_bruijn(2, 2), loops, PCC.common_graph(OneStateAutomaton(2)))
         loci = [[e] for e in PCC.edges(g)]
         push!(loci, collect(PCC.edges(g)))
 

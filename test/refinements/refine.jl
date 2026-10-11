@@ -77,7 +77,7 @@ end
 end
 
 @testset "depth_max stops the loop without claiming convergence" begin
-    # On a system the seed does not already solve: the rotations are certified
+    # On a system the starting graph does not already solve: the rotations are certified
     # optimal at the first step, so `depth_max` would not be why that run ended.
     trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 1)
 
@@ -300,7 +300,7 @@ end
     )
 end
 
-@testset "path_complete decides the seed, and the lifts are trusted after it" begin
+@testset "path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings = (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.SplitTightNode())
 
     # Waiving the check cannot change the answer on a graph that has the
@@ -316,7 +316,7 @@ end
     # and that is asserted here rather than at run time.
     @test all(graph -> PCC.is_path_complete(graph, 1:2), PCC.graphs(waived))
 
-    # The seed, though, is still decided -- node 2 has no outgoing edge, so no
+    # The starting graph, though, is still decided -- node 2 has no outgoing edge, so no
     # word ending in mode 2 is readable.
     dead_end = GraphAutomaton(2)
     add_transition!(dead_end, 1, 1, 1)
@@ -327,7 +327,7 @@ end
 end
 
 @testset "the tightness tolerance must clear the bisection residual by a decade" begin
-    # Below a decade the tight subgraph can come out EMPTY: the seed's two
+    # Below a decade the tight subgraph can come out EMPTY: the starting graph's two
     # self-loops measure 2.9e-6 and 3.5e-6 at rtol = 1e-6, so an atol of 2e-6
     # sees neither. Every node then satisfies Theorem 4 vacuously and the run
     # certifies the memoryless bound as the joint spectral radius -- measured,
@@ -450,7 +450,7 @@ end
 end
 
 @testset "a constrained system is refined from its automaton" begin
-    # Mode 2 may never follow itself. The seed is the automaton; every graph of
+    # Mode 2 may never follow itself. The starting graph is the automaton; every graph of
     # the run reads its language, and the bound is below the unconstrained one.
     constraint = GraphAutomaton(2)
     add_transition!(constraint, 1, 1, 1)

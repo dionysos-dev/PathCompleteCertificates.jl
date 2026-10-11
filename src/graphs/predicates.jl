@@ -106,7 +106,7 @@ Definition III.2 of Philippe et al.
 This is **sufficient but not necessary** for [`is_path_complete`](@ref): a
 graph can read every word without every node reading every letter. Use this
 one only when the stronger structure is what is needed — it is what licenses
-the plain minimum aggregation of Corollary III.3, which is why
+the plain minimum of Corollary III.3, which is why
 [`common`](@ref) dispatches on it.
 
 A statement about letters, so a [`WordGraph`](@ref) with a longer word is never
@@ -126,7 +126,7 @@ is_complete(graph::WordGraph, alphabet::AbstractVector) =
 
 The dual of [`is_complete`](@ref): every node has an *incoming* edge for every
 letter of `alphabet`. Also sufficient but not necessary for path-completeness,
-and it licenses the maximum aggregation of Corollary III.3. The dual De Bruijn
+and it licenses the maximum of Corollary III.3. The dual De Bruijn
 graph is co-complete.
 """
 is_co_complete(graph::CertificateGraph) = is_co_complete(graph, alphabet(graph))

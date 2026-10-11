@@ -22,15 +22,15 @@ const TEMPLATE = PCC.QuadraticTemplate()
 A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 
-# The seed: one node, one self-loop per mode.
+# The starting graph: one node, one self-loop per mode.
 
-seed = GraphAutomaton(1)
-add_transition!(seed, 1, 1, 1)
-add_transition!(seed, 1, 1, 2)
+start = GraphAutomaton(1)
+add_transition!(start, 1, 1, 1)
+add_transition!(start, 1, 1, 2)
 
 # ## Running the loop
 
-trace = PCC.refine(TEMPLATE, seed, problem; optimizer = OPTIMIZER, depth_max = 4)
+trace = PCC.refine(TEMPLATE, start, problem; optimizer = OPTIMIZER, depth_max = 4)
 
 # No seed, and none needed: ties go to the **cheapest** split — the one adding
 # fewest nodes — so this run is identical on every machine and Julia version.
@@ -73,7 +73,7 @@ PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
 # !!! note "Why the split is per edge"
 #     [`ForwardEdgeSplit`](@ref) makes one copy per outgoing **edge**. The paper
-#     splits per distinct **successor** — and the seed's only successor is itself,
+#     splits per distinct **successor** — and the starting graph's only successor is itself,
 #     so that grain could not take a single step here.
 #
 #     It is also what makes the split rule and Theorem 4 the same test, since both
@@ -126,11 +126,11 @@ plot!(
 #
 # `RefinementTrace` carries the certificates themselves, not only the bounds, so
 # the shapes come for free. Each is positively homogeneous of degree
-# [`rate_exponent`](@ref), so the radius of ``\{V \le 1\}`` in direction ``u``
+# [`homogeneity_degree`](@ref), so the radius of ``\{V \le 1\}`` in direction ``u``
 # is ``V(u)^{-1/d}`` — the trick [The sum-of-squares hierarchy](@ref) uses.
 
 function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.rate_exponent(PCC.template(certificate))
+    degree = PCC.homogeneity_degree(PCC.template(certificate))
     angles = range(0, 2pi; length = samples)
     radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
     radii ./= maximum(radii)
@@ -153,9 +153,9 @@ end
 shapes
 
 # Every graph the loop visits here is **co-complete**, so [`common`](@ref)
-# aggregates the node functions with a maximum and the unit ball is their
+# combines the node functions with a maximum and the unit ball is their
 # *intersection* — convex, and gaining a facet per node. That is the opposite of
-# the primal De Bruijn case, where the aggregation is a minimum and the ball is a
+# the primal De Bruijn case, where the common function is a minimum and the ball is a
 # non-convex union; the split builds the dual family.
 
 PCC.is_co_complete.(PCC.graphs(trace))

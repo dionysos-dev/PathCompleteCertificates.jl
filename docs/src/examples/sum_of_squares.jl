@@ -62,12 +62,12 @@ end
 # ## What the certificate looks like
 #
 # No level-set tracing is needed here either. Every node function is positively
-# homogeneous of degree ``d`` = [`rate_exponent`](@ref), so the radius of
+# homogeneous of degree ``d`` = [`homogeneity_degree`](@ref), so the radius of
 # ``\{V \le 1\}`` in direction ``u`` is exactly ``V(u)^{-1/d}`` — the same three
 # lines that drew the quadratic and polyhedral certificates.
 
 function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.rate_exponent(PCC.template(certificate))
+    degree = PCC.homogeneity_degree(PCC.template(certificate))
     angles = range(0, 2pi; length = samples)
     radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
     radii ./= maximum(radii)
@@ -120,7 +120,7 @@ hline!([quadratic.rate]; ls = :dash, lw = 2, label = "quadratic template")
 # ## Both axes at once
 #
 # The graph axis buys the same thing, and the two compose. A De Bruijn graph of
-# memory 1 has two nodes, so it carries two node functions and aggregates them
+# memory 1 has two nodes, so it carries two node functions and combines them
 # with a minimum ([`common`](@ref)) — and that works with any template.
 
 de_bruijn = PCC.de_bruijn(1, 2)

@@ -1,12 +1,12 @@
 """
     common(template, graph, problem, Ps, x)
 
-Evaluate the common function associated with `graph` at `x`. Complete graphs
-use the minimum over the node functions, co-complete graphs use the maximum,
-and other graphs use the observer construction with the corresponding
-minimum-maximum aggregation. Depending on `problem`, this function represents
-a common Lyapunov function for stability, a common barrier function for
-safety, or an upper bound on the value function for optimal control.
+Evaluate at `x` the common function the node functions `Ps` of a certificate
+on `graph` combine into (Philippe, Athanasopoulos, Angeli & Jungers): the
+minimum over the nodes on a complete graph (Cor. III.3), the maximum on a
+co-complete one, and a minimum of maxima over the observer construction
+otherwise (Thm. III.8). Depending on `problem` it is a common Lyapunov
+function, a common barrier function, or an upper bound on the value function.
 """
 function common(
     template::AbstractTemplate,
@@ -15,7 +15,7 @@ function common(
     Ps::AbstractVector,
     x::AbstractVector{<:Real},
 )
-    # Corollary III.3 of Philippe et al.: a complete graph aggregates with a
+    # Corollary III.3 of Philippe et al.: a complete graph combines with a
     # minimum, a co-complete one with a maximum. Both are special cases of the
     # observer construction below (Theorem III.8), taken here because they are
     # cheaper and need no subset construction.
@@ -27,7 +27,7 @@ function common(
         return maximum(node_value(template, problem, P, x) for P in Ps)
     end
 
-    # Each observer node is a *set* of nodes of `graph`, so the aggregation is
+    # Each observer node is a *set* of nodes of `graph`, so the common function is
     # a maximum within each set and a minimum across them.
     _, observer_states = observer_graph(graph)
 

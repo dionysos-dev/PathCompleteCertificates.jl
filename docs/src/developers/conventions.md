@@ -16,7 +16,7 @@ Between problems, only the edge inequality changes:
 | Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
 | Safety | the invariance condition |
 
-The graph, the templates and the aggregation are identical throughout. So the package has **two
+The graph, the templates and the common function are identical throughout. So the package has **two
 independent axes**:
 
 - **template** (`src/templates/`) — what the node functions are;
@@ -30,7 +30,7 @@ axis names the other. Every one of these is public — a user implements them, s
 
 ```julia
 # --- Template axis (src/templates/catalogue/). One file per template, answering all of it.
-rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
+homogeneity_degree(template)                         # degree d: V(cx) = cᵈ V(x)
 add_function_variables!(model, template, dim, node)  # -> the node function V_α
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
 add_normalization!(model, template, V)               # excludes V ≡ 0
@@ -43,7 +43,7 @@ check_dynamics(template, A)                          # is this template applicab
 add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
 node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
 
-# --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
+# --- The common function (src/common.jl). Dispatches on the graph, so neither axis owns it.
 common(template, graph, problem, Vs, x)
 #   complete → min over nodes; co-complete → max; otherwise min-of-max over the observer.
 ```
@@ -122,7 +122,7 @@ that induces it.
   `size`, `eltype`, `parent`.
 - **No acronyms in exported names.** No `PCLF`, `CLF`, `MLF`.
 - **One word per concept.** It is `alphabet`, never `modes` or `labels`. And it is `common` — the
-  term Philippe et al. use for the aggregated function — never `aggregate`.
+  term Philippe et al. use for the single function the node functions combine into — never `aggregate`.
 - **Node functions are callable**: `V(x)`, not `piece_value(V, x)`.
 
 The reference throughout is the
@@ -198,7 +198,7 @@ reindex(template, origins)                       # default identity; polyhedral 
 # --- A lift (src/lifts/catalogue/): two methods to implement, two inherited.
 lift(L, graph)                                   # returns a Lifted: the graph and what every node stands for
 requirements(L)                                  # a tuple of operations; () for the identity lift
-simulation(L, G, H; optimizer)                   # the witness that lift(L, G) simulates H; overridden where cheaper
+simulation(L, G, H; optimizer)                   # the simulation of H by lift(L, G); overridden where cheaper
 is_valid(L, template, system)                    # written ONCE against the two; one cited override exists
 dual(L)                                          # DualLift: conjugation by the dual graph; simulation on the duals
 compare(G, H; templates, system, optimizer)      # the one entry point: every lift, a Comparison

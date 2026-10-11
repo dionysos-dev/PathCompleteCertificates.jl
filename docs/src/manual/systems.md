@@ -26,7 +26,7 @@ switched_system
 Two properties of the dynamics decide what the graph layer may do with a
 system. [`is_invertible`](@ref) is what composition with the dynamics needs to
 keep a quadratic form positive definite, so it gates the composition lifts.
-[`is_nonnegative`](@ref) is a positive system, the setting of the copositive
+[`is_positive`](@ref) is a positive system, the setting of the copositive
 templates.
 
 ## The language
@@ -38,7 +38,7 @@ automaton over the same alphabet, passed as `automaton =`
 twice in a row. [`language`](@ref)`(system)` returns what a certificate graph
 must read in either case, and every problem checks the graph against it.
 
-[`seed`](@ref)`(system)` is the first graph that reads it: one node with a
+[`common_graph`](@ref)`(system)` is the first graph that reads it: one node with a
 loop per mode when switching is arbitrary, the automaton itself otherwise. It
 is where [`refine`](@ref) starts, and every refinement preserves what it
 reads.

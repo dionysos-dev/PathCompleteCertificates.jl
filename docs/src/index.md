@@ -30,7 +30,7 @@ between problems:
 | [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)``, plus separation of the initial and unsafe sets | `margin`, how strictly the sets are separated |
 | [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | `gains`, a feedback per node, under the bound ``V`` |
 
-The graph, the templates and the aggregation of node functions into one
+The graph, the templates and the common function built from the node functions, into one
 common function are shared. So the package is organised along two independent
 axes, **templates** and **problems**, and the graph cuts across both.
 
@@ -39,8 +39,8 @@ axes, **templates** and **problems**, and the graph cuts across both.
 | | Acts on | Does | Read |
 | :-- | :-- | :-- | :-- |
 | **Certify** | a template, a graph and a problem | solve for a certificate on the graph, with any template the problem accepts | [Problems](@ref); [Stability: a first certificate](@ref) |
-| **Build** | a system, or nothing | De Bruijn graphs, the seed of a system, duals, graphs reading words, graphs for constrained switching | [Path-complete graphs](@ref) |
-| **Compare** | two graphs, and optionally templates | decide whether one graph is no worse than the other, for which templates, with the witness | [Comparing graphs](@ref); [Comparing graphs: which one is better?](@ref) |
+| **Build** | a system, or nothing | De Bruijn graphs, the common Lyapunov function graph, duals, graphs reading words, graphs for constrained switching | [Path-complete graphs](@ref) |
+| **Compare** | two graphs, and optionally templates | decide whether one graph is no worse than the other, for which templates, with the simulation that proves it | [Comparing graphs](@ref); [Comparing graphs: which one is better?](@ref) |
 | **Refine** | a template, a graph and a problem | grow the graph where its certificate is tight, with any refinement of the literature, until the bound is proved exact | [Refinement: designing the graph](@ref); [Refinement: letting the graph design itself](@ref) |
 
 ```
@@ -69,7 +69,7 @@ In reading order:
 3. [The two axes, drawn](@ref), three templates on one graph and one template
    on four graphs.
 4. [Comparing graphs: which one is better?](@ref), five graphs, three
-   templates, a witness for every verdict.
+   templates, a simulation for every verdict.
 5. [Refinement: letting the graph design itself](@ref), the graph grown from
    its certificate, against De Bruijn at equal size.
 

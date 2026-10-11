@@ -127,7 +127,7 @@ end
 solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
     PolyhedralFunction(V.G, JuMP.value.(V.w))
 
-rate_exponent(::PolyhedralTemplate) = 1
+homogeneity_degree(::PolyhedralTemplate) = 1
 
 function add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
     # `add_nonnegativity!` already floors the weights, which normalizes too:

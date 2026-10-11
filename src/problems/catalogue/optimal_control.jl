@@ -258,7 +258,7 @@ function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
 
     # Stricter than `_check_path_complete`: the bound is read off the plain
     # minimum of Corollary III.3, which needs a *complete* graph. The general
-    # case is sound (Theorem III.8) but needs the observer aggregation.
+    # case is sound (Theorem III.8) but needs the common function over the observer.
     is_complete(graph, 1:length(A)) || throw(
         ArgumentError(
             "optimal control currently supports only complete graphs; " *

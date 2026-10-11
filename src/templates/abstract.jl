@@ -13,7 +13,7 @@ type — [`PolyhedralTemplate`](@ref) carries one fixed matrix per node.
 abstract type AbstractTemplate end
 
 """
-    rate_exponent(template) -> Int
+    homogeneity_degree(template) -> Int
 
 The degree of homogeneity of the template's functions, `V(cx) = cᵈ V(x)`.
 
@@ -21,7 +21,7 @@ The edge condition is `V_dst(Ax) ≤ γᵈ V_src(x)`, so this is what makes `γ`
 a contraction rate for every template. Quadratic forms are degree 2, linear
 functionals and norms degree 1.
 """
-function rate_exponent end
+function homogeneity_degree end
 
 """
     add_function_variables!(model, template, dimension, node)
@@ -64,7 +64,7 @@ Constrain, for every ``x``,
     - \\text{margin}\\,\\|x\\|^d \\ge 0,
 ```
 
-where ``d`` is [`rate_exponent`](@ref). `scale` and `margin` may be JuMP
+where ``d`` is [`homogeneity_degree`](@ref). `scale` and `margin` may be JuMP
 expressions.
 
 Quantifying over all `x` needs a lifting into a cone, which is template-specific

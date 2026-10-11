@@ -72,7 +72,7 @@ The last two are **sufficient, not necessary**: a graph can read every word
 without every node reading every letter. "Is this a valid certificate?" is
 always [`is_path_complete`](@ref). None of the three is graph-theoretic
 completeness. What the sufficient conditions buy is a cheaper check and a
-simpler aggregation.
+simpler common function.
 
 ## From node functions to one function
 
@@ -89,16 +89,17 @@ common
 
 ## Building one
 
-[`de_bruijn`](@ref)`(k, m)` remembers the last `k` modes at `mᵏ` nodes, in the
-complete orientation or the co-complete one. [`seed`](@ref)`(system)` is the
-smallest graph that reads a system's language: one node with a loop per mode
-under arbitrary switching, the system's own automaton otherwise. It is where
-[`refine`](@ref) starts. Any graph built by hand works once it passes the
-check.
+[`de_bruijn`](@ref)`(k, m)` is the primal De Bruijn graph of order `k`
+([debauche2024thesis](@cite), Def. 6.10): it remembers the last `k` modes at
+`mᵏ` nodes and is complete; `dual(de_bruijn(k, m))` is the dual De Bruijn
+graph, co-complete. [`common_graph`](@ref)`(system)` is the common Lyapunov
+function graph ``G_0``, one node with a loop per mode, or the system's own
+automaton under constrained switching. It is where [`refine`](@ref) starts.
+Any graph built by hand works once it passes the check.
 
 ```@docs; canonical=false
 de_bruijn
-seed
+common_graph
 ```
 
 A higher De Bruijn order buys a tighter bound at exponential cost, and spends
@@ -111,9 +112,9 @@ certificate is tight. The alternatives are the two pages that follow:
 
 [`dual`](@ref)`(graph)` reverses every edge and every word
 ([debauche2024thesis](@cite), Def. 6.3), and the result is path-complete
-exactly when the graph is (Prop. 6.6). The two orientations of De Bruijn are
-each other's duals, and the dual is how every backward construction in the
-package is obtained from a forward one. [Duality](@ref) is the full account.
+exactly when the graph is (Prop. 6.6). The dual De Bruijn graph is the dual of
+the primal one, and the dual is how every backward construction in the package
+is obtained from a forward one. [Duality](@ref) is the full account.
 
 ## Words on edges
 

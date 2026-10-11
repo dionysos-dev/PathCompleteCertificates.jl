@@ -156,7 +156,7 @@ Ninite and Jungers split per distinct **successor**. That grain cannot
 separate two edges to the same successor, so a node held at exactly those
 stays held however often it is split, and the optimality certificate below,
 which counts tight outgoing *edges*, is unreachable for it. Measured over seven
-seed and system combinations it never gives a better bound at equal node
+starting graphs and systems it never gives a better bound at equal node
 count, and on the memoryless graph it cannot take a single step.
 
 With one grain a copy simply **is** an outgoing edge, so the rule below counts
@@ -178,7 +178,7 @@ differently between them.
 
 ## Where it starts
 
-`refine(template, problem)` starts from [`seed`](@ref) of the system: one
+`refine(template, problem)` starts from [`common_graph`](@ref) of the system: one
 node with a loop per mode under arbitrary switching, the system's own
 automaton under constrained switching, so the loop reads the right language
 from the first step. `refine(template, graph, problem)` starts from a graph of

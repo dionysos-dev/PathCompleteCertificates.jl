@@ -167,11 +167,11 @@ end
 end
 
 @testset "every template agrees on the rate" begin
-    # The point of `rate_exponent`: the same system and graph, three templates
+    # The point of `homogeneity_degree`: the same system and graph, three templates
     # of two different degrees, one answer.
-    @test PCC.rate_exponent(PCC.QuadraticTemplate()) == 2
-    @test PCC.rate_exponent(PCC.LinearCopositiveTemplate()) == 1
-    @test PCC.rate_exponent(PCC.PolyhedralTemplate(2, 2)) == 1
+    @test PCC.homogeneity_degree(PCC.QuadraticTemplate()) == 2
+    @test PCC.homogeneity_degree(PCC.LinearCopositiveTemplate()) == 1
+    @test PCC.homogeneity_degree(PCC.PolyhedralTemplate(2, 2)) == 1
 
     bounds = map((
         PCC.QuadraticTemplate(),

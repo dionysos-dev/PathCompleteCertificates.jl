@@ -90,14 +90,14 @@ figure
 # inequality holds for every state in the region and every mode, not only along
 # the trajectories someone happened to draw.
 
-# ## The orientation decides the aggregation
+# ## The dual graph decides the common function
 #
-# A De Bruijn graph comes in two orientations, and they differ in how the node
-# barriers combine: `:complete` aggregates with a minimum, `:co_complete` with a
-# maximum ([`common`](@ref) dispatches on it). Here is the other one, with eight
-# modes of memory.
+# The De Bruijn graph and its dual differ in how the node barriers combine: the
+# primal one is complete and combines with a minimum, the dual one is
+# co-complete and combines with a maximum ([`common`](@ref) dispatches on it).
+# Here is the dual, with eight modes of memory.
 
-dual = PCC.de_bruijn(8, 2; orientation = :co_complete)
+dual = PCC.dual(PCC.de_bruijn(8, 2))
 
 PCC.n_nodes(dual)
 

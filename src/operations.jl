@@ -1,6 +1,6 @@
 # The vocabulary templates and lifts share. A template declares which of these
 # it is closed under; a lift names which it combines node functions with. Neither
-# owns the words, so they sit at the top level like `aggregation.jl`.
+# owns the words, so they sit at the top level like `common.jl`.
 
 """
     Operation

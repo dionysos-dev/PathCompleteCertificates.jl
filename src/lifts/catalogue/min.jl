@@ -11,7 +11,7 @@ Jungers, Def. 9). The node function is the minimum over the subset.
 
 Valid for templates closed under [`Minimum`](@ref), and for the linear
 copositive norms on positive systems without closure (Debauche, Thm. 7.43).
-Its simulation is the greatest [`simulation_relation`](@ref), a map into
+Its simulation is the greatest simulation relation between the nodes, a map into
 subsets computed in polynomial time, and it is complete: `G ≤_V H` for every
 `min`-closed template exactly when the relation exists (Debauche, Thm. 8.1).
 Built explicitly only for small graphs; `origins` are the subsets.
@@ -49,4 +49,4 @@ function lift(::MinLift, g::CertificateGraph)
 end
 
 simulation(::MinLift, G::CertificateGraph, H::CertificateGraph; optimizer = nothing) =
-    simulation_relation(G, H)
+    _simulation_relation(G, H)

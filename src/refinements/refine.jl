@@ -57,8 +57,8 @@ STOPPED
 """
     RefinementTrace(certificates, steps, status)
 
-One certificate per graph a [`refine`](@ref) run visited, the seed's first;
-the [`Refined`](@ref) that produced each graph after the seed, so a run's steps
+One certificate per graph a [`refine`](@ref) run visited, the starting graph's first;
+the [`Refined`](@ref) that produced each graph after the start, so a run's steps
 can be read back; and a [`RefinementStatus`](@ref).
 
 A certificate carries its own graph and objective, so [`graphs`](@ref) and
@@ -81,7 +81,7 @@ certificates(trace::RefinementTrace) = trace.certificates
 """
     graphs(trace)
 
-The graphs visited by a [`refine`](@ref) run, the seed first.
+The graphs visited by a [`refine`](@ref) run, the starting graph first.
 """
 graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.certificates]
 
@@ -154,7 +154,7 @@ lower_bounds(trace::RefinementTrace{<:StabilityCertificate}; atol::Real = 1e-4) 
 Iteratively refine `graph` to tighten the certificate it carries, until the
 problem's [`optimality_gap`](@ref) closes or the search runs out.
 
-Without a `graph`, the run starts from [`seed`](@ref) of the system: the
+Without a `graph`, the run starts from [`common_graph`](@ref) of the system: the
 one-node graph under arbitrary switching, the automaton itself under
 constrained switching.
 
@@ -204,12 +204,12 @@ re-solved, because the tolerance decides how a solution is *read*, not what it
 is. Its remaining purpose is a solution whose accuracy is worse than `rtol`
 suggests.
 
-`path_complete` decides the **seed** only: a refinement of a path-complete
+`path_complete` decides the **starting graph** only: a refinement of a path-complete
 graph is path-complete, so the loop asserts rather than re-deciding a
 PSPACE-complete question. Other keywords go to [`best_certificate`](@ref).
 """
 function refine(template::AbstractTemplate, problem::AbstractProblem; optimizer, kwargs...)
-    return refine(template, seed(problem.system), problem; optimizer, kwargs...)
+    return refine(template, common_graph(problem.system), problem; optimizer, kwargs...)
 end
 
 function refine(

@@ -2,7 +2,7 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Systems and aggregation
+# Systems and the common function
 
 Neither of these belongs to an axis. A switched system is the input to every
 problem, and [`common`](@ref) reads all three of graph, template and problem.
@@ -21,9 +21,9 @@ Modules = [PathCompleteCertificates]
 Pages   = ["systems/trajectory.jl", "systems/simulate.jl", "systems/closed_loop.jl"]
 ```
 
-## Aggregation
+## The common function
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["aggregation.jl"]
+Pages   = ["common.jl"]
 ```

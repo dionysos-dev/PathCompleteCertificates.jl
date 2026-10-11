@@ -193,7 +193,7 @@ function planar_conic_partition(order::Integer)
     return cones
 end
 
-rate_exponent(::ConicPolyhedralTemplate) = 1
+homogeneity_degree(::ConicPolyhedralTemplate) = 1
 
 function add_normalization!(
     model::JuMP.Model,

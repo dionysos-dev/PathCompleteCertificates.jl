@@ -89,10 +89,10 @@ end
     @test Set((PCC.source(e), PCC.dest(e), PCC.label(dd, e)) for e in PCC.edges(dd)) ==
           Set((PCC.source(e), PCC.dest(e), PCC.label(g, e)) for e in PCC.edges(g))
 
-    # On a letter graph, De Bruijn's two orientations are each other's duals.
+    # On a letter graph, the dual De Bruijn graph is the dual of the primal one.
     for k in 1:2
         primal = PCC.de_bruijn(k, 2)
-        co = PCC.de_bruijn(k, 2; orientation = :co_complete)
+        co = PCC.dual(PCC.de_bruijn(k, 2))
         edgeset(h) =
             Set((PCC.source(e), PCC.dest(e), PCC.label(h, e)) for e in PCC.edges(h))
         @test edgeset(PCC.dual(primal)) == edgeset(co)

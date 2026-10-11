@@ -87,7 +87,7 @@ end
 end
 
 @testset "the product lift of length T reads every path of length T" begin
-    one = PCC.seed(OneStateAutomaton(2))
+    one = PCC.common_graph(OneStateAutomaton(2))
     for T in 1:3
         lifted = PCC.refine(PCC.ProductRefinement(T), one)
         w = PCC.graph(lifted)
@@ -114,7 +114,7 @@ end
 
     A = [0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]
     problem = PCC.StabilityProblem(PCC.switched_system(A))
-    one = PCC.seed(OneStateAutomaton(2))
+    one = PCC.common_graph(OneStateAutomaton(2))
     lifted = PCC.refine(PCC.ProductRefinement(2), one)
     w = PCC.graph(lifted)
     expanded, _ = PCC.expanded_form(w)
@@ -148,7 +148,7 @@ end
     # The structural test is not proved with words, and says so.
     @test_throws ArgumentError PCC.is_jsr_exact(on_words)
 
-    # Safety and aggregation need a letter graph, and say so.
+    # Safety and the common function need a letter graph, and say so.
     @test_throws ArgumentError on_words([1.0, 0.0])
 end
 

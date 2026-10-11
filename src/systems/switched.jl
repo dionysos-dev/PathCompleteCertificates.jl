@@ -198,12 +198,12 @@ is_invertible(system::_HS.HybridSystem) =
     all(A -> LinearAlgebra.rank(A) == size(A, 1), mode_matrices(system))
 
 """
-    is_nonnegative(system) -> Bool
+    is_positive(system) -> Bool
 
 Whether every mode matrix is entrywise nonnegative — a positive system, the
 setting of the copositive templates.
 """
-is_nonnegative(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(system))
+is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(system))
 
 """
     dual(system)

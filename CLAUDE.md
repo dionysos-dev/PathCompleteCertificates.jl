@@ -38,7 +38,7 @@ Only the **edge inequality** changes between problems:
 | Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
 | Safety | the invariance condition |
 
-The graph, the templates and the aggregation are identical. So the package has **two
+The graph, the templates and the common function are identical. So the package has **two
 independent axes**, not one type hierarchy:
 
 - **template** (`src/templates/`) — what the node functions are;
@@ -66,7 +66,7 @@ domination_slack(template, V_src, V_dst, map; scale = 1)
                                                      # it holds, 0 exactly when the edge is tight
 add_nonnegativity!(model, template, V)               # V(x) ≥ 0
 add_normalization!(model, template, V)               # excludes V ≡ 0
-rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
+homogeneity_degree(template)                         # degree d: V(cx) = cᵈ V(x)
 solution_value(template, V)                          # variables -> a callable node function
 node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
 check_dynamics(template, A)                          # is this template applicable at all?
@@ -78,7 +78,7 @@ certify(template, graph, problem; optimizer, ...)             # build, solve, ex
 # Not `model`: it is the first argument of every primitive above and would be
 # shadowed inside all of them. Not `program`: one letter from `problem`.
 
-# --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
+# --- The common function (src/common.jl). Dispatches on the graph, so neither axis owns it.
 #   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
 #   `common` is the literature's word (Philippe et al.) -- do not rename it to `aggregate`.
 ```
@@ -119,7 +119,7 @@ the only templates were quadratic and copositive — both data-free, both degree
 | :-- | :-- |
 | an instance, not a `::Type{T}` | quadratic and copositive carry no data; polyhedral carries a matrix per node |
 | `add_nonnegativity!` dispatching on the *template* | it dispatched on the container, and `w` is a `Vector` exactly like `c` — silently the wrong constraint, with `w` in a denominator |
-| `rate_exponent` | `γ²` was hard-coded, so `jsr_bound` returned `√JSR` for the degree-1 template |
+| `homogeneity_degree` | `γ²` was hard-coded, so `jsr_bound` returned `√JSR` for the degree-1 template |
 | `solution_value` | `JuMP.value.(V)` works only if `V` is a bare container |
 
 The second polyhedral template — facets as decision variables, a conic partition per node — then
@@ -178,10 +178,9 @@ src/
 │   │                             nothing outside it touches a graph's internals
 │   ├── words.jl                  expanded_form: a word graph as a letter graph
 │   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
-│   ├── languages.jl              is_path_complete against an automaton; seed(system)
+│   ├── languages.jl              is_path_complete against an automaton; common_graph(system)
 │   ├── dual.jl                   the dual graph: edges and words reversed
-│   ├── simulation.jl             simulation (a map), simulation_relation: what the identity
-│   │                             and min lifts decide with
+│   ├── simulation.jl             simulation (a map), and the relation the min lift decides with
 │   ├── de_bruijn.jl              the De Bruijn family, primal and dual
 │   ├── observer.jl               the subset construction
 │   └── cycles.jl                 simple cycles, for the lower bound
@@ -219,7 +218,7 @@ src/
 │   ├── dual.jl                   DualRefinement: every backward atom
 │   ├── strategies.jl             SplitTightNode, RefineTightEdges, Hierarchy: where to refine
 │   ├── refine.jl                 `refine`; generic in the problem, reads all three like
-│   │                             aggregation.jl, so it is filed under neither axis
+│   │                             common.jl, so it is filed under neither axis
 │   └── catalogue/                one file per refinement
 │       ├── forward_edge_split.jl
 │       ├── backward_edge_split.jl
@@ -227,7 +226,7 @@ src/
 │       ├── backward_edge_product.jl
 │       ├── path_dependent.jl     the backward split at every edge, iterated
 │       └── product.jl            one edge per path of length T
-└── aggregation.jl                `common` — the join; dispatches on the graph, so it
+└── common.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
 
@@ -245,7 +244,7 @@ Two placements that are deliberate rather than obvious:
 - **The conic partition lives with its template, not under `graphs/`.** It partitions the
   *state space*, not the graph; it is indexed by node only because each node gets one. Nothing
   graph-shaped touches it. (The plan filed it under `graphs/` — that was wrong.)
-- **`aggregation.jl` is top-level.** `common` reads all three of graph, template and problem,
+- **`common.jl` is top-level.** `common` reads all three of graph, template and problem,
   so filing it inside one axis would misrepresent it. §2's contract names three things; there
   are three homes.
 
@@ -305,7 +304,7 @@ separate interfaces that share nothing but `dual` and `origins`.
 A **lift** (`src/lifts/`) is the lift of an operation: its nodes stand for combinations of the
 original nodes, and when `lift(L, G)` simulates `H` then `G ≤_V H` for every template closed
 under what `requirements(L)` names (thesis Thms. 7.18, 7.55, 7.56, 7.65, 7.66; complete for
-min, max and sum, Thms. 8.1, 8.5, 8.6). `simulation(L, G, H)` returns that witness, and `compare`
+min, max and sum, Thms. 8.1, 8.5, 8.6). `simulation(L, G, H)` returns that simulation, and `compare`
 runs every lift. The min, max and sum lifts never improve a graph and are never built to decide:
 the relation decides min in polynomial time, the relation on the duals decides max, the linear
 program decides the sum lift over every size. The composition lift is the exception on both
@@ -383,7 +382,7 @@ word without every node reading every letter, so never use them to answer "is th
 certificate" — that question is `is_path_complete`, decided by the subset construction (the
 graph is path-complete iff the subset construction from *all* nodes never reaches ∅).
 
-What each one licenses (Cor. III.3, Thm III.8) is why both survive: complete → aggregate with
+What each one licenses (Cor. III.3, Thm III.8) is why both survive: complete → combine with
 `min`, co-complete → `max`, general path-complete → `min` of `max` over the observer graph.
 `common` dispatches on exactly that.
 
@@ -462,7 +461,7 @@ Never commit to `master`; branch per change; format before committing; open a PR
 
 **Commit message format:** `[ACTION] module: description` — lowercase, no trailing period,
 ≤ 60 chars. Actions: `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV`. Module is the touched
-subsystem (`graphs`, `templates`, `problems`, `systems`, `aggregation`, `test`, `docs`,
+subsystem (`graphs`, `templates`, `problems`, `systems`, `common`, `test`, `docs`,
 `meta`), or `examples` for a change confined to `docs/src/examples/`.
 
 Do **not** add a `Co-Authored-By` line.

@@ -65,7 +65,7 @@ end
 solution_value(::DualCopositiveTemplate, V::DualCopositiveFunction) =
     DualCopositiveFunction(JuMP.value.(V.v))
 
-rate_exponent(::DualCopositiveTemplate) = 1
+homogeneity_degree(::DualCopositiveTemplate) = 1
 
 # The floor on the weights is the normalisation: the edge conditions are
 # homogeneous in v.

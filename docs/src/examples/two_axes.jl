@@ -16,13 +16,13 @@ using Plots
 const OPTIMIZER = Clarabel.Optimizer
 
 # No level-set tracing is needed. Every node function is positively homogeneous
-# of degree ``d`` = [`rate_exponent`](@ref), and so is the common function built
+# of degree ``d`` = [`homogeneity_degree`](@ref), and so is the common function built
 # from them, so ``V(ru) = r^d V(u)`` and the radius in direction ``u`` is exactly
 # ``V(u)^{-1/d}``. The same three lines work for every template, which is the
 # point.
 
 function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.rate_exponent(PCC.template(certificate))
+    degree = PCC.homogeneity_degree(PCC.template(certificate))
     angles = range(0, 2pi; length = samples)
     radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
     radii ./= maximum(radii)

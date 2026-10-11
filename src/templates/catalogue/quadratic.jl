@@ -45,7 +45,7 @@ variables as the **inverse** of the node function, where calling the container a
 `QuadraticFunction` would be a lie.
 
 Wrapping the result is what makes node functions uniformly callable across
-templates, so `node_value` is `V(x)` for all of them and the aggregation in
+templates, so `node_value` is `V(x)` for all of them and the common function in
 [`common`](@ref) needs to know nothing about which template it has.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
@@ -82,7 +82,7 @@ end
 
 solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
-rate_exponent(::QuadraticTemplate) = 2
+homogeneity_degree(::QuadraticTemplate) = 2
 
 function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
     # Scale only: the edge conditions are homogeneous, so any feasible family

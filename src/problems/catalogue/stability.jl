@@ -41,7 +41,7 @@ struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertific
     rate::T
 end
 
-# One method, generic over templates. `rate` is gamma^rate_exponent(template),
+# One method, generic over templates. `rate` is gamma^homogeneity_degree(template),
 # and the whole edge condition of this problem is the template's domination
 # primitive with that scale -- so a new template needs nothing here.
 function add_edge_constraint!(
@@ -106,7 +106,7 @@ function optimization_model(
     # the contraction rate per step for every template, so `jsr_bound` means
     # the same thing whichever one is in use -- and a word edge spans as many
     # steps as it reads.
-    degree = rate_exponent(template)
+    degree = homogeneity_degree(template)
 
     for edge in edges(graph)
         word = letters(label(graph, edge))
@@ -381,7 +381,7 @@ function edge_slacks(certificate::StabilityCertificate)
     template_ = template(certificate)
     V = functions(certificate)
     A = mode_matrices(problem(certificate).system)
-    degree = rate_exponent(template_)
+    degree = homogeneity_degree(template_)
 
     # The certificate stores gamma; the edge inequality is imposed at
     # gamma^(d |w|), exactly as `optimization_model` builds it.

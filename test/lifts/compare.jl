@@ -90,7 +90,7 @@ const COPOSITIVE = PCC.LinearCopositiveTemplate()
 const DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
 const TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
 
-found(comparison) = Dict(PCC.witnesses(comparison))
+found(comparison) = Dict(PCC.simulations(comparison))
 
 @testset "the five graphs read both modes" begin
     for g in (G0, G1, G2, G3, G4)
@@ -118,18 +118,18 @@ end
 
 @testset "G_2 is no worse than G_1 for addition-closed templates, by the sum lift" begin
     c = PCC.compare(G1, G2; templates = TEMPLATES, system = SYSTEM, optimizer = OPTIMIZER)
-    witnesses = found(c)
+    simulations = found(c)
 
     @test first(PCC.lifts(c)) == PCC.IdentityLift()
     @test PCC.SumLift() in PCC.lifts(c)
-    @test !haskey(witnesses, PCC.IdentityLift())
+    @test !haskey(simulations, PCC.IdentityLift())
 
     # Whenever a sum lift simulates, so do the min and max lifts (Debauche,
     # Cor. 7.80).
-    @test haskey(witnesses, PCC.MinLift())
-    @test haskey(witnesses, PCC.MaxLift())
+    @test haskey(simulations, PCC.MinLift())
+    @test haskey(simulations, PCC.MaxLift())
 
-    C = witnesses[PCC.SumLift()]
+    C = simulations[PCC.SumLift()]
     @test size(C) == (4, 5)
     @test all(>=(0), C)
     @test all(>=(1), sum(C; dims = 2))
@@ -141,14 +141,14 @@ end
 
 @testset "G_4 against G_0: the template decides" begin
     c = PCC.compare(G4, G0; templates = TEMPLATES, system = SYSTEM, optimizer = OPTIMIZER)
-    witnesses = found(c)
+    simulations = found(c)
 
     # Complete and co-complete: both subset lifts simulate G_0 by the full
     # node set; no sum lift does, and the one-node graph has no map into G_4.
-    @test witnesses[PCC.MinLift()] == [[1, 2, 3, 4, 5]]
-    @test witnesses[PCC.MaxLift()] == [[1, 2, 3, 4, 5]]
-    @test !haskey(witnesses, PCC.SumLift())
-    @test !haskey(witnesses, PCC.IdentityLift())
+    @test simulations[PCC.MinLift()] == [[1, 2, 3, 4, 5]]
+    @test simulations[PCC.MaxLift()] == [[1, 2, 3, 4, 5]]
+    @test !haskey(simulations, PCC.SumLift())
+    @test !haskey(simulations, PCC.IdentityLift())
     @test Set(PCC.templates(c)) == Set([COPOSITIVE, DUAL_COPOSITIVE])
 
     # The other way round the identity map settles it for every template, and
@@ -156,11 +156,11 @@ end
     back =
         PCC.compare(G0, G4; templates = TEMPLATES, system = SYSTEM, optimizer = OPTIMIZER)
     @test PCC.lifts(back) == [PCC.IdentityLift()]
-    @test only(PCC.witnesses(back)).second == fill(1, 5)
+    @test only(PCC.simulations(back)).second == fill(1, 5)
     @test Set(PCC.templates(back)) == Set(TEMPLATES)
 
     # A co-complete De Bruijn graph collapses for max-closed templates only.
-    co = PCC.de_bruijn(2, 2; orientation = :co_complete)
+    co = PCC.dual(PCC.de_bruijn(2, 2))
     c = PCC.compare(co, G0; templates = TEMPLATES, system = SYSTEM)
     @test haskey(found(c), PCC.MaxLift())
     @test !haskey(found(c), PCC.MinLift())
@@ -195,7 +195,7 @@ end
 
     c = PCC.compare(G1, G2; lifts = (PCC.SumLift(2),))
     @test PCC.lifts(c) == [PCC.SumLift(2)]
-    @test all(m -> 1 in m, only(PCC.witnesses(c)).second)
+    @test all(m -> 1 in m, only(PCC.simulations(c)).second)
 
     @test_throws ArgumentError PCC.compare(G1, G2; templates = (QUADRATIC,))
     words = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G1))

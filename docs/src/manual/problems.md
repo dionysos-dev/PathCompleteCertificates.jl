@@ -5,7 +5,7 @@ CurrentModule = PathCompleteCertificates
 # Problems
 
 A problem says what the **edge inequality** is. The graph, the templates and the
-aggregation are the same across all three.
+common function are the same across all three.
 
 | Problem | Edge inequality on ``(s, d, i)`` | Entry points |
 | :-- | :-- | :-- |
@@ -18,7 +18,7 @@ aggregation are the same across all three.
 [ahmadi2014joint](@cite). [`certify`](@ref) solves once at a given rate;
 [`is_stable`](@ref) asks only whether that rate is feasible, and
 [`jsr_bound`](@ref) bisects for the best one. Every template works here. The
-exponent ``d`` is the template's [`rate_exponent`](@ref), so ``\gamma`` means
+exponent ``d`` is the template's [`homogeneity_degree`](@ref), so ``\gamma`` means
 the same contraction per step whichever template is in use, and an edge
 reading a word of ``k`` modes scales as ``\gamma^{dk}``.
 

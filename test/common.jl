@@ -1,4 +1,4 @@
-module TestAggregation
+module TestCommon
 
 using Test
 using HybridSystems
@@ -15,7 +15,7 @@ const PS = [P1, P2]
 
 value(V) = V(X)
 
-@testset "a complete graph aggregates with a minimum" begin
+@testset "a complete graph combines with a minimum" begin
     graph = PCC.de_bruijn(1, 2)
     @test PCC.is_complete(graph)
 
@@ -23,15 +23,15 @@ value(V) = V(X)
           minimum(value(P) for P in PS)
 end
 
-@testset "a co-complete graph aggregates with a maximum" begin
-    graph = PCC.de_bruijn(1, 2; orientation = :co_complete)
+@testset "a co-complete graph combines with a maximum" begin
+    graph = PCC.dual(PCC.de_bruijn(1, 2))
     @test PCC.is_co_complete(graph)
 
     @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈
           maximum(value(P) for P in PS)
 end
 
-@testset "any other graph aggregates over the observer construction" begin
+@testset "any other graph combines over the observer construction" begin
     # Node 2 has no label-2 edge, so this graph is neither complete nor
     # co-complete and `common` must fall back to the observer construction --
     # a max within each observer state and a min across them.
@@ -51,9 +51,9 @@ end
     @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, PS, X) ≈ expected
 end
 
-@testset "the aggregation is generic in the template" begin
+@testset "the common function is generic in the template" begin
     # It used to be quadratic-only. Once `node_value` moved onto the template
-    # axis, every template that defines it aggregates -- nothing in `common`
+    # axis, every template that defines it combines -- nothing in `common`
     # mentions a template by name.
     graph = PCC.de_bruijn(1, 2)
     coefficients = [[1.0, 1.0], [2.0, 2.0]]

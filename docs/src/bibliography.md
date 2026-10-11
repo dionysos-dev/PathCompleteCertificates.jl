@@ -28,7 +28,7 @@ the order that holds for every template.
 
 [philippe2016stability](@cite) is constrained switching: the system's
 automaton as the language a graph must read, decided by
-`is_path_complete(graph, automaton)` and seeded by [`seed`](@ref). Its Def. 2
+`is_path_complete(graph, automaton)` and seeded by [`common_graph`](@ref). Its Def. 2
 is [`ProductRefinement`](@ref) and its Def. 3 is
 [`PathDependentRefinement`](@ref).
 
@@ -103,7 +103,7 @@ addition, Thm. 2, and its five graphs are
 [debauche2022necessary](@cite) and [debauche2024thesis](@cite) characterise
 the order for `min`-closed and `max`-closed templates by the simulation of the
 min and max lifts (Thms. 3 and 4; Thms. 8.1 and 8.5), which
-[`simulation_relation`](@ref) decides without building them, and the thesis
+`simulation(MinLift(), G, H)` decides without building them, and the thesis
 shows that complete graphs buy nothing over one node for `min`-closed
 templates (Cor. 7.53).
 

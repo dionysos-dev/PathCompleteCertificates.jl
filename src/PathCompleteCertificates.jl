@@ -59,7 +59,7 @@ include("problems/catalogue/safety.jl")
 include("problems/catalogue/optimal_control.jl")
 
 include("systems/closed_loop.jl")
-include("aggregation.jl")
+include("common.jl")
 
 include("refinements/strategies.jl")
 include("refinements/refine.jl")
