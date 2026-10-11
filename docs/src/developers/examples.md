@@ -43,7 +43,7 @@ Admonitions work in the prose comments, and so do `@ref` and `@cite`:
 
 ```julia
 # !!! warning "A bound is an upper bound"
-#     `is_stable` returning `false` means no certificate was found in this
+#     An infeasible result, `is_feasible` false, means no certificate was found in this
 #     template on this graph. See [What works with what](@ref).
 ```
 
