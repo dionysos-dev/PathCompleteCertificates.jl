@@ -1,11 +1,5 @@
-# Plotting for `Trajectory`, as a package extension.
-#
-# RecipesBase is tiny and has no dependencies of its own, so depending on it
-# directly would be defensible. It stays a weak dependency because the rule is
-# written down twice already -- plotting is never a dependency of the package,
-# nor of the environment CI instantiates. Anyone with Plots has RecipesBase
-# loaded, so `plot(trajectory)` works for them without the package ever asking
-# for it.
+# Plotting for `Trajectory`, as a package extension: plotting is never a
+# dependency of the package, and anyone with Plots has RecipesBase loaded.
 module PathCompleteCertificatesRecipesBaseExt
 
 import RecipesBase

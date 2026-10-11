@@ -4,9 +4,13 @@ CurrentModule = PathCompleteCertificates
 
 # Templates
 
-A template is the **family** the node functions are drawn from.
-[`solution_value`](@ref) turns a solved template into the fitted, callable
-member.
+A template defines the search space from which the node functions of a
+certificate are chosen. Its properties depend on the problem: for stability,
+the template consists of candidate Lyapunov functions, continuous, positive
+definite and homogeneous; for safety, of candidate barrier functions, which
+need not be positive. Once a certificate has been computed,
+[`functions`](@ref) returns the fitted node functions, one per node, each
+callable.
 
 !!! warning "A template is an instance, never a type"
     Pass `QuadraticTemplate()`, not `QuadraticTemplate`. Some templates carry
@@ -15,69 +19,88 @@ member.
 
 ## The six templates
 
-| Template | ``V_s(x)`` | Degree | Solved for | Source |
+| Template | ``V_s(x)`` | Homogeneity degree | Solved for | Source |
 | :-- | :-- | :-: | :-- | :-- |
 | [`QuadraticTemplate`](@ref) | ``x^\top P_s x`` | 2 | ``P_s \succ 0`` | standard |
 | [`LinearCopositiveTemplate`](@ref) | ``c_s^\top x`` on the nonnegative orthant | 1 | ``c_s > 0`` | standard |
 | [`DualCopositiveTemplate`](@ref) | ``\max_i x_i / v_{s,i}`` on the nonnegative orthant | 1 | ``v_s > 0`` | [debauche2024thesis](@cite), Def. 2.30 |
-| [`PolyhedralTemplate`](@ref) | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | 1 | weights ``w_s`` | [athanasopoulos2019polyhedral](@cite) |
+| [`PolyhedralTemplate`](@ref) | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | 1 | weights ``w_s``, facets ``G_s`` fixed | [athanasopoulos2019polyhedral](@cite) |
 | [`ConicPolyhedralTemplate`](@ref) | ``\max_i \lvert p_{s,i}^\top x \rvert`` | 1 | facets ``p_{s,i}`` | unpublished ¹ |
-| [`SumOfSquaresTemplate`](@ref) | ``z(x)^\top Q_s z(x)`` | ``2d`` | ``Q_s \succeq 0`` | [parrilo2008approximation](@cite) ² |
+| [`SumOfSquaresTemplate`](@ref) | ``z(x)^\top Q_s z(x)``, ``z`` the monomials of degree ``d`` | ``2d`` | ``Q_s \succeq 0`` | [parrilo2008approximation](@cite) ² |
 
-¹ The free-facet construction is not yet published; it is under submission.
+¹ The free-facet construction is under submission.
 
-² Behind a package extension, since it pulls in the whole polynomial stack.
-Raising `d` tightens the bound monotonically, and `d = 1` is exactly
-[`QuadraticTemplate`](@ref), a useful thing to check a change against.
+² Behind a package extension: load SumOfSquares first. Raising ``d`` tightens
+the bound monotonically, and ``d = 1`` is exactly [`QuadraticTemplate`](@ref).
 
-The degree is [`rate_exponent`](@ref): ``V(cx) = c^d V(x)``. It is accounted
-for when rates are computed, so bounds from different templates are
-comparable.
+The **homogeneity degree**, [`homogeneity_degree`](@ref), is the ``d`` in
+``V(cx) = c^d V(x)``. Stability scales its edge inequality by ``\gamma^d``, so
+a rate means the same thing whatever the template, and bounds from different
+templates compare. For safety the quadratic template is used in homogeneous
+coordinates, ``[x; 1]^\top P_s [x; 1]``, without positive definiteness.
 
-**The two polyhedral templates** differ in what is fixed.
-[`PolyhedralTemplate`](@ref) fixes the facet directions and solves only for the
-weights, keeping the program linear. [`ConicPolyhedralTemplate`](@ref) solves
-for the facets too: larger, and much less conservative. On a rotation scaled by
-`0.9` the fixed-facet template certifies nothing while the conic one reaches
-`0.901`.
+**Fixed or free facets.** [`PolyhedralTemplate`](@ref) fixes the facet
+directions ``G_s`` and solves for the weights only, a linear program.
+[`ConicPolyhedralTemplate`](@ref) solves for the facets as well: a larger
+program, and a much less conservative one.
 
-**The two copositive templates** are each other's duals: the dual norm of
-``c^\top x`` on the orthant is ``\max_i x_i / c_i``. The primal family is
-closed under addition, the dual one under pointwise maximum, which is the
-cheapest pair on which a lift is valid for one template and not the other.
+**The two copositive templates** are each other's duals, the dual norm of
+``c^\top x`` on the orthant being ``\max_i x_i / c_i``. Both are defined on
+the nonnegative orthant, so they apply to positive systems only;
+[`check_dynamics`](@ref) throws on any other.
 
-!!! note "Not every template suits every system"
-    The copositive templates need entrywise nonnegative mode matrices;
-    ``c^\top x`` certifies nothing about a system that leaves the nonnegative
-    orthant. [`check_dynamics`](@ref) throws rather than returning a
-    meaningless bound.
+[What works with what](@ref) says which problems accept which template.
 
-See [What works with what](@ref) for which problems accept which template.
+## Closure properties
 
-## What a template declares beyond its functions
+A lift is **valid** for a template, guaranteed not to worsen the bound, when
+the template is closed under the operation the lift combines node functions
+with ([debauche2021comparison](@cite), Defs. 6 and 7): the sum lift needs
+closure under addition, the min and max lifts under pointwise minimum and
+maximum, the composition lifts under composition with the dynamics. Which
+lifts are valid for a template decides which verdicts of [`compare`](@ref)
+hold for it. A template declares its closures with [`is_closed_under`](@ref):
 
-Three declarations make a template usable by the graph layer. Each has a
-default that claims nothing, so a template that declares none can still be
-lifted and compared; it just carries no guarantee.
+| Template | `+` | `max` | `min` | `∘ A` |
+| :-- | :-: | :-: | :-: | :-: |
+| [`QuadraticTemplate`](@ref) | ✓ | | | ✓ if invertible |
+| [`SumOfSquaresTemplate`](@ref) | ✓ | | | ✓ if invertible |
+| [`LinearCopositiveTemplate`](@ref) | ✓ | | valid on positive systems ¹ | ✓ if `A ≥ 0` with no zero column |
+| [`DualCopositiveTemplate`](@ref) | | ✓ | | |
+| [`PolyhedralTemplate`](@ref) | | ✓ if the node matrices coincide | | |
+| [`ConicPolyhedralTemplate`](@ref) | | | | |
 
-- **Closures.** [`is_closed_under`](@ref)`(template, operation, system)` for
-  the five [`Operation`](@ref)s: [`Addition`](@ref), [`Maximum`](@ref),
-  [`Minimum`](@ref), [`Composition`](@ref) with the dynamics and
-  [`InverseComposition`](@ref). They decide which lifts are *valid* for the
-  template and which procedure decides the order between two graphs. The table
-  of what each template declares is on the [Lifts](@ref) page.
-- **A dual.** [`has_dual`](@ref), [`dual`](@ref)`(template)` and
-  `dual(template, V)`, the dual norm of a fitted function. Quadratic forms are
-  self-dual and the copositive templates are each other's dual; the polyhedral
-  and sum-of-squares templates have none here. See [Duality](@ref).
-- **Per-node data.** A template carrying something per node, such as the
-  facet matrices of [`PolyhedralTemplate`](@ref), follows a lifted graph
-  through [`reindex`](@ref), which hands each new node the data of the node it
-  came from.
+¹ Not closed as a set of functions, yet the min lift is valid for it on
+positive linear systems ([debauche2024thesis](@cite), Thm. 7.43), the one
+override of [`is_valid`](@ref).
+
+Closure is a property of the family as implemented, not of the shape of its
+functions. Polyhedral norms are closed under maximum, but the fixed-facet
+template is only when every node shares the same facet matrix, since the
+maximum of two of its members has the union of their facets; the free-facet
+template declares nothing, because a maximum would need more facets than it
+was given.
+
+## A dual
+
+[`has_dual`](@ref), [`dual`](@ref)`(template)` and `dual(template, V)`, the
+dual norm of a fitted function. Quadratic forms are self-dual and the
+copositive templates are each other's dual; the polyhedral and sum-of-squares
+templates have none here. A closure declared on either of a dual pair serves
+both; see [Duality](@ref).
+
+## Per-node data
+
+A template whose data is attached to the nodes, such as the facet matrices of
+[`PolyhedralTemplate`](@ref), must say what a node copied by a refinement
+inherits. [`reindex`](@ref)`(template, origins)` gives every node of the new
+graph the data of the node it came from; a data-free template returns itself.
 
 ## Writing your own
 
-One file, answering a handful of primitives. No change to any problem, so it
-works with every problem that accepts it, and the three declarations above
-are optional. The interfaces are in the
-[developer conventions](@ref "Coding conventions").
+A new template is one file in `src/templates/catalogue/` implementing the
+primitives of the template interface, listed in the
+[developer conventions](@ref "Conventions"): how to create its
+variables, state the edge inequality and read a solution back. Nothing in any
+problem changes, and the three declarations above are optional, each
+defaulting to claiming nothing.

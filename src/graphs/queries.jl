@@ -37,9 +37,9 @@ WordGraph(n_nodes::Integer) =
 The graph types a certificate is built on: a `HybridSystems.GraphAutomaton`,
 whose labels are modes, or a [`WordGraph`](@ref), whose labels are words.
 
-The certificate graph and the system's own automaton share the first type on
-purpose — one vocabulary — so the argument name says which is wanted: `graph`
-is the certificate's, `system` carries its own.
+A certificate graph and a system's automaton share the first type; the
+argument name says which is wanted: `graph` is the certificate's, `system`
+carries its own.
 """
 const CertificateGraph = Union{_HS.GraphAutomaton, WordGraph}
 
@@ -55,7 +55,7 @@ A `GraphAutomaton` with `n_nodes` nodes and no edge. Add edges with
 """
 empty_graph(n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
 
-# An empty graph of the same kind as `graph`: the lifts and the tight subgraph
+# An empty graph of the same kind as `graph`: the refinements and the tight subgraph
 # rebuild a graph with the labels it had. Dispatch keeps the result type
 # concrete, which a keyword switch would not.
 _empty_like(::_HS.GraphAutomaton, n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
@@ -137,6 +137,15 @@ Return the edges of `graph`.
 edges(graph::CertificateGraph) = _HS.transitions(_automaton(graph))
 
 """
+    has_edge(graph, edge) -> Bool
+
+Whether `edge`, a transition handed out by [`edges`](@ref) or
+[`add_edge!`](@ref), belongs to `graph`.
+"""
+has_edge(graph::CertificateGraph, edge::_HS.GraphTransition) =
+    _HS.has_transition(_automaton(graph), edge)
+
+"""
     source(edge)
 
 Return the source node of an edge.
@@ -165,27 +174,36 @@ label(graph::WordGraph, edge::_HS.GraphTransition) = graph.words[edge.id]
     letters(label)
 
 The modes a label reads, in order: `(i,)` for a mode `i`, the word itself for a
-word. What makes a letter graph and a word graph answer the same code.
+word. What lets a mode and a word answer the same code.
 """
 letters(mode::Integer) = (mode,)
 letters(word::AbstractVector{<:Integer}) = word
 
-"""
-    word_length(graph, edge)
-
-The number of modes `edge` reads — one on a `GraphAutomaton`.
-"""
-word_length(graph::CertificateGraph, edge::_HS.GraphTransition) =
+_word_length(graph::CertificateGraph, edge::_HS.GraphTransition) =
     length(letters(label(graph, edge)))
 
 """
-    is_letter_graph(graph) -> Bool
+    has_words(graph) -> Bool
 
-Whether every edge of `graph` reads exactly one mode. Always true of a
-`GraphAutomaton`; true of a [`WordGraph`](@ref) whose words all have length one.
+Whether some edge of `graph` reads a word of two or more modes. Never true of
+a `GraphAutomaton`; false of a [`WordGraph`](@ref) whose words all have length
+one.
 """
-is_letter_graph(::_HS.GraphAutomaton) = true
-is_letter_graph(graph::WordGraph) = all(word -> length(word) == 1, values(graph.words))
+has_words(::_HS.GraphAutomaton) = false
+has_words(graph::WordGraph) = any(word -> length(word) > 1, values(graph.words))
+
+# What reads the state at every step cannot take a word: nothing constrains the
+# states inside one.
+function _require_one_mode_per_edge(graph::CertificateGraph, what::AbstractString)
+    has_words(graph) && throw(
+        ArgumentError(
+            "$what needs one mode per edge; expand the word graph with " *
+            "`expanded_form` first",
+        ),
+    )
+
+    return nothing
+end
 
 function _check_node(graph::CertificateGraph, node::Integer)
     1 <= node <= n_nodes(graph) || throw(ArgumentError("Node $node is outside the graph."))
@@ -197,9 +215,6 @@ end
     outgoing_edges(graph, node, mode)
 
 The edges leaving `node`, optionally only those reading exactly `mode`.
-
-Indexed through the backing graph's adjacency, so the cost is the degree, not
-the edge count.
 """
 function outgoing_edges(graph::CertificateGraph, node::Integer)
     _check_node(graph, node)
@@ -232,23 +247,6 @@ function _reads(graph::CertificateGraph, edge::_HS.GraphTransition, mode::Intege
 end
 
 """
-    out_neighbors(graph, node)
-
-The nodes directly reachable from `node`, one entry per edge — so a node
-reachable under two labels appears twice.
-"""
-out_neighbors(graph::CertificateGraph, node::Integer) =
-    [dest(edge) for edge in outgoing_edges(graph, node)]
-
-"""
-    in_neighbors(graph, node)
-
-The nodes with an edge into `node`, one entry per edge.
-"""
-in_neighbors(graph::CertificateGraph, node::Integer) =
-    [source(edge) for edge in incoming_edges(graph, node)]
-
-"""
     alphabet(graph)
 
 The distinct modes appearing on the edges of `graph` — every letter of every
@@ -270,33 +268,6 @@ function alphabet(graph::CertificateGraph)
 end
 
 """
-    words(graph)
-
-The distinct labels on the edges of `graph`, each as the vector of modes it
-reads.
-"""
-words(graph::CertificateGraph) =
-    unique(collect(Int, letters(label(graph, edge))) for edge in edges(graph))
-
-"""
-    outgoing_alphabet(graph, node)
-
-The distinct modes readable first from `node`: the first letter of every label
-leaving it.
-"""
-outgoing_alphabet(graph::CertificateGraph, node::Integer) =
-    unique(first(letters(label(graph, edge))) for edge in outgoing_edges(graph, node))
-
-"""
-    incoming_alphabet(graph, node)
-
-The distinct modes read last on arrival at `node`: the last letter of every
-label entering it.
-"""
-incoming_alphabet(graph::CertificateGraph, node::Integer) =
-    unique(last(letters(label(graph, edge))) for edge in incoming_edges(graph, node))
-
-"""
     outdegree(graph, node)
 
 The number of edges leaving `node`.
@@ -310,17 +281,7 @@ The number of edges entering `node`.
 """
 indegree(graph::CertificateGraph, node::Integer) = length(incoming_edges(graph, node))
 
-"""
-    successors(graph)
-
-The adjacency of a letter graph as a dictionary from `(node, mode)` to the
-destinations of the edges leaving `node` under `mode`.
-
-Built once and passed around: the subset construction, the observer and the
-simulation relation all read it, and asking [`outgoing_edges`](@ref) per pair
-instead was measured at fifty times the cost of the predicate it served.
-"""
-function successors(graph::_HS.GraphAutomaton)
+function _successors(graph::_HS.GraphAutomaton)
     index = Dict{Tuple{Int, Int}, Vector{Int}}()
 
     for edge in edges(graph)
@@ -330,14 +291,7 @@ function successors(graph::_HS.GraphAutomaton)
     return index
 end
 
-"""
-    predecessors(graph)
-
-The adjacency of a letter graph as a dictionary from `(node, mode)` to the
-sources of the edges entering `node` under `mode`. The dual of
-[`successors`](@ref).
-"""
-function predecessors(graph::_HS.GraphAutomaton)
+function _predecessors(graph::_HS.GraphAutomaton)
     index = Dict{Tuple{Int, Int}, Vector{Int}}()
 
     for edge in edges(graph)
@@ -347,17 +301,10 @@ function predecessors(graph::_HS.GraphAutomaton)
     return index
 end
 
-"""
-    letter_graph(graph)
+_letter_graph(graph::_HS.GraphAutomaton) = graph
 
-The `GraphAutomaton` with the same nodes and edges as a [`WordGraph`](@ref)
-whose words all have length one. Throws on a longer word — see
-[`expanded_form`](@ref) for those.
-"""
-letter_graph(graph::_HS.GraphAutomaton) = graph
-
-function letter_graph(graph::WordGraph)
-    is_letter_graph(graph) ||
+function _letter_graph(graph::WordGraph)
+    has_words(graph) &&
         throw(ArgumentError("the graph carries words longer than one mode; expand it"))
 
     result = _HS.GraphAutomaton(n_nodes(graph))

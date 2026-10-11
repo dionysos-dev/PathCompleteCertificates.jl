@@ -65,7 +65,7 @@ end
     @test PCC.is_complete(PCC.de_bruijn(2, 2), 1:2)
     @test PCC.is_path_complete(PCC.de_bruijn(2, 2), 1:2)
 
-    dual = PCC.de_bruijn(2, 2; orientation = :co_complete)
+    dual = PCC.dual(PCC.de_bruijn(2, 2))
     @test PCC.is_co_complete(dual, 1:2)
     @test !PCC.is_complete(dual, 1:2)
     @test PCC.is_path_complete(dual, 1:2)

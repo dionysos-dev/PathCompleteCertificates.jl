@@ -1,243 +1,162 @@
-# Coding conventions
+# Conventions
 
-The authoritative version of what `CLAUDE.md` summarises. Read §1 before writing any code in
-`src/` — the rest is house style, but §1 is the thing the package is built on.
+The rules for code under `src/`. The
+[Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) is
+the authority on anything not said here.
 
-## 1. The architectural contract: two axes, not a hierarchy
+## Two axes
 
-A path-complete certificate is always the same three things: a **labelled graph**, a function
-`V_α` drawn from a **template** at each node, and one **inequality along each edge**.
+A certificate is a labelled graph, a function ``V_s`` from a template at each
+node and one inequality along each edge, and only the inequality changes
+between problems:
 
-Between problems, only the edge inequality changes:
-
-| Problem | Edge inequality on `(α, β, i)` |
+| Problem | Edge inequality on ``(s, d, i)`` |
 | :-- | :-- |
-| Stability | `V_α(x) ≥ γ⁻ᵈ V_β(A_i x)` |
-| Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
-| Safety | the invariance condition |
+| Stability | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` |
+| Safety | ``B_d(A_i x) \le B_s(x)`` |
+| Optimal control | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` |
 
-The graph, the templates and the aggregation are identical throughout. So the package has **two
-independent axes**:
-
-- **template** (`src/templates/`) — what the node functions are;
-- **problem** (`src/problems/`) — what the edge inequality says.
-
-### The interfaces
-
-A template supplies primitives; a problem chooses which to apply, and with what arguments. Neither
-axis names the other. Every one of these is public — a user implements them, so none is
-`_`-prefixed.
+So the package has two independent axes rather than one type hierarchy: the
+**template**, `src/templates/`, says what the node functions are, and the
+**problem**, `src/problems/`, says what the edge inequality is. A template
+supplies primitives, a problem composes them, and neither names the other.
 
 ```julia
-# --- Template axis (src/templates/). One file per template, answering all of it.
-rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
-add_function_variables!(model, template, dim, node)  # -> the node function V_α
-add_nonnegativity!(model, template, V)               # V(x) ≥ 0
-add_normalization!(model, template, V)               # excludes V ≡ 0
+# Template axis: one file per template, answering all of it.
+add_function_variables!(model, template, dim, node)        # the node function V_s
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                  # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
-solution_value(template, V)                          # variables -> a callable node function
-check_dynamics(template, A)                          # is this template applicable at all?
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
+add_nonnegativity!(model, template, V)
+add_normalization!(model, template, V)                     # excludes V ≡ 0
+homogeneity_degree(template)                               # d: V(cx) = cᵈ V(x)
+solution_value(template, V)                                # variables -> a callable node function
+check_dynamics(template, A)                                # is the template applicable at all?
+is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
+reindex(template, origins)                                 # per-node data follows a refined graph
+has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
-# --- Problem axis (src/problems/). One file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
-node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
+# Problem axis: one file per problem, composing the above.
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
+certify(template, graph, problem; optimizer, ...)             # build, solve, extract
+best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
+# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
 common(template, graph, problem, Vs, x)
-#   complete → min over nodes; co-complete → max; otherwise min-of-max over the observer.
 ```
 
-**A new template is one file in `src/templates/`. A new problem is one file in `src/problems/`.
-Neither requires editing the other directory.** That is the contract, and counting
-`add_edge_constraint!` definitions per file in `src/problems/` — one everywhere — is how you check
-it still holds.
+Every primitive is public, since a user implements it. `add_domination!` is
+the one that matters: quantifying an inequality over every ``x`` needs a cone
+that depends on the template and on nothing else, so stability's edge
+condition is that one call with `scale = γᵈ`, for every template there is or
+will be. Optimal control is the exception: its inequality is convex only after
+the substitution ``S = P^{-1}``, ``Y = KS``, so it cannot be written against
+`V_src` and `V_dst`, works on the quadratic template's variables directly, and
+says so in place.
 
-`add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
-lifting into a cone, and that lifting is template-specific, which is why it cannot be written once
-against a callable `V(x)`. But it is problem-agnostic, so the whole of stability's edge condition,
-for every template that exists or will, is one call:
+A template is an **instance**, never a type: `PolyhedralTemplate` carries a
+matrix per node, and `::Type{T}` has nowhere to put it. The family and the
+fitted member are different things, `AbstractTemplate` and what
+`solution_value` returns.
+
+Each problem has its own certificate type. The shared fields live once in
+`CertificateData`; what the problem certifies is a typed field of its own,
+`rate`, `margin` or `gains`.
+
+**A new template, problem, lift or refinement is one file in the `catalogue/`
+of its directory, and touches nothing else.** Every directory with an
+interface has that shape: the interface at the top, one file per inhabitant
+under `catalogue/`, named after the type without the directory's suffix.
+
+## Lifts and refinements
+
+Both map a path-complete graph to a path-complete graph; they are kept apart
+by purpose. A **lift** compares graphs: it is the lift of an operation, and
+when the lifted ``G`` simulates ``H`` then ``G \le_V H`` for every template
+closed under that operation. A **refinement** improves a graph, and is no
+worse for every template by construction.
 
 ```julia
-add_edge_constraint!(model, ::StabilityProblem, template, V_src, V_dst, A; rate = 1) =
-    add_domination!(model, template, V_src, V_dst, A; scale = rate)
+# src/operations.jl: what a template is closed under and a lift requires.
+Addition(), Maximum(), Minimum(), Composition(), InverseComposition()
+
+# A lift, src/lifts/catalogue/: two methods to write.
+lift(L, graph)                               # a Lifted: the graph and what each node stands for
+requirements(L)                              # the operations it needs; () for the identity lift
+simulation(L, G, H; optimizer)               # inherited; overridden where the theory decides cheaper
+is_valid(L, template, system)                # written once against the two
+dual(L)                                      # a DualLift, deciding on the dual graphs
+compare(G, H; templates, system, optimizer)  # the entry point
+
+# A refinement, src/refinements/catalogue/: one method to write.
+refine(R, graph, edges)                      # a Refined: the graph and the origin of every node
+dual(R)                                      # a DualRefinement
+refine(template, graph, problem; strategy)   # the entry point: the loop
 ```
 
-!!! warning "A template is an instance, never a type"
-    `QuadraticTemplate()` carries nothing, but a template is not in general determined by its
-    type: `PolyhedralTemplate` carries one fixed matrix per node, and `::Type{T}` has nowhere to
-    put it. Pass `QuadraticTemplate()`, not `QuadraticTemplate`.
+Validity is read from the closures a template declares, never by dispatching
+on its concrete type, which would need a method per pair. The one override,
+the min lift on the linear copositive template, has a theorem behind it; add
+another only with one to cite. A refinement has no `requirements` and no
+`is_valid`. The min, max and sum lifts are never built to decide an order: a
+relation decides the first two and a linear program the third. A strategy for
+the loop is any callable `(certificate; atol) -> Vector{Refined}`.
 
-The one genuine exception is **optimal control**: its inequality is convex only after the
-substitution `S = P⁻¹`, `Y = KS`, so it uses the template variables as the *inverse* of the node
-function and cannot be written against `V_src` and `V_dst` at all. One inhabitant is not yet a
-pattern, so no second primitive is introduced for it.
+## The graph layer
 
-!!! warning "The failure mode this prevents"
-    The code this package grew from had three synthesis routines of 127, 171 and 200 lines that
-    were largely the same program — same model construction, same bisection, same controls —
-    differing only in the variable shape and two constraint forms. If you find yourself writing a
-    fourth monolithic `compute_<something>` function, you have missed this section.
+The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as
+the automaton of a constrained system, or a `WordGraph` when edges read words.
+`graphs/queries.jl` is the only file that touches the backing store, so this
+stays empty:
 
-### Why a product rather than an inheritance tree
-
-The axes are orthogonal: quadratic-stability, quadratic-optimal-control and polyhedral-stability
-all make sense. A single inheritance tree cannot express a product of two axes — you would end up
-writing `QuadraticStabilityCertificate`, `QuadraticOptimalControlCertificate`,
-`PolyhedralStabilityCertificate`, which is exactly the explosion the abstraction exists to avoid.
-
-In Julia the product is expressed by **parameters**. Abstract types carry no fields and inheritance
-is single, so a subtype inherits an interface, never data.
-
-### Each problem owns its certificate
-
-`AbstractCertificate` fixes the shared interface — `functions`, `status`, `is_feasible`, `problem`,
-`template`, `graph`, and callability, where `certificate(x)` is the common function. What a problem
-actually certifies is a **typed field** on its own type: `StabilityCertificate.rate`,
-`SafetyCertificate.margin`, `OptimalControlCertificate.gains`. Not entries in a shared bag — a
-field is documented, inferable and discoverable, and a new problem adds a type rather than
-inventing keys.
-
-The six shared fields live once in `CertificateData`, which each certificate holds as `data`, so a
-certificate implements nothing to get the accessors.
-
-### Template is not the same thing as the fitted function
-
-The literature separates the *family* `𝒯` from the fitted member `V_α ∈ 𝒯`. So does the package:
-`AbstractTemplate` is the family, and `solution_value(template, V)` turns solved JuMP variables
-into the fitted, callable member. Do not collapse them — that conflation is how `EllipsoidalPiece`,
-in the code this package grew from, ended up named after a level set rather than after the function
-that induces it.
-
-## 2. Naming
-
-- **Modules and types** CamelCase; **functions** snake_case; **constants** `UPPER_CASE`;
-  **non-public** names `_`-prefixed.
-- **Mutating functions end in `!`**.
-- **Predicates** are `is_*`.
-- **No `get_` / `compute_` / `build_` / `generate_` prefixes.** The noun *is* the function:
-  `jsr_bound(graph, system)`, not `compute_jsr_bound`. `Base` does this throughout — `length`,
-  `size`, `eltype`, `parent`.
-- **No acronyms in exported names.** No `PCLF`, `CLF`, `MLF`.
-- **One word per concept.** It is `alphabet`, never `modes` or `labels`. And it is `common` — the
-  term Philippe et al. use for the aggregated function — never `aggregate`.
-- **Node functions are callable**: `V(x)`, not `piece_value(V, x)`.
-
-The reference throughout is the
-[Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/).
-
-## 3. Interfaces and types
-
-- **Argument ordering** follows the documented Julia order: *function argument, I/O stream, input
-  being mutated, **type**, input not being mutated, key, value, …*. This is why
-  `certify(QuadraticTemplate(), graph, problem; optimizer)` takes the template first —
-  the same shape as `parse(Int, s)` and `read(io, T)`.
-- **No unnecessary static parameters.** `f(x::T) where {T <: Real}` becomes `f(x::Real)` when the
-  parameter is never used.
-- **No type piracy.** Never add `Base` methods to LazySets, JuMP or HybridSystems types. Aqua fails
-  the build on it, and it breaks unrelated code at a distance.
-- **Prefer methods over field access.** Use `alphabet(g)`, not `g.alphabet`. The graph backing store
-  is expected to change, and accessors are what make that a non-event.
-- **Never hard-code `Float64` in a signature.** Take `Real` and parametrise on the number type. A
-  certificate sometimes has to be *exact* — `Rational`, `BigFloat` — rather than numerical, and a
-  `::Float64` annotation shuts that door for no benefit.
-
-## 4. Three predicates, and they are not the same thing
-
-Philippe, Athanasopoulos, Angeli & Jungers, *On Path-Complete Lyapunov Functions*, is the
-authority:
-
-| Predicate | Paper | Meaning |
-| :-- | :-- | :-- |
-| `is_path_complete` | Def. II.1 | **every** finite switching sequence is readable as a path |
-| `is_complete` | Def. III.2 | every node has an *outgoing* edge for every mode |
-| `is_co_complete` | Def. III.2 | every node has an *incoming* edge for every mode |
-
-`is_complete` and `is_co_complete` are **sufficient, not necessary**. A graph can read every word
-without every node reading every letter, so never use them to answer "is this a valid certificate"
-— that question is `is_path_complete`, decided by the subset construction. What each one licenses
-(Cor. III.3, Thm III.8) is why both survive, and is exactly what `common` dispatches on.
-
-None of the three is graph-theoretic completeness, where every pair of vertices is adjacent.
-
-Path-completeness is also **relative to an alphabet**, and the bare `is_path_complete(graph)` asks
-the weaker question — about the labels the graph happens to use. A graph that never mentions a mode
-passes it trivially and then certifies nothing about that mode; it once returned a bound of `0.906`
-for a system whose joint spectral radius is at least 3. Pass the alphabet of the system.
-
-Deciding it is PSPACE-complete, so it is checked once per solve rather than once per model, and
-`path_complete = false` on an entry point waives the test and *asserts* the property. That is for a
-caller whose graph is large or whose construction already guarantees it. It must not become the
-default: the failure it guards against is silent and unsound.
-
-## 5. Lifts, ordering, and the two things that are not axes
-
-**A lift is sound by definition; the template decides whether it *improves*.** Debauche, Della
-Rossa and Jungers define a lift (Def. 5) as any map on graphs with `L(G)` path-complete whenever
-`G` is. Path-completeness is the soundness condition, so a certificate on a lifted graph always
-certifies the system. What the closure properties buy is **validity** (Def. 6): the guarantee
-`G ≤_V L(G)`, that the lift never makes the bound *worse*. Break it and you get a worse bound,
-visible as soon as you solve.
-
-Validity is answered through **properties**, never by dispatching on the concrete template type,
-which would need one method per (lift, template) pair: the *n × m* explosion §1 exists to avoid.
-
-```julia
-# --- src/operations.jl: the vocabulary both axes and the lifts share.
-Addition(), Maximum(), Minimum(), Composition(), InverseComposition()   # <: Operation; `dual` pairs them
-
-# --- Template axis: what it is closed under, and how its per-node data follows a lift.
-is_closed_under(template, ::Operation, system)   # default false; composition reads the system
-reindex(template, origins)                       # default identity; polyhedral templates index their data
-
-# --- A lift: one struct, its scope, its call, what it requires.
-scope(lift)                                      # Global() or Local()
-(lift)(graph)  /  (lift)(graph, edges)           # returns a Lifted: the graph and the origin of every node
-requirements(lift)                               # a tuple of operations; () for the four local lifts
-is_valid(lift, template, system)                 # written ONCE against the two; one cited override exists
-dual(lift)                                       # DualLift: conjugation by the dual graph; every backward lift
-
-# --- Problem axis: what `refine` reads, generic in the problem.
-best_certificate(template, graph, problem; optimizer, kwargs...)   # default certify; stability: jsr_bound
-objective(certificate)                                              # smaller is better
-optimality_gap(certificate; kwargs...)                              # default Inf; stability: the bracket and Theorem 4
-edge_slacks(certificate)                                            # one method per problem, through domination_slack
+```
+grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries
 ```
 
-Use the papers' word: **valid**, not "admissible". A new lift is one file in `src/lifts/` and
-touches neither axis; a new operation is one struct in `operations.jl`; a strategy for `refine`
-is any callable `(certificate; atol) -> Vector{Lifted}`. The subset lifts (`MinLift`, `MaxLift`,
-`SumLift`) never move the bound; the orders they stand for are decided in `src/ordering.jl` by a
-relation, a map or a linear program, never by building them.
+Build graphs with `empty_graph`, `WordGraph` or `_empty_like`, which picks the
+kind by dispatch; a constructor returning either kind by keyword is not
+type-stable, and `Base.return_types(de_bruijn, (Int, Int))` must stay one
+concrete type. Keep the arguments named `graph` and `system`, never
+`automaton`, since nothing but the name tells the two apart.
 
-**Words on edges are a stability feature.** A `WordGraph` edge reads several modes and imposes
-one inequality on their product; it bounds the growth rate and says nothing about the states
-inside the word. Safety, optimal control and `common` require a letter graph and name
-`expanded_form` in their error.
+Three predicates, and what they license. `is_path_complete`, every admissible
+sequence readable as a path, is the soundness question, decided by the subset
+construction; `is_complete` and `is_co_complete` are sufficient only, and
+decide the form of the common function. Always ask with the system's
+language: `is_path_complete(graph)` alone asks about the modes the graph
+happens to use. Path-completeness is PSPACE-complete, so it is checked once
+per solve, and `path_complete = false` waives it; never make that the default.
+Index adjacency with `_successors` and `_predecessors` rather than calling the
+star queries in a loop.
 
-**The graph adapter is the only door.** `graphs/queries.jl` is the one file that touches
-`HybridSystems` graph internals — `empty_graph`, `add_edge!`, `label`, `successors` and the
-rest. Keep it that way: it is what let words in without the rest of the package noticing, and
-what lets the backing store change.
+A word graph is sound for stability only; safety, optimal control and `common`
+throw on one and name `expanded_form`.
 
-**`refute` will not be `certify`.** A refutation routine samples looking for a violation: it is a
-cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves for the
-guarantee. When refutation lands, keep both visible in the API and never present one as the other —
-conflating them is how unsound results ship.
+## Naming
 
-The sampling half is already here: `simulate` runs a system along one switching sequence. It is
-filed under `src/systems/` rather than with the problems, because nothing about it certifies.
-`refute` is that plus a property to check and a search over sequences.
+- Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public
+  names `_`-prefixed.
+- Mutating functions end in `!`; predicates are `is_*`.
+- No `get_`, `compute_`, `build_` or `generate_` prefixes: the noun is the
+  function.
+- No acronyms in public names.
+- One word per concept, and the papers' word when one exists: `common`,
+  `valid`, `simulation`, `tight`, `common_graph`, `alphabet`.
+- Node functions are callable: `V(x)`.
+- No `Base.show` methods, and no `utils.jl`.
 
-## 6. Tests, formatting, docs
+## Types and signatures
 
-- Every test file is standalone-runnable and wired into `TEST_FILES` in `test/runtests.jl`.
-- Format before every commit; CI fails on any diff.
-- **Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package
-  exports nothing deliberately, so Documenter's `checkdocs = :all` cannot see a name that has no
-  docstring at all — eight docstrings written as `raw"""`, which never attach, once went missing
-  exactly that way. `test/docstrings.jl` is the gate for that: it walks every non-underscore
-  reachable name and fails on any that is undocumented.
-- **Every docstring must land in an `@autodocs` block under `docs/src/reference/`.** This one
-  `checkdocs = :all` does enforce, by failing the docs build — so a new file in `src/` needs a
-  `Pages` entry as well as tests.
+- Argument order follows the style guide, which is why the template comes
+  first in `certify(template, graph, problem)`.
+- No unused static parameters: `f(x::Real)`, not `f(x::T) where {T <: Real}`.
+- No type piracy; Aqua fails the build on it.
+- Methods over field access: `alphabet(g)`, not `g.alphabet`.
+- Never hard-code `Float64` in a signature; a certificate may have to be
+  exact.
+
+## Citations
+
+Every definition and theorem number in a docstring or a page was read in the
+paper it is attributed to. Keep it that way.

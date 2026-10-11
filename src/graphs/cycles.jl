@@ -1,7 +1,8 @@
 # Simple cycles of a labelled graph. Pure graph work, and a foundation rather
 # than a feature: a cycle is what turns a certificate's *upper* bound on the
 # joint spectral radius into a two-sided one, because every cycle carries a
-# lower bound (Ninite & Jungers, arXiv:2607.00637, Lemma 1).
+# lower bound (Philippe, Essick, Dullerud & Jungers, Lemma 3.7; Ninite &
+# Jungers, Lemma 1).
 #
 # Enumeration is exponential in the worst case -- a graph can have
 # exponentially many simple cycles -- so the search is bounded by length.
@@ -16,13 +17,8 @@ sequence of transitions traversed.
 
 *Simple* means no node is visited twice, so a cycle of `k` edges passes through
 `k` distinct nodes. Each is returned once, written from its lowest-numbered
-node — the same cycle is not repeated in its `k` rotations.
-
-!!! warning "Exponential in the worst case"
-    A graph can have exponentially many simple cycles, and `max_length` is the
-    only guard. Whoever consumes these should be sound under a *truncated*
-    enumeration — reading one cycle as evidence on its own, rather than the set
-    as a complete answer.
+node. A graph can have exponentially many simple cycles; `max_length` bounds
+the search.
 """
 function simple_cycles(graph::CertificateGraph; max_length::Integer = n_nodes(graph))
     max_length > 0 || throw(ArgumentError("max_length must be positive"))

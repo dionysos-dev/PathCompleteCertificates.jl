@@ -46,7 +46,7 @@ end
     cones = PCC.planar_conic_partition(2)
     template = PCC.ConicPolyhedralTemplate([cones, cones])
 
-    @test PCC.rate_exponent(template) == 1
+    @test PCC.homogeneity_degree(template) == 1
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 

@@ -24,7 +24,7 @@ function is_path_complete(graph::_HS.GraphAutomaton, constraint::_HS.GraphAutoma
     # A graph reading every word reads any language over the same letters.
     (is_complete(graph, letters) || is_co_complete(graph, letters)) && return true
 
-    index = successors(graph)
+    index = _successors(graph)
 
     # The subset construction in product with the constraint: a state is a node
     # of the constraint and the set of graph nodes that can have read the same
@@ -62,19 +62,22 @@ is_path_complete(graph::WordGraph, constraint::_HS.GraphAutomaton) =
     is_path_complete(first(expanded_form(graph)), constraint)
 
 """
-    seed(system)
+    common_graph(system)
 
-The certificate graph refinement starts from: the one-node graph with a loop
-per mode under arbitrary switching, and the system's own automaton otherwise.
+The common Lyapunov function graph ``G_0`` of the system (Debauche, Della Rossa
+& Jungers, Prop. 2): one node with a loop per mode, on which a certificate is a
+single common function, and which every path-complete graph is no worse than.
+Under constrained switching its counterpart is the system's own automaton, one
+function per state (Philippe, Essick, Dullerud & Jungers), and that is what is
+returned.
 
-Both read the system's [`language`](@ref) by construction — the automaton is
-the multinorm's graph of Philippe, Essick, Dullerud & Jungers, one function per
-state — and every lift preserves that, so a run from the seed never re-decides
+Either reads the system's [`language`](@ref) by construction, and every
+refinement preserves that, so [`refine`](@ref) starts here and never re-decides
 path-completeness.
 """
-seed(system::_HS.HybridSystem) = seed(language(system))
+common_graph(system::_HS.HybridSystem) = common_graph(language(system))
 
-function seed(automaton::_HS.OneStateAutomaton)
+function common_graph(automaton::_HS.OneStateAutomaton)
     graph = empty_graph(1)
 
     for mode in 1:_HS.ntransitions(automaton)
@@ -84,7 +87,7 @@ function seed(automaton::_HS.OneStateAutomaton)
     return graph
 end
 
-function seed(automaton::_HS.GraphAutomaton)
+function common_graph(automaton::_HS.GraphAutomaton)
     graph = empty_graph(n_nodes(automaton))
 
     for edge in edges(automaton)

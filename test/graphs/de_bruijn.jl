@@ -14,7 +14,7 @@ import PathCompleteCertificates as PCC
         @test PCC.outdegree(complete, PCC.source(edge)) == 2
     end
 
-    co_complete = PCC.de_bruijn(2, 2; orientation = :co_complete)
+    co_complete = PCC.dual(PCC.de_bruijn(2, 2))
     @test PCC.n_nodes(co_complete) == 4
     @test PCC.n_edges(co_complete) == 8
     @test !PCC.is_complete(co_complete)
@@ -22,5 +22,4 @@ import PathCompleteCertificates as PCC
 
     @test_throws ArgumentError PCC.de_bruijn(0, 2)
     @test_throws ArgumentError PCC.de_bruijn(2, 0)
-    @test_throws ArgumentError PCC.de_bruijn(2, 2; orientation = :invalid)
 end

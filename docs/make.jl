@@ -19,14 +19,12 @@ const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"
 # while the reading order stays curated.
 const ORDER = [
     "switched_systems",
-    "simulate",
     "stability",
+    "templates_and_graphs",
     "safety",
     "optimal_control",
-    "two_axes",
-    "sum_of_squares",
+    "comparing",
     "refinement",
-    "ordering",
 ]
 
 function example_stems()
@@ -64,6 +62,15 @@ function with_current_module(content)
     return marker * CURRENT_MODULE * "```\n\n" * content
 end
 
+# Documenter builds every markdown file under `src/`, listed in the nav or not,
+# so a page generated from an example that no longer exists would still be
+# built, and its title would clash with that of the example that replaced it.
+if !SKIP_LITERATE && isdir(OUTPUT_DIR)
+    for file in readdir(OUTPUT_DIR)
+        first(splitext(file)) in example_stems() || rm(joinpath(OUTPUT_DIR, file))
+    end
+end
+
 if !SKIP_LITERATE
     for stem in example_stems()
         file = joinpath(EXAMPLES_DIR, stem * ".jl")
@@ -93,11 +100,10 @@ const PAGES = Any[
         "Path-complete graphs" => "manual/graphs.md",
         "Templates" => "manual/templates.md",
         "Problems" => "manual/problems.md",
-        "What works with what" => "manual/support.md",
-        "Lifts" => "manual/lifts.md",
-        "Comparing graphs" => "manual/ordering.md",
-        "Refinement" => "manual/refinement.md",
+        "Graph comparison via lifts" => "manual/comparing.md",
+        "Graph improvement via refinements" => "manual/refinement.md",
         "Duality" => "manual/duality.md",
+        "What works with what" => "manual/support.md",
     ],
 ]
 
@@ -106,13 +112,12 @@ isempty(EXAMPLE_PAGES) || push!(PAGES, "Examples" => EXAMPLE_PAGES)
 push!(
     PAGES,
     "API Reference" => [
-        "Systems and aggregation" => "reference/systems.md",
+        "Systems and the common function" => "reference/systems.md",
         "Graphs" => "reference/graphs.md",
         "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",
         "Lifts" => "reference/lifts.md",
-        "Refinement" => "reference/refinement.md",
-        "Ordering" => "reference/ordering.md",
+        "Refinements" => "reference/refinement.md",
     ],
 )
 push!(

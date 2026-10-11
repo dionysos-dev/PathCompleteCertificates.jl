@@ -34,8 +34,8 @@ end
     @test_throws ArgumentError PCC.SumOfSquaresTemplate(0, x)
     @test_throws ArgumentError PCC.SumOfSquaresTemplate(2, typeof(x[1])[])
 
-    @test PCC.rate_exponent(PCC.SumOfSquaresTemplate(1, x)) == 2
-    @test PCC.rate_exponent(PCC.SumOfSquaresTemplate(3, x)) == 6
+    @test PCC.homogeneity_degree(PCC.SumOfSquaresTemplate(1, x)) == 2
+    @test PCC.homogeneity_degree(PCC.SumOfSquaresTemplate(3, x)) == 6
 end
 
 @testset "degree 1 reproduces the quadratic template" begin
@@ -97,7 +97,7 @@ end
     # V(cx) = c^(2 degree) V(x).
     @test V([2.0, 3.0]) ≈ 2.0^(2degree) * V([1.0, 1.5]) rtol = 1e-6
 
-    # `certificate(x)` is the aggregation over one node, so the same number.
+    # `certificate(x)` is the common function over one node, so the same number.
     @test certificate([1.0, 1.0]) ≈ V([1.0, 1.0]) rtol = 1e-8
 end
 
@@ -122,7 +122,7 @@ end
     )
 
     V = only(PCC.functions(certificate))
-    scale = certificate.rate^PCC.rate_exponent(PCC.SumOfSquaresTemplate(2, x))
+    scale = certificate.rate^PCC.homogeneity_degree(PCC.SumOfSquaresTemplate(2, x))
 
     # The constraint is built with the map divided rather than the inequality
     # scaled; this checks the two are the same inequality.
@@ -161,7 +161,7 @@ end
 
     # The edge inequality, per edge, with the pairing the graph dictates. A
     # source/destination swap fails here and nowhere else.
-    scale = certificate.rate^PCC.rate_exponent(template)
+    scale = certificate.rate^PCC.homogeneity_degree(template)
 
     for edge in PCC.edges(graph)
         src = V[PCC.source(edge)]

@@ -22,7 +22,7 @@ edgeset(g) = Set(
 # The numbers a fitted node function is made of, whatever the template.
 coefficients(V::PCC.QuadraticFunction) = Matrix(V)
 coefficients(V::PCC.DualCopositiveFunction) = V.v
-coefficients(c::AbstractVector) = c
+coefficients(V::PCC.LinearCopositiveFunction) = V.c
 
 # A positive system for the copositive pair, a general one for the quadratic
 # template; both invertible, so the composition lifts are valid somewhere.
@@ -38,27 +38,31 @@ const CASES = [
     (PCC.DualCopositiveTemplate(), POSITIVE),
 ]
 
-const ONE = PCC.seed(OneStateAutomaton(2))
+const ONE = PCC.common_graph(OneStateAutomaton(2))
 const TWO = PCC.de_bruijn(1, 2)
 
-# Every lift, applied where it is defined: the four atoms at a partial locus of
-# the two-node graph, the global lifts on one of the two seeds.
-const LIFTS = [
+# Every refinement and every lift, applied where it is defined: the four atoms
+# at a partial locus of the two-node graph, the rest on one of the two seeds.
+const STEPS = [
     ("forward split", PCC.ForwardEdgeSplit(), TWO, PCC.outgoing_edges(TWO, 1)),
     ("backward split", PCC.BackwardEdgeSplit(), TWO, PCC.incoming_edges(TWO, 1)),
     ("forward product", PCC.ForwardEdgeProduct(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
     ("backward product", PCC.BackwardEdgeProduct(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
-    ("memory", PCC.PathDependentLift(1), ONE, nothing),
-    ("product", PCC.ProductLift(2), ONE, nothing),
+    ("memory", PCC.PathDependentRefinement(1), ONE, nothing),
+    ("product", PCC.ProductRefinement(2), ONE, nothing),
     ("composition", PCC.CompositionLift(1), ONE, nothing),
-    ("backward composition", PCC.dual(PCC.CompositionLift(1)), ONE, nothing),
+    ("backward composition", PCC.BackwardCompositionLift(1), ONE, nothing),
     ("min", PCC.MinLift(), TWO, nothing),
     ("max", PCC.MaxLift(), TWO, nothing),
     ("sum", PCC.SumLift(2), TWO, nothing),
 ]
+const LIFTS = [step for step in STEPS if step[2] isa PCC.AbstractLift]
 
-apply(lift, base, ::Nothing) = PCC.graph(lift(base))
-apply(lift, base, locus) = PCC.graph(lift(base, locus))
+apply(refinement::PCC.AbstractRefinement, base, ::Nothing) =
+    PCC.graph(PCC.refine(refinement, base))
+apply(refinement::PCC.AbstractRefinement, base, locus) =
+    PCC.graph(PCC.refine(refinement, base, locus))
+apply(lift::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(lift, base))
 
 bound(template, g, problem) = PCC.jsr_bound(
     template,
@@ -76,13 +80,13 @@ const BASE_RATES = Dict(
 
 @testset "the dual certificate on $name for $(nameof(typeof(template)))" for (
         name,
-        lift,
+        step,
         base,
         locus,
-    ) in LIFTS,
+    ) in STEPS,
     (template, system) in CASES
 
-    g = apply(lift, base, locus)
+    g = apply(step, base, locus)
     problem = PCC.StabilityProblem(system)
     primal = bound(template, g, problem)
     @test PCC.is_feasible(primal)
@@ -116,14 +120,14 @@ const BASE_RATES = Dict(
     @test isapprox(fresh.rate, primal.rate; rtol = 1e-3)
 
     # The common function of the dual certificate is a function.
-    if PCC.is_letter_graph(g)
+    if !PCC.has_words(g)
         @test dualised(ones(size(first(PCC.mode_matrices(system)), 1))) > 0
     end
 
-    # Validity means no worse than the graph the lift was applied to -- on the
-    # backward lifts, this is the guarantee that so far rested on the dual
-    # construction alone.
-    if PCC.is_valid(lift, template, system)
+    # A refinement, or a valid lift, is no worse than the graph it was applied
+    # to -- on the backward ones, the guarantee that rests on the dual
+    # construction.
+    if step isa PCC.AbstractRefinement || PCC.is_valid(step, template, system)
         @test primal.rate <= BASE_RATES[(template, base)] * (1 + 1e-3)
     end
 end

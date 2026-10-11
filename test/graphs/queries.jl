@@ -26,15 +26,14 @@ import PathCompleteCertificates as PCC
     @test length(PCC.incoming_edges(graph, 3, 1)) == 0
     @test length(PCC.incoming_edges(graph, 3, 2)) == 2
 
-    @test PCC.out_neighbors(graph, 1) == [2, 3]
-    @test PCC.in_neighbors(graph, 1) == [3]
-
     @test PCC.alphabet(graph) == [1, 2]
-    @test PCC.outgoing_alphabet(graph, 1) == [1, 2]
-    @test PCC.incoming_alphabet(graph, 3) == [2]
 
     @test PCC.outdegree(graph, 1) == 2
     @test PCC.indegree(graph, 1) == 1
+
+    @test all(edge -> PCC.has_edge(graph, edge), PCC.edges(graph))
+    other = PCC.empty_graph(3)
+    @test !PCC.has_edge(graph, PCC.add_edge!(other, 2, 1, 1))
 end
 
 @testset "Graph validation" begin

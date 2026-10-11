@@ -1,53 +1,25 @@
 """
-    de_bruijn(order::Integer, n_modes::Integer; orientation::Symbol=:complete)
+    de_bruijn(order, n_modes)
 
-Construct a De Bruijn graph of order `order` over `n_modes` modes.
-
-The nodes are indexed by tuples of length `order` with entries
-in `1:n_modes`.
-
-The keyword `orientation` determines the orientation of the edges:
-
-- `:complete`: an edge from `(i₁, ..., iₗ)` to
-  `(σ, i₁, ..., iₗ₋₁)`, labeled `σ`.
-- `:co_complete`: the reverse orientation.
-
-Returns a `HybridSystems.GraphAutomaton`.
+The primal De Bruijn graph of order `order` on `n_modes` modes: a node per
+tuple of `order` modes, the last ones read, newest first, and from
+`(i₁, …, iₗ)` an edge reading `σ` to `(σ, i₁, …, iₗ₋₁)` (Ninite & Jungers,
+Def. 6; Debauche, Def. 6.10, which writes the tuple oldest first). It is
+complete, with `n_modes^order` nodes, and path-complete. The dual De Bruijn
+graph, co-complete, is [`dual`](@ref)`(de_bruijn(order, n_modes))`.
 """
-function de_bruijn(order::Integer, n_modes::Integer; orientation::Symbol = :complete)
-    order >= 1 || throw(ArgumentError("The order must be positive."))
+function de_bruijn(order::Integer, n_modes::Integer)
+    order >= 1 || throw(ArgumentError("the order must be positive"))
+    n_modes >= 1 || throw(ArgumentError("the number of modes must be positive"))
 
-    n_modes >= 1 || throw(ArgumentError("The number of modes must be positive."))
-
-    orientation in (:complete, :co_complete) ||
-        throw(ArgumentError("Orientation must be :complete or :co_complete."))
-
-    # Nodes are indexed by tuples of mode indices.
     tuples = collect(Iterators.product(ntuple(_ -> 1:n_modes, order)...))
-
-    tuple_to_id = Dict(tuple => id for (id, tuple) in enumerate(tuples))
-
-    graph_edges = Tuple{Int, Int, Int}[]
-
-    for (id, tuple) in enumerate(tuples)
-        for σ in 1:n_modes
-
-            # Shift the tuple and append the new mode.
-            tuple_to = (σ, tuple[1:(end - 1)]...)
-
-            target_id = tuple_to_id[tuple_to]
-
-            if orientation == :complete
-                push!(graph_edges, (id, target_id, σ))
-            else
-                push!(graph_edges, (target_id, id, σ))
-            end
-        end
-    end
+    id = Dict(tuple => k for (k, tuple) in enumerate(tuples))
 
     graph = empty_graph(length(tuples))
-    for (src, dst, edge_label) in graph_edges
-        add_edge!(graph, src, dst, edge_label)
+
+    for (from, tuple) in enumerate(tuples), σ in 1:n_modes
+        add_edge!(graph, from, id[(σ, tuple[1:(end - 1)]...)], σ)
     end
+
     return graph
 end

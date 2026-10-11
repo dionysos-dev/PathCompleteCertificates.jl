@@ -4,25 +4,52 @@ CurrentModule = PathCompleteCertificates
 
 # Refinement reference
 
-Neither axis, and for the same reason as [`common`](@ref): [`refine`](@ref) reads
-the graph, a template and a problem at once. It is the package's one loop that
-*designs* the certificate rather than solving for one on a graph you supplied,
-and it names no problem: what it needs from one are the methods
-[`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref) of the problem interface.
+A **refinement** transforms a path-complete graph into one that is no worse
+for every template; [`refine`](@ref) applies one where a certificate is tight
+and repeats. The loop names no problem: it reads [`best_certificate`](@ref),
+[`objective`](@ref), [`edge_slacks`](@ref) and [`optimality_gap`](@ref), and a
+problem that answers them joins it. See
+[Graph improvement via refinements](@ref) for the picture. A new refinement is
+one file in `src/refinements/catalogue/` answering [`refine`](@ref).
 
-The graph operations it drives are in the [Lift reference](@ref).
-
-## The loop
+## The interface
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["refinement/loop.jl"]
+Pages   = ["refinements/abstract.jl"]
+```
+
+## The dual of a refinement
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/dual.jl"]
+```
+
+## The catalogue
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = [
+    "refinements/catalogue/forward_edge_split.jl",
+    "refinements/catalogue/backward_edge_split.jl",
+    "refinements/catalogue/forward_edge_product.jl",
+    "refinements/catalogue/backward_edge_product.jl",
+    "refinements/catalogue/path_dependent.jl",
+    "refinements/catalogue/product.jl",
+]
 ```
 
 ## Strategies
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["refinement/strategies.jl"]
+Pages   = ["refinements/strategies.jl"]
+```
+
+## The loop
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/refine.jl"]
 ```

@@ -27,7 +27,7 @@ elapsed = @elapsed trace = PCC.refine(
     template,
     problem;
     optimizer = Clarabel.Optimizer,
-    strategy = PCC.LiftTightEdges(),
+    strategy = PCC.RefineTightEdges(),
     select = :best,
     stop = c -> c.rate < 1,
     depth_max = depth_max,

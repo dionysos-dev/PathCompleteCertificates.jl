@@ -57,8 +57,12 @@ end
 @testset "synthesis recovers the rate" begin
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
 
-    @test PCC.is_stable(template, GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
-    @test !PCC.is_stable(template, GRAPH, PROBLEM, 0.4; optimizer = OPTIMIZER)
+    @test PCC.is_feasible(
+        PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.6),
+    )
+    @test !PCC.is_feasible(
+        PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.4),
+    )
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
@@ -101,7 +105,7 @@ end
     @test result.rate <= 1.0             # and still certifies contraction
 end
 
-@testset "the aggregation works for this template too" begin
+@testset "the common function works for this template too" begin
     template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
@@ -111,7 +115,7 @@ end
     value = PCC.common(template, GRAPH, PROBLEM, fitted, x)
 
     # GRAPH uses mode 1 only, and the system has one mode, so it is complete
-    # and the aggregation is the minimum over nodes.
+    # and the common function is the minimum over nodes.
     @test PCC.is_complete(GRAPH, 1:1)
     @test value ≈ minimum(V(x) for V in fitted)
 end

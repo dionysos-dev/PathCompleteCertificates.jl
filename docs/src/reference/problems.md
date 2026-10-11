@@ -18,19 +18,19 @@ Pages   = ["problems/abstract.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["problems/stability.jl"]
+Pages   = ["problems/catalogue/stability.jl"]
 ```
 
 ## Safety
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["problems/safety.jl"]
+Pages   = ["problems/catalogue/safety.jl"]
 ```
 
 ## Optimal control
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["problems/optimal_control.jl"]
+Pages   = ["problems/catalogue/optimal_control.jl"]
 ```
