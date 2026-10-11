@@ -139,8 +139,8 @@ is_closed_under(::AbstractTemplate, ::Operation, system) = false
 """
     reindex(template, origins)
 
-The template for a lifted graph, given where each of its nodes came from — the
-`origins` of a [`Lifted`](@ref).
+The template for a refined or lifted graph, given where each of its nodes came
+from — the `origins` of a [`Refined`](@ref) or a [`Lifted`](@ref).
 
 A template that carries no per-node data returns itself. One that does, such as
 [`PolyhedralTemplate`](@ref), gives every new node the data of its origin; a

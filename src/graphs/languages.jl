@@ -69,7 +69,7 @@ per mode under arbitrary switching, and the system's own automaton otherwise.
 
 Both read the system's [`language`](@ref) by construction — the automaton is
 the multinorm's graph of Philippe, Essick, Dullerud & Jungers, one function per
-state — and every lift preserves that, so a run from the seed never re-decides
+state — and every refinement preserves that, so a run from the seed never re-decides
 path-completeness.
 """
 seed(system::_HS.HybridSystem) = seed(language(system))

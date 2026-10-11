@@ -1,9 +1,3 @@
-# Simulation between labelled graphs, in the two forms the ordering theory
-# uses: as a map (Philippe & Jungers, Def. 3.1), which decides the
-# template-free order, and as a relation, which decides the min-closed order
-# without building the min lift. Pure graph work; the orders themselves are in
-# `ordering.jl`.
-
 """
     simulation(G, H) -> Union{Nothing, Vector{Int}}
 
@@ -88,43 +82,4 @@ function simulation_relation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     any(isempty, relation) && return nothing
 
     return [sort!(collect(related)) for related in relation]
-end
-
-"""
-    closed_subgraph(graph, alphabet; direction = :out) -> Vector{Int}
-
-The largest set of nodes every one of which has, for every letter of
-`alphabet`, an edge reading it into the set — an *outgoing* edge with
-`direction = :out`, the largest **complete** induced subgraph; an *incoming* one
-with `:in`, the largest **co-complete** induced subgraph. Empty when there is
-none.
-
-A greatest fixed point: delete nodes lacking such an edge until none does.
-
-Why it matters: for a template closed under [`Minimum`](@ref), the minimum of
-the node functions over a complete induced subgraph is a common function
-(Corollary III.3 of Philippe et al. on the induced subgraph), so the graph
-certifies nothing a one-node graph would not. Dually for [`Maximum`](@ref) and
-co-complete. [`simplify`](@ref) reads it.
-"""
-function closed_subgraph(graph::_HS.GraphAutomaton, alphabet; direction::Symbol = :out)
-    direction in (:out, :in) || throw(ArgumentError("direction must be :out or :in"))
-
-    index = direction == :out ? successors(graph) : predecessors(graph)
-    members = Set(nodes(graph))
-    changed = true
-
-    while changed
-        changed = false
-
-        for node in collect(members), letter in alphabet
-            any(other in members for other in get(index, (node, letter), Int[])) && continue
-
-            delete!(members, node)
-            changed = true
-            break
-        end
-    end
-
-    return sort!(collect(members))
 end

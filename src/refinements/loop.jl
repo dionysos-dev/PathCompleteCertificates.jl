@@ -1,10 +1,3 @@
-# `refine` drives a problem's driver and the lifts of `src/lifts/` together,
-# reading graph, template and problem at once -- the reason `aggregation.jl`
-# is top-level too. It names no problem: what it needs from one is
-# `best_certificate`, `objective`, `edge_slacks` and `optimality_gap`, and the
-# strategy that picks where to lift is any callable (Ninite & Jungers,
-# arXiv:2607.00637; Athanasopoulos & Jungers, CDC 2019).
-
 """
     RefinementStatus
 
@@ -27,7 +20,7 @@ OPTIMAL
 """
     EXHAUSTED
 
-The strategy proposed no candidate — nothing was left to lift — and the gap
+The strategy proposed no candidate — nothing was left to refine — and the gap
 had not closed. With the default strategy and a letter graph this cannot
 happen without [`OPTIMAL`](@ref): no node held at two tight outgoing edges is
 Theorem 4's hypothesis. With another strategy it is a genuine outcome, a dead
@@ -38,7 +31,7 @@ EXHAUSTED
 """
     STALLED
 
-`stall_max` lifts in a row failed to improve the objective.
+`stall_max` steps in a row failed to improve the objective.
 
 Worth its own outcome because a graph already attaining the exact joint spectral
 radius holds *every* edge tight, so it always looks splittable and would
@@ -65,7 +58,7 @@ STOPPED
     RefinementTrace(certificates, steps, status)
 
 One certificate per graph a [`refine`](@ref) run visited, the seed's first;
-the [`Lifted`](@ref) that produced each graph after the seed, so a run's lifts
+the [`Refined`](@ref) that produced each graph after the seed, so a run's steps
 can be read back; and a [`RefinementStatus`](@ref).
 
 A certificate carries its own graph and objective, so [`graphs`](@ref) and
@@ -73,7 +66,7 @@ A certificate carries its own graph and objective, so [`graphs`](@ref) and
 """
 struct RefinementTrace{C <: AbstractCertificate}
     certificates::Vector{C}
-    steps::Vector{Lifted}
+    steps::Vector{Refined}
     status::RefinementStatus
 end
 
@@ -95,7 +88,7 @@ graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.ce
 """
     steps(trace)
 
-The [`Lifted`](@ref) of each step of a [`refine`](@ref) run: `steps(trace)[k]`
+The [`Refined`](@ref) of each step of a [`refine`](@ref) run: `steps(trace)[k]`
 produced `graphs(trace)[k + 1]`, and its [`origins`](@ref) say which node of the
 previous graph each node came from.
 """
@@ -158,7 +151,7 @@ lower_bounds(trace::RefinementTrace{<:StabilityCertificate}; atol::Real = 1e-4) 
            atol = 1e-4, atol_max = atol, gap_tol = 1e-6, rtol = 1e-6,
            path_complete = true, kwargs...)
 
-Iteratively lift `graph` to tighten the certificate it carries, until the
+Iteratively refine `graph` to tighten the certificate it carries, until the
 problem's [`optimality_gap`](@ref) closes or the search runs out.
 
 Without a `graph`, the run starts from [`seed`](@ref) of the system: the
@@ -167,13 +160,13 @@ constrained switching.
 
 Each step solves [`best_certificate`](@ref) — [`jsr_bound`](@ref) for
 stability — and hands the certificate to `strategy`, any callable
-`(certificate; atol) -> Vector{Lifted}` returning candidate graphs, best guess
+`(certificate; atol) -> Vector{Refined}` returning candidate graphs, best guess
 first. The default [`SplitTightNode`](@ref) splits the node held at the most
-tight outgoing edges; [`LiftTightEdges`](@ref) tries every local lift at every
-tight edge; [`Hierarchy`](@ref) applies one global lift. `select` takes the
-first candidate, or with `:best` solves every candidate and keeps the lowest
-[`objective`](@ref) — one solve per candidate, the rule of Athanasopoulos &
-Jungers.
+tight outgoing edges; [`RefineTightEdges`](@ref) tries every local refinement
+at every tight edge; [`Hierarchy`](@ref) applies one step to the whole graph.
+`select` takes the first candidate, or with `:best` solves every candidate and
+keeps the lowest [`objective`](@ref) — one solve per candidate, the rule of
+Athanasopoulos & Jungers.
 
 Returns a [`RefinementTrace`](@ref).
 
@@ -185,7 +178,7 @@ Returns a [`RefinementTrace`](@ref).
   depend on `atol` being right;
 - `stop(certificate)` → [`STOPPED`](@ref), an explicit request taken before the
   gap; `c -> c.rate < 1` stops a stability run at the first proof of stability;
-- `stall_max` lifts in a row not improving the objective by more than `rtol`
+- `stall_max` steps in a row not improving the objective by more than `rtol`
   → [`STALLED`](@ref). Raise `stall_max` to cross a plateau;
 - `depth_max` certificates solved → [`DEPTH_EXHAUSTED`](@ref);
 - no candidate → [`EXHAUSTED`](@ref). With the default strategy on a letter
@@ -211,9 +204,9 @@ re-solved, because the tolerance decides how a solution is *read*, not what it
 is. Its remaining purpose is a solution whose accuracy is worse than `rtol`
 suggests.
 
-`path_complete` decides the **seed** only: a lift of a path-complete graph is
-path-complete, so the loop asserts rather than re-deciding a PSPACE-complete
-question. Other keywords go to [`best_certificate`](@ref).
+`path_complete` decides the **seed** only: a refinement of a path-complete
+graph is path-complete, so the loop asserts rather than re-deciding a
+PSPACE-complete question. Other keywords go to [`best_certificate`](@ref).
 """
 function refine(template::AbstractTemplate, problem::AbstractProblem; optimizer, kwargs...)
     return refine(template, seed(problem.system), problem; optimizer, kwargs...)
@@ -243,11 +236,6 @@ function refine(
     atol_max >= atol ||
         throw(ArgumentError("atol_max ($atol_max) must be at least atol ($atol)"))
 
-    # An active edge measures about the bisection residual, so `atol` has to clear
-    # it with room: measured at `rtol = 1e-6`, active slacks run to 3.5e-6, and a
-    # decade is the least that discriminates. At 2x the tight subgraph comes out
-    # EMPTY, every node then satisfies Theorem 4 vacuously, and the seed's own
-    # bound gets certified as the JSR -- which is why this is an error, not advice.
     atol >= 10 * rtol || throw(
         ArgumentError(
             "atol ($atol) must exceed rtol ($rtol) by at least a decade: a tight " *
@@ -267,13 +255,11 @@ function refine(
     )
 
     trace = AbstractCertificate[]
-    lifts = Lifted[]
+    taken = Refined[]
     outcome = DEPTH_EXHAUSTED
     stalled = 0
     tolerance = atol
 
-    # `:best` solves the candidates before choosing, so the chosen one's
-    # certificate is already in hand when the next step begins.
     pending = nothing
     current = start
 
@@ -295,8 +281,6 @@ function refine(
 
         push!(trace, certificate)
 
-        # First, because it is an explicit request to stop early rather than a
-        # fact about the graph -- and it spares the gap below.
         if stop(certificate)
             outcome = STOPPED
             break
@@ -316,10 +300,6 @@ function refine(
 
         candidates = strategy(certificate; atol = tolerance)
 
-        # A dead end may only mean the tight subgraph is too thin: an active edge
-        # measures about the bisection residual, not zero, so too small a
-        # tolerance hides it. Re-read the SAME solution at a coarser one before
-        # concluding anything -- no restart and no second solve.
         while isempty(candidates) && 10 * tolerance <= atol_max
             tolerance *= 10
             candidates = strategy(certificate; atol = tolerance)
@@ -333,7 +313,6 @@ function refine(
         chosen = first(candidates)
 
         if select == :best && length(candidates) > 1
-            # Each candidate is solved with the template moved onto its graph.
             solved = [
                 solve(reindex(template, origins(candidate)), graph(candidate), false)
                 for candidate in candidates
@@ -343,10 +322,10 @@ function refine(
             pending = solved[best]
         end
 
-        push!(lifts, chosen)
+        push!(taken, chosen)
         current = graph(chosen)
         template = reindex(template, origins(chosen))
     end
 
-    return RefinementTrace(identity.(trace), lifts, outcome)
+    return RefinementTrace(identity.(trace), taken, outcome)
 end

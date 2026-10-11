@@ -87,7 +87,7 @@ triple(g, e) = (PCC.source(e), collect(Int, PCC.letters(PCC.label(g, e))), PCC.d
 
 reference(kind, g, e) = Set(REFERENCE[kind](nfa(g), triple(g, e)...))
 
-ours(kind, g, e) = edgeset(PCC.graph(OURS[kind](g, [e])))
+ours(kind, g, e) = edgeset(PCC.graph(PCC.refine(OURS[kind], g, [e])))
 
 # The paper assumes a second outgoing edge at the source of a P*-lifted edge
 # and a second incoming one at the destination of a P-lifted edge.
@@ -154,7 +154,7 @@ const G4 = graph(
 const LOOPS =
     graph([(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (2, 3, 1), (3, 1, 2), (3, 3, 2)], 3)
 const ONE = PCC.seed(OneStateAutomaton(2))
-const WORDS = PCC.graph(PCC.ProductLift(2)(G2))
+const WORDS = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G2))
 
 const GRAPHS = [("G1", G1), ("G2", G2), ("G4", G4), ("loops", LOOPS), ("one", ONE)]
 
@@ -224,7 +224,7 @@ end
     @test PCC.source(loop) == PCC.dest(loop) == 2
 
     loop_last = [across, loop]
-    @test edgeset(PCC.graph(PCC.ForwardEdgeSplit()(LOOPS, loop_last))) ==
+    @test edgeset(PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), LOOPS, loop_last))) ==
           sequential("P*", LOOPS, loop_last)
 
     # The reference is order dependent at a loop: the other order differs.
@@ -235,7 +235,7 @@ end
     out = PCC.outgoing_edges(G4, 1)
     @test length(out) == 3
     for order in (out[1:2], reverse(out[1:2]))
-        @test edgeset(PCC.graph(PCC.ForwardEdgeSplit()(G4, order))) ==
+        @test edgeset(PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), G4, order))) ==
               sequential("P*", G4, order)
     end
 end

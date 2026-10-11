@@ -367,7 +367,7 @@ end
         MEMORYLESS,
         problem;
         optimizer = OPTIMIZER,
-        strategy = PCC.LiftTightEdges(),
+        strategy = PCC.RefineTightEdges(),
         select = :best,
         depth_max = 4,
         atol = 1e-4,
@@ -395,14 +395,14 @@ end
     @test PCC.is_path_complete(PCC.graph(final), 1:2)
 end
 
-@testset "a global lift as the strategy walks a hierarchy" begin
-    # Memory lift each step from the one-node graph: De Bruijn of growing order,
-    # so the rates are those of de_bruijn(k, 2).
+@testset "a global refinement as the strategy walks a hierarchy" begin
+    # One path-dependent step from the one-node graph each time: De Bruijn of
+    # growing order, so the rates are those of de_bruijn(k, 2).
     trace = PCC.refine(
         TEMPLATE,
         SHEARED;
         optimizer = OPTIMIZER,
-        strategy = PCC.Hierarchy(PCC.PathDependentLift(1)),
+        strategy = PCC.Hierarchy(PCC.PathDependentRefinement(1)),
         depth_max = 3,
     )
 
@@ -417,6 +417,36 @@ end
         )
         @test isapprox(certificate.rate, db.rate; rtol = 1e-4)
     end
+end
+
+@testset "a lift as the step is accepted where it is valid and refused where not" begin
+    # Jongeneel & Jungers, §IV-A: the forward composition lift refines a graph
+    # for a template closed under composition with invertible dynamics.
+    composition = PCC.Hierarchy(PCC.CompositionLift(1))
+    trace = PCC.refine(
+        TEMPLATE,
+        SHEARED;
+        optimizer = OPTIMIZER,
+        strategy = composition,
+        depth_max = 2,
+    )
+    @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2]
+    @test PCC.rates(trace)[2] <= PCC.rates(trace)[1] * (1 + 1e-4)
+
+    # Refused on a singular system, and on a template not closed under
+    # composition, the moment the step is asked for.
+    singular =
+        PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.0], [0.0 0.5; 0.5 0.0]]))
+    on_singular = PCC.jsr_bound(TEMPLATE, MEMORYLESS, singular; optimizer = OPTIMIZER)
+    @test_throws ArgumentError composition(on_singular; atol = 1e-4)
+
+    polyhedral = PCC.jsr_bound(
+        PCC.PolyhedralTemplate(1, 2),
+        MEMORYLESS,
+        SHEARED;
+        optimizer = OPTIMIZER,
+    )
+    @test_throws ArgumentError composition(polyhedral; atol = 1e-4)
 end
 
 @testset "a constrained system is refined from its automaton" begin

@@ -1,77 +1,26 @@
-# A lift maps a path-complete graph to a path-complete graph (Debauche, Della
-# Rossa & Jungers, Def. 5). It names no template and no problem: what it
-# combines node functions with is an `Operation`, and whether that keeps the
-# bound from getting worse is the template's declaration, read by `is_valid`.
-
 """
     AbstractLift
 
-A transformation of a path-complete graph into another path-complete graph —
-Definition 5 of Debauche, Della Rossa & Jungers, and the whole of it.
+A map from path-complete graphs to path-complete graphs whose nodes stand for
+combinations of the original nodes under one [`Operation`](@ref): the lift of
+an operation (Debauche, Della Rossa & Jungers, Defs. 5 and 7; Debauche,
+Def. 8.15). It exists to compare graphs. When `lift(L, G)` simulates `H`,
+`G ≤_V H` holds for every template closed under what the lift
+[`requirements`](@ref): a certificate on `G`, combined along the simulation,
+is one on `H`. [`compare`](@ref) runs every lift on a pair of graphs.
 
-A lift is an instance, applied to a graph. Its [`scope`](@ref) says how: a
-[`Global`](@ref) lift rebuilds the graph, `lift(graph)`; a [`Local`](@ref) one
-acts at a locus of edges, `lift(graph, edges)`, all of them at once. Both return
-a [`Lifted`](@ref), the graph with the origin of each of its nodes.
-
-Preserving path-completeness is the soundness condition, so a certificate on
-the lifted graph certifies the system whatever the template. Whether it is
-guaranteed **no worse** is [`is_valid`](@ref), decided by the operations the
-lift lists in [`requirements`](@ref) and the template's
-[`is_closed_under`](@ref). An invalid lift returns a worse bound, never an
-unsound certificate.
-
-The four local lifts — [`ForwardEdgeSplit`](@ref), [`BackwardEdgeSplit`](@ref),
-[`ForwardEdgeProduct`](@ref), [`BackwardEdgeProduct`](@ref) — require nothing;
-applied at every edge they are the classical hierarchies, and applied where a
-certificate is tight they are [`refine`](@ref). The global ones —
-[`CompositionLift`](@ref), [`MinLift`](@ref), [`MaxLift`](@ref),
-[`SumLift`](@ref) — each require one operation.
+A lift is an instance. It implements [`lift`](@ref) and
+[`requirements`](@ref); it inherits [`simulation`](@ref), which builds the
+lifted graph and searches a map into it, and overrides it where something
+cheaper decides the same question. [`is_valid`](@ref) is written once.
 """
 abstract type AbstractLift end
 
 """
-    Scope
-
-How a lift is applied: [`Global`](@ref) or [`Local`](@ref). Read it with
-[`scope`](@ref).
-"""
-abstract type Scope end
-
-"""
-    Global()
-
-The scope of a lift applied to the whole graph, `lift(graph)`.
-"""
-struct Global <: Scope end
-
-"""
-    Local()
-
-The scope of a lift applied at a locus, `lift(graph, edges)`: one edge, several,
-or `edges(graph)` for all of them, simultaneously.
-"""
-struct Local <: Scope end
-
-"""
-    scope(lift) -> Scope
-
-Whether `lift` is applied to the whole graph or at a locus of edges. Every lift
-implements it; a strategy reads it to know what to enumerate.
-"""
-function scope end
-
-"""
     Lifted(graph, origins)
 
-What a lift returns: the lifted `graph` and, for each of its nodes, where it
-came from.
-
-`origins[node]` is the node of the original graph a copy was made of, the
-vector of original nodes a subset node stands for, or a `(node, word)` pair for
-a node of the composition lift. [`reindex`](@ref) reads it to carry a template's
-per-node data across; a [`RefinementTrace`](@ref) keeps it so a run's lifts can
-be read back.
+What a lift returns: the lifted `graph` and, for each of its nodes, the
+original nodes it stands for — a subset, a multiset, or a `(node, word)` pair.
 """
 struct Lifted{G <: CertificateGraph, O}
     graph::G
@@ -79,28 +28,54 @@ struct Lifted{G <: CertificateGraph, O}
 end
 
 graph(lifted::Lifted) = lifted.graph
-
-"""
-    origins(lifted)
-
-Where each node of a [`Lifted`](@ref) graph came from.
-"""
 origins(lifted::Lifted) = lifted.origins
 
 """
-    requirements(lift) -> Tuple
+    lift(L, graph) -> Lifted
 
-The [`Operation`](@ref)s `lift` combines node functions with — what a template
-must be closed under for the lift to be valid on it. Empty for the local lifts,
-whose copies inherit their origin's function and whose products chain two
-inequalities, which no template can fail to allow.
+The lifted graph. Letter graphs only; every lift preserves path-completeness.
+"""
+function lift end
+
+"""
+    requirements(L) -> Tuple
+
+The [`Operation`](@ref)s a template must be closed under for `L` to be valid
+on it; `()` for the identity lift, which is valid for every template.
 """
 requirements(::AbstractLift) = ()
 
 """
-    is_valid(lift, template, system) -> Bool
+    simulation(L, G, H; optimizer = nothing)
 
-Whether `lift` is guaranteed not to make the bound worse for `template` on
+The witness that `lift(L, G)` simulates `H`, or `nothing`. It proves
+`G ≤_V H` for every template closed under `requirements(L)` (Philippe &
+Jungers, Thm. 3.5; Debauche, Thms. 7.18, 7.55, 7.56, 7.65 and 7.66).
+
+The default builds the lifted graph and returns the [`simulation`](@ref) map
+from the nodes of `H`, read through `origins`: subsets, multisets or
+`(node, word)` pairs of `G`. [`IdentityLift`](@ref) returns the plain map,
+[`MinLift`](@ref) the greatest simulation relation, [`MaxLift`](@ref) that
+relation on the dual graphs and [`SumLift`](@ref)`()` the integer matrix of a
+linear program, each without building anything. `optimizer` is read by the
+linear program only.
+"""
+function simulation(
+    L::AbstractLift,
+    G::CertificateGraph,
+    H::CertificateGraph;
+    optimizer = nothing,
+)
+    lifted = lift(L, G)
+    map = simulation(graph(lifted), H)
+    map === nothing && return nothing
+    return origins(lifted)[map]
+end
+
+"""
+    is_valid(L, template, system) -> Bool
+
+Whether `L` is guaranteed not to make the bound worse for `template` on
 `system` — Definition 6 of Debauche, Della Rossa & Jungers: whether
 ``G ≤_V L(G)`` for every path-complete ``G``.
 
@@ -109,42 +84,36 @@ Written once: the template is closed under every operation the lift requires
 [`has_dual`](@ref) — the dual template is closed under what the dual lift
 requires, on the transposed system. The two questions are the same one
 (Debauche, Prop. 7.5), so a closure declared on either of a dual pair of
-templates serves both: [`SumLift`](@ref) is valid for
-[`DualCopositiveTemplate`](@ref) because the primal norms add. A few methods
-override it where the literature proves validity without closure, and say
-which theorem.
+templates serves both. A few methods override it where the literature proves
+validity without closure, and say which theorem.
 
 `false` never means unsound. Every lift preserves path-completeness, so a
 certificate on the lifted graph certifies the system regardless; it only
 carries no guarantee of improvement.
 """
-function is_valid(lift::AbstractLift, template, system)
-    all(op -> is_closed_under(template, op, system), requirements(lift)) && return true
+function is_valid(L::AbstractLift, template, system)
+    all(op -> is_closed_under(template, op, system), requirements(L)) && return true
 
     has_dual(template) && !has_input(system) || return false
 
     dual_template = dual(template)
     dual_system = dual(system)
 
-    return all(
-        op -> is_closed_under(dual_template, op, dual_system),
-        requirements(dual(lift)),
-    )
+    return all(op -> is_closed_under(dual_template, op, dual_system), requirements(dual(L)))
 end
 
-(lift::AbstractLift)(graph::CertificateGraph, edge::_HS.GraphTransition) =
-    lift(graph, [edge])
+const _LIFT_NODE_LIMIT = 1024
 
-# The edges of a locus must belong to the graph.
-function _check_locus(graph::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
-    isempty(locus) && throw(ArgumentError("the locus is empty"))
-    allunique(locus) || throw(ArgumentError("the locus lists an edge twice"))
-    automaton = _automaton(graph)
+function _check_lift_size(g::CertificateGraph, what::AbstractString, lifted_nodes)
+    is_letter_graph(g) || throw(ArgumentError("the $what is defined on letter graphs"))
 
-    for edge in locus
-        _HS.has_transition(automaton, edge) ||
-            throw(ArgumentError("the locus contains an edge that is not in the graph"))
-    end
+    lifted_nodes <= _LIFT_NODE_LIMIT || throw(
+        ArgumentError(
+            "the $what of a graph with $(n_nodes(g)) nodes has $lifted_nodes nodes, " *
+            "more than the $_LIFT_NODE_LIMIT this builds; `simulation` decides the " *
+            "ordering without building it",
+        ),
+    )
 
     return nothing
 end

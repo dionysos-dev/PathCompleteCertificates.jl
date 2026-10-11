@@ -47,8 +47,8 @@ struct Composition <: Operation end
 """
     InverseComposition()
 
-Composition with the inverse dynamics, `V ∘ A_i⁻¹`: the operation behind the
-backward composition lift, `dual(CompositionLift(T))`.
+Composition with the inverse dynamics, `V ∘ A_i⁻¹`: the operation behind
+[`BackwardCompositionLift`](@ref).
 """
 struct InverseComposition <: Operation end
 

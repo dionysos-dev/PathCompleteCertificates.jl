@@ -1,24 +1,19 @@
-# The composition lift (Debauche, Della Rossa & Jungers, Def. 10; Debauche,
-# Def. 7.58; Jongeneel & Jungers, Def. III.1): a node commits to the next T
-# modes, and its function is the original one composed with them.
-
 """
     CompositionLift(T)
 
 The `T`-forward composition lift: a node `(s, j₁, …, j_T)` for every node `s`
 and every `T`-tuple of modes, and for every edge `(a, b, i)` and tuple the edge
-`((a, j₁…j_T), (b, i, j₁…j_{T−1}), j_T)`. The node function is
-``V_s ∘ A_{j_1} ∘ ⋯ ∘ A_{j_T}``.
+`((a, j₁…j_T), (b, i, j₁…j_{T−1}), j_T)` (Debauche, Della Rossa & Jungers,
+Def. 10; Debauche, Def. 7.58). The node function is ``V_s ∘ A_{j_1} ∘ ⋯ ∘
+A_{j_T}``.
 
-Requires the template to be closed under [`Composition`](@ref) with the
-dynamics, which for the templates here means invertible mode matrices. Unlike
-the subset lifts it can strictly improve the bound (Jongeneel & Jungers,
-Ex. IV.4). Its dual, `dual(CompositionLift(T))`, is the backward composition
-lift, requiring [`InverseComposition`](@ref).
-
-The tuples range over the modes the graph reads, which are the system's on any
-path-complete graph. Letter graphs only. `origins` are the `(s, [j₁, …, j_T])`
-pairs.
+Valid for templates closed under [`Composition`](@ref) with the dynamics,
+which for the templates here means invertible mode matrices. Its simulation is
+sufficient for the order on such templates (Debauche, Thm. 7.65) but not
+necessary (Jongeneel & Jungers, Ex. IV.3). Unlike the subset lifts it can
+strictly improve a bound (Jongeneel & Jungers, Ex. IV.4), which is why
+[`Hierarchy`](@ref) accepts it as a step of [`refine`](@ref). `origins` are
+the `(s, [j₁, …, j_T])` pairs.
 """
 struct CompositionLift <: AbstractLift
     length::Int
@@ -29,16 +24,14 @@ struct CompositionLift <: AbstractLift
     end
 end
 
-scope(::CompositionLift) = Global()
-
 requirements(::CompositionLift) = (Composition(),)
 
-function (lift::CompositionLift)(g::CertificateGraph)
+function lift(L::CompositionLift, g::CertificateGraph)
     is_letter_graph(g) ||
         throw(ArgumentError("the composition lift is defined on letter graphs"))
 
     modes = sort(alphabet(g))
-    tuples = vec(collect(Iterators.product(ntuple(_ -> modes, lift.length)...)))
+    tuples = vec(collect(Iterators.product(ntuple(_ -> modes, L.length)...)))
 
     origins = [(node, collect(Int, tuple)) for node in nodes(g) for tuple in tuples]
     index = Dict(origin => k for (k, origin) in enumerate(origins))
@@ -54,3 +47,16 @@ function (lift::CompositionLift)(g::CertificateGraph)
 
     return Lifted(lifted, origins)
 end
+
+"""
+    BackwardCompositionLift(T)
+
+The `T`-backward composition lift (Debauche, Def. 7.61), the dual of
+[`CompositionLift`](@ref)`(T)` (Prop. 7.64): the node function is
+``V_s ∘ A_{j_T}^{-1} ∘ ⋯ ∘ A_{j_1}^{-1}``. Valid for templates closed under
+[`InverseComposition`](@ref) on invertible systems (Prop. 7.63); its
+simulation is sufficient for the order on them (Thm. 7.66).
+"""
+const BackwardCompositionLift = DualLift{CompositionLift}
+
+BackwardCompositionLift(length::Integer) = DualLift(CompositionLift(length))

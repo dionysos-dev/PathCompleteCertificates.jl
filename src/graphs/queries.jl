@@ -55,7 +55,7 @@ A `GraphAutomaton` with `n_nodes` nodes and no edge. Add edges with
 """
 empty_graph(n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
 
-# An empty graph of the same kind as `graph`: the lifts and the tight subgraph
+# An empty graph of the same kind as `graph`: the refinements and the tight subgraph
 # rebuild a graph with the labels it had. Dispatch keeps the result type
 # concrete, which a keyword switch would not.
 _empty_like(::_HS.GraphAutomaton, n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
