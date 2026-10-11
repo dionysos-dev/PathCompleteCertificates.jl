@@ -18,7 +18,7 @@ OPTIMIZER = JuMP.optimizer_with_attributes(
 system = PCC.switched_system(A, B)
 problem = PCC.OptimalControlProblem(system, Q, R)
 
-graph = PCC.de_bruijn(1, 2; orientation = :complete)
+graph = PCC.de_bruijn(1, 2)
 
 certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 
@@ -28,8 +28,6 @@ certificate.gains
 
 x = [1.0, 1.0]
 certificate(x)
-
-certificate.objective
 
 run = PCC.simulate(certificate, [3.0, -2.0], 25; rng = MersenneTwister(1))
 

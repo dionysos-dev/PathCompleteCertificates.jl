@@ -55,16 +55,4 @@ plot!(figure, [NaN], [NaN]; lw = 2, color = :black, label = "barrier, B(x) = 0")
 
 figure
 
-dual = PCC.de_bruijn(8, 2; orientation = :co_complete)
-
-PCC.n_nodes(dual)
-
-certificate_dual =
-    PCC.certify(PCC.QuadraticTemplate(), dual, problem; optimizer = OPTIMIZER)
-
-PCC.is_feasible(certificate_dual), certificate_dual.margin
-
-x = [1.0, 1.0]
-certificate(x), certificate_dual(x)
-
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

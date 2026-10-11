@@ -80,16 +80,32 @@ G4 = graph(
 GRAPHS = [G0, G1, G2, G3, G4]
 NAMES = ["G0", "G1", "G2", "G3", "G4"]
 
-all(g -> PCC.is_path_complete(g, 1:2), GRAPHS)
-
 [
-    (name, PCC.is_complete(g, 1:2), PCC.is_co_complete(g, 1:2)) for
-    (name, g) in zip(NAMES, GRAPHS)
+    (
+        name,
+        PCC.is_path_complete(g, 1:2),
+        PCC.is_complete(g, 1:2),
+        PCC.is_co_complete(g, 1:2),
+    ) for (name, g) in zip(NAMES, GRAPHS)
 ]
 
-PCC.simulation(G1, G2) === nothing
+A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
+system = PCC.switched_system(A)
+problem = PCC.StabilityProblem(system)
 
-C = PCC.conic_witness(G1, G2; optimizer = OPTIMIZER)
+QUADRATIC = PCC.QuadraticTemplate()
+COPOSITIVE = PCC.LinearCopositiveTemplate()
+DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
+TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
+
+c12 = PCC.compare(G1, G2; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+PCC.lifts(c12)
+
+first.(PCC.simulations(c12))
+
+PCC.templates(c12)
+
+C = Dict(PCC.simulations(c12))[PCC.SumLift()]
 
 combination(row) = join(
     [(c == 1 ? "" : "$c·") * "V_" * node_name(g) for (g, c) in enumerate(row) if c > 0],
@@ -97,11 +113,6 @@ combination(row) = join(
 )
 
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:PCC.n_nodes(G2)]
-
-A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
-QUADRATIC = PCC.QuadraticTemplate()
 
 bound(template, g) = PCC.jsr_bound(
     template,
@@ -118,7 +129,7 @@ W = [
     PCC.QuadraticFunction(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))) for
     h in 1:PCC.n_nodes(G2)
 ]
-scale = on_G1.rate^PCC.rate_exponent(QUADRATIC)
+scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
 
 slacks = [
     PCC.domination_slack(
@@ -132,39 +143,26 @@ slacks = [
 
 all(>=(-1e-6), slacks)
 
-witness = PCC.order_witness(G1, G2; template = QUADRATIC, system, optimizer = OPTIMIZER)
-witness.kind
+c40 = PCC.compare(G4, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+first.(PCC.simulations(c40)), PCC.templates(c40)
 
-PCC.is_no_worse(G2, G1; template = QUADRATIC, system, optimizer = OPTIMIZER)
+c30 = PCC.compare(G3, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+Dict(PCC.simulations(c30))[PCC.SumLift()]
 
-C3 = PCC.conic_witness(G3, G0; optimizer = OPTIMIZER)
+c04 = PCC.compare(G0, G4; templates = TEMPLATES, system)
+PCC.lifts(c04), PCC.templates(c04)
 
-PCC.conic_witness(G4, G0; optimizer = OPTIMIZER) === nothing
-
-PCC.closed_subgraph(G4, 1:2; direction = :in)
-
-witness = PCC.order_witness(G4, G0; template = PCC.DualCopositiveTemplate(), system)
-witness.kind, witness.data
-
-(
-    PCC.n_nodes(PCC.simplify(G4; template = PCC.DualCopositiveTemplate(), system)),
-    PCC.n_nodes(PCC.simplify(G4; template = QUADRATIC, system)),
-)
-
-TEMPLATES = [
-    ("quadratic", QUADRATIC),
-    ("copositive", PCC.LinearCopositiveTemplate()),
-    ("dual copositive", PCC.DualCopositiveTemplate()),
+RATES = [
+    (name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in (
+        ("quadratic", QUADRATIC),
+        ("copositive", COPOSITIVE),
+        ("dual copositive", DUAL_COPOSITIVE),
+    )
 ]
-
-RATES =
-    [(name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in TEMPLATES]
 
 rows = [hcat(name, round.(rates; digits = 4)') for (name, rates) in RATES]
 
 vcat(reshape(["template"; NAMES], 1, :), rows...)
-
-PCC.is_valid(PCC.MinLift(), PCC.LinearCopositiveTemplate(), system)
 
 figure = plot(;
     xticks = (1:5, NAMES),
@@ -176,22 +174,5 @@ for (name, rates) in RATES
     plot!(figure, 1:5, rates; marker = :circle, markersize = 6, lw = 2, label = name)
 end
 figure
-
-sum_lift = PCC.SumLift(2)(G1)
-R_sum = PCC.simulation(PCC.graph(sum_lift), G2)
-
-[
-    node_name(h) *
-    "₂ ↦ {" *
-    join(node_name.(PCC.origins(sum_lift)[R_sum[h]]) .* "₁", ", ") *
-    "}" for h in 1:PCC.n_nodes(G2)
-]
-
-min_lift = PCC.MinLift()(G4)
-R = PCC.simulation(PCC.graph(min_lift), G0)
-
-"a₀ ↦ {" * join(node_name.(PCC.origins(min_lift)[R[1]]) .* "₄", ", ") * "}"
-
-PCC.n_nodes(PCC.graph(sum_lift)), PCC.n_nodes(PCC.graph(min_lift))
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
