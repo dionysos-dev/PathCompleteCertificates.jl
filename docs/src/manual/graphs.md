@@ -6,7 +6,7 @@ CurrentModule = PathCompleteCertificates
 
 The graph is the object of study here, not an internal device. This page is
 what a certificate graph is, when it is sound, how to build one and what can
-be read off it. [Lifts](@ref), [Comparing graphs](@ref) and
+be read off it. [Comparing graphs](@ref) and
 [Refinement: designing the graph](@ref) are what to do with one.
 
 ## What a certificate graph is
@@ -57,7 +57,7 @@ entry point skips the check.
 !!! warning "`path_complete = false` is an assertion, not a question"
     Assert it wrongly and you get a certificate that certifies nothing, with no
     error and no warning. It is for a graph whose construction guarantees the
-    property, such as a lift of a path-complete graph, which is how
+    property, such as a refinement of a path-complete graph, which is how
     [`refine`](@ref) uses it after its first step.
 
 ## Three predicates
@@ -103,8 +103,8 @@ seed
 
 A higher De Bruijn order buys a tighter bound at exponential cost, and spends
 its nodes on remembering the last `k` modes whether or not that is where the
-certificate is tight. The alternatives are the three pages that follow:
-[Lifts](@ref) transform a graph, [Comparing graphs](@ref) orders two, and
+certificate is tight. The alternatives are the two pages that follow:
+[Comparing graphs](@ref) orders two graphs, and
 [Refinement: designing the graph](@ref) grows one from its certificate.
 
 ## The dual graph
@@ -123,7 +123,7 @@ A [`WordGraph`](@ref) lets an edge read a sequence of modes
 [`expanded_form`](@ref) is the letter graph reading the same language with one
 fresh node per intermediate step ([ahmadi2014joint](@cite), Def. 2.1), and a
 word graph is path-complete exactly when its expanded form is (Def. 2.2). The
-product lifts write words; for stability the edge inequality then scales as
+product refinements write words; for stability the edge inequality then scales as
 ``\gamma^{dk}`` over a word of length ``k``.
 
 Words are sound for **stability only**: an inequality on a product bounds the

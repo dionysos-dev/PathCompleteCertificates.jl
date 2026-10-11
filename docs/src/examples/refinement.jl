@@ -71,7 +71,7 @@ exact = PCC.refine(TEMPLATE, PCC.de_bruijn(1, 2), rotations; optimizer = OPTIMIZ
 
 PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
-# !!! note "Why the lift splits per edge"
+# !!! note "Why the split is per edge"
 #     [`ForwardEdgeSplit`](@ref) makes one copy per outgoing **edge**. The paper
 #     splits per distinct **successor** — and the seed's only successor is itself,
 #     so that grain could not take a single step here.
@@ -114,7 +114,7 @@ plot!(
     label = "de_bruijn",
 )
 
-# At two nodes the bounds coincide: the edge-grained lift of the memoryless graph
+# At two nodes the bounds coincide: the edge-grained split of the memoryless graph
 # is the *transpose* of `de_bruijn(1, 2)` — co-complete where that one is
 # complete — and on this system the two certify the same rate. At four nodes they
 # part: refinement reaches `0.9043` where `de_bruijn(2, 2)` stops at `0.9055`.
@@ -156,21 +156,20 @@ shapes
 # aggregates the node functions with a maximum and the unit ball is their
 # *intersection* — convex, and gaining a facet per node. That is the opposite of
 # the primal De Bruijn case, where the aggregation is a minimum and the ball is a
-# non-convex union; the lift builds the dual family.
+# non-convex union; the split builds the dual family.
 
 PCC.is_co_complete.(PCC.graphs(trace))
 
 # ## Soundness
 #
-# A lift that lost path-completeness would produce certificates that certify
-# nothing, silently. It does not, and this is checkable rather than asserted:
+# A refinement that lost path-completeness would produce certificates that
+# certify nothing, silently. It does not, and this is checkable rather than
+# asserted:
 
 all(graph -> PCC.is_path_complete(graph, 1:length(A)), PCC.graphs(trace))
 
 # !!! note "Path-completeness *is* the whole soundness argument"
-#     A lift is defined as a map on graphs preserving it, so the check above is
-#     the guarantee. A template's closure properties decide something else —
-#     whether the lift is *valid*, meaning the lifted graph is no **worse** — and
-#     the forward lifts need none, since each copy inherits the split node's
-#     function. [`refine`](@ref) takes a [`QuadraticTemplate`](@ref) because that
-#     is what is tested.
+#     A refinement is a map on graphs preserving it, so the check above is the
+#     guarantee. Being no **worse** needs nothing from the template either: each
+#     copy inherits the split node's function. [`refine`](@ref) takes a
+#     [`QuadraticTemplate`](@ref) because that is what is tested.

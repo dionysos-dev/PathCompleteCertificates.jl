@@ -4,25 +4,53 @@ CurrentModule = PathCompleteCertificates
 
 # Refinement reference
 
-Neither axis, and for the same reason as [`common`](@ref): [`refine`](@ref) reads
-the graph, a template and a problem at once. It is the package's one loop that
-*designs* the certificate rather than solving for one on a graph you supplied,
-and it names no problem: what it needs from one are the methods
+A **refinement** transforms a path-complete graph into one that is no worse
+for every template; [`refine`](@ref) applies one where a certificate is tight
+and repeats. The loop reads the graph, a template and a problem at once, so it
+belongs to neither axis, and it names no problem: what it needs from one are
 [`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref) of the problem interface.
+[`optimality_gap`](@ref). See [Refinement: designing the graph](@ref) for the
+picture. A new refinement is one file answering [`scope`](@ref) and
+[`refine`](@ref).
 
-The graph operations it drives are in the [Lift reference](@ref).
-
-## The loop
+## The interface
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["refinement/loop.jl"]
+Pages   = ["refinements/abstract.jl"]
+```
+
+## The dual of a refinement
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/dual.jl"]
+```
+
+## Splitting nodes along edges
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/split.jl"]
+```
+
+## Folding edges into words
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/product.jl"]
 ```
 
 ## Strategies
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["refinement/strategies.jl"]
+Pages   = ["refinements/strategies.jl"]
+```
+
+## The loop
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["refinements/loop.jl"]
 ```

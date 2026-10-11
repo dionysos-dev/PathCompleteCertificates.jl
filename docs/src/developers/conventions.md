@@ -170,45 +170,56 @@ Deciding it is PSPACE-complete, so it is checked once per solve rather than once
 caller whose graph is large or whose construction already guarantees it. It must not become the
 default: the failure it guards against is silent and unsound.
 
-## 5. Lifts, ordering, and the two things that are not axes
+## 5. Lifts, refinements, and the two things that are not axes
 
-**A lift is sound by definition; the template decides whether it *improves*.** Debauche, Della
-Rossa and Jungers define a lift (Def. 5) as any map on graphs with `L(G)` path-complete whenever
-`G` is. Path-completeness is the soundness condition, so a certificate on a lifted graph always
-certifies the system. What the closure properties buy is **validity** (Def. 6): the guarantee
-`G ≤_V L(G)`, that the lift never makes the bound *worse*. Break it and you get a worse bound,
-visible as soon as you solve.
+Both transform a path-complete graph into a path-complete graph, which is the literature's
+definition of a lift (Debauche, Della Rossa and Jungers, Def. 5). They are kept apart by
+purpose. **A lift compares graphs**: it is the lift of an operation, its nodes stand for
+combinations of the original nodes, and when the lifted `G` simulates `H` then `G ≤_V H` for every
+template closed under that operation. It never improves a graph, except the composition lift.
+**A refinement improves a graph**: it is valid for every template by construction, the `origins`
+being the simulation that proves it (Def. 6(c)), and `refine` applies one where a certificate is
+tight.
 
-Validity is answered through **properties**, never by dispatching on the concrete template type,
-which would need one method per (lift, template) pair: the *n × m* explosion §1 exists to avoid.
+Validity of a lift is answered through **properties**, never by dispatching on the concrete
+template type, which would need one method per (lift, template) pair: the *n × m* explosion §1
+exists to avoid.
 
 ```julia
 # --- src/operations.jl: the vocabulary both axes and the lifts share.
 Addition(), Maximum(), Minimum(), Composition(), InverseComposition()   # <: Operation; `dual` pairs them
 
-# --- Template axis: what it is closed under, and how its per-node data follows a lift.
+# --- Template axis: what it is closed under, and how its per-node data follows a step.
 is_closed_under(template, ::Operation, system)   # default false; composition reads the system
 reindex(template, origins)                       # default identity; polyhedral templates index their data
 
-# --- A lift: one struct, its scope, its call, what it requires.
-scope(lift)                                      # Global() or Local()
-(lift)(graph)  /  (lift)(graph, edges)           # returns a Lifted: the graph and the origin of every node
-requirements(lift)                               # a tuple of operations; () for the four local lifts
-is_valid(lift, template, system)                 # written ONCE against the two; one cited override exists
-dual(lift)                                       # DualLift: conjugation by the dual graph; every backward lift
+# --- A lift (src/lifts/): two methods to implement, two inherited.
+lift(L, graph)                                   # returns a Lifted: the graph and what every node stands for
+requirements(L)                                  # a tuple of operations; () for the identity lift
+simulation(L, G, H; optimizer)                   # the witness that lift(L, G) simulates H; overridden where cheaper
+is_valid(L, template, system)                    # written ONCE against the two; one cited override exists
+dual(L)                                          # DualLift: conjugation by the dual graph; simulation on the duals
+compare(G, H; templates, system, optimizer)      # the one entry point: every lift, a Comparison
 
-# --- Problem axis: what `refine` reads, generic in the problem.
+# --- A refinement (src/refinements/): two methods to implement.
+scope(R)                                         # Global() or Local()
+refine(R, graph, edges) / refine(R, graph)       # returns a Refined: the graph and the origin of every node
+dual(R)                                          # DualRefinement; every backward atom
+refine(template, graph, problem; strategy)       # the one entry point: the loop
+
+# --- Problem axis: what the loop reads, generic in the problem.
 best_certificate(template, graph, problem; optimizer, kwargs...)   # default certify; stability: jsr_bound
 objective(certificate)                                              # smaller is better
 optimality_gap(certificate; kwargs...)                              # default Inf; stability: the bracket and Theorem 4
 edge_slacks(certificate)                                            # one method per problem, through domination_slack
 ```
 
-Use the papers' word: **valid**, not "admissible". A new lift is one file in `src/lifts/` and
-touches neither axis; a new operation is one struct in `operations.jl`; a strategy for `refine`
-is any callable `(certificate; atol) -> Vector{Lifted}`. The subset lifts (`MinLift`, `MaxLift`,
-`SumLift`) never move the bound; the orders they stand for are decided in `src/ordering.jl` by a
-relation, a map or a linear program, never by building them.
+Use the papers' word: **valid**, not "admissible". A new lift is one file in `src/lifts/`, a new
+refinement one file in `src/refinements/`, and neither touches an axis; a new operation is one
+struct in `operations.jl`; a strategy for `refine` is any callable `(certificate; atol) ->
+Vector{Refined}`. The min and max lifts are never built to decide anything: a relation decides in
+polynomial time what they exhibit in exponential size, and the sum lift over every size is a
+linear program.
 
 **Words on edges are a stability feature.** A `WordGraph` edge reads several modes and imposes
 one inequality on their product; it bounds the growth rate and says nothing about the states

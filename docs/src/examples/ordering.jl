@@ -5,11 +5,9 @@
 # the question the package is built around — the graph is the object of study,
 # not a device for a bound — and its answer depends on what the template is
 # closed under. This example decides it on the five graphs of
-# [debauche2023ordering](@cite) and its repeatability package, hands back a
-# witness for every verdict, and confirms each with certified rates.
-#
-# No exponential lift is built to decide anything. Two are built at the end,
-# as exhibits.
+# [debauche2023ordering](@cite) and its repeatability package with one call,
+# reads the witness behind every verdict, and confirms each with certified
+# rates.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -114,30 +112,57 @@ all(g -> PCC.is_path_complete(g, 1:2), GRAPHS)
     (name, g) in zip(NAMES, GRAPHS)
 ]
 
-# ## For every template: a map
+# ## One call
 #
-# The order that holds whatever the template is a labelled graph homomorphism
-# ([philippe2017path](@cite)): a map from the nodes of `G2` to those of `G1`
-# carrying every edge of `G2` onto an edge of `G1` with the same mode. Any
-# certificate on `G1`, read through the map, is then one on `G2`. Here none
-# exists: `G2` has a self-loop and `G1` has none — the paper's Example 1.
+# [`compare`](@ref)`(G, H)` decides whether `H` is no worse than `G`, written
+# ``G \le_V H``: every system certified on `G` in a template ``V`` is certified
+# on `H` in the same template. It tries every lift of the literature, cheapest
+# first, and records which ones found a simulation of `H` by the lifted `G`.
+# Given templates and the system they will be read on, it also says for which
+# of them the verdict holds.
 
-PCC.simulation(G1, G2) === nothing
+A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
+system = PCC.switched_system(A)
+problem = PCC.StabilityProblem(system)
 
-# ## Closed under addition: a matrix
+QUADRATIC = PCC.QuadraticTemplate()
+COPOSITIVE = PCC.LinearCopositiveTemplate()
+DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
+TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
+
+c12 = PCC.compare(G1, G2; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+PCC.lifts(c12)
+
+# Six lifts were tried. The first, the identity lift, is the order that holds
+# for every template ([philippe2019complete](@cite)): a map from the nodes of
+# `G2` to those of `G1` carrying every edge onto an edge with the same mode.
+# None exists, since `G2` has a self-loop and `G1` has none — the paper's
+# Example 1. Three lifts did find one:
+
+first.(PCC.witnesses(c12))
+
+# The sum lift's is the verdict the paper is about, and it carries the other
+# two with it: whenever a sum lift of `G1` simulates `G2`, so do its min and
+# max lifts ([debauche2024thesis](@cite), Cor. 7.80). Together they settle the
+# three templates — the quadratic and copositive norms add, the dual copositive
+# norms are closed under maximum.
+
+PCC.templates(c12)
+
+# ## Reading the witness: a matrix
 #
-# For a template closed under addition — quadratic forms, say — a *sum* of node
-# functions is a candidate too, and the paper builds a certificate on `G2` from
-# one on `G1` by hand: ``W_a = V_a + V_c``, ``W_b = V_a + V_b``, and so on. The
-# package writes such a construction as a nonnegative integer matrix ``C`` with
-# ``W = C\,V`` and finds it by a linear program, [`conic_witness`](@ref). The
-# program is **complete** for this order: it is feasible exactly when some sum
-# lift of `G1` simulates `G2` ([debauche2023ordering](@cite), Thm. 2). Rows are
-# the nodes of `G2`, columns those of `G1`.
+# For a template closed under addition a *sum* of node functions is a candidate
+# too, and the paper builds a certificate on `G2` from one on `G1` by hand:
+# ``W_a = V_a + V_c``, ``W_b = V_a + V_b``, and so on. The sum lift's witness is
+# that construction as a nonnegative integer matrix ``C`` with ``W = C\,V``,
+# found by a linear program that is **complete** for the order: feasible
+# exactly when some sum lift of `G1` simulates `G2`
+# ([debauche2023ordering](@cite), Thm. 2). Rows are the nodes of `G2`, columns
+# those of `G1`.
 
-C = PCC.conic_witness(G1, G2; optimizer = OPTIMIZER)
+C = Dict(PCC.witnesses(c12))[PCC.SumLift()]
 
-# Read off, it is the paper's construction. The program has several solutions,
+# Read off, it is the paper's construction; the program has several solutions
 # and this is one of them.
 
 combination(row) = join(
@@ -150,11 +175,6 @@ combination(row) = join(
 # A matrix is what you check by hand. Take a quadratic certificate on `G1` for
 # the paper's system, combine its node matrices with ``C``, and every edge
 # inequality of `G2` holds at the same rate: the slack of each is nonnegative.
-
-A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
-QUADRATIC = PCC.QuadraticTemplate()
 
 bound(template, g) = PCC.jsr_bound(
     template,
@@ -185,63 +205,43 @@ slacks = [
 
 all(>=(-1e-6), slacks)
 
-# [`order_witness`](@ref) is the one entry point. It reads the template's
-# closures on the system and runs only the procedures they entitle it to — the
-# map always, the linear program here — and names the one that answered.
-# [`is_no_worse`](@ref) is its Boolean, in the literature's reading
-# ``G_1 \le_V G_2``: `G2` is no worse than `G1`.
+# ## The same two graphs, ordered differently by the template
+#
+# `G4` against the one-node graph. It is complete and co-complete, so both
+# subset lifts simulate `G0` by the full set of its nodes: the minimum of its
+# node functions is a common function, and so is the maximum. No sum lift
+# does, and the linear program says so.
 
-witness = PCC.order_witness(G1, G2; template = QUADRATIC, system, optimizer = OPTIMIZER)
-witness.kind
+c40 = PCC.compare(G4, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+first.(PCC.witnesses(c40))
 
 #-
 
-PCC.is_no_worse(G2, G1; template = QUADRATIC, system, optimizer = OPTIMIZER)
+Dict(PCC.witnesses(c40))[PCC.MaxLift()]
 
-# ## A graph that buys nothing
-#
-# `G3` has five nodes and twelve edges. For any template closed under addition
-# it certifies nothing that the one-node graph would not: the program between
-# `G3` and `G0` has a solution, a single row.
+# So `G4` buys nothing over a common function for the copositive templates —
+# the primal norms by the min lift, valid for them on positive systems without
+# closure ([debauche2024thesis](@cite), Thm. 7.43), the dual norms by the max
+# lift — and is strictly better for the quadratic one, since the program is
+# complete and found nothing.
 
-C3 = PCC.conic_witness(G3, G0; optimizer = OPTIMIZER)
+PCC.templates(c40)
 
-# Whenever ``V`` certifies `G3`, ``2V_a + V_b + V_c + 2V_d + 2V_e`` is a common
-# Lyapunov function. The paper proves this through the 8-sum lift of `G3`, whose
-# nodes are the 495 multisets of eight of its nodes; the program never builds it.
-#
-# `G4`, also five nodes and twelve edges, is different. The program has no
-# solution, and since it is complete, `nothing` is a proof: no sum lift of `G4`
-# simulates `G0`, so for some addition-closed template and some system `G4`
-# is strictly better than a common function.
+# `G3`, also five nodes and twelve edges, is different: the program has a
+# solution, a single row, so for every addition-closed template it certifies
+# nothing the one-node graph would not. Whenever ``V`` certifies `G3`,
+# ``2V_a + V_b + V_c + 2V_d + 2V_e`` is a common Lyapunov function. The paper
+# proves this through the 8-sum lift of `G3`, whose nodes are the 495 multisets
+# of eight of its nodes; the program never builds it.
 
-PCC.conic_witness(G4, G0; optimizer = OPTIMIZER) === nothing
+c30 = PCC.compare(G3, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+Dict(PCC.witnesses(c30))[PCC.SumLift()]
 
-# ## The same two graphs, ordered differently by the template
-#
-# For a template closed under maximum, `G4` cannot beat `G0`. It is co-complete,
-# so the maximum of its node functions is a common Lyapunov function, and that
-# maximum is in the template. [`closed_subgraph`](@ref) finds the largest set of
-# nodes with this property; here it is all of them.
+# The other way round needs no lift at all: the one-node graph simulates every
+# graph, so the identity lift answers and nothing else is tried.
 
-PCC.closed_subgraph(G4, 1:2; direction = :in)
-
-# The dual copositive norms ``\max_i x_i / v_i`` are closed under maximum, and
-# for them [`order_witness`](@ref) decides the order between `G4` and `G0` in
-# the other direction — `G0` is no worse than `G4` — by a relation on the dual
-# graphs rather than by the linear program. The relation pairs the single node
-# of `G0` with every node of `G4`.
-
-witness = PCC.order_witness(G4, G0; template = PCC.DualCopositiveTemplate(), system)
-witness.kind, witness.data
-
-# [`simplify`](@ref) draws the conclusion. For that template `G4` is the
-# one-node graph; for the quadratic one, it stays as it is.
-
-(
-    PCC.n_nodes(PCC.simplify(G4; template = PCC.DualCopositiveTemplate(), system)),
-    PCC.n_nodes(PCC.simplify(G4; template = QUADRATIC, system)),
-)
+c04 = PCC.compare(G0, G4; templates = TEMPLATES, system)
+PCC.lifts(c04), PCC.templates(c04)
 
 # ## The rates agree
 #
@@ -251,25 +251,17 @@ witness.kind, witness.data
 # and `G0`, and is strictly lower on `G4` than on `G0`. The dual copositive row
 # is equal on `G0`, `G3` and `G4`, which is the collapse.
 
-TEMPLATES = [
-    ("quadratic", QUADRATIC),
-    ("copositive", PCC.LinearCopositiveTemplate()),
-    ("dual copositive", PCC.DualCopositiveTemplate()),
+RATES = [
+    (name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in (
+        ("quadratic", QUADRATIC),
+        ("copositive", COPOSITIVE),
+        ("dual copositive", DUAL_COPOSITIVE),
+    )
 ]
-
-RATES =
-    [(name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in TEMPLATES]
 
 rows = [hcat(name, round.(rates; digits = 4)') for (name, rates) in RATES]
 
 vcat(reshape(["template"; NAMES], 1, :), rows...)
-
-# The primal copositive norms ``c^\top x`` are not closed under minimum, yet
-# their row collapses on `G3` and `G4` as well. On positive systems the min lift
-# is valid for them without closure (Debauche, Thm. 7.43), one theorem the
-# package records as an override of [`is_valid`](@ref):
-
-PCC.is_valid(PCC.MinLift(), PCC.LinearCopositiveTemplate(), system)
 
 # Drawn, the dependence on the template is one picture: `G4` sits below `G0`
 # for the quadratic template and on it for the two copositive ones, while `G2`
@@ -288,38 +280,35 @@ figure
 
 # ## The lifts, as exhibits
 #
-# The theory speaks of lifts: the 2-sum lift of `G1`, whose nodes are the
-# multisets of two of its nodes, simulates `G2`; the min lift of `G4`, whose
-# nodes are the subsets, simulates `G0`. Both can be built, and they do — this
-# is what the repeatability package prints. Nothing above needed them, which is
-# the point: the relation and the linear program decide in polynomial time what
-# the lifts exhibit in exponential size.
+# The theory speaks of lifted graphs: the 2-sum lift of `G1`, whose nodes are
+# the multisets of two of its nodes, simulates `G2`; the min lift of `G4`,
+# whose nodes are the subsets, simulates `G0`. Both can be built with
+# [`lift`](@ref), and [`simulation`](@ref) on a lift of fixed size does build
+# it — this is what the repeatability package prints. Nothing above needed
+# them: the relation and the linear program decide in polynomial time what the
+# lifts exhibit in exponential size.
 
-sum_lift = PCC.SumLift(2)(G1)
-R_sum = PCC.simulation(PCC.graph(sum_lift), G2)
+R_sum = PCC.simulation(PCC.SumLift(2), G1, G2)
 
 [
-    node_name(h) *
-    "₂ ↦ {" *
-    join(node_name.(PCC.origins(sum_lift)[R_sum[h]]) .* "₁", ", ") *
-    "}" for h in 1:PCC.n_nodes(G2)
+    node_name(h) * "₂ ↦ {" * join(node_name.(R_sum[h]) .* "₁", ", ") * "}" for
+    h in 1:PCC.n_nodes(G2)
 ]
 
 #-
 
-min_lift = PCC.MinLift()(G4)
-R = PCC.simulation(PCC.graph(min_lift), G0)
+R_min = PCC.simulation(PCC.MinLift(), G4, G0)
 
-"a₀ ↦ {" * join(node_name.(PCC.origins(min_lift)[R[1]]) .* "₄", ", ") * "}"
+"a₀ ↦ {" * join(node_name.(R_min[1]) .* "₄", ", ") * "}"
 
-# Fifteen and thirty-one nodes, for a question the relation answered on five.
+# Fifteen and thirty-one nodes, for questions answered on five.
 
-PCC.n_nodes(PCC.graph(sum_lift)), PCC.n_nodes(PCC.graph(min_lift))
+PCC.n_nodes(PCC.graph(PCC.lift(PCC.SumLift(2), G1))),
+PCC.n_nodes(PCC.graph(PCC.lift(PCC.MinLift(), G4)))
 
 # !!! note "Where this sits"
-#     [`order_witness`](@ref) answers *is this graph no worse than that one*,
-#     for a template, whatever the system. [`refine`](@ref) is the other
+#     [`compare`](@ref) answers *is this graph no worse than that one*, for
+#     which templates, whatever the system. [`refine`](@ref) is the other
 #     direction: start from a graph and build a better one where the certificate
-#     is tight. [Lifts](@ref) explains what connects them — a lift is valid for
-#     a template exactly when the lifted graph is no worse, and that is read from
-#     the same closures.
+#     is tight. [Comparing graphs](@ref) explains the lifts and what each one
+#     decides; [Refinement: designing the graph](@ref) the steps that improve.

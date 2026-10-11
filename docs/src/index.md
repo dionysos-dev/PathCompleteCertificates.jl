@@ -5,8 +5,8 @@ CurrentModule = PathCompleteCertificates
 # PathCompleteCertificates.jl
 
 Certificates for switched systems, built on **path-complete graphs**, with the
-graph as the object you work on: build one, lift it, compare it with another,
-and refine it against its own certificate.
+graph as the object you work on: build one, compare it with another, and
+refine it against its own certificate.
 
 ## One structure, three problems
 
@@ -36,27 +36,28 @@ axes, **templates** and **problems**, and the graph cuts across both.
 
 ## What you can do
 
-| | | Read |
-| :-- | :-- | :-- |
-| **Certify** | solve for a certificate on a graph you supply, with any template the problem accepts | [Problems](@ref); [Stability: a first certificate](@ref) |
-| **Build** | De Bruijn graphs, the seed of a system, duals, graphs reading words, graphs for constrained switching | [Path-complete graphs](@ref) |
-| **Compare** | decide whether one graph is guaranteed no worse than another for a template, and get the witness | [Comparing graphs](@ref); [Comparing graphs: which one is better?](@ref) |
-| **Refine** | grow a graph where its certificate is tight, with any lift of the literature, until the bound is proved exact | [Refinement: designing the graph](@ref); [Refinement: letting the graph design itself](@ref) |
+| | Acts on | Does | Read |
+| :-- | :-- | :-- | :-- |
+| **Certify** | a template, a graph and a problem | solve for a certificate on the graph, with any template the problem accepts | [Problems](@ref); [Stability: a first certificate](@ref) |
+| **Build** | a system, or nothing | De Bruijn graphs, the seed of a system, duals, graphs reading words, graphs for constrained switching | [Path-complete graphs](@ref) |
+| **Compare** | two graphs, and optionally templates | decide whether one graph is no worse than the other, for which templates, with the witness | [Comparing graphs](@ref); [Comparing graphs: which one is better?](@ref) |
+| **Refine** | a template, a graph and a problem | grow the graph where its certificate is tight, with any refinement of the literature, until the bound is proved exact | [Refinement: designing the graph](@ref); [Refinement: letting the graph design itself](@ref) |
 
 ```
    system ──┐                                     ┌─▶ rate, margin or gains
  template ──┼─▶ certify ─▶ certificate ───────────┤
     graph ──┘      ▲                              └─▶ common function, slacks, tight edges
       ▲            │                                             │
-      │     lift · dual · compare                                │
+      │       dual · compare                                     │
       └───────────────────────────── refine ◀────────────────────┘
 ```
 
-Every verb that acts on the graph does so without a solver. A lift maps a
-path-complete graph to a path-complete graph, so it is sound whatever the
-template; a comparison is a statement about every system at once. What the
-template decides is whether a lift is *valid*, guaranteed not to make the bound
-worse, and that is read from the closure properties the template declares.
+Comparing two graphs needs no solver beyond a linear program, and its verdict
+holds for every system at once: it is decided by a simulation between a
+*lift* of one graph and the other, one lift per closure property a template
+may declare. Refining a graph is solver-driven: each step reads where the
+certificate is tight and applies a *refinement*, a transformation that is no
+worse for every template.
 
 ## Where to start
 
@@ -80,8 +81,8 @@ The other examples cover [safety](@ref "Safety: a barrier certificate"),
 ## Scope
 
 Stability, safety and optimal control are solved; [What works with what](@ref)
-says which template each accepts. The graph layer, lifting, comparing, refining
-and words on edges, is written for stability, where the theory is.
+says which template each accepts. The graph layer, comparing, refining and
+words on edges, is written for stability, where the theory is.
 
 Three things to know before reading a result. A template is passed as an
 instance, never as a type, because some carry data. A bound is always an upper

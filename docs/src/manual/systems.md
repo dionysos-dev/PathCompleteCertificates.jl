@@ -40,7 +40,8 @@ must read in either case, and every problem checks the graph against it.
 
 [`seed`](@ref)`(system)` is the first graph that reads it: one node with a
 loop per mode when switching is arbitrary, the automaton itself otherwise. It
-is where [`refine`](@ref) starts, and every lift preserves what it reads.
+is where [`refine`](@ref) starts, and every refinement preserves what it
+reads.
 
 ## Runs
 

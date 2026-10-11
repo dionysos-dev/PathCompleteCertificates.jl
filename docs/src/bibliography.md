@@ -19,8 +19,8 @@ what path-completeness means for one.
 [philippe2017path](@cite) is the authority for [Path-complete graphs](@ref):
 Def. II.1 is [`is_path_complete`](@ref), Def. III.2 is [`is_complete`](@ref)
 and [`is_co_complete`](@ref), and Cor. III.3 with Thm. III.8 are what
-[`common`](@ref) dispatches on. Its Thm. IV.4 is the linear program of
-[`conic_witness`](@ref).
+[`common`](@ref) dispatches on. Its Thm. IV.4 is the linear program behind
+[`SumLift`](@ref)`()`.
 
 [philippe2019complete](@cite) is the template-free ordering by simulation,
 [`simulation`](@ref): Def. 3.1 defines it and Thm. 3.5 shows it characterises
@@ -29,7 +29,8 @@ the order that holds for every template.
 [philippe2016stability](@cite) is constrained switching: the system's
 automaton as the language a graph must read, decided by
 `is_path_complete(graph, automaton)` and seeded by [`seed`](@ref). Its Def. 2
-is [`ProductLift`](@ref) and its Def. 3 is [`PathDependentLift`](@ref).
+is [`ProductRefinement`](@ref) and its Def. 3 is
+[`PathDependentRefinement`](@ref).
 
 ## Template sources
 
@@ -60,13 +61,15 @@ implemented here.
 
 [`StabilityProblem`](@ref) is [ahmadi2014joint](@cite) directly.
 
-## Sources for lifts and duality
+## Sources for lifts, refinements and duality
 
 [debauche2021comparison](@cite) defines a lift as any map on graphs preserving
-path-completeness ([`AbstractLift`](@ref), its Def. 5), validity as the
-guarantee of no worse a bound ([`is_valid`](@ref), Def. 6), and the sum, min,
-max and composition lifts ([`SumLift`](@ref), [`MinLift`](@ref),
-[`MaxLift`](@ref), [`CompositionLift`](@ref); Defs. 8, 9 and 10).
+path-completeness (its Def. 5), validity as the guarantee of no worse a bound
+([`is_valid`](@ref), Def. 6), and the sum, min, max and composition lifts
+([`SumLift`](@ref), [`MinLift`](@ref), [`MaxLift`](@ref),
+[`CompositionLift`](@ref); Defs. 8, 9 and 10). Its Def. 6(c), validity for
+every template, is what a refinement ([`AbstractRefinement`](@ref)) has by
+construction.
 
 [debauche2024thesis](@cite) supplies the rest of [Duality](@ref): the dual
 graph (Def. 6.3), the dual certificate (Lemma 6.25), the dual lift (Def. 7.4)
@@ -80,7 +83,9 @@ template without closure (Thm. 7.43).
 [`ForwardEdgeProduct`](@ref) and [`BackwardEdgeProduct`](@ref), Defs. 4 to 7.
 
 [jongeneel2025ordering](@cite) is the `T`-fold [`CompositionLift`](@ref),
-Def. III.1, and the reason it needs invertible dynamics.
+Def. III.1, the reason it needs invertible dynamics, the counterexample to its
+completeness (Ex. IV.3) and its use as a step of [`refine`](@ref) (§IV-A,
+Ex. IV.4).
 
 [abate2026categorical](@cite) rederives the min, max and sum lifts from the
 algebraic theory of each operation; its Example III.23 relates its sum lift to
@@ -89,15 +94,18 @@ lifts and is not yet available.
 
 ## Sources for comparing graphs
 
-[debauche2023ordering](@cite) proves the linear program complete for
-templates closed under addition, Thm. 2, and its five graphs are
+[philippe2017path](@cite) is the linear program of the sum lift,
+`simulation(SumLift(), G, H)`, Def. IV.2 and Thm. IV.4;
+[debauche2023ordering](@cite) proves it complete for templates closed under
+addition, Thm. 2, and its five graphs are
 [Comparing graphs: which one is better?](@ref).
 
-[debauche2024thesis](@cite) characterises the order for `min`-closed and
-`max`-closed templates by the simulation of the min and max lifts (Thms. 8.1
-and 8.5), which [`simulation_relation`](@ref) decides without building them,
-and shows that complete graphs buy nothing over one node for `min`-closed
-templates (Cor. 7.53), which is [`simplify`](@ref).
+[debauche2022necessary](@cite) and [debauche2024thesis](@cite) characterise
+the order for `min`-closed and `max`-closed templates by the simulation of the
+min and max lifts (Thms. 3 and 4; Thms. 8.1 and 8.5), which
+[`simulation_relation`](@ref) decides without building them, and the thesis
+shows that complete graphs buy nothing over one node for `min`-closed
+templates (Cor. 7.53).
 
 ## Sources for refinement
 

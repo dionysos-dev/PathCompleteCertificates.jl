@@ -28,29 +28,29 @@ mode per edge and say so.
 
 ## The graph layer
 
-Lifting, comparing, refining and words on edges are written for stability,
-where the theory is. [`refine`](@ref) is generic in the problem, reading only
+Comparing, refining and words on edges are written for stability, where the
+theory is. [`refine`](@ref) is generic in the problem, reading only
 [`best_certificate`](@ref), [`objective`](@ref) and
 [`optimality_gap`](@ref), but today only [`StabilityProblem`](@ref) answers
 them. Within stability it runs for every template that answers
 [`domination_slack`](@ref), which is how the loop reads where a certificate is
 tight:
 
-| | [`refine`](@ref) | [`order_witness`](@ref) |
-| :-- | :-: | :-: |
-| [`QuadraticTemplate`](@ref) | ✓ | map, linear program |
-| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ | map, linear program; min lift valid without closure |
-| [`DualCopositiveTemplate`](@ref) | ✓ ¹ | map, relation on the duals |
-| [`PolyhedralTemplate`](@ref) | ✓ | map; relation on the duals when the node matrices coincide |
-| [`ConicPolyhedralTemplate`](@ref) | ✓ | map |
-| [`SumOfSquaresTemplate`](@ref) | ✗ ³ | map, linear program |
+| | [`refine`](@ref) | lifts valid for [`compare`](@ref) |
+| :-- | :-: | :-- |
+| [`QuadraticTemplate`](@ref) | ✓ | identity, sum; composition if invertible |
+| [`LinearCopositiveTemplate`](@ref) | ✓ ¹ | identity, sum, min without closure; composition if nonnegative with no zero column |
+| [`DualCopositiveTemplate`](@ref) | ✓ ¹ | identity, max; sum through its dual |
+| [`PolyhedralTemplate`](@ref) | ✓ | identity; max when the node matrices coincide |
+| [`ConicPolyhedralTemplate`](@ref) | ✓ | identity |
+| [`SumOfSquaresTemplate`](@ref) | ✗ ³ | identity, sum; composition if invertible |
 
 ³ No `domination_slack` yet, so the loop cannot read where that template is
 tight.
 
-The second column is what the template's closures entitle
-[`order_witness`](@ref) to run; see [Comparing graphs](@ref). A template with
-per-node data follows a lifted graph through [`reindex`](@ref).
+The second column is what the template's closures entitle [`compare`](@ref)
+to conclude from; see [Comparing graphs](@ref). A template with per-node data
+follows a refined graph through [`reindex`](@ref).
 
 ## The two gaps are different
 

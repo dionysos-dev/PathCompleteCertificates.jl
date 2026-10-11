@@ -9,8 +9,78 @@ Every other part of this package takes a graph you chose and solves on it.
 about and grows the one the system needs, guided by where the certificate is
 under strain ([ninite2026lifting](@cite)).
 
+A **refinement** is a transformation of a path-complete graph that is no worse
+for every template: a copy inherits its origin's function, a product chains
+two edge inequalities. The literature calls these lifts too; here the word is
+kept for the [lifts that compare graphs](@ref "Comparing graphs"), and the
+transformations that improve one are refinements.
+
 This page explains the whole loop.
 [Refinement: letting the graph design itself](@ref) runs it.
+
+## The four atoms
+
+Every refining construction in the literature is one of two local operations
+at an edge ``(s, d, w)``, forward or backward ([athanasopoulos2019polyhedral](@cite),
+Defs. 4 to 7).
+
+| Refinement | At one edge `(s, d, w)` | Paper's name |
+| :-- | :-- | :-- |
+| [`ForwardEdgeSplit`](@ref) | a copy of `s` owning that outgoing edge and every incoming one | partial P\*-lift, Def. 7 |
+| [`BackwardEdgeSplit`](@ref) | a copy of `d` owning that incoming edge and every outgoing one | partial P-lift, Def. 6 |
+| [`ForwardEdgeProduct`](@ref) | replace it by `(s, d′, w·u)` for every `(d, d′, u)` | partial T-lift, Def. 4 |
+| [`BackwardEdgeProduct`](@ref) | replace it by `(s′, d, u·w)` for every `(s′, s, u)` | partial T\*-lift, Def. 5 |
+
+Drawn at the edge `s ─w─▶ d` of a graph where `s` also reads `u` to `f` and
+is entered by `a`, and `d` also is entered by `b` and leaves for `e`:
+
+```
+      before                      ForwardEdgeSplit               BackwardEdgeSplit
+
+ a ──v──▶ s ──w──▶ d ──x──▶ e     a ──v──▶ s′ ──w──▶ d ──x──▶ e   a ──v──▶ s ──w──▶ d′ ──x──▶ e
+          │        ▲              │                  ▲                     │
+          u        t              v                  t                     u    b ──t──▶ d ──x──▶ e
+          ▼        │              ▼                  │                     ▼
+          f        b              s ──u──▶ f         b                     f
+
+      ForwardEdgeProduct                              BackwardEdgeProduct
+
+ a ──v──▶ s ──w·x──▶ e                                a ──v·w──▶ d ──x──▶ e
+          │                                           │          ▲
+          u          b ──t──▶ d ──x──▶ e              v          t
+          ▼                                           ▼          │
+          f                                           s ──u──▶ f b
+```
+
+A split adds a node and splits the inequalities that passed through it; a
+product adds no node and writes a **word** on an edge, one inequality on
+``A_x A_w`` with nothing imposed on the state in between. A [`WordGraph`](@ref)
+carries words, every query accepts one, stability solves on one, and its
+[`expanded_form`](@ref) reads the same language with one mode per edge; for a
+template closed under composition the two certify the same rate, the word
+graph with fewer variables ([debauche2024thesis](@cite), Prop. 7.70).
+
+Each backward atom is the [`dual`](@ref) of the forward one. Where they are
+applied is the **locus**, and the classical hierarchies are the atoms at the
+full locus:
+
+- `ForwardEdgeSplit` on `outgoing_edges(graph, s)` is the forward lift at a
+  node of [ninite2026lifting](@cite), Def. 3, which [`refine`](@ref) uses by
+  default;
+- `BackwardEdgeSplit` on `edges(graph)` is the path-dependent lift of
+  [philippe2016stability](@cite), Def. 3, [`PathDependentRefinement`](@ref)`(1)`;
+  iterated from the one-node graph it is [`de_bruijn`](@ref);
+- either product on `edges(graph)` is [`ProductRefinement`](@ref)`(2)`, the
+  product lift of [philippe2016stability](@cite), Def. 2, which is self-dual.
+
+None of this needs anything from the template: give every copy the function of
+the node it came from and the old certificate is still feasible
+([ninite2026lifting](@cite), Thm. 3), and two chained edge inequalities imply
+the product's ([athanasopoulos2019polyhedral](@cite), Thm. 1). The one step
+that is not an atom is a lift, [`CompositionLift`](@ref), which can strictly
+improve a graph for templates closed under composition
+([jongeneel2025ordering](@cite), Ex. IV.4) and which [`Hierarchy`](@ref) accepts
+where it is valid.
 
 ## What a graph buys, and what it costs
 
@@ -44,63 +114,60 @@ At each step:
    bound up; the rest have slack. [`edge_slacks`](@ref) measures them,
    [`tight_edges`](@ref) names them, [`tight_subgraph`](@ref) keeps only them
    ([ninite2026lifting](@cite), Def. 4).
-3. **Propose.** A *strategy* reads the certificate and proposes lifted graphs:
-   where to apply which lift. The three strategies are below.
-4. **Lift.** A lift replaces part of the graph, a path-complete graph for a
-   path-complete graph. With `select = :first` the first proposal is taken;
-   with `select = :best` every proposal is solved and the lowest rate kept.
+3. **Propose.** A *strategy* reads the certificate and proposes refined
+   graphs: where to apply which refinement. The three strategies are below.
+4. **Refine.** With `select = :first` the first proposal is taken; with
+   `select = :best` every proposal is solved and the lowest rate kept.
 5. **Repeat** on the bigger graph.
 
-A split can never make the bound worse: give every copy the function the
-original node had and the old certificate is still feasible, so the rate can
-only fall or stay ([ninite2026lifting](@cite), Thm. 3). A product of two edges
-cannot either, since their two inequalities imply the product's. That is why
-the sequence of rates is monotone, and it needs nothing from the template,
-which is why the four local lifts are valid for all of them.
+A refinement never makes the bound worse, so the sequence of rates is
+monotone, and it needs nothing from the template.
 
 ## Three strategies
 
-A strategy is any callable `(certificate; atol) -> Vector{Lifted}`. The
+A strategy is any callable `(certificate; atol) -> Vector{Refined}`. The
 package ships the three rules of the literature.
 
 | Strategy | Proposes | Source |
 | :-- | :-- | :-- |
 | [`SplitTightNode`](@ref), the default | one candidate: [`ForwardEdgeSplit`](@ref) on the out-star of the node held at the most tight outgoing edges | [ninite2026lifting](@cite), Def. 3 |
-| [`LiftTightEdges`](@ref) | every local lift at every tight edge; with `select = :best` the one with the smallest rate is kept | [athanasopoulos2019polyhedral](@cite), Example 2 |
-| [`Hierarchy`](@ref)`(lift)` | one candidate: a global lift of the whole graph, or a local one at every edge | [philippe2016stability](@cite) for the path-dependent lift; [jongeneel2025ordering](@cite), Example IV.4, for the composition lift |
+| [`RefineTightEdges`](@ref) | every atom at every tight edge; with `select = :best` the one with the smallest rate is kept | [athanasopoulos2019polyhedral](@cite), Example 2 |
+| [`Hierarchy`](@ref)`(step)` | one candidate: a global refinement of the whole graph, a local one at every edge, or a lift | [philippe2016stability](@cite) for the path-dependent lift; [jongeneel2025ordering](@cite), §IV-A, for the composition lift |
 
-`LiftTightEdges` with `select = :best` is the procedure of Athanasopoulos and
+`RefineTightEdges` with `select = :best` is the procedure of Athanasopoulos and
 Jungers as they describe it: identify the edges whose constraints are active,
 solve again for each of them under each partial lift, and keep the lift with
 the smallest optimal value. On their Example 2 they report stability at the
 fifteenth iteration with 1533 edges; the benchmark under `bench/` runs the same
 instance on the fixed-facet polyhedral template.
 
-`Hierarchy(PathDependentLift(1))` from the one-node graph walks the De Bruijn
-hierarchy one order per step, which makes [`de_bruijn`](@ref) a special case
-of the loop and a baseline inside it.
+`Hierarchy(PathDependentRefinement(1))` from the one-node graph walks the De
+Bruijn hierarchy one order per step, which makes [`de_bruijn`](@ref) a special
+case of the loop and a baseline inside it. `Hierarchy(CompositionLift(1))` is
+accepted only where the lift is valid for the template on the system, since an
+invalid one may worsen the bound.
 
-## The lift
+## The split
 
 [`ForwardEdgeSplit`](@ref) on the out-star of a node splits it into one copy
 per outgoing **edge**.
 
 Ninite and Jungers split per distinct **successor**. That grain cannot
 separate two edges to the same successor, so a node held at exactly those
-stays held however often it is lifted, and the optimality certificate below,
+stays held however often it is split, and the optimality certificate below,
 which counts tight outgoing *edges*, is unreachable for it. Measured over seven
 seed and system combinations it never gives a better bound at equal node
 count, and on the memoryless graph it cannot take a single step.
 
 With one grain a copy simply **is** an outgoing edge, so the rule below counts
-edges rather than asking what a given lift can tell apart.
+edges rather than asking what a given refinement can tell apart.
 
 ## Choosing among bottlenecks
 
 Several nodes may qualify for the default strategy. The rule is:
 
 1. prefer the node with the **most** tight outgoing edges;
-2. break ties by the **cheapest** split, fewest outgoing edges, since the lift
+2. break ties by the **cheapest** split, fewest outgoing edges, since the split
    adds one node per edge and node count is the budget;
 3. break what remains by lowest node number.
 
@@ -115,11 +182,11 @@ differently between them.
 node with a loop per mode under arbitrary switching, the system's own
 automaton under constrained switching, so the loop reads the right language
 from the first step. `refine(template, graph, problem)` starts from a graph of
-yours. Path-completeness is checked on that first graph only; every lift
+yours. Path-completeness is checked on that first graph only; every refinement
 preserves it.
 
-The product lifts write words on the edges, so a run with
-[`LiftTightEdges`](@ref) may continue on a [`WordGraph`](@ref). Everything
+The products write words on the edges, so a run with
+[`RefineTightEdges`](@ref) may continue on a [`WordGraph`](@ref). Everything
 below still applies to it except the structural optimality test, which is
 stated on letter graphs and is skipped there; the cycle bracket is not.
 
@@ -131,12 +198,12 @@ things happened.
 | | |
 | :-- | :-- |
 | [`OPTIMAL`](@ref) | the rate **is** the joint spectral radius |
-| [`STALLED`](@ref) | `stall_max` lifts in a row bought nothing |
+| [`STALLED`](@ref) | `stall_max` steps in a row bought nothing |
 | [`DEPTH_EXHAUSTED`](@ref) | `depth_max` reached with the bound still falling |
 | [`STOPPED`](@ref) | the `stop` predicate held, `c -> c.rate < 1` being the usual one |
 | [`EXHAUSTED`](@ref) | the strategy proposed nothing, and the gap had not closed |
 
-The trace keeps every certificate and every [`Lifted`](@ref) step, so a run
+The trace keeps every certificate and every [`Refined`](@ref) step, so a run
 can be read back: [`rates`](@ref), [`lower_bounds`](@ref), [`graphs`](@ref)
 and the [`origins`](@ref) of each node.
 
@@ -235,7 +302,7 @@ Worth knowing if you are reading both.
 
 | | paper | here |
 | :-- | :-- | :-- |
-| lift | node-grained | edge-grained, the coarse grain being dominated, which makes the split rule and Theorem 4 literally the same test |
+| split | node-grained | edge-grained, the coarse grain being dominated, which makes the split rule and Theorem 4 literally the same test |
 | cycle bound | computed once the structural condition fires | checked every step, the only way the all-edges-tight case is ever certified |
 | tolerance escalation | restart the algorithm | re-read the same certificate; no solve repeated |
 | tie-breaking | unspecified | cheapest split, deterministic |

@@ -41,7 +41,7 @@ What the package adds to that framework is the graph as a first-class object:
 | **Certify** | stability, safety or optimal control on a graph you supply, with quadratic, copositive, polyhedral or sum-of-squares templates |
 | **Build** | De Bruijn graphs, the seed of a system, duals, graphs reading words, graphs for constrained switching |
 | **Compare** | decide whether one graph is guaranteed no worse than another for a template, with the witness: a map, a relation or an integer matrix |
-| **Refine** | grow a graph where its certificate is tight, with every lift of the literature, until the bound is proved to be the joint spectral radius |
+| **Refine** | grow a graph where its certificate is tight, with every refinement of the literature, until the bound is proved to be the joint spectral radius |
 
 ## How it relates to the other tools
 
@@ -80,7 +80,8 @@ discuss a feature, and see the Developer Docs for the setup, conventions and Git
 One thing to read before writing code: the package is organised along **two independent axes**,
 *template* (what the node functions are) and *problem* (what the edge inequality says), with the
 graph cutting across both. A new template is one file under `src/templates/`, a new problem one
-file under `src/problems/`, a new lift one file under `src/lifts/`. The
+file under `src/problems/`, a new lift one file under `src/lifts/`, a new refinement one
+file under `src/refinements/`. The
 [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
 page explains why, and what goes wrong when the structure is ignored.
 
@@ -88,7 +89,7 @@ page explains why, and what goes wrong when the structure is ignored.
 
 The [bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/)
 lists every paper the package implements, grouped by what each one underwrites: the
-predicates, the templates, the problems, the lifts and the ordering.
+predicates, the templates, the problems, the lifts and the refinements.
 
 ## Acknowledgements
 

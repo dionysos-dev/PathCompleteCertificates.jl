@@ -64,14 +64,25 @@ lifted and compared; it just carries no guarantee.
   the five [`Operation`](@ref)s: [`Addition`](@ref), [`Maximum`](@ref),
   [`Minimum`](@ref), [`Composition`](@ref) with the dynamics and
   [`InverseComposition`](@ref). They decide which lifts are *valid* for the
-  template and which procedure decides the order between two graphs. The table
-  of what each template declares is on the [Lifts](@ref) page.
+  template, hence which verdicts of [`compare`](@ref) hold for it.
+
+  | Template | `+` | `max` | `min` | `∘ A` |
+  | :-- | :-: | :-: | :-: | :-: |
+  | [`QuadraticTemplate`](@ref) | ✓ | | | ✓ if invertible |
+  | [`SumOfSquaresTemplate`](@ref) | ✓ | | | ✓ if invertible |
+  | [`LinearCopositiveTemplate`](@ref) | ✓ | | valid on positive systems ¹ | ✓ if `A ≥ 0`, no zero column |
+  | [`DualCopositiveTemplate`](@ref) | | ✓ | | |
+  | [`PolyhedralTemplate`](@ref) | | ✓ if the node matrices coincide | | |
+
+  ¹ Not closed as a set of functions, yet the min lift is valid for it on
+  positive linear systems ([debauche2024thesis](@cite), Thm. 7.43); the one
+  override of [`is_valid`](@ref).
 - **A dual.** [`has_dual`](@ref), [`dual`](@ref)`(template)` and
   `dual(template, V)`, the dual norm of a fitted function. Quadratic forms are
   self-dual and the copositive templates are each other's dual; the polyhedral
   and sum-of-squares templates have none here. See [Duality](@ref).
 - **Per-node data.** A template carrying something per node, such as the
-  facet matrices of [`PolyhedralTemplate`](@ref), follows a lifted graph
+  facet matrices of [`PolyhedralTemplate`](@ref), follows a refined graph
   through [`reindex`](@ref), which hands each new node the data of the node it
   came from.
 

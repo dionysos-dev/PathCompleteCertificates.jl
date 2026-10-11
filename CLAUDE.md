@@ -163,7 +163,7 @@ architecture before you read a line.
 
 ```
 src/
-├── PathCompleteCertificates.jl   include order, grouped and commented
+├── PathCompleteCertificates.jl   include order
 ├── operations.jl                 Addition, Maximum, Minimum, Composition, InverseComposition,
 │                                 and `dual`: what a template is closed under and a lift requires
 ├── systems/                      the input to every problem, and runs of it
@@ -178,7 +178,8 @@ src/
 │   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
 │   ├── languages.jl              is_path_complete against an automaton; seed(system)
 │   ├── dual.jl                   the dual graph: edges and words reversed
-│   ├── simulation.jl             simulation (a map), simulation_relation, closed_subgraph
+│   ├── simulation.jl             simulation (a map), simulation_relation: what the identity
+│   │                             and min lifts decide with
 │   ├── de_bruijn.jl              the De Bruijn family, primal and dual
 │   ├── observer.jl               the subset construction
 │   └── cycles.jl                 simple cycles, for the lower bound
@@ -196,20 +197,24 @@ src/
 │   ├── stability.jl
 │   ├── safety.jl
 │   └── optimal_control.jl
-├── lifts/                        transformations of the graph — not a third axis, an
-│                                 operation on one of the three things a certificate is
-│   ├── abstract.jl               AbstractLift, scope, Lifted, requirements, is_valid
-│   ├── dual.jl                   DualLift: every backward lift is the dual of a forward one
-│   ├── split.jl                  ForwardEdgeSplit at a locus; PathDependentLift
-│   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductLift
-│   ├── composition.jl            CompositionLift
-│   └── subsets.jl                MinLift, MaxLift, SumLift: exhibits, never built to decide
-├── refinement/                   designing the graph, rather than solving on a given one
-│   ├── strategies.jl             SplitTightNode, LiftTightEdges, Hierarchy
+├── lifts/                        COMPARING graphs: the lift of an operation; the lifted G
+│                                 simulating H proves G ≤_V H for templates closed under it
+│   ├── abstract.jl               AbstractLift, Lifted, lift, requirements, simulation, is_valid
+│   ├── dual.jl                   DualLift: its simulation is the primal's on the dual graphs
+│   ├── identity.jl               IdentityLift: the order that holds for every template
+│   ├── subsets.jl                MinLift, decided by the relation; MaxLift, its dual
+│   ├── sum.jl                    SumLift(T) by matching; SumLift() by the linear program
+│   ├── composition.jl            CompositionLift, BackwardCompositionLift: sufficient only
+│   └── compare.jl                `compare`: every lift on a pair of graphs, a Comparison
+├── refinements/                  IMPROVING a graph: no worse for every template, applied
+│                                 where a certificate is tight
+│   ├── abstract.jl               AbstractRefinement, Refined, scope, refine(R, graph[, edges])
+│   ├── dual.jl                   DualRefinement: every backward atom
+│   ├── split.jl                  ForwardEdgeSplit at a locus; PathDependentRefinement
+│   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductRefinement
+│   ├── strategies.jl             SplitTightNode, RefineTightEdges, Hierarchy
 │   └── loop.jl                   `refine`; generic in the problem, reads all three like
 │                                 aggregation.jl, so it is filed under neither axis
-├── ordering.jl                   is one graph no worse than another for a template:
-│                                 conic_witness (an LP), order_witness, simplify
 └── aggregation.jl                `common` — the join; dispatches on the graph, so it
                                   belongs to neither axis
 ```
@@ -278,46 +283,55 @@ the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its la
 
 ## 5. Gotchas
 
-**A lift is always sound. The template decides whether it *improves*.**
+**A lift compares graphs; a refinement improves one. Both are "lifts" in the papers.**
 
 Debauche, Della Rossa & Jungers define a lift (Def. 5) as any `L : Graphs_M → Graphs_M` with
-`L(G)` path-complete whenever `G` is. No template in it — so a certificate on `L(G)` certifies
-the system whatever template it carries. What their closure properties decide is **validity**
-(Def. 6): whether `G ≤_V L(G)`, the guarantee that the lift does not make the bound *worse*.
-Apply one where it does not hold and you get a worse bound, visible the moment you solve, not
-an unsound certificate.
+`L(G)` path-complete whenever `G` is, so a certificate on `L(G)` certifies the system whatever
+template it carries. The package splits that definition by purpose, into two directories with
+separate interfaces that share nothing but `dual` and `origins`.
 
-Validity is answered through **properties**, never by dispatching on the concrete template type
-— that would need one method per (lift, template) pair, the *n × m* explosion §2 exists to
-avoid:
+A **lift** (`src/lifts/`) is the lift of an operation: its nodes stand for combinations of the
+original nodes, and when `lift(L, G)` simulates `H` then `G ≤_V H` for every template closed
+under what `requirements(L)` names (thesis Thms. 7.18, 7.55, 7.56, 7.65, 7.66; complete for
+min, max and sum, Thms. 8.1, 8.5, 8.6). `simulation(L, G, H)` returns that witness, and `compare`
+runs every lift. The min, max and sum lifts never improve a graph and are never built to decide:
+the relation decides min in polynomial time, the relation on the duals decides max, the linear
+program decides the sum lift over every size. The composition lift is the exception on both
+counts: its simulation is sufficient only (Jongeneel & Jungers, Ex. IV.3) and it can strictly
+improve a graph (Ex. IV.4), which is why `Hierarchy` accepts it as a step of `refine` after an
+`is_valid` check.
+
+Validity of a lift is answered through **properties**, never by dispatching on the concrete
+template type — that would need one method per (lift, template) pair, the *n × m* explosion §2
+exists to avoid:
 
 ```julia
 is_closed_under(template, ::Operation, system)   # the template declares; default false
-requirements(lift)                               # the lift names what it needs; () for the atoms
-is_valid(lift, template, system)                 # written ONCE, against the two
+requirements(L)                                  # the lift names what it needs; () for the identity
+is_valid(L, template, system)                    # written ONCE, against the two
 ```
 
 One documented override exists, `is_valid(::MinLift, ::LinearCopositiveTemplate, system)`,
 because the literature proves validity there without closure (Debauche, Thm. 7.43). Add
 another only with a theorem to cite. Use the papers' word: **valid**, not "admissible".
+`is_valid` also reads the dual side (Prop. 7.5): a lift is valid for a template whenever its
+dual is valid for `dual(template)` on `dual(system)`, so a closure declared on either of a dual
+pair of templates serves both. `dual(certificate)` is the constructive form of the same duality
+(Lemma 6.25), and `test/problems/dual.jl` asserts it on every lift and refinement — a new
+template with a dual declares `has_dual`, `dual(template)` and `dual(template, V)`, and that
+test is where an asymmetric declaration shows up.
 
-`is_valid` also reads the dual side (Debauche, Prop. 7.5): a lift is valid for a template
-whenever its dual is valid for `dual(template)` on `dual(system)`, so a closure declared on
-either of a dual pair of templates serves both. `dual(certificate)` is the constructive form
-of the same duality (Lemma 6.25), and `test/problems/dual.jl` asserts it on every lift — a
-new template with a dual declares `has_dual`, `dual(template)` and `dual(template, V)`, and
-that test is where an asymmetric declaration shows up.
-
-The four local lifts — split a node along one edge, fold an edge into its neighbours, each
-forward or backward — need none of it: a copy inherits its origin's function, a product chains
-two inequalities. They are the partial lifts of Athanasopoulos & Jungers edge for edge, and
-`test/lifts/reference.jl` pins them against the reference implementation of Roy's repository, self-loops
-included. Two things the paper's degree assumptions leave open are decided there too: a node
-left without edges is deleted, and a locus of several edges is the lift applied edge by edge
-with the loop last. Applied at every edge they are the classical hierarchies (De Bruijn is the
-backward split at every edge, iterated); applied where a certificate is tight they are
-`refine`. The subset lifts never move the bound and are never built to decide an ordering:
-`simulation_relation` and `conic_witness` decide those in polynomial time.
+A **refinement** (`src/refinements/`) needs none of it. The four atoms — split a node along one
+edge, fold an edge into its neighbours, each forward or backward — are valid for every template
+by construction: a copy inherits its origin's function, a product chains two inequalities, and
+`origins` is the simulation that proves it (Def. 6(c)). They are the partial lifts of
+Athanasopoulos & Jungers edge for edge, and `test/refinements/reference.jl` pins them against
+the reference implementation of Roy's repository, self-loops included. Two things the paper's
+degree assumptions leave open are decided there too: a node left without edges is deleted, and
+a locus of several edges is the lift applied edge by edge with the loop last. Applied at every
+edge they are the classical hierarchies (`PathDependentRefinement` is the backward split at
+every edge, iterated; from the one-node graph, De Bruijn); applied where a certificate is tight
+they are `refine`. A refinement has no `requirements` and no `is_valid`; do not add them.
 
 **A word graph is sound for stability only.** An edge reading a word imposes one inequality on
 the product of its modes and nothing on the states inside; the joint spectral radius is still
