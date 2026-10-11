@@ -6,12 +6,11 @@ CurrentModule = PathCompleteCertificates
 
 A **refinement** transforms a path-complete graph into one that is no worse
 for every template; [`refine`](@ref) applies one where a certificate is tight
-and repeats. The loop reads the graph, a template and a problem at once, so it
-belongs to neither axis, and it names no problem: what it needs from one are
-[`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref). See [Graph improvement via refinements](@ref) for the
-picture. A new refinement is one file in `src/refinements/catalogue/`
-answering [`refine`](@ref).
+and repeats. The loop names no problem: it reads [`best_certificate`](@ref),
+[`objective`](@ref), [`edge_slacks`](@ref) and [`optimality_gap`](@ref), and a
+problem that answers them joins it. See
+[Graph improvement via refinements](@ref) for the picture. A new refinement is
+one file in `src/refinements/catalogue/` answering [`refine`](@ref).
 
 ## The interface
 

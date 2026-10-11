@@ -54,4 +54,4 @@ control is tied to the quadratic template by the mathematics, the substitution
 ``S = P^{-1}``, ``Y = KS`` that makes it convex ([ninite2026path](@cite)). A
 new template gives the whole stability column at once, and the two other
 problems once it answers their primitives; see the
-[developer conventions](@ref "Coding conventions").
+[developer conventions](@ref "Conventions").

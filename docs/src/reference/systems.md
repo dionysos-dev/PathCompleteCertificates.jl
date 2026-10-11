@@ -4,8 +4,9 @@ CurrentModule = PathCompleteCertificates
 
 # Systems and the common function
 
-Neither of these belongs to an axis. A switched system is the input to every
-problem, and [`common`](@ref) reads all three of graph, template and problem.
+A switched system is the input to every problem. The common function,
+[`common`](@ref), is the single function the node functions of a certificate
+combine into, which `certificate(x)` evaluates.
 
 ## Systems
 

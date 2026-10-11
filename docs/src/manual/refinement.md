@@ -178,12 +178,10 @@ sees it.
 | `gap_tol` | how close the bracket must come to count as closed |
 
 `atol` is the delicate one. Bisection stops just *above* the optimum, so an
-active edge does not measure zero: it measures about the bisection gap. At
-`rtol = 1e-6` the active edges of a worked example measure `1.3e-7`, `6.0e-7`
-and `2.9e-6`, against `0.17` for the slack one. Set `atol` too low and the
-tight subgraph comes out empty, every node satisfies Theorem 4 vacuously, and
-the run certifies a bound that is not the joint spectral radius.
-[`refine`](@ref) therefore enforces `atol ≥ 10 rtol`.
+active edge does not measure zero but about the bisection gap. Set `atol` too
+low and the tight subgraph comes out empty, every node satisfies Theorem 4
+vacuously, and the run certifies a bound that is not the joint spectral
+radius. [`refine`](@ref) therefore enforces `atol ≥ 10 rtol`.
 
 ## Generic in the problem
 

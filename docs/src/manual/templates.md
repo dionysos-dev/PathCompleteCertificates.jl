@@ -30,9 +30,8 @@ callable.
 
 ¹ The free-facet construction is under submission.
 
-² Behind a package extension, since it pulls in the whole polynomial stack.
-Raising ``d`` tightens the bound monotonically, and ``d = 1`` is exactly
-[`QuadraticTemplate`](@ref).
+² Behind a package extension: load SumOfSquares first. Raising ``d`` tightens
+the bound monotonically, and ``d = 1`` is exactly [`QuadraticTemplate`](@ref).
 
 The **homogeneity degree**, [`homogeneity_degree`](@ref), is the ``d`` in
 ``V(cx) = c^d V(x)``. Stability scales its edge inequality by ``\gamma^d``, so
@@ -101,7 +100,7 @@ graph the data of the node it came from; a data-free template returns itself.
 
 A new template is one file in `src/templates/catalogue/` implementing the
 primitives of the template interface, listed in the
-[developer conventions](@ref "Coding conventions"): how to create its
+[developer conventions](@ref "Conventions"): how to create its
 variables, state the edge inequality and read a solution back. Nothing in any
 problem changes, and the three declarations above are optional, each
 defaulting to claiming nothing.
