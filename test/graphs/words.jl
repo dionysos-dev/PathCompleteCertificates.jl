@@ -99,12 +99,12 @@ end
     # Path-completeness is preserved by duality.
     @test PCC.is_path_complete(PCC.dual(PCC.de_bruijn(2, 2)), 1:2)
 
-    # The edge correspondence at a locus.
+    # The edge correspondence at some edges.
     primal = PCC.de_bruijn(1, 2)
-    locus = PCC.outgoing_edges(primal, 1)
-    dualised, images = PCC.dual(primal, locus)
-    @test length(images) == length(locus)
-    for (e, f) in zip(locus, images)
+    edge_list = PCC.outgoing_edges(primal, 1)
+    dualised, images = PCC.dual(primal, edge_list)
+    @test length(images) == length(edge_list)
+    for (e, f) in zip(edge_list, images)
         @test PCC.source(f) == PCC.dest(e) && PCC.dest(f) == PCC.source(e)
         @test PCC.label(dualised, f) == PCC.label(primal, e)
     end

@@ -88,7 +88,7 @@ end
     @test PCC.is_path_complete(split, 1:2)
 end
 
-@testset "a self-loop in the locus returns from its copy to the node" begin
+@testset "a given self-loop returns from its copy to the node" begin
     # The one-node graph split at its mode-1 loop, as Athanasopoulos & Jungers
     # define it: the copy reads 1 back to the node, the node reads 1 into the
     # copy, and the node's other loop enters both.
@@ -184,7 +184,7 @@ end
     @test PCC.origins(lifted) == [PCC.dest(e) for e in PCC.edges(a)]
 end
 
-@testset "lifts refuse a locus outside the graph or empty" begin
+@testset "lifts refuse edges outside the graph or none" begin
     graph = PCC.de_bruijn(1, 2)
     other = PCC.de_bruijn(2, 2)
 
@@ -225,11 +225,13 @@ end
     )
 
     for g in (PCC.de_bruijn(2, 2), loops, PCC.common_graph(OneStateAutomaton(2)))
-        loci = [[e] for e in PCC.edges(g)]
-        push!(loci, collect(PCC.edges(g)))
+        edge_lists = [[e] for e in PCC.edges(g)]
+        push!(edge_lists, collect(PCC.edges(g)))
 
-        for refinement in (PCC.ForwardEdgeSplit(), PCC.BackwardEdgeSplit()), locus in loci
-            refined = PCC.refine(refinement, g, locus)
+        for refinement in (PCC.ForwardEdgeSplit(), PCC.BackwardEdgeSplit()),
+            edge_list in edge_lists
+
+            refined = PCC.refine(refinement, g, edge_list)
             @test PCC.is_path_complete(PCC.graph(refined), 1:2)
             @test preserved(refined, g)
         end
