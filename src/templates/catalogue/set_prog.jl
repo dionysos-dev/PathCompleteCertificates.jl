@@ -17,9 +17,8 @@ where the cones are over the facets of the polytope `P`, which must contain
 the origin in its interior. A vector gives one variable per node.
 
 Requires `using SetProg`. Round the facet normals of `P`, since rounding errors
-can make an almost optimal solution violate the edge inequalities, and build
-`P` with a simplex solver such as HiGHS for speed. [`domination_slack`](@ref),
-hence [`edge_slacks`](@ref), is not implemented.
+can make an almost optimal solution violate the edge inequalities.
+[`domination_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented.
 """
 struct SetProgTemplate{V <: AbstractVector} <: AbstractTemplate
     variables::V

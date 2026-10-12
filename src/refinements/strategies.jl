@@ -3,9 +3,9 @@ import Random
 """
     SplitTightNode(refinement = ForwardEdgeSplit(); rng = nothing)
 
-Apply `refinement` to the out-star of the node with the most tight outgoing
-edges; no candidate when no node has two. Ties go to the node with the fewest
-outgoing edges, then to the lowest-numbered one, or at random with `rng`.
+Apply `refinement` to the outgoing edges of the node with the most tight
+outgoing edges, or propose no candidate when no node has two. With `rng`, ties
+are broken at random.
 """
 struct SplitTightNode{R <: AbstractRefinement, G <: Union{Nothing, Random.AbstractRNG}}
     refinement::R

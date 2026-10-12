@@ -3,8 +3,8 @@
 """
     simple_cycles(graph; max_length = n_nodes(graph))
 
-Every simple cycle of `graph` with at most `max_length` edges, as the sequence
-of transitions traversed.
+Every simple cycle of `graph` with at most `max_length` edges, as the
+sequence of its edges.
 """
 function simple_cycles(graph::CertificateGraph; max_length::Integer = n_nodes(graph))
     max_length > 0 || throw(ArgumentError("max_length must be positive"))

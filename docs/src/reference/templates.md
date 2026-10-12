@@ -4,8 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # Template reference
 
-The first axis: what the node functions are. See [Templates](@ref) for the
-concepts, and [What works with what](@ref) for which problems accept each one.
+A template is the family the node functions are drawn from. See
+[Templates](@ref) for the concepts, and [What works with what](@ref) for which problems accept each one.
 
 ## The interface
 

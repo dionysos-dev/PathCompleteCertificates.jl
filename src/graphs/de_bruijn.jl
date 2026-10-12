@@ -1,10 +1,10 @@
 """
     de_bruijn(order, n_modes)
 
-The De Bruijn graph of order `l = order` has a node per tuple of the last `l`
-modes, newest first. For all modes `i₁, …, iₗ, σ ∈ {1, …, n_modes}`, there is
-an edge from `(i₁, …, iₗ)` to `(σ, i₁, …, iₗ₋₁)` with label `σ`.
-Complete, hence path-complete; its dual is
+The De Bruijn graph of order `l = order` on `n_modes` modes. It has a node per
+sequence `(i₁, …, iₗ)` of the last `l` modes, newest first, and an edge labelled
+`σ` from `(i₁, …, iₗ)` to `(σ, i₁, …, iₗ₋₁)`. It is complete, hence
+path-complete. The dual De Bruijn graph is
 [`dual`](@ref)`(de_bruijn(order, n_modes))`.
 """
 function de_bruijn(order::Integer, n_modes::Integer)

@@ -6,9 +6,9 @@ import LinearAlgebra
 
 The template ``V(x) = x^\\top P x``, with ``P`` positive definite.
 
-A finite `conditioning_bound` imposes
-``P_s \\preceq \\text{conditioning\\_bound} \\cdot I`` on top of ``P_s \\succeq I``;
-unlike the latter, it can exclude every certificate of a stable system.
+A finite `conditioning_bound` also imposes
+``P_s \\preceq \\text{conditioning\\_bound} \\cdot I``, which can exclude every
+certificate of a stable system.
 """
 struct QuadraticTemplate{T <: Real} <: AbstractTemplate
     conditioning_bound::T
@@ -29,8 +29,7 @@ end
     QuadraticFunction(P)
 
 A fitted node function `V(x) = x'Px` of a [`QuadraticTemplate`](@ref);
-`Matrix(V)` is `P`. Before solving, the node function is the `Symmetric` matrix
-of variables itself.
+`Matrix(V)` is `P`.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M

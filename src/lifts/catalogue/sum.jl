@@ -6,8 +6,8 @@ import JuMP
 
 The `T`-sum lift: nodes are the multisets of `T` nodes, with an `i`-edge from
 `P` to `Q` when the `i`-edges from `P` to `Q` admit a perfect matching.
-`SumLift()`, over every `T`, cannot be built; `simulation(SumLift(), G, H;
-optimizer)` decides it by a linear program
+`SumLift()` stands for every `T` at once and is never built:
+`simulation(SumLift(), G, H; optimizer)` decides it
 [debauche2024thesis; Thm. 7.35 and Cor. 8.11](@cite) and returns an integer
 matrix `C` such that `C·V` is a certificate on `H` whenever `V` is one on `G`
 [philippe2017path; Def. IV.2 and Thm. IV.4](@cite). Requires

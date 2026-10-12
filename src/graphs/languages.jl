@@ -1,8 +1,8 @@
 """
     language(system)
 
-The switching language of `system`, as its automaton: a `OneStateAutomaton`
-under arbitrary switching, the constraint automaton otherwise.
+The switching sequences admitted by `system`, to pass to
+[`is_path_complete`](@ref).
 """
 language(system::_HS.HybridSystem) = system.automaton
 

@@ -10,8 +10,9 @@ const _HS = HybridSystems
 """
     WordGraph(n_nodes)
 
-A labelled graph whose edges carry words, finite sequences of modes. Only
-stability accepts one; safety, optimal control and [`common`](@ref) throw.
+A labelled graph whose edges carry words, finite sequences of modes. Safety,
+optimal control and [`common`](@ref) accept it only when every word is a single
+mode.
 """
 struct WordGraph{A <: _HS.GraphAutomaton}
     automaton::A
@@ -24,8 +25,8 @@ WordGraph(n_nodes::Integer) =
 """
     CertificateGraph
 
-The graph types a certificate is built on: a `HybridSystems.GraphAutomaton`,
-whose labels are modes, or a [`WordGraph`](@ref), whose labels are words.
+A graph a certificate is built on: one mode per edge, as made by
+[`empty_graph`](@ref), or one word per edge, as a [`WordGraph`](@ref).
 """
 const CertificateGraph = Union{_HS.GraphAutomaton, WordGraph}
 
@@ -35,7 +36,7 @@ _automaton(graph::WordGraph) = graph.automaton
 """
     empty_graph(n_nodes)
 
-A `GraphAutomaton` with `n_nodes` nodes and no edge.
+A labelled graph with `n_nodes` nodes and no edge.
 """
 empty_graph(n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
 
@@ -47,7 +48,8 @@ _empty_like(::WordGraph, n_nodes::Integer) = WordGraph(n_nodes)
     add_edge!(graph, source, dest, label)
 
 Add an edge from `source` to `dest` reading `label`, a mode or a vector of
-modes, and return it. A `GraphAutomaton` throws on a word longer than one mode.
+modes, and return it. Only a [`WordGraph`](@ref) accepts a word of several
+modes.
 """
 function add_edge!(graph::_HS.GraphAutomaton, s::Integer, d::Integer, mode::Integer)
     return _HS.add_transition!(graph, s, d, mode)
@@ -140,7 +142,7 @@ dest(edge::_HS.GraphTransition) = edge.edge.dst
 """
     label(graph, edge)
 
-Return the label of `edge` in `graph`: a mode on a `GraphAutomaton`, a word on a
+Return the label of `edge` in `graph`: a mode, or a word on a
 [`WordGraph`](@ref).
 """
 label(graph::_HS.GraphAutomaton, edge::_HS.GraphTransition) = _HS.event(graph, edge)
@@ -149,8 +151,7 @@ label(graph::WordGraph, edge::_HS.GraphTransition) = graph.words[edge.id]
 """
     letters(label)
 
-The modes a label reads, in order: `(i,)` for a mode `i`, the word itself for a
-word.
+The modes a label reads, in order.
 """
 letters(mode::Integer) = (mode,)
 letters(word::AbstractVector{<:Integer}) = word

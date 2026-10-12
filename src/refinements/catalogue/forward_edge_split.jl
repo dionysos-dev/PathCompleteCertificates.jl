@@ -3,8 +3,7 @@
 
 Split the source of each given edge into a copy owning that outgoing edge and
 every incoming edge; a given self-loop goes from its copy to the node. A node
-whose outgoing edges are all given is replaced by its copies, which are
-numbered last.
+whose outgoing edges are all given is replaced by its copies.
 """
 struct ForwardEdgeSplit <: AbstractRefinement end
 

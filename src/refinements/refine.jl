@@ -109,9 +109,10 @@ Refine `graph`, by default [`common_graph`](@ref) of the system, until the
 - The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
   `stall_max` steps in a row fail to improve the objective by `rtol`,
   `depth_max` certificates are solved, or no candidate is left.
-- `rtol` is the solve tolerance, `atol` decides tightness; `atol ≥ 10 rtol` is
-  required, since a tight edge measures about the bisection gap, not zero.
-- `path_complete` is checked on the starting graph only.
+- `rtol` is the solve tolerance and `atol` decides tightness, with
+  `atol ≥ 10 rtol`.
+- `path_complete = false` skips the path-completeness check of the starting
+  graph.
 
 Other keywords go to [`best_certificate`](@ref).
 """

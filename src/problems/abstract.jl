@@ -3,16 +3,15 @@ import JuMP
 """
     AbstractProblem
 
-A problem: it fixes the inequality imposed along each edge.
+A property to certify, defined by the inequality imposed along each edge.
 """
 abstract type AbstractProblem end
 
 """
     add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
 
-Add the problem's inequality for one edge, `dynamics` being the product of
-the modes the edge reads. `scale` multiplies the source side; stability passes
-`rate^(d·|w|)`.
+Add the problem's inequality for one edge, where `dynamics` is the product of
+the matrices of the modes the edge reads and `scale` multiplies the source side.
 """
 function add_edge_constraint! end
 
@@ -71,8 +70,9 @@ const _FEASIBLE_TERMINATION_STATUSES = (
 """
     AbstractCertificate
 
-The result of a solve: a [`CertificateData`](@ref) and what the problem
-certifies (`rate`, `margin` or `gains`). `certificate(x)` is [`common`](@ref) at `x`.
+The result of [`certify`](@ref): node functions on a graph, and the value
+certified (`rate`, `margin` or `gains`). `certificate(x)` evaluates
+[`common`](@ref) at `x`.
 """
 abstract type AbstractCertificate end
 
@@ -182,9 +182,9 @@ end
 """
     best_certificate(template, graph, problem; optimizer, kwargs...)
 
-The certificate [`refine`](@ref) computes on each graph: [`certify`](@ref), or
-[`jsr_bound`](@ref) for stability. `rtol` is ignored by problems that do not
-bisect.
+The certificate [`refine`](@ref) solves on each graph: that of
+[`certify`](@ref), or for stability that of smallest rate, from
+[`jsr_bound`](@ref).
 """
 function best_certificate(
     template::AbstractTemplate,
@@ -233,7 +233,8 @@ end
     tight_edges(certificate; atol = 1e-6)
 
 The edges whose slack is at most `atol`, as `(source, destination, label)`
-tuples. `atol` is absolute, while a certificate is only defined up to scale.
+tuples. `atol` is absolute, so its meaning depends on the scale of the
+certificate.
 """
 function tight_edges(certificate::AbstractCertificate; atol::Real = 1e-6)
     graph_ = graph(certificate)

@@ -48,9 +48,8 @@ const _LIFTS = (
     compare(G, H; templates = (), system = nothing, optimizer = nothing, lifts = …)
 
 Whether ``G ≤_V H``, and for which of `templates`, as a [`Comparison`](@ref).
-The sum lift is tried only with an `optimizer`, the search stops once the
-identity lift finds a map, and `system` is required when `templates` is
-nonempty.
+The sum lift is tried only with an `optimizer`, and `system` is required when
+`templates` is nonempty.
 """
 function compare(
     G::CertificateGraph,

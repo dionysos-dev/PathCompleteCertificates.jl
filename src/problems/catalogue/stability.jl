@@ -1,8 +1,8 @@
 """
     StabilityProblem(system)
 
-Stability problem for an input-free switched linear system. The rate is passed
-to [`certify`](@ref) or bisected on by [`jsr_bound`](@ref).
+Stability problem for an input-free switched linear system, certified at a
+given rate by [`certify`](@ref) or at the smallest rate by [`jsr_bound`](@ref).
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -99,9 +99,8 @@ end
     jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
               max_iterations = 100, initial_upper = 1.0)
 
-The [`StabilityCertificate`](@ref) of the smallest feasible rate, found by
-bisection to relative tolerance `rtol`. `initial_upper` is doubled until
-feasible.
+The [`StabilityCertificate`](@ref) of the smallest feasible rate, to relative
+tolerance `rtol`. `initial_upper` is a first guess of a feasible rate.
 """
 function jsr_bound(
     template::AbstractTemplate,

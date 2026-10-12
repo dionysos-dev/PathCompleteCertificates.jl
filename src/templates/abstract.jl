@@ -4,8 +4,8 @@ import LinearAlgebra
 """
     AbstractTemplate
 
-A family of candidate node functions, passed as an instance since it may carry
-per-node data.
+A family of candidate node functions, passed as an instance such as
+`QuadraticTemplate()`.
 """
 abstract type AbstractTemplate end
 

@@ -4,11 +4,9 @@ CurrentModule = PathCompleteCertificates
 
 # Graph reference
 
-The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as the
-automaton of a constrained system, or a [`WordGraph`](@ref) when its edges read
-words. The argument name says which is wanted: `graph` is the certificate's,
-`system` carries its own. See [Path-complete graphs](@ref) for what the
-predicates mean.
+A certificate is built on a labelled graph with one mode per edge, made with
+[`empty_graph`](@ref), or with one word per edge, a [`WordGraph`](@ref). See
+[Path-complete graphs](@ref) for what the predicates mean.
 
 ## Queries
 
