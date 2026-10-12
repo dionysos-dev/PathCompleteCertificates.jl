@@ -77,3 +77,9 @@ reindex(template::SetProgTemplate, origins::AbstractVector) =
 # The sets are constructed in their cone (PSD matrices, SOS polynomials), and
 # the normalization keeps them positive, so there is nothing to add.
 add_nonnegativity!(::JuMP.Model, ::SetProgTemplate, _) = nothing
+
+# The sum of two functions of one family, on one partition, is in the family
+# again: closed under addition exactly when every node carries the same set
+# variable, as the fixed-facet polyhedral template is under maximum.
+is_closed_under(template::SetProgTemplate, ::Addition, system) =
+    template.shared || allequal(template.variables)

@@ -43,7 +43,7 @@ how the loop reads where a certificate is tight:
 | [`PolyhedralTemplate`](@ref) | ✓ | identity; max when the node matrices coincide |
 | [`ConicPolyhedralTemplate`](@ref) | ✓ | identity |
 | [`SumOfSquaresTemplate`](@ref) | ✗ ³ | identity, sum; composition if invertible |
-| [`SetProgTemplate`](@ref) | ✗ ³ | identity |
+| [`SetProgTemplate`](@ref) | ✗ ³ | identity; sum when the nodes share the set variable |
 
 ³ No `domination_slack` yet, so the loop cannot read where these templates are
 tight.

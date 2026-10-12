@@ -76,7 +76,7 @@ hold for it. A template declares its closures with [`is_closed_under`](@ref):
 | [`DualCopositiveTemplate`](@ref) | | ✓ | | |
 | [`PolyhedralTemplate`](@ref) | | ✓ if the node matrices coincide | | |
 | [`ConicPolyhedralTemplate`](@ref) | | | | |
-| [`SetProgTemplate`](@ref) | | | | |
+| [`SetProgTemplate`](@ref) | ✓ if the nodes share the set variable | | | |
 
 ¹ Not closed as a set of functions, yet the min lift is valid for it on
 positive linear systems ([debauche2024thesis](@cite), Thm. 7.43), the one

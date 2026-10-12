@@ -201,6 +201,22 @@ end
     @test_throws ArgumentError PCC.reindex(per_node, [[1, 2]])
 end
 
+@testset "closed under addition when the nodes share the variable" begin
+    system = PROBLEM.system
+    shared = PCC.SetProgTemplate(Ellipsoid(symmetric = true))
+    @test PCC.is_closed_under(shared, PCC.Addition(), system)
+    @test PCC.is_valid(PCC.SumLift(2), shared, system)
+
+    octagon = Ellipsoid(symmetric = true, piecewise = OCTAGON)
+    same = PCC.SetProgTemplate([octagon, octagon])
+    @test PCC.is_closed_under(same, PCC.Addition(), system)
+
+    mixed = PCC.SetProgTemplate([Ellipsoid(symmetric = true, piecewise = SQUARE), octagon])
+    @test !PCC.is_closed_under(mixed, PCC.Addition(), system)
+    @test !PCC.is_valid(PCC.SumLift(2), mixed, system)
+    @test !PCC.is_closed_under(shared, PCC.Maximum(), system)
+end
+
 @testset "what the template does not support" begin
     @test_throws ArgumentError rate(PCC.SetProgTemplate(Ellipsoid(dimension = 2)))
     @test_throws ArgumentError rate(
