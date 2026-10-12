@@ -1,86 +1,64 @@
-
 """
-    observer_graph(graph::HybridSystems.GraphAutomaton)
+    observer_graph(graph) -> (observer, states)
+    observer_graph(graph, alphabet) -> (observer, states)
 
-Construct the observer graph associated with `graph`.
-
-Each observer node represents a nonempty subset of nodes
-of the original graph.
-
-The initial observer node contains all nodes of `graph`.
-
-For each label, an observer transition maps a subset to the
-set of all nodes reachable through an edge with that label.
-
-Observer states are explored using a breadth-first search.
-
-Returns:
-
-- `observer`: the observer graph as a `HybridSystems.GraphAutomaton`;
-- `states`: a vector of sets, where `states[i]` is the subset
-  of original nodes represented by observer node `i`.
-
-The observer graph contains only reachable nonempty subsets.
+The subset construction of `graph` from the set of all its nodes: a node of the
+observer per nonempty subset reached, `states[k]` being the subset node `k`
+stands for, and an edge `(P, Q, σ)` when `Q` is the set of nodes an edge
+reading `σ` leads to from some node of `P`. Empty subsets are dropped, so the
+observer is complete for `alphabet` exactly when `graph` is path-complete for
+it, which is how [`is_path_complete`](@ref) decides. It is the graph on which
+Theorem III.8 of Philippe, Athanasopoulos, Angeli & Jungers states the common
+function of a graph that is neither complete nor co-complete, which is how
+[`common`](@ref) reads it. `alphabet` defaults to the modes `graph` uses.
 """
-function observer_graph(graph::_HS.GraphAutomaton)
-    letters = sort!(collect(alphabet(graph)))
+observer_graph(graph::_HS.GraphAutomaton) = observer_graph(graph, sort(alphabet(graph)))
 
-    # succ[(node, label)] contains all reachable successors.
-    succ = Dict{Tuple{Int, Int}, Set{Int}}()
+function observer_graph(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
+    index = _successors(graph)
+    start = Set(nodes(graph))
 
-    for edge in edges(graph)
-        key = (source(edge), label(graph, edge))
-        push!(get!(succ, key, Set{Int}()), dest(edge))
-    end
+    states = [start]
+    ids = Dict{Tuple{Vararg{Int}}, Int}(_key(start) => 1)
+    transitions = Tuple{Int, Int, Int}[]
+    pending = [1]
 
-    initial_state = Set(nodes(graph))
-    states = [initial_state]
+    while !isempty(pending)
+        p = popfirst!(pending)
 
-    # Variable-length tuples as immutable dictionary keys.
-    state_to_id = Dict{Tuple{Vararg{Int}}, Int}()
-    state_to_id[Tuple(sort!(collect(initial_state)))] = 1
+        for letter in alphabet
+            reachable = _step(index, states[p], letter)
+            isempty(reachable) && continue
 
-    graph_edges = Tuple{Int, Int, Int}[]
-
-    queue = [1]
-    head = 1
-
-    while head <= length(queue)
-        id_P = queue[head]
-        head += 1
-
-        P = states[id_P]
-
-        for σ in letters
-            Q = Set{Int}()
-
-            for p in P
-                union!(Q, get(succ, (p, σ), Set{Int}()))
+            q = get!(ids, _key(reachable)) do
+                push!(states, reachable)
+                push!(pending, length(states))
+                return length(states)
             end
 
-            # Empty observer states are not included.
-            isempty(Q) && continue
-
-            key_Q = Tuple(sort!(collect(Q)))
-
-            if !haskey(state_to_id, key_Q)
-                id_Q = length(states) + 1
-
-                state_to_id[key_Q] = id_Q
-                push!(states, Q)
-                push!(queue, id_Q)
-            else
-                id_Q = state_to_id[key_Q]
-            end
-
-            push!(graph_edges, (id_P, id_Q, σ))
+            push!(transitions, (p, q, letter))
         end
     end
 
     observer = empty_graph(length(states))
-    for (src, dst, edge_label) in graph_edges
-        add_edge!(observer, src, dst, edge_label)
+    for (p, q, letter) in transitions
+        add_edge!(observer, p, q, letter)
     end
 
     return observer, states
 end
+
+# The nodes reachable from `subset` by one edge reading `letter`.
+function _step(index, subset, letter::Integer)
+    reachable = Set{Int}()
+
+    for node in subset
+        union!(reachable, get(index, (node, letter), Int[]))
+    end
+
+    return reachable
+end
+
+# A subset as an immutable key. The key type is written out where the
+# dictionary is made: inferred from the first subset, it would pin the arity.
+_key(subset) = Tuple(sort!(collect(subset)))

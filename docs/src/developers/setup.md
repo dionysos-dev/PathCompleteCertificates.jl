@@ -1,6 +1,6 @@
 # Set up
 
-Julia ≥ 1.10. CI tests 1.10 and the current release.
+Julia 1.10 or later.
 
 ## Clone and instantiate
 
@@ -9,100 +9,67 @@ git clone https://github.com/dionysos-dev/PathCompleteCertificates.jl.git
 cd PathCompleteCertificates.jl
 julia --project -e 'using Pkg; Pkg.instantiate()'
 julia --project=test -e 'using Pkg; Pkg.instantiate()'
+julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 ```
 
-`Manifest.toml` is deliberately untracked — a library must not pin its own resolution, so each
-clone resolves for itself.
+`Manifest.toml` is not tracked, so each clone resolves for itself. When
+`Pkg.test()` reports a dependency missing from the manifest, delete the
+manifest of the environment that failed, root, `test/` or `docs/`, and resolve
+again. The docs environment reaches the package through a relative `[sources]`
+entry; do not `Pkg.develop` it.
 
 ## Run the tests
 
-**Do not run the whole suite for every change.** Prefer the narrowest scope that can fail:
-
-**1. The file you touched, on its own.** Every test file is a self-contained module and *must* be
-runnable standalone:
+Every test file is standalone. Run the narrowest scope that can fail, and the
+whole suite before opening a pull request.
 
 ```
-julia --project=test test/systems/simulate.jl
+julia --project=test test/graphs/predicates.jl                       # one file
+julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips the :slow suites
+julia --project -e 'using Pkg; Pkg.test()'                           # everything
 ```
 
-Each file declares its own imports and fixtures. If one is *not* standalone-runnable, that is a bug
-in the file — fix it by adding the missing import.
+The `:slow` suites are the ones that solve programs, and most regressions
+surface there, so `--fast` passing is not a result. A new test file goes in
+`TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it solves.
 
-**2. The fast subset.**
+While iterating, keep one Julia session open with Revise and `include` the
+file you are working on; a cold start costs about half a minute.
 
-```
-julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'
-```
+## Format
 
-Skips suites tagged `:slow` in `test/runtests.jl` — the SDP- and LP-heavy synthesis tests. The
-driver prints per-file timings and a slowest-first summary, so a suite that has quietly become
-expensive is easy to spot and tag.
-
-**3. The full gate, before committing.**
-
-```
-julia --project -e 'using Pkg; Pkg.test()'
-```
-
-!!! warning "The fast subset can report green on a broken change"
-    Anything whose only coverage lives in a `:slow` suite is invisible to `--fast` — and the
-    synthesis tests, which are where most regressions will surface, are exactly those. Run the
-    full gate before opening a pull request.
-
-New test files go in the `TEST_FILES` list in `test/runtests.jl`, with `:slow` if they belong there.
-
-## Format — required before every commit
+Required before every commit; CI fails on any diff. The rules are in
+`.JuliaFormatter.toml`.
 
 ```
 julia -e 'using JuliaFormatter; format(".")'
 ```
 
-CI fails on any diff. The rules are in `.JuliaFormatter.toml`; the settings themselves matter less
-than having them fixed, so the style stops being something anyone argues about. Most consequential:
-`always_use_return = true`, so every function ends with an explicit `return`.
-
 ## Build the documentation
 
 ```
-julia --project=docs -e 'using Pkg; Pkg.instantiate()'
-julia --project=docs docs/make.jl
+julia --project=docs docs/make.jl                          # runs the examples, a few minutes
+PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl   # prose only
 ```
 
-No `Pkg.develop` here: `docs/Project.toml` carries a relative `[sources]` entry pointing at
-the repository, and `Pkg.develop` would overwrite it with an absolute path from your own
-machine.
+The build executes every example under `docs/src/examples/`, which is what
+keeps their output true of the code. With the examples skipped, a page not
+already generated is dropped from the navigation, so run a full build before
+opening a pull request.
 
-**The build executes the examples.** Every file under `docs/src/examples/` runs for real --
-most solve semidefinite programs, and two of them draw. That is what keeps their printed
-numbers and figures true of the current code, and it costs minutes rather than seconds.
-While iterating on prose:
-
-```
-PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl
-```
-
-Pages whose markdown is not already in `docs/src/generated` are then dropped from the nav
-rather than breaking the build, so run a full build before opening a pull request.
-
-**Every name reachable as `PathCompleteCertificates.name` needs a docstring.** The package exports
-nothing deliberately, so `checkdocs = :all` cannot see a name that carries no docstring at all;
-`test/docstrings.jl` is the gate for that. What `checkdocs` *does* enforce is that every docstring
-appears in an `@autodocs` block under `docs/src/reference/`, and it fails the build otherwise — so
-a new file in `src/` needs a `Pages` entry too. That matters because the tool paper has six pages
-including references, so it cannot explain the package — these docs have to.
+Two gates on docstrings. Nothing is exported, so `test/docstrings.jl` fails
+on any name reachable as `PathCompleteCertificates.name` without one. And the
+build fails on a docstring that no `@autodocs` block under
+`docs/src/reference/` picks up, so a new file in `src/` needs a `Pages` entry
+there.
 
 ## Continuous integration
 
-| Workflow | What it gates |
+| Workflow | Gates |
 | :-- | :-- |
-| `ci.yml` | Test matrix on 1.10 and current; `ci-ok` aggregates it into one stable check |
-| `format_check.yml` | Fails on any JuliaFormatter diff |
-| `aqua.yml` | Type piracy, method ambiguities, stale dependencies |
-| `documentation.yml` | Builds and deploys the docs |
-| `blob-size-guard.yml` | Rejects any pull request adding a file over 5 MB |
-| `doc-preview-cleanup.yml` | Deletes a pull request's docs preview when it closes |
-
-The last two exist from the first commit rather than as an afterthought. A blob committed once
-lives in the history of every clone forever, even if a later commit deletes it, and stale docs
-previews accumulate in `gh-pages` until they dominate what a clone transfers. Both are cheap to
-prevent and expensive to undo — undoing them means rewriting history on a live repository.
+| `ci.yml` | the tests on Julia 1.10 and the current release |
+| `format_check.yml` | the formatter |
+| `aqua.yml` | type piracy, method ambiguities, stale dependencies |
+| `documentation.yml` | the docs build and its deployment |
+| `blob-size-guard.yml` | no file over 5 MB |
+| `doc-preview-cleanup.yml` | removes a pull request's docs preview when it closes |

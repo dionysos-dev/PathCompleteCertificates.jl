@@ -35,15 +35,15 @@ end
     @test PCC.n_nodes(PCC.language(constrained)) == 4
 end
 
-@testset "the seed reads the language by construction" begin
+@testset "the common graph reads the language by construction" begin
     arbitrary = PCC.switched_system(MODES)
-    one = PCC.seed(arbitrary)
+    one = PCC.common_graph(arbitrary)
     @test PCC.n_nodes(one) == 1
     @test PCC.n_edges(one) == 4
     @test PCC.is_path_complete(one, PCC.language(arbitrary))
 
     constrained = PCC.switched_system(MODES; automaton = failure_automaton())
-    auto = PCC.seed(constrained)
+    auto = PCC.common_graph(constrained)
     @test PCC.n_nodes(auto) == 4
     @test PCC.n_edges(auto) == 9
     @test PCC.is_path_complete(auto, PCC.language(constrained))
@@ -90,9 +90,9 @@ end
     # The automaton itself is accepted as a certificate graph ...
     model = PCC.optimization_model(
         PCC.QuadraticTemplate(),
-        PCC.seed(constrained),
-        problem,
-        1.0;
+        PCC.common_graph(constrained),
+        problem;
+        rate = 1.0,
         optimizer = nothing,
     )
     @test model isa PCC.JuMP.Model
@@ -105,8 +105,8 @@ end
     @test_throws ArgumentError PCC.optimization_model(
         PCC.QuadraticTemplate(),
         partial,
-        problem,
-        1.0;
+        problem;
+        rate = 1.0,
         optimizer = nothing,
     )
 end

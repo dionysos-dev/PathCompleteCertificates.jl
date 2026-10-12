@@ -23,25 +23,26 @@
        registry, so the badge renders empty until then.
      Add both at registration (plan P7), not before. -->
 
-Certificates for switched systems, built on **path-complete graphs**, with the graph as the
-object you work on.
+Tools for constructing, comparing and refining certificates for switched systems within the
+**path-complete framework**, with the two components of a certificate, the template and the
+graph, both explicit.
 
 ## What it does
 
 A path-complete certificate is three things: a **labelled graph** whose labels are the modes
 of a switched system, a function at each node drawn from a **template**, and one **inequality
-along each edge**, fixed by the **problem**. When every switching sequence can be read as a
-path in the graph, the local inequalities imply a property of the whole system. Only the
-inequality changes between stability, safety and optimal control.
+along each edge**, fixed by the **problem**. When every admissible switching sequence can be
+read as a path in the graph, the local inequalities imply a property of the whole system. Only
+the inequality changes between stability, safety and optimal control.
 
-What the package adds to that framework is the graph as a first-class object:
+What the package adds to that framework is the graph as an object in its own right:
 
 | | |
 | :-- | :-- |
 | **Certify** | stability, safety or optimal control on a graph you supply, with quadratic, copositive, polyhedral or sum-of-squares templates |
-| **Build** | De Bruijn graphs, the seed of a system, duals, graphs reading words, graphs for constrained switching |
-| **Compare** | decide whether one graph is guaranteed no worse than another for a template, with the witness: a map, a relation or an integer matrix |
-| **Refine** | grow a graph where its certificate is tight, with every lift of the literature, until the bound is proved to be the joint spectral radius |
+| **Build** | De Bruijn graphs, the common Lyapunov function graph, duals, graphs reading words, graphs for constrained switching |
+| **Compare** | decide whether one graph is guaranteed no worse than another for a template, with the simulation that proves it: a map, a relation or an integer matrix |
+| **Refine** | grow a graph where its certificate is tight, with every refinement of the literature, until the bound is proved to be the joint spectral radius |
 
 ## How it relates to the other tools
 
@@ -79,8 +80,8 @@ discuss a feature, and see the Developer Docs for the setup, conventions and Git
 
 One thing to read before writing code: the package is organised along **two independent axes**,
 *template* (what the node functions are) and *problem* (what the edge inequality says), with the
-graph cutting across both. A new template is one file under `src/templates/`, a new problem one
-file under `src/problems/`, a new lift one file under `src/lifts/`. The
+graph cutting across both. A new template, problem, lift or refinement is one file in the
+`catalogue/` of its directory under `src/`. The
 [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
 page explains why, and what goes wrong when the structure is ignored.
 
@@ -88,7 +89,7 @@ page explains why, and what goes wrong when the structure is ignored.
 
 The [bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/)
 lists every paper the package implements, grouped by what each one underwrites: the
-predicates, the templates, the problems, the lifts and the ordering.
+predicates, the templates, the problems, the lifts and the refinements.
 
 ## Acknowledgements
 

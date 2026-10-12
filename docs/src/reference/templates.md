@@ -18,35 +18,35 @@ Pages   = ["templates/abstract.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/quadratic.jl"]
+Pages   = ["templates/catalogue/quadratic.jl"]
 ```
 
 ## Linear copositive
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/linear_copositive.jl"]
+Pages   = ["templates/catalogue/linear_copositive.jl"]
 ```
 
 ## Dual copositive
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/dual_copositive.jl"]
+Pages   = ["templates/catalogue/dual_copositive.jl"]
 ```
 
 ## Polyhedral, fixed facets
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/polyhedral.jl"]
+Pages   = ["templates/catalogue/polyhedral.jl"]
 ```
 
 ## Polyhedral, free facets
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/conic_polyhedral.jl"]
+Pages   = ["templates/catalogue/conic_polyhedral.jl"]
 ```
 
 ## Sum of squares
@@ -56,7 +56,7 @@ required before this template can be solved with.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/sum_of_squares.jl"]
+Pages   = ["templates/catalogue/sum_of_squares.jl"]
 ```
 
 ## SetProg sets
@@ -66,5 +66,5 @@ required before this template can be solved with.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/set_prog.jl"]
+Pages   = ["templates/catalogue/set_prog.jl"]
 ```

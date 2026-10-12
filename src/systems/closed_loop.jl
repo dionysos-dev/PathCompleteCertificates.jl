@@ -1,35 +1,31 @@
 # The closed loop, kept apart from `simulate.jl` because it is the one part of
-# simulation that depends on the problem axis: it dispatches on a certificate,
-# so it cannot be included with the other systems files.
+# simulation that depends on the problem axis: it dispatches on a certificate.
 
 """
-    simulate(certificate, x0, steps; rng = Random.default_rng(), node = 1)
+    simulate(certificate, x0, steps; rng = Random.default_rng(), node = nothing)
 
 Run the closed loop under the policy an [`OptimalControlCertificate`](@ref)
-carries, and return a [`Trajectory`](@ref) whose [`inputs`](@ref) are the inputs
-applied.
+carries, and return a [`Trajectory`](@ref) whose [`inputs`](@ref) are the
+inputs applied. The mode at each step is drawn from the modes the system's
+automaton admits, as in the open-loop method.
 
-The mode at each step is drawn from the modes the system's switching automaton
-admits, exactly as in the open-loop method.
+The policy has memory: the gains are indexed by node of the certificate graph,
+and that node advances along the observed mode, so the run tracks the state,
+the automaton state and the graph node at once. A memoryless law `u(x)` cannot
+express it, which is why it is not the `u` keyword of the open-loop method.
 
-!!! note "The policy has memory, which is why it is not a `u(x)`"
-    The gains are indexed by **node of the certificate graph**, and that node
-    advances along the observed mode. So the run tracks three things at once:
-    the state, the automaton state that says which modes are available, and the
-    graph node that says which gain applies. A memoryless `u(x)` law — what
-    `simulate`'s `u` keyword takes — cannot express this, because it is never
-    told the mode.
-
-`node` is where the walk starts. Where the graph offers several successors for
-the observed mode the first is taken; on a De Bruijn graph the successor is
-unique, so the choice does not arise.
+`node` is the node of the certificate graph the policy starts in. By default it
+is the node whose function attains `certificate(x0)`, so the run is bounded by
+the common bound at the initial state. Where the graph offers several
+successors for the observed mode the first is taken; on a De Bruijn graph the
+successor is unique.
 """
 function simulate(
     certificate::OptimalControlCertificate,
     x0::AbstractVector{<:Real},
     steps::Integer;
     rng::Random.AbstractRNG = Random.default_rng(),
-    node::Integer = 1,
+    node::Union{Nothing, Integer} = nothing,
 )
     steps >= 0 || throw(ArgumentError("steps must be nonnegative, got $steps"))
 
@@ -44,14 +40,15 @@ function simulate(
     certificate_graph = graph(certificate)
     gains = certificate.gains
 
-    _check_node(certificate_graph, node)
-
     A = mode_matrices(system)
     B = input_matrices(system)
 
     n = size(first(A), 1)
     length(x0) == n ||
         throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
+
+    node = something(node, argmin([V(x0) for V in functions(certificate)]))
+    _check_node(certificate_graph, node)
 
     modes = _random_modes(system.automaton, first(_HS.states(system.automaton)), steps, rng)
 
@@ -74,7 +71,7 @@ function simulate(
     return Trajectory(xs, modes, us)
 end
 
-"The node the certificate graph moves to when `mode` is observed at `node`."
+# The node the certificate graph moves to when `mode` is observed at `node`.
 function _successor(certificate_graph, node::Integer, mode::Integer)
     candidates = outgoing_edges(certificate_graph, node, mode)
 

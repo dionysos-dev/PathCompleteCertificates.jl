@@ -4,20 +4,13 @@ CurrentModule = PathCompleteCertificates
 
 # Lift reference
 
-A **lift** maps a path-complete graph to a path-complete graph
-([debauche2021comparison](@cite), Def. 5) — that is the whole of it. It names no
-template and no problem, which is why lifts sit in neither axis.
-
-Two consumers: [`refine`](@ref) applies one where a certificate is tight, and
-the ordering of two graphs, in the [Ordering reference](@ref), reads what a lift
-requires. See [Lifts](@ref) for the picture.
-
-!!! note "Soundness is free; improvement is not"
-    Path-completeness is preserved, and it is the soundness condition, so a
-    certificate on a lifted graph certifies the system whatever template it
-    carries. What the template's closure properties decide is **validity**
-    (Def. 6): whether the lift is guaranteed not to make the bound *worse*. The
-    four local lifts need no such property.
+A **lift** is the lift of an operation: a map from path-complete graphs to
+path-complete graphs whose nodes stand for combinations of the original nodes
+([debauche2021comparison](@cite), Defs. 5 and 7). It exists to compare graphs:
+when the lifted `G` simulates `H`, `H` is no worse than `G` for every template
+closed under the operation. [`compare`](@ref) runs every lift on a pair of
+graphs; see [Graph comparison via lifts](@ref) for the picture. A new lift is one file in
+`src/lifts/catalogue/` answering [`lift`](@ref) and [`requirements`](@ref).
 
 ## The interface
 
@@ -40,30 +33,23 @@ Modules = [PathCompleteCertificates]
 Pages   = ["lifts/dual.jl"]
 ```
 
-## Splitting nodes along edges
+## The catalogue
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["lifts/split.jl"]
+Pages   = [
+    "lifts/catalogue/identity.jl",
+    "lifts/catalogue/min.jl",
+    "lifts/catalogue/max.jl",
+    "lifts/catalogue/sum.jl",
+    "lifts/catalogue/composition.jl",
+    "lifts/catalogue/backward_composition.jl",
+]
 ```
 
-## Folding edges into words
+## Comparing two graphs
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["lifts/product.jl"]
-```
-
-## The composition lift
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["lifts/composition.jl"]
-```
-
-## The subset lifts
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["lifts/subsets.jl"]
+Pages   = ["lifts/compare.jl"]
 ```

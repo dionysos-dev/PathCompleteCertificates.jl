@@ -38,7 +38,7 @@ end
     # One reset-map type, so one call always returns one parametrisation.
     # Emitting an affine or constrained map would silently return a different
     # type from the same call.
-    @test s isa PCC.SwitchedLinearControlSystem
+    @test PCC.has_input(s)
 
     rm = maps_by_mode(s)
     for σ in 1:2
@@ -76,12 +76,12 @@ end
 
     # It is a test of shape, and the shape must not depend on whether the
     # switching happens to be restricted -- the automaton parameter is open.
-    @test PCC.switched_system(A, B) isa PCC.SwitchedLinearControlSystem
-    @test PCC.switched_system(A, B; automaton = g) isa PCC.SwitchedLinearControlSystem
+    @test PCC.has_input(PCC.switched_system(A, B))
+    @test PCC.has_input(PCC.switched_system(A, B; automaton = g))
 
     # No input, no match, constrained or not.
-    @test !(PCC.switched_system(A) isa PCC.SwitchedLinearControlSystem)
-    @test !(PCC.switched_system(A; automaton = g) isa PCC.SwitchedLinearControlSystem)
+    @test !PCC.has_input(PCC.switched_system(A))
+    @test !PCC.has_input(PCC.switched_system(A; automaton = g))
 end
 
 @testset "constrained switching" begin

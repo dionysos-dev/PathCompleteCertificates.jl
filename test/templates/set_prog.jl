@@ -70,7 +70,7 @@ rate(template, graph = MEMORYLESS) =
 # The edge inequality `V_dst(A x) ≤ γᵈ V_src(x)`, sampled on the circle.
 function test_edges(certificate, template, graph)
     V = PCC.functions(certificate)
-    scale = certificate.rate^PCC.rate_exponent(template)
+    scale = certificate.rate^PCC.homogeneity_degree(template)
 
     for edge in PCC.edges(graph), θ in range(0, 2π; length = 97)
         point = [cos(θ), sin(θ)]
@@ -85,18 +85,18 @@ end
 end
 
 @testset "the degree is the one of the set variable" begin
-    @test PCC.rate_exponent(PCC.SetProgTemplate(Ellipsoid(symmetric = true))) == 2
-    @test PCC.rate_exponent(
+    @test PCC.homogeneity_degree(PCC.SetProgTemplate(Ellipsoid(symmetric = true))) == 2
+    @test PCC.homogeneity_degree(
         PCC.SetProgTemplate(PolySet(symmetric = true, degree = 6, variables = x)),
     ) == 6
-    @test PCC.rate_exponent(
+    @test PCC.homogeneity_degree(
         PCC.SetProgTemplate(Polytope(symmetric = true, piecewise = SQUARE)),
     ) == 1
     mixed = PCC.SetProgTemplate([
         Ellipsoid(symmetric = true),
         PolySet(symmetric = true, degree = 4, variables = x),
     ])
-    @test_throws ArgumentError PCC.rate_exponent(mixed)
+    @test_throws ArgumentError PCC.homogeneity_degree(mixed)
 end
 
 @testset "an ellipsoid reproduces the quadratic template" begin

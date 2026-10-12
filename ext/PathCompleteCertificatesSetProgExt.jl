@@ -37,7 +37,7 @@ _degree(::SetProg.Ellipsoid) = 2
 _degree(variable::SetProg.PolySet) = variable.degree
 _degree(::SetProg.Polytope) = 1
 
-function PCC.rate_exponent(template::PCC.SetProgTemplate)
+function PCC.homogeneity_degree(template::PCC.SetProgTemplate)
     degrees = unique(_degree.(template.variables))
 
     # One rate for the whole graph needs one degree: the edge condition scales
@@ -205,7 +205,7 @@ function PCC.add_domination!(
         throw(ArgumentError("SetProgTemplate needs a constant scale, got $scale"))
     scale > 0 || throw(ArgumentError("the scale must be positive, got $scale"))
 
-    gamma = scale^(1 / PCC.rate_exponent(template))
+    gamma = scale^(1 / PCC.homogeneity_degree(template))
 
     JuMP.@constraint(model, (map ./ gamma) * S_src ⊆ S_dst)
 

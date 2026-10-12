@@ -4,18 +4,11 @@ CurrentModule = PathCompleteCertificates
 
 # Graph reference
 
-The path-complete graph is a `HybridSystems.GraphAutomaton` — the same type as
-the system's own automaton — or a [`WordGraph`](@ref) when its edges read words.
-The package owns no graph algorithms of its own beyond these: the queries,
-predicates and constructions layered over the backing store, all of them
-reachable through the adapter in `graphs/queries.jl` and nothing else.
-
-See [Path-complete graphs](@ref) for what they mean and what they license.
-
-!!! note "The certificate graph and the system's automaton are the same type"
-    Both are a `GraphAutomaton`, so nothing stops you passing one where the
-    other is expected. The argument name tells you which is wanted: `graph` is
-    the certificate's, `system` carries its own.
+The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as the
+automaton of a constrained system, or a [`WordGraph`](@ref) when its edges read
+words. The argument name says which is wanted: `graph` is the certificate's,
+`system` carries its own. See [Path-complete graphs](@ref) for what the
+predicates mean.
 
 ## Queries
 

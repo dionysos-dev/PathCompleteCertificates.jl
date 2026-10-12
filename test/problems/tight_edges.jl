@@ -70,7 +70,7 @@ end
     )
 
     V = PCC.functions(certificate)
-    scale = 0.8^PCC.rate_exponent(PCC.QuadraticTemplate())
+    scale = 0.8^PCC.homogeneity_degree(PCC.QuadraticTemplate())
 
     for (edge, slack) in zip(PCC.edges(GRAPH), PCC.edge_slacks(certificate))
         src = V[PCC.source(edge)]

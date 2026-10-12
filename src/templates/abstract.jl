@@ -13,7 +13,7 @@ type — [`PolyhedralTemplate`](@ref) carries one fixed matrix per node.
 abstract type AbstractTemplate end
 
 """
-    rate_exponent(template) -> Int
+    homogeneity_degree(template) -> Int
 
 The degree of homogeneity of the template's functions, `V(cx) = cᵈ V(x)`.
 
@@ -21,7 +21,7 @@ The edge condition is `V_dst(Ax) ≤ γᵈ V_src(x)`, so this is what makes `γ`
 a contraction rate for every template. Quadratic forms are degree 2, linear
 functionals and norms degree 1.
 """
-function rate_exponent end
+function homogeneity_degree end
 
 """
     add_function_variables!(model, template, dimension, node)
@@ -64,13 +64,12 @@ Constrain, for every ``x``,
     - \\text{margin}\\,\\|x\\|^d \\ge 0,
 ```
 
-where ``d`` is [`rate_exponent`](@ref). `scale` and `margin` may be JuMP
+where ``d`` is [`homogeneity_degree`](@ref). `scale` and `margin` may be JuMP
 expressions.
 
 Quantifying over all `x` needs a lifting into a cone, which is template-specific
-but problem-agnostic — so this is the method that keeps the interface at
-templates + problems rather than templates × problems. A template that cannot
-express `margin` should accept `margin = 0` and throw otherwise.
+but problem-agnostic. A template that cannot express `margin` should accept
+`margin = 0` and throw otherwise.
 """
 function add_domination! end
 
@@ -139,8 +138,8 @@ is_closed_under(::AbstractTemplate, ::Operation, system) = false
 """
     reindex(template, origins)
 
-The template for a lifted graph, given where each of its nodes came from — the
-`origins` of a [`Lifted`](@ref).
+The template for a refined or lifted graph, given where each of its nodes came
+from — the `origins` of a [`Refined`](@ref) or a [`Lifted`](@ref).
 
 A template that carries no per-node data returns itself. One that does, such as
 [`PolyhedralTemplate`](@ref), gives every new node the data of its origin; a

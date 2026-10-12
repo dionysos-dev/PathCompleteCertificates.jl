@@ -62,19 +62,8 @@ end
     end
 end
 
-@testset "`objective` is the log-determinant heuristic, not a value bound" begin
-    # It is named `objective` because it is exactly the solved objective. A
-    # value-function bound could not be negative here, since Q and R are
-    # positive definite.
-    log_det = sum(
-        log(LinearAlgebra.det(inv(LinearAlgebra.Symmetric(Matrix(V))))) for
-        V in PCC.functions(RESULT)
-    )
-
-    @test RESULT.objective ≈ log_det rtol = 1e-4
-    @test RESULT.objective < 0
-
-    # The bound itself is a function of the state, and it is nonnegative.
+@testset "the bound is a function of the state, and nonnegative" begin
+    @test RESULT([1.0, 1.0]) > 0
     @test PCC.common(
         PCC.QuadraticTemplate(),
         GRAPH,

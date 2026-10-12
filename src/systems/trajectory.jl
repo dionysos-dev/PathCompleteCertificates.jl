@@ -7,9 +7,6 @@ and the inputs applied if there were any.
 `states` holds one more entry than `switching` — it starts at the initial state
 and ends after the last transition. `inputs` is `nothing` for an open-loop run,
 and otherwise holds one input per step.
-
-The sequence is called `switching`, not `modes`: `alphabet` is the set of modes
-a system or graph has, and this is a word over it.
 """
 struct Trajectory{T <: Real, U <: Union{Nothing, Vector{Vector{T}}}}
     states::Vector{Vector{T}}
@@ -66,16 +63,15 @@ switching(trajectory::Trajectory) = trajectory.switching
 """
     inputs(trajectory)
 
-The inputs applied, one per step, or `nothing` for an open-loop run. Guard with
-[`has_input`](@ref) rather than comparing to `nothing` at the call site.
+The inputs applied, one per step, or `nothing` for an open-loop run;
+[`has_input`](@ref) says which.
 """
 inputs(trajectory::Trajectory) = trajectory.inputs
 
 """
     has_input(trajectory) -> Bool
 
-Whether the run applied an input. Mirrors `has_input` on a system, so the same
-word answers the same question on both.
+Whether the run applied an input.
 """
 has_input(trajectory::Trajectory) = trajectory.inputs !== nothing
 

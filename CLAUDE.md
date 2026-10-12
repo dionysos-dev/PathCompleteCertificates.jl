@@ -1,474 +1,145 @@
 # CLAUDE.md
 
-Operating guide for AI coding agents (Claude Code) working in
-**PathCompleteCertificates.jl**. Read this before making changes.
-
----
+Operating guide for AI coding agents working in **PathCompleteCertificates.jl**. The developer
+pages of the manual, `docs/src/developers/`, say the same for a human reader. Read this before
+changing anything under `src/`.
 
 ## 1. What this package is
 
-Certificates for switched systems built on **path-complete graphs**.
+Certificates for switched systems built on **path-complete graphs**. A certificate is three
+things: a **labelled graph** whose labels are the modes, a function `V_s` drawn from a
+**template** at each node, and one **inequality along each edge**. When the graph is
+path-complete, every switching sequence is readable as a path and the local inequalities imply a
+property of the whole system.
 
-A path-complete certificate is always the same three things:
+The graph is the object of study: built, compared with another, and refined against its own
+certificate. A change that makes the graph less manipulable works against the package.
 
-1. a **labelled graph**, whose labels are the modes of the switched system;
-2. a function `V_α` drawn from a **template** at each node;
-3. one **inequality along each edge**.
+## 2. The architectural contract
 
-The graph is **path-complete** when every switching sequence of the system is readable as a
-path in it. That is the soundness condition — without it the inequalities certify nothing.
-
-**What makes this package different from the tools that exist**
-([SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl), the MATLAB
-[JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)):
-they treat the path-complete graph as an internal device for obtaining a
-joint-spectral-radius bound. Here the graph is *the object of study* — something you build,
-compare against another, order, and refine iteratively. Keep that framing when adding
-features: a change that makes the graph less manipulable is working against the package.
-
----
-
-## 2. The one architectural contract — read this before touching `src/`
-
-Only the **edge inequality** changes between problems:
-
-| Problem | Edge inequality on `(α, β, i)` |
-| :-- | :-- |
-| Stability | `V_α(x) ≥ γ⁻¹ V_β(A_i x)` |
-| Optimal control | `V_α(x) ≥ c(x) + V_β(f_i(x))` |
-| Safety | the invariance condition |
-
-The graph, the templates and the aggregation are identical. So the package has **two
-independent axes**, not one type hierarchy:
-
-- **template** (`src/templates/`) — what the node functions are;
-- **problem** (`src/problems/`) — what the edge inequality says.
-
-### The interfaces
-
-A template is passed as an **instance**, never as a type. `QuadraticTemplate()` carries
-nothing, but a template is not in general determined by its type: `PolyhedralTemplate` carries
-one fixed matrix per node, and `::Type{T}` has nowhere to put it.
-
-**A template supplies primitives; a problem chooses which to apply, and with what arguments.**
-Neither axis names the other.
-
-Every one of these is **public**. They are what a user implements, so none of them is
-`_`-prefixed — a hidden extension point is a contradiction.
+Only the edge inequality changes between problems, so there are **two independent axes**, not
+one type hierarchy: the **template** (`src/templates/`) says what the node functions are, the
+**problem** (`src/problems/`) says what the edge inequality is. A template supplies primitives,
+a problem composes them, and neither names the other. A template is an **instance**, never a
+type, because some carry per-node data. Every primitive is public, since a user implements it:
 
 ```julia
-# --- Template axis (src/templates/). One file per template, answering all of it.
-add_function_variables!(model, template, dim, node)  # -> the node function V_α
+# Template axis: one file per template, answering all of it.
+add_function_variables!(model, template, dim, node)        # the node function V_s
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                     # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
-domination_slack(template, V_src, V_dst, map; scale = 1)
-                                                     # the same, read off a *solution*: ≥ 0 when
-                                                     # it holds, 0 exactly when the edge is tight
-add_nonnegativity!(model, template, V)               # V(x) ≥ 0
-add_normalization!(model, template, V)               # excludes V ≡ 0
-rate_exponent(template)                              # degree d: V(cx) = cᵈ V(x)
-solution_value(template, V)                          # variables -> a callable node function
-node_value(template, problem, V, x)                  # evaluate V_α; generic in the problem
-check_dynamics(template, A)                          # is this template applicable at all?
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
+add_nonnegativity!(model, template, V)
+add_normalization!(model, template, V)                     # excludes V ≡ 0
+homogeneity_degree(template)                               # d: V(cx) = cᵈ V(x)
+solution_value(template, V)                                # variables -> a callable node function
+check_dynamics(template, A)                                # is the template applicable at all?
+is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
+reindex(template, origins)                                 # per-node data follows a refined graph
+has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
-# --- Problem axis (src/problems/). One file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; rate = 1)
-optimization_model(template, graph, problem; optimizer, ...)  # build, do not solve
+# Problem axis: one file per problem, composing the above.
+add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
-# Not `model`: it is the first argument of every primitive above and would be
-# shadowed inside all of them. Not `program`: one letter from `problem`.
+best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# --- Aggregation (src/aggregation.jl). Dispatches on the graph, so neither axis owns it.
-#   complete → min over nodes;  co-complete → max;  otherwise min-of-max over the observer.
-#   `common` is the literature's word (Philippe et al.) -- do not rename it to `aggregate`.
+# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
+common(template, graph, problem, Vs, x)
 ```
 
-**Each problem defines its own certificate, in its own file.** `AbstractCertificate` fixes the
-shared interface — `functions`, `status`, `is_feasible`, `problem`, `template`, `graph`, and
-callability, where `certificate(x)` is the common function. What a problem actually certifies
-is a **typed field** on its own type: `StabilityCertificate.rate`, `SafetyCertificate.margin`,
-`OptimalControlCertificate.gains`. Not entries in a shared bag — a field is documented,
-inferable and discoverable, and a new problem adds a type rather than inventing keys.
+`add_domination!` is the load-bearing primitive: the cone that quantifies an inequality over
+all `x` depends on the template and on nothing else, so stability's whole edge condition is one
+call with `scale = γᵈ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
+`Y = KS`, and says so in place.
 
-The six shared fields live once in `CertificateData`, which each certificate holds as `data`;
-the accessors read it, so a certificate implements nothing to get them.
+Each problem owns its certificate type; what it certifies is a typed field (`rate`, `margin`,
+`gains`), and the shared fields live once in `CertificateData`.
 
-`add_domination!` is the load-bearing one. Quantifying an edge inequality over all `x` needs a
-lifting into a cone, and that lifting is template-specific — which is why it cannot be written
-once against a callable `V(x)`. But it is **problem-agnostic**: stability is this with
-`scale = γᵈ`, safety is this on the homogeneous lift with `margin = ε`. So:
-
-```julia
-# The whole of stability's edge condition, for every template that exists or will:
-add_edge_constraint!(model, ::StabilityProblem, template, V_src, V_dst, A, rate) =
-    add_domination!(model, template, V_src, V_dst, A; scale = rate)
-```
-
-**A new template is one file in `src/templates/`. A new problem is one file in
-`src/problems/`. Neither requires editing the other directory.** That is the contract, and
-`grep -c '^function add_edge_constraint!' src/problems/*.jl` returning 1 everywhere is how you
-check it still holds.
-
-### How this was arrived at, so it is not undone
-
-The contract once read *"a new template is two methods"*. Porting the two polyhedral templates
-from Dionysos measured it instead. The first exposed four interface defects, all invisible while
-the only templates were quadratic and copositive — both data-free, both degree 2:
-
-| What it needed | Why the first two hid it |
-| :-- | :-- |
-| an instance, not a `::Type{T}` | quadratic and copositive carry no data; polyhedral carries a matrix per node |
-| `add_nonnegativity!` dispatching on the *template* | it dispatched on the container, and `w` is a `Vector` exactly like `c` — silently the wrong constraint, with `w` in a denominator |
-| `rate_exponent` | `γ²` was hard-coded, so `jsr_bound` returned `√JSR` for the degree-1 template |
-| `solution_value` | `JuMP.value.(V)` works only if `V` is a bare container |
-
-The second polyhedral template — facets as decision variables, a conic partition per node — then
-needed **no interface change at all**, which is the evidence the two axes were right and only
-their interface was shaped around a coincidence.
-
-What remained was `add_edge_constraint!` scaling as templates × problems, and template-axis code
-living in `problems/stability.jl` (all four `_add_normalization!` methods, three `_node_value`
-methods, a copositive `isa` test). `add_domination!` removed the first; moving those methods to
-their own template files removed the second.
-
-**The one genuine exception is optimal control**, and it is documented in place rather than
-smoothed over: its inequality is convex only after the substitution `S = P⁻¹`, `Y = KS`, so it
-uses the template's variables as the *inverse* of the node function and cannot be written
-against `V_src` and `V_dst` at all. A template wanting to support it must supply a second
-primitive. One inhabitant is not yet a pattern, so none is introduced.
-
-> **The failure mode this prevents.** The code this package grew from had three synthesis
-> routines of 127, 171 and 200 lines that were largely the same program, differing only in
-> the variable shape and two constraint forms. If you find yourself writing a fourth
-> monolithic `compute_<something>` function, you have missed this section.
-
-### Why a product, not an inheritance tree
-
-The axes are orthogonal: quadratic-stability, quadratic-optimal-control and
-polyhedral-stability all make sense. A single inheritance tree cannot express a product of two
-axes — you would write `QuadraticStabilityCertificate`,
-`QuadraticOptimalControlCertificate`, and so on. In Julia the product is expressed by
-**parameters**; abstract types carry no fields, so a subtype inherits an interface, never data.
-
----
+**A new template, problem, lift or refinement is one file in the `catalogue/` of its directory,
+and touches nothing else.**
 
 ## 3. Repository map
 
-What exists today. The package is young, so this is short.
-
-**The two axes of §2 are the directory layout.** `templates/` and `problems/` have the same
-shape on purpose — an `abstract.jl` holding the interface, then one file per inhabitant that
-answers all of it. Adding a template or a problem is adding a file, and `ls src/` tells you the
-architecture before you read a line.
+Each directory with an interface has the same shape: the interface files at the top, one file
+per inhabitant under `catalogue/`, named after the type without the directory's suffix.
 
 ```
 src/
-├── PathCompleteCertificates.jl   include order, grouped and commented
-├── operations.jl                 Addition, Maximum, Minimum, Composition, InverseComposition,
-│                                 and `dual`: what a template is closed under and a lift requires
-├── systems/                      the input to every problem, and runs of it
-│   ├── switched.jl               switched linear systems; mode_matrix on a word; language; dual
-│   ├── trajectory.jl             one run: states, switching sequence, inputs
-│   ├── simulate.jl               sampling runs -- the substrate for `refute`
-│   └── closed_loop.jl            the one simulation that needs a certificate
-├── graphs/
-│   ├── queries.jl                THE ADAPTER over HybridSystems.GraphAutomaton and WordGraph;
-│   │                             nothing outside it touches a graph's internals
-│   ├── words.jl                  expanded_form: a word graph as a letter graph
-│   ├── predicates.jl             is_path_complete (Def. II.1), is_complete / is_co_complete
-│   ├── languages.jl              is_path_complete against an automaton; seed(system)
-│   ├── dual.jl                   the dual graph: edges and words reversed
-│   ├── simulation.jl             simulation (a map), simulation_relation, closed_subgraph
-│   ├── de_bruijn.jl              the De Bruijn family, primal and dual
-│   ├── observer.jl               the subset construction
-│   └── cycles.jl                 simple cycles, for the lower bound
-├── templates/                    AXIS 1 — what the node functions are
-│   ├── abstract.jl               AbstractTemplate, its primitives, is_closed_under, reindex
-│   ├── linear_copositive.jl
-│   ├── dual_copositive.jl        max_i x_i / v_i, the dual of the one above
-│   ├── quadratic.jl
-│   ├── polyhedral.jl             symmetric 2n-face, fixed facets
-│   ├── conic_polyhedral.jl       free facets, plus the partition that linearises them
-│   ├── sum_of_squares.jl         the type only -- its methods are in ext/
-│   └── set_prog.jl               the type only -- its methods are in ext/
-├── problems/                     AXIS 2 — what the edge inequality says
-│   ├── abstract.jl               AbstractProblem, add_edge_constraint!, shared statuses, and
-│   │                             what refine reads: best_certificate, objective, optimality_gap
-│   ├── stability.jl
-│   ├── safety.jl
-│   └── optimal_control.jl
-├── lifts/                        transformations of the graph — not a third axis, an
-│                                 operation on one of the three things a certificate is
-│   ├── abstract.jl               AbstractLift, scope, Lifted, requirements, is_valid
-│   ├── dual.jl                   DualLift: every backward lift is the dual of a forward one
-│   ├── split.jl                  ForwardEdgeSplit at a locus; PathDependentLift
-│   ├── product.jl                ForwardEdgeProduct at a locus, writing words; ProductLift
-│   ├── composition.jl            CompositionLift
-│   └── subsets.jl                MinLift, MaxLift, SumLift: exhibits, never built to decide
-├── refinement/                   designing the graph, rather than solving on a given one
-│   ├── strategies.jl             SplitTightNode, LiftTightEdges, Hierarchy
-│   └── loop.jl                   `refine`; generic in the problem, reads all three like
-│                                 aggregation.jl, so it is filed under neither axis
-├── ordering.jl                   is one graph no worse than another for a template:
-│                                 conic_witness (an LP), order_witness, simplify
-└── aggregation.jl                `common` — the join; dispatches on the graph, so it
-                                  belongs to neither axis
+├── operations.jl        Addition, Maximum, Minimum, Composition, InverseComposition; `dual`
+├── systems/             switched systems, runs, the dual system
+├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words, predicates,
+│                        languages, dual, de_bruijn, observer, cycles, simulation
+├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
+├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
+├── lifts/               COMPARING graphs: abstract.jl, dual.jl, compare.jl + catalogue/
+├── refinements/         IMPROVING a graph: abstract.jl, dual.jl, strategies.jl, refine.jl + catalogue/
+└── common.jl            `common`: reads graph, template and problem, so belongs to neither axis
 ```
 
-| Path | What it is |
-| :--- | :--- |
-| `ext/` | Optional interop, one extension per weak dependency. Today: the plotting recipe for `Trajectory` behind `RecipesBase`, the sum-of-squares template behind `SumOfSquares`, and the SetProg template behind `SetProg`. **A template may be split this way** — type in `src/templates/`, primitives in `ext/` — when its stack is too heavy to load for an LP |
-| `test/` | Mirrors `src/` **including its subdirectories**. Entry point `test/runtests.jl`; every file is standalone-runnable |
-| `docs/` | The manual, the examples and these developer docs |
-| `docs/src/examples/` | Runnable scripts, **executed by the docs build** via Literate. Run one with `--project=docs`, which is where `Clarabel` and `Plots` live — never a dependency of the package or of the environment CI instantiates. There is no top-level `examples/`: it was folded in here so an example cannot go stale unnoticed |
-
-Add a directory when there is something to put in it, not before.
-
-Two placements that are deliberate rather than obvious:
-
-- **The conic partition lives with its template, not under `graphs/`.** It partitions the
-  *state space*, not the graph; it is indexed by node only because each node gets one. Nothing
-  graph-shaped touches it. (The plan filed it under `graphs/` — that was wrong.)
-- **`aggregation.jl` is top-level.** `common` reads all three of graph, template and problem,
-  so filing it inside one axis would misrepresent it. §2's contract names three things; there
-  are three homes.
-
-Avoid `utils.jl` and `*_helper.jl`. Both existed here and both were junk drawers — name a file
-for what is in it, and if nothing fits, that is the signal a concept is missing.
-
-**The path-complete graph is a `HybridSystems.GraphAutomaton`** — the same type as the
-system's own automaton. The package owns no graph type; `graph_helper.jl` adds the queries.
-That keeps one vocabulary across the system and the certificate, and it is why `label` takes
-the graph (`label(graph, edge)`): a `GraphTransition` carries its id, not its label.
-
-> The cost, so it is not rediscovered as a surprise: `GraphAutomaton` does not subtype
-> `Graphs.AbstractGraph`, so the ecosystem's algorithms do not come for free; label lookup
-> reaches into its `Σ` field; and the queries are still linear scans. Accepted deliberately.
-> **Because the two graphs are now the same type, nothing but the argument name stops
-> `system.automaton` being passed where the certificate graph belongs** — so keep the
-> arguments named `system`, `graph` and `reachability`, never `automaton`.
-
----
+`ext/` holds one extension per weak dependency. `test/` mirrors `src/` directory for directory,
+every file standalone-runnable and listed in `TEST_FILES`. `docs/src/examples/` are executed by
+the docs build. No `utils.jl`.
 
 ## 4. Conventions
 
-**The authority is the [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/).**
-
-- **Modules and types** CamelCase; **functions** snake_case; **constants** `UPPER_CASE`;
-  **non-public** names `_`-prefixed.
-- **Mutating functions end in `!`**.
-- **Argument ordering** follows the documented order: *function argument, I/O stream, input
-  being mutated, **type**, input not being mutated, key, value, …* — which is why
-  `certify(QuadraticTemplate(), graph, problem; optimizer)` takes the template first,
-  the same shape as `parse(Int, s)` and `read(io, T)`.
-- **No unnecessary static parameters.** `f(x::T) where {T <: Real}` becomes `f(x::Real)` when
-  the parameter is unused.
-- **No type piracy.** Never add `Base` methods to LazySets, JuMP or HybridSystems types — Aqua
-  fails the build on it.
-- **Prefer methods over field access.** Reach for `alphabet(g)`, not `g.alphabet`: the graph
-  backing store is expected to change.
-- **Predicates** are `is_*`. **No `get_` / `compute_` / `build_` / `generate_` prefixes** — the
-  noun *is* the function.
-- **No acronyms in exported names.** No `PCLF`, `CLF`, `MLF`.
-- **One word per concept.** It is `alphabet`, never `modes` or `labels`.
-- **Node functions are callable**: `V(x)`, not `piece_value(V, x)`.
-- **Never hard-code `Float64` in a signature.** Take `Real` and parametrise on the number
-  type — a certificate sometimes has to be exact (`Rational`, `BigFloat`) rather than numerical.
-
----
+The [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) is the authority.
+Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public names `_`-prefixed;
+mutating functions end in `!`; predicates are `is_*`; no `get_`/`compute_`/`build_` prefixes;
+no acronyms in public names; one word per concept, and **the papers' word** whenever one
+exists (`common`, `valid`, `simulation`, `tight`, `common_graph`). The template comes first in
+`certify(template, graph, problem)`, the style guide's argument order. Methods over field
+access. Never hard-code `Float64` in a signature. No `Base.show`.
 
 ## 5. Gotchas
 
-**A lift is always sound. The template decides whether it *improves*.**
-
-Debauche, Della Rossa & Jungers define a lift (Def. 5) as any `L : Graphs_M → Graphs_M` with
-`L(G)` path-complete whenever `G` is. No template in it — so a certificate on `L(G)` certifies
-the system whatever template it carries. What their closure properties decide is **validity**
-(Def. 6): whether `G ≤_V L(G)`, the guarantee that the lift does not make the bound *worse*.
-Apply one where it does not hold and you get a worse bound, visible the moment you solve, not
-an unsound certificate.
-
-Validity is answered through **properties**, never by dispatching on the concrete template type
-— that would need one method per (lift, template) pair, the *n × m* explosion §2 exists to
-avoid:
-
-```julia
-is_closed_under(template, ::Operation, system)   # the template declares; default false
-requirements(lift)                               # the lift names what it needs; () for the atoms
-is_valid(lift, template, system)                 # written ONCE, against the two
-```
-
-One documented override exists, `is_valid(::MinLift, ::LinearCopositiveTemplate, system)`,
-because the literature proves validity there without closure (Debauche, Thm. 7.43). Add
-another only with a theorem to cite. Use the papers' word: **valid**, not "admissible".
-
-`is_valid` also reads the dual side (Debauche, Prop. 7.5): a lift is valid for a template
-whenever its dual is valid for `dual(template)` on `dual(system)`, so a closure declared on
-either of a dual pair of templates serves both. `dual(certificate)` is the constructive form
-of the same duality (Lemma 6.25), and `test/problems/dual.jl` asserts it on every lift — a
-new template with a dual declares `has_dual`, `dual(template)` and `dual(template, V)`, and
-that test is where an asymmetric declaration shows up.
-
-The four local lifts — split a node along one edge, fold an edge into its neighbours, each
-forward or backward — need none of it: a copy inherits its origin's function, a product chains
-two inequalities. They are the partial lifts of Athanasopoulos & Jungers edge for edge, and
-`test/lifts/reference.jl` pins them against the reference implementation of Roy's repository, self-loops
-included. Two things the paper's degree assumptions leave open are decided there too: a node
-left without edges is deleted, and a locus of several edges is the lift applied edge by edge
-with the loop last. Applied at every edge they are the classical hierarchies (De Bruijn is the
-backward split at every edge, iterated); applied where a certificate is tight they are
-`refine`. The subset lifts never move the bound and are never built to decide an ordering:
-`simulation_relation` and `conic_witness` decide those in polynomial time.
-
-**A word graph is sound for stability only.** An edge reading a word imposes one inequality on
-the product of its modes and nothing on the states inside; the joint spectral radius is still
-bounded, a barrier is not. Safety, optimal control and `common` throw on a `WordGraph` and name
-`expanded_form`.
-
-**The adapter invariant.** Nothing outside `graphs/queries.jl` calls `_HS.GraphAutomaton`,
-`_HS.add_transition!` or reads a graph's fields — `grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v graphs/queries.jl`
-is empty. It is what lets a graph carry words, and what lets the backing store change in one
-file. Build graphs with `empty_graph(n)` (a `GraphAutomaton`), `WordGraph(n)`, or
-`_empty_like(graph, n)` for one of the same kind as `graph`.
-
-**Keep the graph constructors type-stable.** `empty_graph(n; words = false)` returning either a
-`GraphAutomaton` or a `WordGraph` made every construction routed through it infer as a union of a
-mutable and an immutable struct. On Julia 1.12.5 a closure that called `certify` through a
-non-const global on such a graph and then read the result crashed with an access violation —
-not an error, a crash — while master and the test suite, where the types are static, were fine.
-That is why the kind of graph is chosen by dispatch (`_empty_like`), never by a keyword, and why
-`Base.return_types(de_bruijn, (Int, Int))` must stay a single concrete type.
-
-**`refute` and `certify` are not the same thing.** `refute` samples looking for a violation:
-it is a cheap way to learn you are wrong, and finding nothing proves nothing. `certify` solves
-for the guarantee. Never present one as the other — conflating them is how unsound results
-ship.
-
-**Three predicates, and they are not the same thing.** Philippe, Athanasopoulos, Angeli &
-Jungers, *On Path-Complete Lyapunov Functions*, is the authority:
-
-| Predicate | Paper | Meaning |
-| :-- | :-- | :-- |
-| `is_path_complete` | Def. II.1 | **every** finite switching sequence is readable as a path |
-| `is_complete` | Def. III.2 | every node has an *outgoing* edge for every mode |
-| `is_co_complete` | Def. III.2 | every node has an *incoming* edge for every mode |
-
-`is_complete` and `is_co_complete` are **sufficient, not necessary**. A graph can read every
-word without every node reading every letter, so never use them to answer "is this a valid
-certificate" — that question is `is_path_complete`, decided by the subset construction (the
-graph is path-complete iff the subset construction from *all* nodes never reaches ∅).
-
-What each one licenses (Cor. III.3, Thm III.8) is why both survive: complete → aggregate with
-`min`, co-complete → `max`, general path-complete → `min` of `max` over the observer graph.
-`common` dispatches on exactly that.
-
-Neither is graph-theoretic completeness, where every pair of vertices is adjacent.
-
-**Path-completeness is relative to an alphabet, and the default is the weaker question.**
-`is_path_complete(graph)` asks about the labels the graph *happens to use*, so a graph that
-never mentions a mode passes trivially — and then certifies nothing about that mode. It once
-returned a JSR bound of 0.906 for a system whose JSR is at least 3. Always pass the system's
-alphabet when the question is about a certificate: `is_path_complete(graph, 1:n_modes)`.
-Every problem's data check calls `_check_path_complete(graph, length(A))`; add the call when
-you add a problem.
-
----
+- **A lift compares; a refinement improves.** Both preserve path-completeness. A lift is the
+  lift of an operation; its validity is read from the template's closures through `is_valid`,
+  written once, and `simulation(lift, G, H)` decides the order `G ≤_V H`. A refinement is valid
+  for every template by construction and has no `requirements`; do not add them.
+- **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
+  the duals decides max, a linear program decides the sum lift over every size.
+- **One override of `is_valid`** exists, the min lift on the linear copositive template
+  (Debauche, Thm. 7.43). Add another only with a theorem to cite.
+- **Duality is an involution on everything**: graphs, systems, templates, certificates, lifts,
+  refinements, operations. Every backward construction is `dual` of a forward one.
+- **A word graph is sound for stability only.** Safety, optimal control and `common` throw on a
+  `WordGraph` and name `expanded_form`.
+- **The adapter invariant.** Nothing outside `graphs/queries.jl` touches HybridSystems' graph
+  internals; `grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries` is
+  empty. Build graphs with `empty_graph`, `WordGraph` or `_empty_like`, which chooses the kind
+  by dispatch, never by keyword, so the constructors stay type-stable.
+- **Three predicates.** `is_path_complete` is the soundness question, decided by the subset
+  construction; `is_complete` and `is_co_complete` are sufficient only, and decide the form of
+  `common`. Always pass the system's language: `is_path_complete(graph)` alone asks about the
+  modes the graph happens to use.
+- **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
+  the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
+  solve; `path_complete = false` waives it and must never become the default.
+- **Verify every citation in the PDF before writing it.** No theorem number without reading it.
 
 ## 6. Commands
 
 ```
-# Narrowest scope first — every test file is standalone-runnable
-julia --project=test test/graphs/predicates.jl
-
-# Fast subset: skips :slow suites (the SDP/LP-heavy synthesis tests)
-julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'
-
-# Full gate, before committing
-julia --project -e 'using Pkg; Pkg.test()'
-
-# Format — REQUIRED before every commit, CI fails on any diff
-julia -e 'using JuliaFormatter; format(".")'
-
-# Docs. The examples under docs/src/examples/ are EXECUTED by this build, so it
-# solves a handful of SDPs and draws two figures -- a few minutes, not seconds.
-julia --project=docs docs/make.jl
-
-# Docs without running the examples, for fast iteration on prose
-PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl
+julia --project=test test/graphs/predicates.jl                       # one file
+julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips :slow suites
+julia --project -e 'using Pkg; Pkg.test()'                           # the gate, before committing
+julia -e 'using JuliaFormatter; format(".")'                         # required before every commit
+julia --project=docs docs/make.jl                                    # runs the examples; minutes
+PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl             # prose only
 ```
 
-New test files go in the `TEST_FILES` list in `test/runtests.jl` (tag a slow suite `:slow`).
+Iterate in one long-lived `julia --project=test` session with Revise; run the cold `Pkg.test()`
+once at the end. Nothing is exported, so `test/docstrings.jl` is the docstring gate, and every
+docstring must land in an `@autodocs` block under `docs/src/reference/`. A stale
+`Manifest.toml` fails `Pkg.test()` before any test runs: delete it and `Pkg.resolve()` in the
+environment that failed.
 
-`makedocs` runs with `checkdocs = :all`, but the package **exports nothing deliberately**, so
-that setting has no symbol list to work from and checks nothing for coverage. The real gate is
-`test/docstrings.jl`, which walks every non-underscore name reachable as `PCC.name`. What
-`checkdocs` still catches is a docstring missing from the manual — every one must land in an
-`@autodocs` block under `docs/src/reference/`.
+## 7. Git
 
-### Don't relaunch Julia for every check
-
-A cold `julia` costs ~30 s of startup and precompilation, and `Pkg.test()` adds Aqua's
-persistent-task probe (~50 s) on top. Iterate in **one long-lived session** instead: the four
-test files together take 80 s warm against roughly five minutes of cold starts.
-
-```julia
-julia --project=test          # once, and leave it open
-using Revise                  # picks up edits to src/ without a restart
-include("test/safety.jl")     # rerun after each edit; ~8 s instead of ~3 min
-```
-
-In VS Code that is the integrated Julia REPL (`Alt-J Alt-O`); an agent without a terminal it can
-keep open gets the same effect from a background `julia` process that polls a file for code and
-writes the output to a log — same session, same warm caches, one message per command.
-
-Run the cold `Pkg.test()` **once** at the end, as the gate. It is what CI runs; it is not an
-iteration loop.
-
-**Trap:** `Manifest.toml` is gitignored, so a branch that adds a dependency leaves yours stale
-and `Pkg.test()` fails on `"X is a direct dependency, but does not appear in the manifest"`
-before running a single test. Fix with `rm Manifest.toml` then `Pkg.resolve()` — in the
-environment that failed (root, `test/` or `docs/`), not always the root one.
-
----
-
-## 7. Git workflow
-
-Never commit to `master`; branch per change; format before committing; open a PR.
-
-**Commit message format:** `[ACTION] module: description` — lowercase, no trailing period,
-≤ 60 chars. Actions: `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV`. Module is the touched
-subsystem (`graphs`, `templates`, `problems`, `systems`, `aggregation`, `test`, `docs`,
-`meta`), or `examples` for a change confined to `docs/src/examples/`.
-
-Do **not** add a `Co-Authored-By` line.
-
----
-
-## 8. Two traps measured, not guessed
-
-**Path-completeness is PSPACE-complete to decide, so it is checked once and can be waived.** It is NFA universality, and
-`is_path_complete` is the subset construction — exponential in `|V|` in the worst case. It is
-usable here because the graphs are not worst cases (a De Bruijn graph visits about `2|V|`
-subsets, not `2^|V|`) and because complete / co-complete short-circuit it. Refinement tests
-many candidate graphs with this predicate, so measure here first if a loop gets slow.
-
-**Index adjacency before scanning it.** `is_complete` used to call `outgoing_edges(graph, node,
-letter)` per pair, each a full scan of the edge list — `O(|V|·|Σ|·|E|)`. On `M = 4, k = 4` that
-was 46 ms, **50× slower than the PSPACE-complete predicate it was supposed to be a cheap
-substitute for**. Building the index once made it 0.1 ms. `successors(graph)` and
-`predecessors(graph)` are that index, built once and shared by the predicates, the observer,
-the simulation relation and the subset lifts; `outgoing_edges` and `incoming_edges` go through
-the backing graph's adjacency and cost the degree. Build the index rather than calling the
-star queries in a loop over letters.
-
-Two consequences of that cost, both already in the code:
-
-- **Check once per solve, not once per model.** `jsr_bound` used to validate, then build a model
-  per bisection step, each rebuild revalidating — running the PSPACE-complete test a dozen times
-  on a graph that cannot have changed. It now checks once and passes `path_complete = false`
-  inward.
-- **`path_complete = false` on every entry point** waives the test and *asserts* the property,
-  for a caller with a large graph or one whose construction already guarantees it — a lift of a
-  path-complete graph, say. It is not the default and must not become one: the failure it guards
-  against is silent and unsound, and a rare performance cliff is the better risk. De Bruijn
-  graphs are cheap here (≈ 2|V| subsets), but nothing stops a user passing an arbitrary graph.
+Never commit to `master`; branch per change; format before committing; the user opens the PR.
+Commit message: `ACTION module: description`, lowercase, no trailing period, ≤ 60 chars, with
+`ACTION` one of `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV` and the module the touched
+subsystem (`graphs`, `templates`, `problems`, `systems`, `lifts`, `refinements`, `common`,
+`test`, `docs`, `examples`, `meta`). Do **not** add a `Co-Authored-By` line. `plan*.md`, the
+`lifts/` folder and reviewers' documents stay untracked.

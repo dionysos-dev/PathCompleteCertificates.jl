@@ -18,8 +18,9 @@ Definition II.1 of Philippe, Athanasopoulos, Angeli & Jungers: for any ``k ≥ 1
 and any ``σ_1 … σ_k`` over the alphabet there is a path
 ``(s_i, s_{i+1}, σ_i)_{i=1..k}`` in the graph.
 
-**This is the soundness condition.** Without it the edge inequalities certify
-nothing, whatever the solver reports.
+This is what makes a certificate speak for the whole system: the edge
+inequalities certify the property over the language the graph reads, which is
+every admissible sequence exactly when the graph is path-complete.
 
 It is *not* graph-theoretic completeness, where every pair of vertices is
 adjacent, and it is strictly weaker than [`is_complete`](@ref) — see that
@@ -31,13 +32,14 @@ path-complete iff the subset construction started from *all* nodes never
 reaches the empty set. That is a finite search, since there are finitely many
 subsets.
 
-The language is an `alphabet`, every word over it, or an `automaton`, the words
-it accepts from any state — the constrained case, decided by the same
-construction run in product with the automaton. Pass [`language`](@ref) of the
-system whenever the question is about a certificate: `alphabet` defaults to the
-modes `graph` happens to use, which answers the weaker question. A graph that
-never mentions a mode is trivially path-complete for its own labels and **not**
-path-complete for a system that has that mode.
+The second argument says which switching sequences must be readable. Under
+arbitrary switching it is the alphabet, and every sequence of modes over it
+must be; under constrained switching it is the system's automaton, and every
+path of the automaton must be, which the same construction decides in product
+with it. Pass [`language`](@ref) of the system whenever the question is about a
+certificate: without a second argument the alphabet is the modes `graph`
+happens to use, so a graph that never mentions a mode passes for its own labels
+and is **not** path-complete for a system that has that mode.
 
 A [`WordGraph`](@ref) is path-complete when its [`expanded_form`](@ref) is:
 every word of the language is then a *factor* of the label of some path.
@@ -49,52 +51,15 @@ function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
     # them before paying for the subset construction.
     (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
 
-    index = successors(graph)
+    # The observer drops empty subsets, so a word some reachable subset cannot
+    # read is a missing edge of it.
+    observer, _ = observer_graph(graph, alphabet)
 
-    # `observer_graph` runs the same search but drops empty states, which is
-    # exactly what this predicate needs to see.
-    start = Set(nodes(graph))
-
-    # Variable-length tuples as immutable keys. The element type must be
-    # written out: inferring it from the first subset pins the arity.
-    seen = Set{Tuple{Vararg{Int}}}()
-    push!(seen, Tuple(sort!(collect(start))))
-    pending = [start]
-
-    while !isempty(pending)
-        subset = pop!(pending)
-
-        for letter in alphabet
-            reachable = _step(index, subset, letter)
-
-            # Some word is unreadable: the graph certifies nothing about it.
-            isempty(reachable) && return false
-
-            key = Tuple(sort!(collect(reachable)))
-            if !(key in seen)
-                push!(seen, key)
-                push!(pending, reachable)
-            end
-        end
-    end
-
-    return true
+    return is_complete(observer, alphabet)
 end
 
 is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_path_complete(first(expanded_form(graph)), alphabet)
-
-# The nodes reachable from `subset` by one edge reading `letter`.
-function _step(index, subset, letter::Integer)
-    reachable = Set{Int}()
-
-    for node in subset
-        targets = get(index, (node, letter), nothing)
-        targets === nothing || union!(reachable, targets)
-    end
-
-    return reachable
-end
 
 """
     is_complete(graph)
@@ -104,10 +69,9 @@ Whether every node has an *outgoing* edge for every letter of `alphabet` —
 Definition III.2 of Philippe et al.
 
 This is **sufficient but not necessary** for [`is_path_complete`](@ref): a
-graph can read every word without every node reading every letter. Use this
-one only when the stronger structure is what is needed — it is what licenses
-the plain minimum aggregation of Corollary III.3, which is why
-[`common`](@ref) dispatches on it.
+graph can read every word without every node reading every letter. It is what
+licenses the plain minimum of Corollary III.3, which is how [`common`](@ref)
+combines on a complete graph.
 
 A statement about letters, so a [`WordGraph`](@ref) with a longer word is never
 complete.
@@ -115,10 +79,10 @@ complete.
 is_complete(graph::CertificateGraph) = is_complete(graph, alphabet(graph))
 
 is_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
-    _covers_every_letter(graph, alphabet, successors(graph))
+    _covers_every_letter(graph, alphabet, _successors(graph))
 
 is_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_complete(letter_graph(graph), alphabet)
+    !has_words(graph) && is_complete(_letter_graph(graph), alphabet)
 
 """
     is_co_complete(graph)
@@ -126,16 +90,16 @@ is_complete(graph::WordGraph, alphabet::AbstractVector) =
 
 The dual of [`is_complete`](@ref): every node has an *incoming* edge for every
 letter of `alphabet`. Also sufficient but not necessary for path-completeness,
-and it licenses the maximum aggregation of Corollary III.3. The dual De Bruijn
+and it licenses the maximum of Corollary III.3. The dual De Bruijn
 graph is co-complete.
 """
 is_co_complete(graph::CertificateGraph) = is_co_complete(graph, alphabet(graph))
 
 is_co_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
-    _covers_every_letter(graph, alphabet, predecessors(graph))
+    _covers_every_letter(graph, alphabet, _predecessors(graph))
 
 is_co_complete(graph::WordGraph, alphabet::AbstractVector) =
-    is_letter_graph(graph) && is_co_complete(letter_graph(graph), alphabet)
+    !has_words(graph) && is_co_complete(_letter_graph(graph), alphabet)
 
 # Whether every node has, in `index`, an entry for every letter. O(|V|·|Σ|) on
 # top of the index, which is built once.
@@ -147,23 +111,14 @@ function _covers_every_letter(graph::_HS.GraphAutomaton, alphabet, index)
     return true
 end
 
-"""
-    _check_path_complete(graph, language)
-
-Throw unless `graph` certifies something for `language` — an alphabet or a
-system's automaton, see [`language`](@ref).
-
-Called by every problem's data check. Path-completeness is the soundness
-condition, so a graph that fails it must not reach a solver — and it is the
-*general* condition, so a graph that is neither complete nor co-complete is
-accepted whenever it can still read every word.
-"""
+# Throw unless `graph` is path-complete for `language`, an alphabet or a
+# system's automaton. Every problem's data check calls it.
 function _check_path_complete(graph::CertificateGraph, language)
     is_path_complete(graph, language) || throw(
         ArgumentError(
             "the graph is not path-complete for the system's switching language, " *
-            "so its edge inequalities certify nothing; the graph reads the modes " *
-            "$(sort(alphabet(graph)))",
+            "so its edge inequalities would certify the property for part of it " *
+            "only; the graph reads the modes $(sort(alphabet(graph)))",
         ),
     )
 

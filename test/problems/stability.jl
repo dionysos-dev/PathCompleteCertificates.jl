@@ -28,12 +28,14 @@ const OPTIMIZER = Clarabel.Optimizer
     @test PCC.is_path_complete(mode_1_only)          # for its own alphabet
     @test !PCC.is_path_complete(mode_1_only, 1:2)    # not for the system's
 
-    @test_throws ArgumentError PCC.is_stable(
-        PCC.QuadraticTemplate(),
-        mode_1_only,
-        problem,
-        0.95;
-        optimizer = OPTIMIZER,
+    @test_throws ArgumentError PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            mode_1_only,
+            problem;
+            optimizer = OPTIMIZER,
+            rate = 0.95,
+        ),
     )
 
     @test_throws ArgumentError PCC.jsr_bound(
@@ -57,23 +59,27 @@ end
 
     @test !PCC.is_path_complete(mode_1_only, 1:2)
 
-    @test_throws ArgumentError PCC.is_stable(
-        PCC.QuadraticTemplate(),
-        mode_1_only,
-        problem,
-        0.95;
-        optimizer = OPTIMIZER,
+    @test_throws ArgumentError PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            mode_1_only,
+            problem;
+            optimizer = OPTIMIZER,
+            rate = 0.95,
+        ),
     )
 
     # Waived: the solve runs. The bound it produces says nothing about mode 2,
     # which is exactly the risk the caller has taken on.
-    @test PCC.is_stable(
-        PCC.QuadraticTemplate(),
-        mode_1_only,
-        problem,
-        0.95;
-        optimizer = OPTIMIZER,
-        path_complete = false,
+    @test PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            mode_1_only,
+            problem;
+            optimizer = OPTIMIZER,
+            rate = 0.95,
+            path_complete = false,
+        ),
     )
 end
 
@@ -107,14 +113,24 @@ end
 end
 
 @testset "quadratic stability" begin
-    @test PCC.is_stable(PCC.QuadraticTemplate(), GRAPH, PROBLEM, 0.6; optimizer = OPTIMIZER)
+    @test PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            GRAPH,
+            PROBLEM;
+            optimizer = OPTIMIZER,
+            rate = 0.6,
+        ),
+    )
 
-    @test !PCC.is_stable(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM,
-        0.4;
-        optimizer = OPTIMIZER,
+    @test !PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            GRAPH,
+            PROBLEM;
+            optimizer = OPTIMIZER,
+            rate = 0.4,
+        ),
     )
 
     result = PCC.jsr_bound(
@@ -137,20 +153,24 @@ end
     # which made this bound sqrt(rho(A)) = 0.707 rather than rho(A) = 0.5 --
     # `jsr_bound` returned different quantities for different templates.
 
-    @test PCC.is_stable(
-        PCC.LinearCopositiveTemplate(),
-        GRAPH,
-        PROBLEM,
-        0.6;
-        optimizer = OPTIMIZER,
+    @test PCC.is_feasible(
+        PCC.certify(
+            PCC.LinearCopositiveTemplate(),
+            GRAPH,
+            PROBLEM;
+            optimizer = OPTIMIZER,
+            rate = 0.6,
+        ),
     )
 
-    @test !PCC.is_stable(
-        PCC.LinearCopositiveTemplate(),
-        GRAPH,
-        PROBLEM,
-        0.4;
-        optimizer = OPTIMIZER,
+    @test !PCC.is_feasible(
+        PCC.certify(
+            PCC.LinearCopositiveTemplate(),
+            GRAPH,
+            PROBLEM;
+            optimizer = OPTIMIZER,
+            rate = 0.4,
+        ),
     )
 
     result = PCC.jsr_bound(
@@ -167,11 +187,11 @@ end
 end
 
 @testset "every template agrees on the rate" begin
-    # The point of `rate_exponent`: the same system and graph, three templates
+    # The point of `homogeneity_degree`: the same system and graph, three templates
     # of two different degrees, one answer.
-    @test PCC.rate_exponent(PCC.QuadraticTemplate()) == 2
-    @test PCC.rate_exponent(PCC.LinearCopositiveTemplate()) == 1
-    @test PCC.rate_exponent(PCC.PolyhedralTemplate(2, 2)) == 1
+    @test PCC.homogeneity_degree(PCC.QuadraticTemplate()) == 2
+    @test PCC.homogeneity_degree(PCC.LinearCopositiveTemplate()) == 1
+    @test PCC.homogeneity_degree(PCC.PolyhedralTemplate(2, 2)) == 1
 
     bounds = map((
         PCC.QuadraticTemplate(),
@@ -190,7 +210,7 @@ end
     # A rotation in coordinates stretched by 20: rho = 0.9, and the only
     # quadratic certificates have cond(P) = 400. The normalisation used to cap
     # that at 100 unconditionally, so `jsr_bound` returned 1.5 for a system
-    # whose true rate is 0.9 and `is_stable` said false for a stable system.
+    # whose true rate is 0.9 and `certify` came back infeasible for a stable system.
     stretch = [1.0 0.0; 0.0 20.0]
     theta = pi / 4
     stretched =
@@ -209,12 +229,14 @@ end
     )
 
     @test abs(default.rate - 0.9) <= 0.01
-    @test PCC.is_stable(
-        PCC.QuadraticTemplate(),
-        graph,
-        problem,
-        0.95;
-        optimizer = OPTIMIZER,
+    @test PCC.is_feasible(
+        PCC.certify(
+            PCC.QuadraticTemplate(),
+            graph,
+            problem;
+            optimizer = OPTIMIZER,
+            rate = 0.95,
+        ),
     )
 
     # The cap still available, and still conservative -- which is the point of
@@ -240,8 +262,8 @@ end
     @test_throws ArgumentError PCC.optimization_model(
         PCC.QuadraticTemplate(),
         invalid_label_graph,
-        PROBLEM,
-        1.0;
+        PROBLEM;
+        rate = 1.0,
         optimizer = OPTIMIZER,
     )
 
