@@ -130,6 +130,11 @@ per solve, and `path_complete = false` waives it; never make that the default.
 Index adjacency with `_successors` and `_predecessors` rather than calling the
 star queries in a loop.
 
+A cycle bounds the joint spectral radius only when its word is admissible:
+`jsr_lower_bound` searches the tight subgraph in product with the system's
+automaton, `is_jsr_exact` runs only when the automaton simulates the graph,
+and `common` throws on a constrained system.
+
 A word graph is sound for stability only; safety, optimal control and `common`
 throw on one and name `expanded_form`.
 

@@ -48,6 +48,14 @@ how the loop reads where a certificate is tight:
 ³ No `domination_slack` yet, so the loop cannot read where these templates are
 tight.
 
+## Constrained switching
+
+A system built with `automaton =` goes through every problem,
+[`jsr_bound`](@ref) and its cycle bracket, [`refine`](@ref) and the runs; the
+graph must read the automaton's paths, which every problem checks against
+[`language`](@ref)`(system)`. [`compare`](@ref) and [`common`](@ref) are
+stated for arbitrary switching: the first reads graphs only, the second throws.
+
 ## The gaps
 
 Safety with the polyhedral templates is possible in principle, by the same

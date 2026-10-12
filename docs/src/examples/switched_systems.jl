@@ -54,12 +54,6 @@ PCC.mode_matrices(controlled) == A, PCC.input_matrices(controlled) == B
 
 PCC.mode_matrix(controlled, [1, 2]) == A[2] * A[1]
 
-# !!! note "Two automata, easily confused"
-#     The automaton of a constrained system describes which switching
-#     sequences the *plant* can produce. The path-complete graph handed to a
-#     certificate is a different object that happens to share its type; the
-#     argument name says which is wanted.
-
 # ## Running one
 #
 # A certificate quantifies over *every* admissible switching sequence; a run

@@ -117,9 +117,8 @@ status(trace::RefinementTrace) = trace.status
 Iteratively refine `graph` to tighten the certificate it carries, until the
 problem's [`optimality_gap`](@ref) closes or the search runs out.
 
-Without a `graph`, the run starts from [`common_graph`](@ref) of the system: the
-one-node graph under arbitrary switching, the automaton itself under
-constrained switching.
+Without a `graph`, the run starts from [`common_graph`](@ref) of the system,
+which reads its language by construction.
 
 Each step solves [`best_certificate`](@ref) — [`jsr_bound`](@ref) for
 stability — and hands the certificate to `strategy`, any callable

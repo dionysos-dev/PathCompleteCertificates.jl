@@ -70,4 +70,20 @@ end
           minimum(V(X) for V in weights)
 end
 
+@testset "the common function is an arbitrary-switching notion" begin
+    automaton = GraphAutomaton(2)
+    add_transition!(automaton, 1, 2, 1)
+    add_transition!(automaton, 1, 1, 2)
+    add_transition!(automaton, 2, 1, 2)
+    constrained = PCC.StabilityProblem(PCC.switched_system(A; automaton = automaton))
+
+    @test_throws ArgumentError PCC.common(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        constrained,
+        PS,
+        X,
+    )
+end
+
 end

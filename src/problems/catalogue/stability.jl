@@ -356,8 +356,13 @@ Whether the certificate's rate is the **exact** joint spectral radius, by the
 optimality certificate of Ninite & Jungers (Theorem 4): if every node has at
 most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
 
-The constrained precedent is Theorem 3.8 of Philippe, Essick, Dullerud &
-Jungers, where the tight edges form a simple cycle. One mode per edge: the
+The rate is then attained on a tight cycle, which is the joint spectral radius
+only when the cycle reads an admissible word. Under constrained switching the
+test therefore runs only when the system's automaton simulates the graph,
+[`simulation`](@ref)`(automaton, graph) !== nothing`, as it does the automaton
+itself and every graph [`refine`](@ref) builds from it; otherwise `false`. The
+precedent is Theorem 3.8 of Philippe, Essick, Dullerud & Jungers, on the
+automaton, where the tight edges form a simple cycle. One mode per edge: the
 theorem is not proved with words on the edges, and [`jsr_lower_bound`](@ref)
 needs no such proof.
 
@@ -374,6 +379,13 @@ needs no such proof.
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
     _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
 
+    # Every tight cycle reads an admissible word when the automaton simulates
+    # the graph, which the theorem needs to bound the rate from below.
+    automaton = language(problem(certificate).system)
+    automaton isa _HS.OneStateAutomaton ||
+        simulation(automaton, _letter_graph(graph(certificate))) !== nothing ||
+        return false
+
     subgraph = tight_subgraph(certificate; atol = atol)
 
     return all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph))
@@ -387,10 +399,13 @@ A **lower** bound on the joint spectral radius, from the cycles of the
 
 A cycle `(a₁,a₂,w₁) … (a_k,a₁,w_k)` of the graph forces
 `γ ≥ ρ(A_{w_k} ⋯ A_{w_1})^{1/ℓ}` with `ℓ` the number of modes read along it,
-and any product of modes bounds the joint spectral radius from below (Philippe,
-Essick, Dullerud & Jungers, Lemma 3.7; Ninite & Jungers, Lemma 1 and its
-proof). The largest such value over the cycles found is returned; `0` when
-there are none.
+and the product along an admissible cycle bounds the joint spectral radius
+from below (Ninite & Jungers, Lemma 1 and its proof; Philippe, Essick,
+Dullerud & Jungers, Lemma 3.7). Under arbitrary switching every cycle is
+admissible; under constrained switching the cycles searched are those of the
+subgraph in product with the system's automaton, which read admissible words
+by construction. The largest such value over the cycles found is returned; `0`
+when there are none.
 
 Together with the certificate's own rate — an *upper* bound — this brackets the
 answer, and **the bracket holds whatever `atol` was**: a cycle of the tight
@@ -399,16 +414,20 @@ set was identified badly. `atol` only decides where to look for good cycles, and
 `max_length` how far; both affect how tight the bound is, neither whether it is
 true.
 
-`max_length` defaults to the number of nodes, which enumerates every simple
-cycle; the count grows quickly with the graph, so lower it on a large one. A
-truncated search weakens the bound without making it wrong.
+`max_length` defaults to the number of nodes of the graph searched, which
+enumerates every simple cycle; the count grows quickly with the graph, so lower
+it on a large one. A truncated search weakens the bound without making it
+wrong.
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;
     atol::Real = 1e-6,
     max_length::Union{Nothing, Integer} = nothing,
 )
-    subgraph = tight_subgraph(certificate; atol = atol)
+    subgraph = _admissible(
+        tight_subgraph(certificate; atol = atol),
+        language(problem(certificate).system),
+    )
     A = mode_matrices(problem(certificate).system)
 
     length_bound = something(max_length, n_nodes(subgraph))
@@ -432,4 +451,34 @@ function jsr_lower_bound(
     end
 
     return best
+end
+
+# The graph whose cycles read admissible words: the subgraph itself under
+# arbitrary switching, its product with the automaton otherwise, a cycle of
+# which is a closed walk of both. Node `(s, q)` is numbered `(s - 1) * m + q`.
+_admissible(subgraph::CertificateGraph, ::_HS.OneStateAutomaton) = subgraph
+
+function _admissible(subgraph::CertificateGraph, automaton::_HS.GraphAutomaton)
+    m = n_nodes(automaton)
+    product = _empty_like(subgraph, n_nodes(subgraph) * m)
+    index = _successors(automaton)
+
+    for edge in edges(subgraph), state in nodes(automaton)
+        word = label(subgraph, edge)
+        reached = Set((state,))
+        for letter in letters(word)
+            reached = _step(index, reached, letter)
+        end
+
+        for target in reached
+            add_edge!(
+                product,
+                (source(edge) - 1) * m + state,
+                (dest(edge) - 1) * m + target,
+                word,
+            )
+        end
+    end
+
+    return product
 end

@@ -46,7 +46,7 @@ jsr_bound
 ## Safety
 
 The safety problem is to prove that every trajectory starting in a given
-initial set never reaches a given unsafe set, under arbitrary switching.
+initial set never reaches a given unsafe set.
 Following [anand2024barrier](@cite), it is certified by path-complete barrier
 functions: one function per node, negative on the initial set, positive on the
 unsafe set, and non-increasing along every edge, so that the region they cut

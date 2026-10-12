@@ -5,8 +5,7 @@ The path-dependent lift of order `k` (Philippe, Essick, Dullerud & Jungers,
 Def. 3): [`BackwardEdgeSplit`](@ref) at every edge, `k` times. Its nodes are
 the paths of length `k` of the original graph and its edges the paths of
 length `k + 1`. From the one-node graph it is [`de_bruijn`](@ref)`(k, M)`, and
-its [`dual`](@ref) the dual De Bruijn graph; from a constraint automaton, the
-`k`-memory lift of the constrained system. `origins` record the last node of
+its [`dual`](@ref) the dual De Bruijn graph. `origins` record the last node of
 each path.
 """
 struct PathDependentRefinement <: AbstractRefinement

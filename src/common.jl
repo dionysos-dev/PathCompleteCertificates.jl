@@ -7,6 +7,10 @@ minimum over the nodes on a complete graph (Cor. III.3), the maximum on a
 co-complete one, and a minimum of maxima over the observer construction
 otherwise (Thm. III.8). Depending on `problem` it is a common Lyapunov
 function, a common barrier function, or an upper bound on the value function.
+
+Defined under arbitrary switching, where the theorem is; on a constrained
+system, whose certificate is one function per state of the automaton, this
+throws.
 """
 function common(
     template::AbstractTemplate,
@@ -19,6 +23,14 @@ function common(
     # minimum, a co-complete one with a maximum. Both are special cases of the
     # observer construction below (Theorem III.8), taken here because they are
     # cheaper and need no subset construction.
+    language(problem.system) isa _HS.OneStateAutomaton || throw(
+        ArgumentError(
+            "the common function is defined under arbitrary switching; under " *
+            "constrained switching a certificate is one function per state of " *
+            "the automaton",
+        ),
+    )
+
     alphabet = 1:_n_modes(problem)
 
     if is_complete(graph, alphabet)

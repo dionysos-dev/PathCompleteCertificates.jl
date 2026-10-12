@@ -227,4 +227,45 @@ end
     @test isapprox(single.rate, 0.5; atol = 1e-3)
 end
 
+@testset "under constrained switching only admissible cycles count" begin
+    # Mode 1 may never be read twice in a row, so the worst admissible word
+    # alternates the modes and the self-loop on mode 1 bounds nothing.
+    automaton = GraphAutomaton(2)
+    add_transition!(automaton, 1, 2, 1)
+    add_transition!(automaton, 1, 1, 2)
+    add_transition!(automaton, 2, 1, 2)
+
+    A = [[2.0 0.0; 0.0 2.0], [0.1 0.0; 0.0 0.1]]
+    constrained = PCC.StabilityProblem(PCC.switched_system(A; automaton = automaton))
+    rate = sqrt(2.0 * 0.1)
+
+    # On the automaton itself every cycle is admissible and the bracket closes.
+    exact = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        PCC.common_graph(constrained.system),
+        constrained;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+
+    @test isapprox(exact.rate, rate; atol = 1e-3)
+    @test isapprox(PCC.jsr_lower_bound(exact; atol = 1e-4), rate; atol = 1e-3)
+    @test PCC.is_jsr_exact(exact; atol = 1e-4)
+
+    # De Bruijn reads the forbidden word too, so its rate is the one of
+    # arbitrary switching, 2, and its tight self-loop is no lower bound.
+    loose = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        constrained;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+
+    @test isapprox(loose.rate, 2.0; atol = 1e-3)
+    @test PCC.jsr_lower_bound(loose; atol = 1e-4) <= rate + 1e-6
+    @test !PCC.is_jsr_exact(loose; atol = 1e-4)
+    @test PCC.optimality_gap(loose; atol = 1e-4) >= 2.0 - rate - 1e-3
+end
+
 end

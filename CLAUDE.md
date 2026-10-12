@@ -113,6 +113,10 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   construction; `is_complete` and `is_co_complete` are sufficient only, and decide the form of
   `common`. Always pass the system's language: `is_path_complete(graph)` alone asks about the
   modes the graph happens to use.
+- **A cycle bounds the joint spectral radius only when its word is admissible.**
+  `jsr_lower_bound` searches the tight subgraph in product with the system's automaton,
+  `is_jsr_exact` runs only when the automaton simulates the graph, and `common` throws on
+  a constrained system.
 - **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
   the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
   solve; `path_complete = false` waives it and must never become the default.

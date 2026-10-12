@@ -21,10 +21,8 @@ from the closures a template declares which verdicts apply to it.
 [debauche2023ordering](@cite).
 
 The theory is stated for arbitrary switching. [`compare`](@ref) reads graphs
-only, so a simulation it finds holds whatever the language, and a certificate
-on ``G`` read through it is one on ``H`` for every system both graphs are
-path-complete for; that no order holds without a simulation is proved for
-arbitrary switching.
+only, so a simulation it finds carries a certificate on ``G`` to one on ``H``
+for every system both graphs are path-complete for.
 
 ## The template-free order
 

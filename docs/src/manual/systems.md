@@ -44,7 +44,9 @@ runs it before solving.
 [`common_graph`](@ref)`(system)` is the smallest graph that reads it: the
 common Lyapunov function graph ``G_0``, one node with a loop per mode, under
 arbitrary switching, and the automaton itself otherwise. Every path-complete
-graph is at least as good, and it is where [`refine`](@ref) starts.
+graph is at least as good, and it is where [`refine`](@ref) starts. What
+applies to a constrained system is listed in
+[What works with what](@ref "What works with what").
 
 ## Runs
 

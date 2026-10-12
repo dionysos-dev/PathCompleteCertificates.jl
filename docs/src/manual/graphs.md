@@ -73,9 +73,8 @@ path-complete graphs ([ahmadi2014joint](@cite)); going one order up is the
 backward split at every edge, so the certified bound never gets worse
 ([philippe2016stability](@cite)), at the price of `M` times as many nodes.
 
-[`common_graph`](@ref)`(system)` is order zero: the common Lyapunov function
-graph ``G_0`` under arbitrary switching, the automaton itself under
-constrained switching.
+[`common_graph`](@ref)`(system)` is order zero, the common Lyapunov function
+graph ``G_0``.
 
 ```@docs; canonical=false
 de_bruijn

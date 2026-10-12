@@ -39,7 +39,7 @@ only the edge inequality and the conditions on the node functions change:
 | | Takes | Gives |
 | :-- | :-- | :-- |
 | **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`) and the common function `certificate(x)` |
-| **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, the automaton of a constrained system as a graph, graphs with words on their edges |
+| **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, graphs with words on their edges |
 | **Compare** | two graphs, and optionally templates and a system | whether the second graph is no worse than the first, for which templates, and the simulation that proves it |
 | **Refine** | a template, a graph and a problem | a sequence of graphs, each refined where its certificate is tight, until the bound is proved exact or a budget is reached |
 
