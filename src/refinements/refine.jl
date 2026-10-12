@@ -8,57 +8,45 @@ Why a [`refine`](@ref) run stopped.
 """
     OPTIMAL
 
-The [`optimality_gap`](@ref) closed: the certificate is proved as good as any
-graph could make it, and the run stopped because it had nothing left to prove.
-For stability, `rates(trace)[end]` is then the joint spectral radius, not merely
-a bound on it — reached either by the cycle bracket of
-[`jsr_lower_bound`](@ref), sound whatever `atol` was, or by
-[`is_jsr_exact`](@ref), Theorem 4 of Ninite & Jungers.
+The [`optimality_gap`](@ref) closed; for stability, the last rate is the joint
+spectral radius.
 """
 OPTIMAL
 
 """
     EXHAUSTED
 
-The strategy proposed no candidate — nothing was left to refine — and the gap
-had not closed. With the default strategy and one mode per edge this cannot
-happen without [`OPTIMAL`](@ref): no node held at two tight outgoing edges is
-Theorem 4's hypothesis. With another strategy it is a genuine outcome, a dead
-end that proves nothing.
+The strategy proposed no candidate before the gap closed.
 """
 EXHAUSTED
 
 """
     STALLED
 
-`stall_max` steps in a row failed to improve the objective. A graph already
-attaining the exact joint spectral radius holds *every* edge tight, so it
-always looks splittable and would otherwise be grown forever at a constant
-bound.
+`stall_max` steps in a row did not improve the objective.
 """
 STALLED
 
 """
     DEPTH_REACHED
 
-`depth_max` certificates were solved with the search still making progress.
+`depth_max` certificates were solved.
 """
 DEPTH_REACHED
 
 """
     STOPPED
 
-The `stop` predicate held on the last certificate — for stability, the rate fell
-below `1` when `stop = c -> c.rate < 1`, already a proof.
+The `stop` predicate held on the last certificate.
 """
 STOPPED
 
 """
     RefinementTrace(certificates, steps, status)
 
-One certificate per graph a [`refine`](@ref) run visited, the starting graph's first;
-the [`Refined`](@ref) that produced each graph after the start, so a run's steps
-can be read back; and a [`RefinementStatus`](@ref).
+The certificates of a [`refine`](@ref) run, one per graph visited, the
+[`Refined`](@ref) step that produced each graph after the first, and a
+[`RefinementStatus`](@ref).
 """
 struct RefinementTrace{C <: AbstractCertificate}
     certificates::Vector{C}
@@ -69,8 +57,7 @@ end
 """
     certificates(trace)
 
-The certificate solved on each graph a [`refine`](@ref) run visited — the node
-functions themselves, so a run can be drawn without re-solving.
+The certificate solved on each graph a [`refine`](@ref) run visited.
 """
 certificates(trace::RefinementTrace) = trace.certificates
 
@@ -84,17 +71,15 @@ graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.ce
 """
     steps(trace)
 
-The [`Refined`](@ref) of each step of a [`refine`](@ref) run: `steps(trace)[k]`
-produced `graphs(trace)[k + 1]`, and its [`origins`](@ref) say which node of the
-previous graph each node came from.
+The [`Refined`](@ref) of each step: `steps(trace)[k]` produced
+`graphs(trace)[k + 1]`.
 """
 steps(trace::RefinementTrace) = trace.steps
 
 """
     rates(trace)
 
-The rate certified on each of [`graphs`](@ref) of a stability run, in the same
-order; the matching lower bounds are `jsr_lower_bound.(certificates(trace))`.
+The rate certified on each of [`graphs`](@ref) of a stability run.
 """
 rates(trace::RefinementTrace{<:StabilityCertificate}) =
     [certificate.rate for certificate in trace.certificates]
@@ -102,8 +87,7 @@ rates(trace::RefinementTrace{<:StabilityCertificate}) =
 """
     status(trace::RefinementTrace)
 
-Why the run stopped, as a [`RefinementStatus`](@ref). Only [`OPTIMAL`](@ref)
-means the answer is certified.
+Why the run stopped, as a [`RefinementStatus`](@ref).
 """
 status(trace::RefinementTrace) = trace.status
 
@@ -114,53 +98,22 @@ status(trace::RefinementTrace) = trace.status
            atol = 1e-4, gap_tol = 1e-6, rtol = 1e-6, path_complete = true,
            kwargs...)
 
-Iteratively refine `graph` to tighten the certificate it carries, until the
-problem's [`optimality_gap`](@ref) closes or the search runs out.
+Refine `graph`, by default [`common_graph`](@ref) of the system, until the
+[`optimality_gap`](@ref) of its certificate closes; returns a
+[`RefinementTrace`](@ref).
 
-Without a `graph`, the run starts from [`common_graph`](@ref) of the system: the
-one-node graph under arbitrary switching, the automaton itself under
-constrained switching.
+- `strategy(certificate; atol)` returns candidate [`Refined`](@ref) graphs,
+  best first.
+- `select = :best` solves every candidate and keeps the lowest
+  [`objective`](@ref); `:first` takes the first.
+- The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
+  `stall_max` steps in a row fail to improve the objective by `rtol`,
+  `depth_max` certificates are solved, or no candidate is left.
+- `rtol` is the solve tolerance, `atol` decides tightness; `atol ≥ 10 rtol` is
+  required, since a tight edge measures about the bisection gap, not zero.
+- `path_complete` is checked on the starting graph only.
 
-Each step solves [`best_certificate`](@ref) — [`jsr_bound`](@ref) for
-stability — and hands the certificate to `strategy`, any callable
-`(certificate; atol) -> Vector{Refined}` returning candidate graphs, best guess
-first. The default [`SplitTightNode`](@ref) splits the node held at the most
-tight outgoing edges; [`RefineTightEdges`](@ref) tries every local refinement
-at every tight edge; [`Hierarchy`](@ref) applies one step to the whole graph.
-`select` takes the first candidate, or with `:best` solves every candidate and
-keeps the lowest [`objective`](@ref) — one solve per candidate, the rule of
-Athanasopoulos & Jungers.
-
-Returns a [`RefinementTrace`](@ref).
-
-## Stopping
-
-- [`optimality_gap`](@ref)` ≤ gap_tol` → [`OPTIMAL`](@ref). Checked *every*
-  step, not only when the search runs dry: a graph can be optimal long before
-  it is structurally exhausted, and for stability the cycle bracket does not
-  depend on `atol` being right;
-- `stop(certificate)` → [`STOPPED`](@ref), an explicit request taken before the
-  gap; `c -> c.rate < 1` stops a stability run at the first proof of stability;
-- `stall_max` steps in a row not improving the objective by more than `rtol`
-  → [`STALLED`](@ref). Raise `stall_max` to cross a plateau;
-- `depth_max` certificates solved → [`DEPTH_REACHED`](@ref);
-- no candidate → [`EXHAUSTED`](@ref). With the default strategy and one mode
-  per edge this coincides with `OPTIMAL`, since "no node holds two tight
-  outgoing edges" is Theorem 4's hypothesis, and the gap is tested first.
-
-## The tolerances
-
-`rtol` is the solve tolerance forwarded to [`best_certificate`](@ref) — the
-bisection tolerance of each [`jsr_bound`](@ref) call — and `atol` decides
-tightness. `atol ≥ 10 rtol` is **enforced**: bisection stops just *above* the
-optimum, so an active edge measures about the bisection gap, not zero. Below a
-decade the tight subgraph can come out empty, every node then satisfies
-[`is_jsr_exact`](@ref) vacuously, and the run certifies a bound that is not the
-joint spectral radius.
-
-`path_complete` decides the **starting graph** only: a refinement of a
-path-complete graph is path-complete, so the loop does not re-decide it. Other
-keywords go to [`best_certificate`](@ref).
+Other keywords go to [`best_certificate`](@ref).
 """
 function refine(template::AbstractTemplate, problem::AbstractProblem; optimizer, kwargs...)
     return refine(template, common_graph(problem.system), problem; optimizer, kwargs...)

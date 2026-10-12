@@ -3,43 +3,32 @@ import JuMP
 """
     AbstractProblem
 
-What is proved: a problem determines the edge inequality, templates the family
-the node functions are drawn from.
+A problem: it fixes the inequality imposed along each edge.
 """
 abstract type AbstractProblem end
 
 """
     add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
 
-Add this problem's certificate inequality for one edge, `dynamics` being the
-matrix the edge reads: the product along its word.
-
-One method per problem, generic in the template: compose the template's
-primitives rather than dispatching on a template here. `scale` is the factor
-on the source side a driver varies, already raised to the template's degree
-and the word's length; stability passes `rate^(d·|w|)`. A problem with no such
-factor ignores it.
+Add the problem's inequality for one edge, `dynamics` being the product of
+the modes the edge reads. `scale` multiplies the source side; stability passes
+`rate^(d·|w|)`.
 """
 function add_edge_constraint! end
 
-# The size of the system's alphabet, which is what completeness is judged
-# against, not the labels the graph happens to carry.
+# The system's modes, not the labels the graph happens to use.
 _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 
 """
     node_value(template, problem, V, x)
 
-Evaluate one fitted node function at `x`. Node functions are callable, so the
-default is `V(x)`. It is on the problem axis because a problem may lift the
-value into other coordinates: `SafetyProblem` evaluates its barriers at
-`[x; 1]`, the one pair with a method of its own.
+Evaluate the node function `V` at `x`: `V(x)`, or `V([x; 1])` for
+`SafetyProblem`.
 """
 node_value(::AbstractTemplate, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 
-# Validate the mode matrices against the graph and return the state dimension:
-# square matrices of one size, edge labels that index a mode, and a graph that
-# is path-complete for the system's language. `path_complete = false` waives
-# the last test, which is expensive to decide, and asserts it instead.
+# Validate the modes against the graph and return the state dimension.
+# `path_complete = false` skips the path-completeness test, which is expensive.
 function _check_modes(
     graph::CertificateGraph,
     system::_HS.HybridSystem;
@@ -71,7 +60,7 @@ function _check_modes(
     return dimension
 end
 
-# Termination statuses a driver treats as "the solver found something".
+# Termination statuses counted as a solution.
 const _FEASIBLE_TERMINATION_STATUSES = (
     JuMP.MOI.OPTIMAL,
     JuMP.MOI.LOCALLY_SOLVED,
@@ -82,18 +71,15 @@ const _FEASIBLE_TERMINATION_STATUSES = (
 """
     AbstractCertificate
 
-What a problem hands back: the fitted node functions, plus whatever that
-problem certifies as a field of its own, `rate`, `margin` or `gains`. The
-shared part is a [`CertificateData`](@ref), read by the accessors below.
-
-A certificate is **callable**: `certificate(x)` is [`common`](@ref) at `x`.
+The result of a solve: a [`CertificateData`](@ref) and what the problem
+certifies (`rate`, `margin` or `gains`). `certificate(x)` is [`common`](@ref) at `x`.
 """
 abstract type AbstractCertificate end
 
 """
     CertificateData(problem, template, graph, functions, status, feasible)
 
-The part of a certificate that does not depend on which problem produced it.
+The fields shared by every certificate.
 """
 struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     problem::P
@@ -104,8 +90,7 @@ struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     feasible::Bool
 end
 
-# The shared CertificateData; a certificate holding it in a field named `data`
-# inherits every accessor.
+# A certificate storing its CertificateData in a field `data` gets every accessor.
 _data(certificate::AbstractCertificate) = certificate.data
 
 """
@@ -118,18 +103,15 @@ functions(certificate::AbstractCertificate) = _data(certificate).functions
 """
     status(certificate)
 
-The solver's termination status. Distinct from [`is_feasible`](@ref), which a
-problem may decide on the returned numbers.
+The solver's termination status, which may disagree with [`is_feasible`](@ref).
 """
 status(certificate::AbstractCertificate) = _data(certificate).status
 
 """
     is_feasible(certificate) -> Bool
 
-Whether the solve produced a certificate.
-
-`false` means none was found **for this template on this graph** — never that
-the property fails.
+Whether the solve produced a certificate. `false` means none exists in this
+template on this graph, not that the property fails.
 """
 is_feasible(certificate::AbstractCertificate) = _data(certificate).feasible
 
@@ -168,12 +150,8 @@ end
     dual(problem)
     dual(certificate)
 
-The problem on the dual system, and the certificate it has on the dual graph in
-the dual template, made of the dual norms of the node functions at the same
-nodes — nothing is solved (Debauche, Lemma 6.25).
-
-Stability defines both; a problem whose edge inequality is not a norm
-inequality has no dual, and these throw.
+The problem on the dual system, and the certificate on the dual graph made of
+the dual norms of the node functions. Throws for every problem but stability.
 """
 dual(problem::AbstractProblem) =
     throw(ArgumentError("no dual is defined for $(nameof(typeof(problem)))"))
@@ -184,33 +162,19 @@ dual(certificate::AbstractCertificate) =
 """
     optimization_model(template, graph, problem; optimizer, kwargs...)
 
-Build the JuMP model this problem and template induce on `graph`, without
-solving it.
-
-One method per problem. Use it to inspect the program, add your own
-constraints, or change the objective before handing it to `JuMP.optimize!`;
-[`certify`](@ref) is this plus the solve and the extraction.
+Build, without solving, the JuMP model that [`certify`](@ref) solves.
 """
 function optimization_model end
 
 """
     certify(template, graph, problem; optimizer, kwargs...)
 
-Solve for the guarantee, and return an [`AbstractCertificate`](@ref).
-
-One entry point for every problem: build the model, solve it, and read the
-result back. What each problem certifies is a typed field on the certificate it
-returns — `rate`, `margin`, `gains`.
-
-Check [`is_feasible`](@ref) before reading anything else. An infeasible result
-is still a certificate object, carrying the solver [`status`](@ref) so that "no
-certificate exists in this template on this graph" is distinguishable from "the
-solver gave up".
+Build and solve the model, and return an [`AbstractCertificate`](@ref). Check
+[`is_feasible`](@ref) before reading it.
 """
 function certify end
 
-# The CertificateData of a solve that produced nothing: no functions, so no
-# element type to name.
+# The CertificateData of a failed solve.
 function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
     return CertificateData(problem, template, graph, Any[], status, false)
 end
@@ -218,10 +182,9 @@ end
 """
     best_certificate(template, graph, problem; optimizer, kwargs...)
 
-The certificate [`refine`](@ref) repeats on each graph: the problem's own driver.
-The default is [`certify`](@ref); stability's is [`jsr_bound`](@ref), which
-bisects on the rate, so `rtol` is accepted here and ignored by problems that do
-not bisect.
+The certificate [`refine`](@ref) computes on each graph: [`certify`](@ref), or
+[`jsr_bound`](@ref) for stability. `rtol` is ignored by problems that do not
+bisect.
 """
 function best_certificate(
     template::AbstractTemplate,
@@ -237,35 +200,24 @@ end
 """
     objective(certificate) -> Real
 
-What a problem minimises across graphs, smaller being better: the rate for
-stability, minus the margin for safety. [`refine`](@ref) compares steps on it.
+The value [`refine`](@ref) minimises: the rate for stability, minus the margin
+for safety.
 """
 function objective end
 
 """
     optimality_gap(certificate; kwargs...) -> Real
 
-How far the certificate is known to be from the best any graph could do —
-zero when it is proved optimal, `Inf` when the problem has no lower bound, which
-is the default. [`refine`](@ref) stops with [`OPTIMAL`](@ref) when it closes.
-
-Stability supplies the cycle bracket of [`jsr_lower_bound`](@ref) and the
-structural test of [`is_jsr_exact`](@ref).
+An upper bound on how far [`objective`](@ref) is from the best any graph could
+reach: `0` when proved optimal, `Inf` by default.
 """
 optimality_gap(::AbstractCertificate; kwargs...) = Inf
 
 """
     edge_slacks(certificate)
 
-The slack of every edge inequality, in `edges(graph(certificate))` order.
-
-Zero means the edge is tight: the certificate is held at exactly that
-inequality. A large value means the edge is not what limits the bound. One
-method per problem, each through [`domination_slack`](@ref) with the edge's
-own map and scale; a problem whose edge does not factor through
-[`add_domination!`](@ref) has none.
-
-Throws on an infeasible certificate, which has no fitted functions to measure.
+The slack of every edge inequality, in `edges(graph(certificate))` order; zero
+means tight. Throws on an infeasible certificate.
 """
 function edge_slacks end
 
@@ -280,11 +232,8 @@ end
 """
     tight_edges(certificate; atol = 1e-6)
 
-The edges whose inequality is active, as `(source, destination, label)` tuples:
-the edges that hold the certificate up. A node with two or more tight outgoing
-edges is the one a refinement step splits, since it serves two futures with a
-single function. `atol` is absolute, and a certificate is only determined up to
-scale, so read it against [`edge_slacks`](@ref).
+The edges whose slack is at most `atol`, as `(source, destination, label)`
+tuples. `atol` is absolute, while a certificate is only defined up to scale.
 """
 function tight_edges(certificate::AbstractCertificate; atol::Real = 1e-6)
     graph_ = graph(certificate)
@@ -298,12 +247,7 @@ end
 """
     tight_subgraph(certificate; atol = 1e-6)
 
-The subgraph of the edges whose inequality is active, on the same nodes, so
-node numbers carry over. For stability it is Definition 4 of Ninite & Jungers,
-`Ē = {(a,b,i) ∈ E : λ_min(γ²P_a − Aᵢᵀ P_b A_i) = 0}`, the object
-[`is_jsr_exact`](@ref) reads the out-degrees of and [`jsr_lower_bound`](@ref)
-the cycles. `atol` stands in for the exact zero, which a bisected solution
-never reaches; see [`refine`](@ref) on choosing it.
+The subgraph, on the same nodes, of the edges whose slack is at most `atol`.
 """
 function tight_subgraph(certificate::AbstractCertificate; atol::Real = 1e-6)
     graph_ = graph(certificate)

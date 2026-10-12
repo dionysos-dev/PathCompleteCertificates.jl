@@ -1,17 +1,8 @@
-# The language a certificate graph must read is the system's: every word over
-# its modes under arbitrary switching, the paths of its automaton otherwise
-# (Philippe, Essick, Dullerud & Jungers, 2016). Constrained switching is then
-# not a separate theory but a second kind of language for the same predicate.
-
 """
     language(system)
 
 The switching language of `system`, as its automaton: a `OneStateAutomaton`
-reading every word over the modes when switching is arbitrary, the constraint
-automaton passed to [`switched_system`](@ref) otherwise.
-
-This is what [`is_path_complete`](@ref) must be asked against when the question
-is about a certificate, and every problem asks it.
+under arbitrary switching, the constraint automaton otherwise.
 """
 language(system::_HS.HybridSystem) = system.automaton
 
@@ -26,10 +17,8 @@ function is_path_complete(graph::_HS.GraphAutomaton, constraint::_HS.GraphAutoma
 
     index = _successors(graph)
 
-    # The subset construction in product with the constraint: a state is a node
-    # of the constraint and the set of graph nodes that can have read the same
-    # path. Every word the constraint accepts from any of its states must keep
-    # that set nonempty.
+    # Subset construction in product with the constraint: a state is a constraint
+    # node and the set of graph nodes that can have read the same path.
     seen = Set{Tuple{Int, Tuple{Vararg{Int}}}}()
     pending = Tuple{Int, Set{Int}}[]
 
@@ -64,16 +53,8 @@ is_path_complete(graph::WordGraph, constraint::_HS.GraphAutomaton) =
 """
     common_graph(system)
 
-The common Lyapunov function graph ``G_0`` of the system (Debauche, Della Rossa
-& Jungers, Prop. 2): one node with a loop per mode, on which a certificate is a
-single common function, and which every path-complete graph is no worse than.
-Under constrained switching its counterpart is the system's own automaton, one
-function per state (Philippe, Essick, Dullerud & Jungers), and that is what is
-returned.
-
-Either reads the system's [`language`](@ref) by construction, and every
-refinement preserves that, so [`refine`](@ref) starts here and never re-decides
-path-completeness.
+The graph of a common Lyapunov function: one node with a loop per mode under
+arbitrary switching, a copy of the constraint automaton otherwise.
 """
 common_graph(system::_HS.HybridSystem) = common_graph(language(system))
 

@@ -1,53 +1,45 @@
-# The vocabulary templates and lifts share. A template declares which of these
-# it is closed under; a lift names which it combines node functions with. Neither
-# owns the words, so they sit at the top level like `common.jl`.
+# Operations on node functions, shared by templates and lifts.
 
 """
     Operation
 
-An operation on node functions that a template may be closed under, and that a
-lift may require (Debauche, Della Rossa & Jungers, Def. 7).
-
-The inhabitants are [`Addition`](@ref), [`Maximum`](@ref), [`Minimum`](@ref),
-[`Composition`](@ref) and [`InverseComposition`](@ref). A template answers
-[`is_closed_under`](@ref) for each; a lift lists its [`requirements`](@ref);
-[`is_valid`](@ref) is written once against the two.
+An operation on node functions that a template may be closed under
+([`is_closed_under`](@ref)) and a lift may require ([`requirements`](@ref)).
 """
 abstract type Operation end
 
 """
     Addition()
 
-Pointwise addition of node functions: the operation behind [`SumLift`](@ref).
+Pointwise addition of node functions, required by [`SumLift`](@ref).
 """
 struct Addition <: Operation end
 
 """
     Maximum()
 
-Pointwise maximum of node functions: the operation behind [`MaxLift`](@ref).
+Pointwise maximum of node functions, required by [`MaxLift`](@ref).
 """
 struct Maximum <: Operation end
 
 """
     Minimum()
 
-Pointwise minimum of node functions: the operation behind [`MinLift`](@ref).
+Pointwise minimum of node functions, required by [`MinLift`](@ref).
 """
 struct Minimum <: Operation end
 
 """
     Composition()
 
-Composition with the dynamics, `V ∘ A_i`: the operation behind
-[`CompositionLift`](@ref).
+Composition with the dynamics, `V ∘ A_i`, required by [`CompositionLift`](@ref).
 """
 struct Composition <: Operation end
 
 """
     InverseComposition()
 
-Composition with the inverse dynamics, `V ∘ A_i⁻¹`: the operation behind
+Composition with the inverse dynamics, `V ∘ A_i⁻¹`, required by
 [`BackwardCompositionLift`](@ref).
 """
 struct InverseComposition <: Operation end
@@ -55,16 +47,8 @@ struct InverseComposition <: Operation end
 """
     dual(x)
 
-The dual of a graph, a lift, an operation, a template, a system, a problem or a
-certificate; `dual(template, V)` is the dual of one node function.
-
-Duality is an involution on the whole problem: a certificate on `graph` for
-`template` and `system` is one on `dual(graph)` for `dual(template)` and
-`dual(system)` (Debauche, Lemma 6.25), and `dual(certificate)` constructs it.
-On an operation it is what the dual lift requires: minimum and maximum
-exchange (Lemma 7.45), addition is fixed because the sum lift is self-dual
-(Prop. 7.13), and composition becomes composition with the inverse
-(Prop. 7.64).
+The dual of a graph, lift, operation, template, system, problem or certificate;
+`dual(template, V)` is the dual of one node function.
 """
 function dual end
 

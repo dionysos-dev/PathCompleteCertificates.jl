@@ -1,13 +1,10 @@
-# Plotting for `Trajectory`, as a package extension: plotting is never a
-# dependency of the package, and anyone with Plots has RecipesBase loaded.
+# Plot recipe for `Trajectory`.
 module PathCompleteCertificatesRecipesBaseExt
 
 import RecipesBase
 import PathCompleteCertificates as PCC
 
-# Each coordinate against the step index, which is the one view that works for
-# every state dimension. A phase portrait would only work for n = 2, so it is
-# left to the caller rather than guessed at here.
+# Each coordinate against the step index, which works in every dimension.
 RecipesBase.@recipe function _(trajectory::PCC.Trajectory)
     visited = PCC.states(trajectory)
     dimension = length(first(visited))

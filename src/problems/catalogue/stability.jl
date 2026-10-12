@@ -1,10 +1,8 @@
 """
     StabilityProblem(system)
 
-Stability problem for an input-free switched linear system.
-
-The problem stores the system only; the rate is given to [`certify`](@ref) or
-bisected on by [`jsr_bound`](@ref).
+Stability problem for an input-free switched linear system. The rate is passed
+to [`certify`](@ref) or bisected on by [`jsr_bound`](@ref).
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -22,25 +20,14 @@ dual(problem::StabilityProblem) = StabilityProblem(dual(problem.system))
 """
     StabilityCertificate
 
-A path-complete Lyapunov function and the contraction rate it certifies.
-
-`rate` is an **upper** bound on the joint spectral radius: every switching
-sequence contracts at least this fast under the node functions. It is the
-smallest rate the bisection in [`jsr_bound`](@ref) could certify with this
-template on this graph, so a larger value says the template is conservative,
-not that the system is slower.
-
-`functions(certificate)` are the node Lyapunov functions and `certificate(x)`
-the common one.
+A path-complete Lyapunov function and its `rate`, an upper bound on the joint
+spectral radius.
 """
 struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertificate
     data::D
     rate::T
 end
 
-# One method, generic over templates: the whole edge condition of this problem
-# is the template's domination primitive at the scale the driver passes, so a
-# new template needs nothing here.
 function add_edge_constraint!(
     model::JuMP.Model,
     ::StabilityProblem,
@@ -58,18 +45,8 @@ end
 """
     optimization_model(template, graph, problem; optimizer, rate = 1)
 
-The feasibility problem of the Lyapunov inequalities
-
-    V_b(A_w x) <= rate^(d |w|) * V_a(x)
-
-for every edge `(a, b, w)` of `graph`, `d` the template's degree of homogeneity
-and `|w|` the number of modes the edge reads: one as a rule, the product of
-the modes along the word on a [`WordGraph`](@ref).
-
-The model has no objective: [`certify`](@ref) solves it once at a rate and
-[`jsr_bound`](@ref) bisects on the rate. `optimizer` must be an LP solver for
-the copositive and polyhedral templates and an SDP solver for the quadratic
-one.
+The feasibility problem `V_b(A_w x) <= rate^(d |w|) * V_a(x)` for every edge
+`(a, b, w)`, with `d` the template's degree and `|w|` the length of the word.
 """
 function optimization_model(
     template::AbstractTemplate,
@@ -122,13 +99,9 @@ end
     jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
               max_iterations = 100, initial_upper = 1.0)
 
-Estimate an upper bound on the joint spectral radius by bisection.
-
-At each candidate rate, solve the fixed-rate feasibility problem.
-
-Returns a [`StabilityCertificate`](@ref). Its `rate` is the smallest feasible
-bound found to relative tolerance `rtol`; `functions(certificate)` are the
-node Lyapunov functions, and `certificate(x)` evaluates the common one.
+The [`StabilityCertificate`](@ref) of the smallest feasible rate, found by
+bisection to relative tolerance `rtol`. `initial_upper` is doubled until
+feasible.
 """
 function jsr_bound(
     template::AbstractTemplate,
@@ -146,9 +119,7 @@ function jsr_bound(
 
     initial_upper > 0 || throw(ArgumentError("initial_upper must be positive"))
 
-    # Once, here. The bisection below builds a model per step and each build
-    # revalidates, so leaving this on would run a PSPACE-complete test a dozen
-    # times over on a graph that cannot have changed.
+    # Check path-completeness once; the models built below skip it.
     _check_stability_data(template, graph, problem; path_complete = path_complete)
 
     function feasible(rate)
@@ -204,9 +175,7 @@ end
 """
     certify(template, graph, problem::StabilityProblem; optimizer, rate = 1)
 
-Solve the fixed-`rate` Lyapunov feasibility problem once; `is_feasible` of the
-result says whether the system contracts at that rate on this graph in this
-template. [`jsr_bound`](@ref) bisects on `rate` on top of it.
+Solve the stability problem at the fixed `rate`.
 """
 function certify(
     template::AbstractTemplate,
@@ -235,15 +204,8 @@ end
 """
     dual(certificate::StabilityCertificate)
 
-The certificate on `dual(graph)` for `dual(problem)` in `dual(template)` made of
-the dual norms of the node functions, at the same rate (Debauche, Lemma 6.25).
-
-Each edge inequality `V_d(A_i x) ≤ γ V_s(x)` is, by duality of norms,
-`V_s*(A_iᵀ x) ≤ γ V_d*(x)`: the inequality of the reversed edge. Nothing is
-solved, and an edge of the result is tight exactly when its reverse was. An
-infeasible certificate dualises to an infeasible one with the same status.
-
-Requires a template that [`has_dual`](@ref).
+The certificate on the dual graph made of the dual norms of the node functions,
+at the same rate. Requires a template that [`has_dual`](@ref).
 """
 function dual(certificate::StabilityCertificate)
     template_ = template(certificate)
@@ -302,12 +264,7 @@ objective(certificate::StabilityCertificate) = certificate.rate
     optimality_gap(certificate::StabilityCertificate; atol = 1e-4, max_length = nothing)
 
 How far the rate is known to be from the joint spectral radius: `0` when
-[`is_jsr_exact`](@ref) holds, and otherwise the rate minus
-[`jsr_lower_bound`](@ref), the cycle bracket. `atol` reads tightness and
-`max_length` bounds the cycle search, as in those two.
-
-The bracket is sound whatever `atol` was; the structural test is not, and it is
-skipped on a [`WordGraph`](@ref), where it is not yet proved.
+[`is_jsr_exact`](@ref) holds, otherwise the rate minus [`jsr_lower_bound`](@ref).
 """
 function optimality_gap(
     certificate::StabilityCertificate;
@@ -334,8 +291,6 @@ function edge_slacks(certificate::StabilityCertificate)
     A = mode_matrices(problem(certificate).system)
     degree = homogeneity_degree(template_)
 
-    # The certificate stores gamma; the edge inequality is imposed at
-    # gamma^(d |w|), exactly as `optimization_model` builds it.
     return map(edges(graph_)) do edge
         word = letters(label(graph_, edge))
 
@@ -352,24 +307,10 @@ end
 """
     is_jsr_exact(certificate; atol = 1e-6) -> Bool
 
-Whether the certificate's rate is the **exact** joint spectral radius, by the
-optimality certificate of Ninite & Jungers (Theorem 4): if every node has at
-most one outgoing edge in the [`tight_subgraph`](@ref), then `γ*(G) = ρ(A)`.
-
-The constrained precedent is Theorem 3.8 of Philippe, Essick, Dullerud &
-Jungers, where the tight edges form a simple cycle. One mode per edge: the
-theorem is not proved with words on the edges, and [`jsr_lower_bound`](@ref)
-needs no such proof.
-
-!!! warning "Sufficient, not necessary — and `atol`-dependent"
-    `false` means *unknown*, never "inexact". A graph can attain the exact rate
-    with every edge tight, where the condition cannot hold: two opposite
-    rotations scaled by `0.9` do exactly that.
-
-    And the test is only as good as `atol`. Too small, and genuinely active
-    edges are missed, the subgraph is too thin, and this returns `true` without
-    grounds. [`jsr_lower_bound`](@ref) is the tolerance-free alternative: it
-    brackets the answer instead of asserting it.
+Whether every node has at most one outgoing edge in the
+[`tight_subgraph`](@ref), which proves the rate is the joint spectral radius
+[ninite2026lifting; Thm. 4](@cite). `false` means unknown; too small an `atol`
+can give a wrong `true`. Throws on a graph with words; use `expanded_form`.
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
     _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
@@ -382,26 +323,9 @@ end
 """
     jsr_lower_bound(certificate; atol = 1e-6, max_length = nothing)
 
-A **lower** bound on the joint spectral radius, from the cycles of the
-[`tight_subgraph`](@ref).
-
-A cycle `(a₁,a₂,w₁) … (a_k,a₁,w_k)` of the graph forces
-`γ ≥ ρ(A_{w_k} ⋯ A_{w_1})^{1/ℓ}` with `ℓ` the number of modes read along it,
-and any product of modes bounds the joint spectral radius from below (Philippe,
-Essick, Dullerud & Jungers, Lemma 3.7; Ninite & Jungers, Lemma 1 and its
-proof). The largest such value over the cycles found is returned; `0` when
-there are none.
-
-Together with the certificate's own rate — an *upper* bound — this brackets the
-answer, and **the bracket holds whatever `atol` was**: a cycle of the tight
-subgraph is still a cycle of the graph, so its bound is valid even if the tight
-set was identified badly. `atol` only decides where to look for good cycles, and
-`max_length` how far; both affect how tight the bound is, neither whether it is
-true.
-
-`max_length` defaults to the number of nodes, which enumerates every simple
-cycle; the count grows quickly with the graph, so lower it on a large one. A
-truncated search weakens the bound without making it wrong.
+A lower bound on the joint spectral radius, valid for any `atol`: the largest
+`ρ(A_w)^{1/|w|}` over the words `w` read along the simple cycles of at most
+`max_length` edges of the [`tight_subgraph`](@ref); `0` if there are none.
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;
@@ -415,9 +339,7 @@ function jsr_lower_bound(
     best = zero(float(eltype(first(A))))
 
     for cycle in simple_cycles(subgraph; max_length = length_bound)
-        # Composing the edge inequalities along the cycle puts the last mode
-        # leftmost, which is also the order in which they act: the first read
-        # is applied first. A word edge reads several.
+        # The first mode read acts first, so later modes multiply on the left.
         product = LinearAlgebra.I
         steps = 0
 

@@ -1,21 +1,15 @@
 """
     Trajectory
 
-One run of a switched system: the states visited, the switching sequence taken,
-and the inputs applied if there were any.
-
-`states` holds one more entry than `switching` — it starts at the initial state
-and ends after the last transition. `inputs` is `nothing` for an open-loop run,
-and otherwise holds one input per step.
+One run of a switched system: the states visited, the switching sequence taken
+and the inputs applied, `nothing` if there were none.
 """
 struct Trajectory{T <: Real, U <: Union{Nothing, Vector{Vector{T}}}}
     states::Vector{Vector{T}}
     switching::Vector{Int}
     inputs::U
 
-    # Inner, so the default constructors are not generated alongside it: an
-    # outer method of the same signature would merely overwrite one of them,
-    # and a trajectory of the wrong shape must not be constructible at all.
+    # Inner, so that no default constructor bypasses the shape checks.
     function Trajectory(
         states::AbstractVector{<:AbstractVector{T}},
         switching::AbstractVector{<:Integer},
@@ -47,15 +41,14 @@ end
 """
     states(trajectory)
 
-The states visited, oldest first. One longer than [`switching`](@ref).
+The states visited, oldest first, one more than the steps.
 """
 states(trajectory::Trajectory) = trajectory.states
 
 """
     switching(trajectory)
 
-The switching sequence taken, as modes. One shorter than [`states`](@ref):
-entry `k` is the mode that carried `states(trajectory)[k]` to
+The modes taken: entry `k` carried `states(trajectory)[k]` to
 `states(trajectory)[k + 1]`.
 """
 switching(trajectory::Trajectory) = trajectory.switching
@@ -63,8 +56,7 @@ switching(trajectory::Trajectory) = trajectory.switching
 """
     inputs(trajectory)
 
-The inputs applied, one per step, or `nothing` for an open-loop run;
-[`has_input`](@ref) says which.
+The inputs applied, one per step, or `nothing` for an open-loop run.
 """
 inputs(trajectory::Trajectory) = trajectory.inputs
 
@@ -75,7 +67,5 @@ Whether the run applied an input.
 """
 has_input(trajectory::Trajectory) = trajectory.inputs !== nothing
 
-# The number of steps, which is one fewer than the number of states. Left
-# undocumented on purpose: `checkdocs = :all` would then demand a manual entry
-# for a `Base` binding we merely extend.
+# The number of steps. No docstring, or `checkdocs` would demand a manual entry.
 Base.length(trajectory::Trajectory) = length(trajectory.switching)

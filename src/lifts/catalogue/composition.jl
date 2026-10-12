@@ -1,19 +1,9 @@
 """
     CompositionLift(T)
 
-The `T`-forward composition lift: a node `(s, j₁, …, j_T)` for every node `s`
-and every `T`-tuple of modes, and for every edge `(a, b, i)` and tuple the edge
-`((a, j₁…j_T), (b, i, j₁…j_{T−1}), j_T)` (Debauche, Della Rossa & Jungers,
-Def. 10; Debauche, Def. 7.58). The node function is ``V_s ∘ A_{j_1} ∘ ⋯ ∘
-A_{j_T}``.
-
-Valid for templates closed under [`Composition`](@ref) with the dynamics,
-which for the templates here means invertible mode matrices. Its simulation is
-sufficient for the order on such templates (Debauche, Thm. 7.65) but not
-necessary (Jongeneel & Jungers, Ex. IV.3). Unlike the subset lifts it can
-strictly improve a bound (Jongeneel & Jungers, Ex. IV.4), which is why
-[`Hierarchy`](@ref) accepts it as a step of [`refine`](@ref). `origins` are
-the `(s, [j₁, …, j_T])` pairs.
+The `T`-forward composition lift: a node `(s, j₁, …, j_T)` per node `s` and
+`T`-tuple of modes, and for each edge `(a, b, i)` an edge labelled `j_T` from
+`(a, j₁…j_T)` to `(b, i, j₁…j_{T−1})`. Requires [`Composition`](@ref).
 """
 struct CompositionLift <: AbstractLift
     length::Int

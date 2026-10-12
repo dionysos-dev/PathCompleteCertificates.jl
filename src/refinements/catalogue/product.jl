@@ -1,10 +1,8 @@
 """
     ProductRefinement(T)
 
-The `T`-product lift (Philippe, Essick, Dullerud & Jungers, Def. 2): the same
-nodes, one edge per path of length `T`, reading the concatenated word. A
-[`WordGraph`](@ref). `ProductRefinement(2)` is either edge product at every
-edge; the construction is self-dual.
+The same nodes, and one edge per path of length `T` labelled by its word, as a
+[`WordGraph`](@ref).
 """
 struct ProductRefinement <: AbstractRefinement
     length::Int

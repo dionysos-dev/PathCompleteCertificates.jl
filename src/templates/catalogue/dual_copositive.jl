@@ -5,19 +5,8 @@ import LinearAlgebra
     DualCopositiveTemplate(; min_weight = 1e-3)
 
 The template ``V(x) = \\max_i x_i / v_i`` on the nonnegative orthant, with
-``v > 0``: the dual norms of [`LinearCopositiveTemplate`](@ref), and what
-`dual(LinearCopositiveTemplate())` returns (Debauche, Della Rossa & Jungers,
-Def. 11).
-
-Applicable to positive switched systems only, like its dual. The edge condition
-``V_{dst}(Ax) ≤ γ V_{src}(x)`` on the orthant is ``A v_{src} ≤ γ v_{dst}``
-componentwise (their Prop. 5), so every program stays linear.
-
-Closed under pointwise maximum, ``\\max(V_v, V_w) = V_{\\min(v, w)}``, which the
-primal template is not.
-
-`min_weight` floors the weights, which sit in a denominator; it also normalises,
-the edge conditions being homogeneous.
+every ``v_i`` at least `min_weight`: the dual of
+[`LinearCopositiveTemplate`](@ref). For positive systems only.
 """
 struct DualCopositiveTemplate{T <: Real} <: AbstractTemplate
     min_weight::T
@@ -31,8 +20,7 @@ end
 """
     DualCopositiveFunction(v)
 
-One fitted node function of a [`DualCopositiveTemplate`](@ref),
-`V(x) = max_i x_i / v_i`.
+A node function `V(x) = max_i x_i / v_i` of a [`DualCopositiveTemplate`](@ref).
 """
 struct DualCopositiveFunction{W <: AbstractVector}
     v::W
@@ -66,8 +54,7 @@ solution_value(::DualCopositiveTemplate, V::DualCopositiveFunction) =
 
 homogeneity_degree(::DualCopositiveTemplate) = 1
 
-# The floor on the weights is the normalisation: the edge conditions are
-# homogeneous in v.
+# The lower bound min_weight on v already excludes V = 0.
 add_normalization!(::JuMP.Model, ::DualCopositiveTemplate, ::DualCopositiveFunction) =
     nothing
 
@@ -115,8 +102,7 @@ function domination_slack(
     return minimum(scale * V_dst.v - map * V_src.v)
 end
 
-# Prop. 5 of Debauche, Della Rossa & Jungers: the maximum of two dual norms is
-# the dual norm of the componentwise minimum.
+# max(V_v, V_w) = V_min(v, w) [debauche2021comparison, Prop. 5].
 is_closed_under(::DualCopositiveTemplate, ::Maximum, system) = true
 
 has_dual(::DualCopositiveTemplate) = true

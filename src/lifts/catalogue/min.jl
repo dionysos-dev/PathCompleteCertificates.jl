@@ -5,16 +5,11 @@ _members(mask::Integer, n::Integer) =
 """
     MinLift()
 
-Nodes are the nonempty subsets of the original nodes; `(A, B, i)` is an edge
-when every node of `A` has an `i`-edge into `B` (Debauche, Della Rossa &
-Jungers, Def. 9). The node function is the minimum over the subset.
-
-Valid for templates closed under [`Minimum`](@ref), and for the linear
-copositive norms on positive systems without closure (Debauche, Thm. 7.43).
-Its simulation is the greatest simulation relation between the nodes, a map into
-subsets computed in polynomial time, and it is complete: `G ≤_V H` for every
-`min`-closed template exactly when the relation exists (Debauche, Thm. 8.1).
-Built explicitly only for small graphs; `origins` are the subsets.
+Nodes are the nonempty subsets, with an `i`-edge from `A` to `B` when every
+node of `A` has an `i`-edge into `B`. Requires [`Minimum`](@ref), except for
+linear copositive norms on positive systems
+[debauche2024thesis; Thm. 7.43](@cite); its simulation is the greatest
+simulation relation [debauche2024thesis; Thm. 8.1](@cite).
 """
 struct MinLift <: AbstractLift end
 

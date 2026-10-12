@@ -4,31 +4,22 @@ import LinearAlgebra
 """
     AbstractTemplate
 
-A family of candidate node functions.
-
-A template supplies primitives; a problem chooses which to apply. It is passed
-as an **instance**, not a type, because a template need not be determined by its
-type — [`PolyhedralTemplate`](@ref) carries one fixed matrix per node.
+A family of candidate node functions, passed as an instance since it may carry
+per-node data.
 """
 abstract type AbstractTemplate end
 
 """
     homogeneity_degree(template) -> Int
 
-The degree of homogeneity of the template's functions, `V(cx) = cᵈ V(x)`.
-
-The edge condition is `V_dst(Ax) ≤ γᵈ V_src(x)`, so this is what makes `γ` mean
-a contraction rate for every template. Quadratic forms are degree 2, linear
-functionals and norms degree 1.
+The degree `d` such that `V(cx) = cᵈ V(x)` for every function of the template.
 """
 function homogeneity_degree end
 
 """
     add_function_variables!(model, template, dimension, node)
 
-Add the decision variables for one candidate function at `node` and return it.
-
-`node` selects that node's fixed template data, where the template has any.
+Add the variables of the node function at `node` and return the function.
 """
 function add_function_variables! end
 
@@ -36,21 +27,13 @@ function add_function_variables! end
     add_nonnegativity!(model, template, V)
 
 Constrain `V` to be nonnegative.
-
-Dispatch is on the template, not on the type of `V`: two templates may represent
-their functions with the same container, and dispatching on the container then
-applies the wrong constraint silently.
 """
 function add_nonnegativity! end
 
 """
     add_normalization!(model, template, V)
 
-Rule out the degenerate member of the family, typically `V ≡ 0` — which
-satisfies every homogeneous edge condition and certifies nothing.
-
-Separate from [`add_nonnegativity!`](@ref) because a problem may want one
-without the other: safety's barriers are sign-free but still must not vanish.
+Constrain `V` to exclude the trivial function `V ≡ 0`.
 """
 function add_normalization! end
 
@@ -64,23 +47,15 @@ Constrain, for every ``x``,
     - \\text{margin}\\,\\|x\\|^d \\ge 0,
 ```
 
-where ``d`` is [`homogeneity_degree`](@ref). `scale` and `margin` may be JuMP
-expressions.
-
-Quantifying over all `x` needs a lifting into a cone, which is template-specific
-but problem-agnostic. A template that cannot express `margin` should accept
-`margin = 0` and throw otherwise.
+where ``d`` is [`homogeneity_degree`](@ref). A template that cannot express
+`margin` throws unless `margin = 0`.
 """
 function add_domination! end
 
 """
     solution_value(template, V)
 
-The fitted node function after `optimize!`: the same object holding numbers
-rather than variables.
-
-Not a plain `JuMP.value` broadcast, because a node function may carry fixed data
-alongside its variables — a [`PolyhedralFunction`](@ref) keeps its `G`.
+The node function `V` after `optimize!`, with values in place of variables.
 """
 function solution_value end
 
@@ -88,9 +63,6 @@ function solution_value end
     check_dynamics(template, A)
 
 Throw if `template` does not apply to the mode matrices `A`.
-
-A copositive function certifies nothing about a system that leaves the
-nonnegative orthant. The default is that every template applies.
 """
 function check_dynamics end
 
@@ -99,57 +71,30 @@ check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
 """
     domination_slack(template, V_src, V_dst, map; scale = 1)
 
-How much slack the domination `scale · V_src(x) ≥ V_dst(map · x)` has, given
-*fitted* node functions.
-
-The mirror of [`add_domination!`](@ref): same arguments, same meaning, but read
-off a solution rather than imposed on variables. Nonnegative when the
-inequality holds, and **zero exactly when it is tight** — which is what tells
-you the edge is limiting the certificate rather than slack in it.
-
-One method per template, because the slack is in the template's own terms: the
-smallest eigenvalue of a matrix pencil for a quadratic, the tightest row for a
-polyhedral one.
-
-The value is in the units of the fitted functions, and a certificate is only
-determined up to scale, so compare slacks within one certificate rather than
-across two.
+The slack of `scale · V_src(x) ≥ V_dst(map · x)` for fitted node functions:
+nonnegative when it holds, zero exactly when it is tight. It is in the units of
+the fitted functions, so compare slacks within one certificate only.
 """
 function domination_slack end
 
 """
     is_closed_under(template, operation, system) -> Bool
 
-Whether the family of node functions is closed under an [`Operation`](@ref):
-whether combining members of it gives a member (Debauche, Della Rossa &
-Jungers, Def. 7). The template declares; the default is `false`, which claims
-nothing.
-
-`system` is read by [`Composition`](@ref) and [`InverseComposition`](@ref)
-only — "closed under composition with the dynamics" is a statement about the
-maps composed with — and ignored by the three pointwise operations.
-
-What it decides is [`is_valid`](@ref): whether a lift is guaranteed not to make
-the bound worse for this template. A template that is closed under nothing can
-still be lifted; it just carries no such guarantee.
+Whether combining members of the template by `operation` gives a member;
+`false` by default. `system` matters only for [`Composition`](@ref) and
+[`InverseComposition`](@ref).
 """
 is_closed_under(::AbstractTemplate, ::Operation, system) = false
 
 """
     reindex(template, origins)
 
-The template for a refined or lifted graph, given where each of its nodes came
-from — the `origins` of a [`Refined`](@ref) or a [`Lifted`](@ref).
-
-A template that carries no per-node data returns itself. One that does, such as
-[`PolyhedralTemplate`](@ref), gives every new node the data of its origin; a
-node that merges several origins takes their data when it coincides and throws
-otherwise.
+The template for a refined or lifted graph whose nodes come from `origins`.
+Throws if a node merges origins with different per-node data.
 """
 reindex(template::AbstractTemplate, ::AbstractVector) = template
 
-# The original nodes an origin refers to, whatever a lift recorded: a copy, a
-# subset, or a node paired with a word.
+# The original nodes of an origin: a node, a subset, or a (node, word) pair.
 _origin_nodes(origin::Integer) = (origin,)
 _origin_nodes(origin::AbstractVector{<:Integer}) = origin
 _origin_nodes(origin::Tuple{<:Integer, <:Any}) = (first(origin),)
@@ -178,9 +123,7 @@ end
 """
     has_dual(template) -> Bool
 
-Whether `dual(template)` and `dual(template, V)` are defined: whether the dual
-norms of the family form a family the package has (Debauche, Def. 1.32). The
-default is `false`; a template with a dual declares both.
+Whether `dual(template)` and `dual(template, V)` are defined; `false` by default.
 """
 has_dual(::AbstractTemplate) = false
 
@@ -190,9 +133,7 @@ dual(template::AbstractTemplate) =
 """
     dual(template, V)
 
-The dual norm of a fitted node function `V` of `template`, as a member of
-`dual(template)`: the node function the certificate on the dual graph carries at
-the same node (Debauche, Lemma 6.25). Required by `dual(certificate)`.
+The dual norm of a fitted node function `V`, as a member of `dual(template)`.
 """
 dual(template::AbstractTemplate, V) =
     throw(ArgumentError("no dual node function is defined for $(nameof(typeof(template)))"))

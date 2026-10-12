@@ -1,29 +1,19 @@
-# Words on edges, and the graph with one mode per edge that reads the same
-# language.
-
 """
     expanded_form(graph) -> (expanded, origins)
 
 The graph with one mode per edge obtained by breaking every word edge
-`(s, d, i₁…iₖ)` into a chain `s → m₁ → ⋯ → mₖ₋₁ → d` through `k − 1` fresh
-nodes (Ahmadi et al. 2014, Def. 2.1; Debauche, Def. 6.7).
-
-`origins[m]` is the node of `graph` a node `m` came from, and `0` for a fresh
-one. A graph with one mode per edge expands to itself.
-
-A word graph is path-complete exactly when its expanded form is, which is how
-[`is_path_complete`](@ref) decides it. The two certify the same rate for a
-template closed under composition with the dynamics, the word graph with fewer
-variables (Debauche, Prop. 7.70).
+`(s, d, i₁…iₖ)` into a chain `s → m₁ → ⋯ → mₖ₋₁ → d` through `k − 1` new
+nodes. `origins[m]` is the node of `graph` that `m` came from, `0` for a new
+one.
 """
 expanded_form(graph::_HS.GraphAutomaton) = (graph, collect(nodes(graph)))
 
 function expanded_form(graph::WordGraph)
     n = n_nodes(graph)
-    fresh = sum(edge -> _word_length(graph, edge) - 1, edges(graph); init = 0)
+    n_new = sum(edge -> _word_length(graph, edge) - 1, edges(graph); init = 0)
 
-    expanded = empty_graph(n + fresh)
-    origins = [collect(nodes(graph)); zeros(Int, fresh)]
+    expanded = empty_graph(n + n_new)
+    origins = [collect(nodes(graph)); zeros(Int, n_new)]
     next = n
 
     for edge in edges(graph)

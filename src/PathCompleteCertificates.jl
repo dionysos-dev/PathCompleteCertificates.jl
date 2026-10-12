@@ -1,12 +1,8 @@
 """
     PathCompleteCertificates
 
-Certificates for switched systems built on **path-complete graphs**.
-
-A certificate here is always the same three things: a labelled graph, a function
-drawn from a *template* at each node, and one inequality along each edge. What
-changes between stability, optimal control and safety is only the edge
-inequality.
+Certificates for switched systems built on path-complete graphs: a labelled
+graph, a function from a template at each node, and one inequality per edge.
 """
 module PathCompleteCertificates
 

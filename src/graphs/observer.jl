@@ -2,15 +2,10 @@
     observer_graph(graph) -> (observer, states)
     observer_graph(graph, alphabet) -> (observer, states)
 
-The subset construction of `graph` from the set of all its nodes: a node of the
-observer per nonempty subset reached, `states[k]` being the subset node `k`
-stands for, and an edge `(P, Q, σ)` when `Q` is the set of nodes an edge
-reading `σ` leads to from some node of `P`. Empty subsets are dropped, so the
-observer is complete for `alphabet` exactly when `graph` is path-complete for
-it, which is how [`is_path_complete`](@ref) decides. It is the graph on which
-Theorem III.8 of Philippe, Athanasopoulos, Angeli & Jungers states the common
-function of a graph that is neither complete nor co-complete, which is how
-[`common`](@ref) reads it. `alphabet` defaults to the modes `graph` uses.
+The subset construction of `graph` started from all its nodes, with empty
+subsets dropped: an edge `(P, Q, σ)` when `Q` is the set of successors by `σ`
+of the nodes in `P`. `states[k]` is the subset of nodes of `graph` that
+observer node `k` stands for.
 """
 observer_graph(graph::_HS.GraphAutomaton) = observer_graph(graph, sort(alphabet(graph)))
 
@@ -59,6 +54,5 @@ function _step(index, subset, letter::Integer)
     return reachable
 end
 
-# A subset as an immutable key. The key type is written out where the
-# dictionary is made: inferred from the first subset, it would pin the arity.
+# The key type is written out where the dictionary is made, so the arity is free.
 _key(subset) = Tuple(sort!(collect(subset)))

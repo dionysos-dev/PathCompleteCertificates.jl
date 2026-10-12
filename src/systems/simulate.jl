@@ -4,26 +4,10 @@ import Random
     simulate(system, x0, modes; u = nothing)
     simulate(system, x0, horizon::Integer; u = nothing, discrete_state = 1, rng = Random.default_rng())
 
-Run `system` from `x0` along a switching sequence and return a
-[`Trajectory`](@ref): `x[k+1] = A_{modes[k]} x[k]`, or, once `system` has an
-input, `x[k+1] = A_{modes[k]} x[k] + B_{modes[k]} u[k]`.
-
-Given `modes` explicitly, that sequence is taken. Given a `horizon` instead, a sequence of that length is drawn: a random walk on
-`system`'s automaton, starting at `discrete_state` and, at each step, picking
-uniformly among the transitions leaving the current state. A system built with
-a restricted `automaton` therefore only ever produces a sequence that automaton
-admits, never an inadmissible one.
-
-The drawn sequence is read back with [`switching`](@ref).
-
-`u` is required exactly when [`has_input`](@ref)`(system)`; passing one for an
-autonomous system, or omitting it for a controlled one, throws. It is either a
-sequence of inputs, as long as the switching sequence and indexed like it, or a
-*memoryless* feedback law `u(x)`, called on the current state at each step.
-
-The policy of an [`OptimalControlCertificate`](@ref) has memory, a node of the
-certificate graph, so it is not a `u(x)`; `simulate(certificate, x0, steps)`
-runs it.
+Run `system` from `x0` along `modes`, or along a uniform random walk of length
+`horizon` on its automaton from `discrete_state`, and return a
+[`Trajectory`](@ref). `u`, a vector of inputs or a feedback law `u(x)`, is
+required exactly when [`has_input`](@ref)`(system)`; otherwise it throws.
 """
 function simulate(
     system::_HS.HybridSystem,
@@ -46,9 +30,7 @@ function simulate(
     length(x0) == n ||
         throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
 
-    # Promoted, not `typeof(x0)`: an integer `x0` under real dynamics is the
-    # obvious call, and storing the result back into a `Vector{Int}` would throw
-    # an `InexactError` from the second step.
+    # Promoted so that an integer `x0` under real dynamics does not throw.
     T = promote_type(eltype(x0), eltype(first(A)), controlled ? eltype(first(B)) : Bool)
 
     xs = Vector{Vector{T}}(undef, length(modes) + 1)
@@ -86,14 +68,10 @@ end
 _input_at(u::AbstractVector, k, x) = u[k]
 _input_at(u, k, x) = u(x)
 
-# A random walk on `automaton`, `horizon` labels long, starting from `node`.
 function _random_modes(automaton, node::Integer, horizon::Integer, rng::Random.AbstractRNG)
     modes = Vector{Int}(undef, horizon)
     for k in 1:horizon
-        # Not `outgoing_edges`: those queries are the adapter over
-        # `GraphAutomaton`, the type a *certificate* graph has. The automaton of
-        # a system built without a restriction is a `OneStateAutomaton`, which
-        # they do not accept. The HybridSystems walk works on both.
+        # Not `outgoing_edges`, which rejects a `OneStateAutomaton`.
         options = collect(_HS.out_transitions(automaton, node))
         isempty(options) && throw(
             ArgumentError(

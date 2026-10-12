@@ -1,52 +1,45 @@
 """
-    common(template, graph, problem, Ps, x)
+    common(template, graph, problem, Vs, x)
 
-Evaluate at `x` the common function the node functions `Ps` of a certificate
-on `graph` combine into (Philippe, Athanasopoulos, Angeli & Jungers): the
-minimum over the nodes on a complete graph (Cor. III.3), the maximum on a
-co-complete one, and a minimum of maxima over the observer construction
-otherwise (Thm. III.8). Depending on `problem` it is a common Lyapunov
-function, a common barrier function, or an upper bound on the value function.
+The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
+minimum of maxima of the `Vs` [philippe2017path](@cite). Depending on `problem`,
+a common Lyapunov function, a common barrier function or a bound on the value
+function.
 """
 function common(
     template::AbstractTemplate,
     graph::CertificateGraph,
     problem::AbstractProblem,
-    Ps::AbstractVector,
+    Vs::AbstractVector,
     x::AbstractVector{<:Real},
 )
-    # Corollary III.3 of Philippe et al.: a complete graph combines with a
-    # minimum, a co-complete one with a maximum. Both are special cases of the
-    # observer construction below (Theorem III.8), taken here because they are
-    # cheaper and need no subset construction.
+    # Special cases of the observer construction below, cheaper to evaluate.
     alphabet = 1:_n_modes(problem)
 
     if is_complete(graph, alphabet)
-        return minimum(node_value(template, problem, P, x) for P in Ps)
+        return minimum(node_value(template, problem, V, x) for V in Vs)
     elseif is_co_complete(graph, alphabet)
-        return maximum(node_value(template, problem, P, x) for P in Ps)
+        return maximum(node_value(template, problem, V, x) for V in Vs)
     end
 
-    # Each observer node is a *set* of nodes of `graph`, so the common function is
-    # a maximum within each set and a minimum across them.
+    # Each observer node is a set of nodes: maximum within, minimum across.
     _, observer_states = observer_graph(graph, alphabet)
 
     return minimum(
-        maximum(node_value(template, problem, Ps[node], x) for node in state) for
+        maximum(node_value(template, problem, Vs[node], x) for node in state) for
         state in observer_states
     )
 end
 
-# A word graph has no state at the silent steps inside a word, so no observer
-# and no common function; expand it first.
+# No state is constrained inside a word, so a word graph has no common function.
 function common(
     template::AbstractTemplate,
     graph::WordGraph,
     problem::AbstractProblem,
-    Ps::AbstractVector,
+    Vs::AbstractVector,
     x::AbstractVector{<:Real},
 )
     _require_one_mode_per_edge(graph, "common")
 
-    return common(template, _letter_graph(graph), problem, Ps, x)
+    return common(template, _letter_graph(graph), problem, Vs, x)
 end

@@ -5,25 +5,15 @@ import LinearAlgebra
     PolyhedralTemplate(G; min_weight = 1e-3)
     PolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
 
-The symmetric ``2n``-face polyhedral template of Athanasopoulos et al.: at node
+The polyhedral template of [athanasopoulos2019polyhedral](@citet): at node
 ``s``,
 
 ```math
 V_s(x) = \\max_k \\frac{|(G_s x)_k|}{w_{s,k}},
 ```
 
-a weighted infinity norm in the coordinates fixed by ``G_s``. Its sublevel set
-``\\{x : -\\gamma w_s \\le G_s x \\le \\gamma w_s\\}`` is a symmetric polytope with
-``2n`` faces, hence the name.
-
-`G` holds one invertible matrix per node and is **fixed data, not a decision
-variable** — only the weights ``w_s > 0`` are solved for, which keeps the edge
-condition a linear program. The second constructor defaults every ``G_s`` to
-the identity, which is the plain weighted infinity norm.
-
-`min_weight` is the strict-positivity floor on the weights. It cannot be `0`:
-``w`` sits in a denominator, so a zero weight leaves ``V_s`` undefined rather
-than merely degenerate.
+where `G` holds one fixed invertible matrix per node (the identity by default)
+and the weights ``w_{s,k}``, at least `min_weight`, are the variables.
 """
 struct PolyhedralTemplate{T <: Real} <: AbstractTemplate
     G::Vector{Matrix{T}}
@@ -46,8 +36,7 @@ struct PolyhedralTemplate{T <: Real} <: AbstractTemplate
                 ),
             )
 
-            # The edge condition needs G_src^-1, so a singular template is not
-            # merely a bad choice -- it has no edge condition at all.
+            # The edge condition needs G_src^-1.
             LinearAlgebra.rank(G_node) == dimension ||
                 throw(ArgumentError("G[$node] is singular; it must have full rank"))
         end
@@ -70,10 +59,7 @@ end
 """
     PolyhedralFunction(G, w)
 
-One fitted node function of a [`PolyhedralTemplate`](@ref), `V(x) = max_k |(Gx)_k| / w_k`.
-
-It carries the node's fixed `G` with its weights `w`, since the edge condition
-needs both.
+A node function `V(x) = max_k |(Gx)_k| / w_k` of a [`PolyhedralTemplate`](@ref).
 """
 struct PolyhedralFunction{M <: AbstractMatrix, W <: AbstractVector}
     G::M
@@ -116,8 +102,7 @@ function add_nonnegativity!(
     template::PolyhedralTemplate,
     V::PolyhedralFunction,
 )
-    # Not `>= 0`: the weights are a denominator, so they must be bounded away
-    # from zero for the function to be defined at all.
+    # The weights are a denominator, so they must be bounded away from zero.
     JuMP.@constraint(model, V.w .>= template.min_weight)
     return nothing
 end
@@ -128,8 +113,7 @@ solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
 homogeneity_degree(::PolyhedralTemplate) = 1
 
 function add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
-    # `add_nonnegativity!` already floors the weights, which normalizes too:
-    # the edge conditions are homogeneous in w.
+    # The lower bound min_weight from `add_nonnegativity!` already excludes V = 0.
     return nothing
 end
 
@@ -149,10 +133,8 @@ function add_domination!(
         ),
     )
 
-    # Under z = W_src^-1 G_src x this is an infinity-norm induced norm bound,
-    # which row by row is |G_dst map G_src^-1| w_src <= scale * w_dst -- linear
-    # in w, which keeps this template an LP. The *destination* carries the
-    # scale because w sits in a denominator.
+    # The induced infinity-norm bound |G_dst map G_src^-1| w_src <= scale * w_dst;
+    # w_dst carries the scale since w is a denominator.
     M = abs.(V_dst.G * map * inv(V_src.G))
 
     JuMP.@constraint(model, M * V_src.w .<= scale * V_dst.w)
@@ -167,16 +149,12 @@ function domination_slack(
     map::AbstractMatrix;
     scale = 1,
 )
-    # The destination carries the scale here, exactly as in `add_domination!`:
-    # the weights sit in a denominator.
     M = abs.(V_dst.G * map * inv(V_src.G))
 
     return minimum(scale * V_dst.w - M * V_src.w)
 end
 
-# The maximum of two weighted infinity norms in the same coordinates is one
-# again, with the smaller weights: closed under `max` exactly when every node
-# shares the matrix.
+# The max of two such norms with the same G is one, with the smaller weights.
 is_closed_under(template::PolyhedralTemplate, ::Maximum, system) = allequal(template.G)
 
 reindex(template::PolyhedralTemplate, origins::AbstractVector) = PolyhedralTemplate(
