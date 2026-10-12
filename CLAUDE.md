@@ -70,7 +70,7 @@ src/
 ├── systems/             switched systems, runs, the dual system
 ├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words, predicates,
 │                        languages, dual, de_bruijn, observer, cycles, simulation
-├── templates/           abstract.jl + catalogue/ (six templates; sum_of_squares in ext/)
+├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
 ├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
 ├── lifts/               COMPARING graphs: abstract.jl, dual.jl, compare.jl + catalogue/
 ├── refinements/         IMPROVING a graph: abstract.jl, dual.jl, strategies.jl, refine.jl + catalogue/

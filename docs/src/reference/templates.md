@@ -58,3 +58,13 @@ required before this template can be solved with.
 Modules = [PathCompleteCertificates]
 Pages   = ["templates/catalogue/sum_of_squares.jl"]
 ```
+
+## SetProg sets
+
+The primitives are defined in a package extension, so `using SetProg` is
+required before this template can be solved with.
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["templates/catalogue/set_prog.jl"]
+```

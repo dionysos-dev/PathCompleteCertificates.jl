@@ -5,7 +5,7 @@ CurrentModule = PathCompleteCertificates
 # What works with what
 
 Every template composes with every problem in principle. In practice,
-stability runs on all six templates, and the two other problems on the
+stability runs on all seven templates, and the two other problems on the
 quadratic one.
 
 |                                | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
@@ -16,11 +16,12 @@ quadratic one.
 | [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
 | [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
+| [`SetProgTemplate`](@ref)           | ✓ ² | ✗ | ✗ |
 
 ¹ Positive systems only: entrywise nonnegative mode matrices.
 
-² Behind a package extension: `using SumOfSquares` first, or its primitives are
-not defined.
+² Behind a package extension: `using SumOfSquares` first, or `using SetProg`
+for [`SetProgTemplate`](@ref), or its primitives are not defined.
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control needs
 a **complete** graph, not merely a path-complete one. Stability accepts a
@@ -42,8 +43,9 @@ how the loop reads where a certificate is tight:
 | [`PolyhedralTemplate`](@ref) | ✓ | identity; max when the node matrices coincide |
 | [`ConicPolyhedralTemplate`](@ref) | ✓ | identity |
 | [`SumOfSquaresTemplate`](@ref) | ✗ ³ | identity, sum; composition if invertible |
+| [`SetProgTemplate`](@ref) | ✗ ³ | identity; sum when the nodes share the set variable |
 
-³ No `domination_slack` yet, so the loop cannot read where that template is
+³ No `domination_slack` yet, so the loop cannot read where these templates are
 tight.
 
 ## The gaps

@@ -53,6 +53,7 @@ include("templates/catalogue/quadratic.jl")
 include("templates/catalogue/polyhedral.jl")
 include("templates/catalogue/conic_polyhedral.jl")
 include("templates/catalogue/sum_of_squares.jl")
+include("templates/catalogue/set_prog.jl")
 
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")

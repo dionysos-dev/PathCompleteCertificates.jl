@@ -17,7 +17,7 @@ callable.
     data, [`PolyhedralTemplate`](@ref) holds one matrix per node, and a type
     has nowhere to put it.
 
-## The six templates
+## The seven templates
 
 | Template | ``V_s(x)`` | Homogeneity degree | Solved for | Source |
 | :-- | :-- | :-: | :-- | :-- |
@@ -27,11 +27,19 @@ callable.
 | [`PolyhedralTemplate`](@ref) | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | 1 | weights ``w_s``, facets ``G_s`` fixed | [athanasopoulos2019polyhedral](@cite) |
 | [`ConicPolyhedralTemplate`](@ref) | ``\max_i \lvert p_{s,i}^\top x \rvert`` | 1 | facets ``p_{s,i}`` | unpublished ¹ |
 | [`SumOfSquaresTemplate`](@ref) | ``z(x)^\top Q_s z(x)``, ``z`` the monomials of degree ``d`` | ``2d`` | ``Q_s \succeq 0`` | [parrilo2008approximation](@cite) ² |
+| [`SetProgTemplate`](@ref) | the gauge of a [SetProg](https://github.com/blegat/SetProg.jl) set | the set's | the set | ³ |
 
 ¹ The free-facet construction is under submission.
 
 ² Behind a package extension: load SumOfSquares first. Raising ``d`` tightens
 the bound monotonically, and ``d = 1`` is exactly [`QuadraticTemplate`](@ref).
+
+³ Behind a package extension: load SetProg first. An ellipsoid is the
+quadratic template, a polynomial set the sum-of-squares one and a piecewise
+polytope the free-facet one on the same cones; what it adds are the piecewise
+semi-ellipsoids, quadratic on each cone of a partition, which improve on the
+quadratic template as the partition is refined;
+[Piecewise semi-ellipsoids: a template from SetProg](@ref) shows all four.
 
 The **homogeneity degree**, [`homogeneity_degree`](@ref), is the ``d`` in
 ``V(cx) = c^d V(x)``. Stability scales its edge inequality by ``\gamma^d``, so
@@ -69,6 +77,7 @@ hold for it. A template declares its closures with [`is_closed_under`](@ref):
 | [`DualCopositiveTemplate`](@ref) | | ✓ | | |
 | [`PolyhedralTemplate`](@ref) | | ✓ if the node matrices coincide | | |
 | [`ConicPolyhedralTemplate`](@ref) | | | | |
+| [`SetProgTemplate`](@ref) | ✓ if the nodes share the set variable | | | |
 
 ¹ Not closed as a set of functions, yet the min lift is valid for it on
 positive linear systems ([debauche2024thesis](@cite), Thm. 7.43), the one
@@ -85,15 +94,15 @@ was given.
 
 [`has_dual`](@ref), [`dual`](@ref)`(template)` and `dual(template, V)`, the
 dual norm of a fitted function. Quadratic forms are self-dual and the
-copositive templates are each other's dual; the polyhedral and sum-of-squares
-templates have none here. A closure declared on either of a dual pair serves
-both; see [Duality](@ref).
+copositive templates are each other's dual; the polyhedral, sum-of-squares and
+SetProg templates have none here. A closure declared on either of a dual pair
+serves both; see [Duality](@ref).
 
 ## Per-node data
 
 A template whose data is attached to the nodes, such as the facet matrices of
-[`PolyhedralTemplate`](@ref), must say what a node copied by a refinement
-inherits. [`reindex`](@ref)`(template, origins)` gives every node of the new
+[`PolyhedralTemplate`](@ref) or the set variables of [`SetProgTemplate`](@ref),
+must say what a node copied by a refinement inherits. [`reindex`](@ref)`(template, origins)` gives every node of the new
 graph the data of the node it came from; a data-free template returns itself.
 
 ## Writing your own
