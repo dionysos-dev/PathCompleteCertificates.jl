@@ -38,7 +38,8 @@ the bound monotonically, and ``d = 1`` is exactly [`QuadraticTemplate`](@ref).
 quadratic template, a polynomial set the sum-of-squares one and a piecewise
 polytope the free-facet one on the same cones; what it adds are the piecewise
 semi-ellipsoids, quadratic on each cone of a partition, which improve on the
-quadratic template as the partition is refined.
+quadratic template as the partition is refined;
+[Piecewise semi-ellipsoids: a template from SetProg](@ref) shows all four.
 
 The **homogeneity degree**, [`homogeneity_degree`](@ref), is the ``d`` in
 ``V(cx) = c^d V(x)``. Stability scales its edge inequality by ``\gamma^d``, so

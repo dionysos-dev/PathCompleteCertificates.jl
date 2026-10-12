@@ -64,7 +64,9 @@ In reading order:
 
 The two other problems have an example each:
 [Safety: a barrier certificate](@ref) and
-[Optimal control: a feedback per node](@ref).
+[Optimal control: a feedback per node](@ref). A template from another
+package has one too:
+[Piecewise semi-ellipsoids: a template from SetProg](@ref).
 
 ## Scope
 

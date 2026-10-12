@@ -21,6 +21,7 @@ const ORDER = [
     "switched_systems",
     "stability",
     "templates_and_graphs",
+    "set_prog",
     "safety",
     "optimal_control",
     "comparing",
@@ -146,8 +147,7 @@ makedocs(;
             style = :authoryear,
         ),
     ],
-    # The tool paper has six pages including references, so it cannot explain
-    # the package -- these docs have to. `checkdocs = :all` ignores the export
+    # `checkdocs = :all` ignores the export
     # list, so it covers every docstring in the module and *fails the build* on
     # one that no `@autodocs` block under `src/reference/` picks up. Adding a
     # file to `src/` therefore means adding it to a `Pages` list as well.
