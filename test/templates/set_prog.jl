@@ -16,6 +16,7 @@ using SetProg
 using SumOfSquares, DynamicPolynomials
 import PathCompleteCertificates as PCC
 import Clarabel
+import HiGHS
 
 const OPTIMIZER = Clarabel.Optimizer
 
@@ -29,9 +30,11 @@ const MEMORYLESS = GraphAutomaton(1)
 add_transition!(MEMORYLESS, 1, 1, 1)
 add_transition!(MEMORYLESS, 1, 1, 2)
 
-# The Polyhedra library needs an LP solver to detect the linearity of the pieces
+# The Polyhedra library needs an LP solver to detect the linearity of the
+# pieces, and SetProg runs many small programs on it at every solve: a simplex
+# solver keeps them cheap, where Clarabel would triple the time of each solve.
 const LIB = Polyhedra.DefaultLibrary{Float64}(
-    JuMP.optimizer_with_attributes(Clarabel.Optimizer, JuMP.MOI.Silent() => true),
+    JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
 
 # Partitions with exact facets, see the warning in the docstring. The cones over
@@ -64,8 +67,10 @@ const OCTAGON = polyhedron(
 
 @polyvar x[1:2]
 
+# Every bound is bisected to `rtol`, so two of them agree to about twice that.
 rate(template, graph = MEMORYLESS) =
-    PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+    PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+const AGREE = 2e-3
 
 # The edge inequality `V_dst(A x) ≤ γᵈ V_src(x)`, sampled on the circle.
 function test_edges(certificate, template, graph)
@@ -99,19 +104,21 @@ end
     @test_throws ArgumentError PCC.homogeneity_degree(mixed)
 end
 
+# The one-node ellipsoid bound, shared by the tests below.
+const ELLIPSOID = rate(PCC.SetProgTemplate(Ellipsoid(; symmetric = true)))
+
 @testset "an ellipsoid reproduces the quadratic template" begin
     quadratic = rate(PCC.QuadraticTemplate())
-    ellipsoid = rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true)))
 
-    @test PCC.is_feasible(ellipsoid)
-    @test abs(ellipsoid.rate - quadratic.rate) <= 1e-3
+    @test PCC.is_feasible(ELLIPSOID)
+    @test abs(ELLIPSOID.rate - quadratic.rate) <= AGREE
 
-    V = only(PCC.functions(ellipsoid))
+    V = only(PCC.functions(ELLIPSOID))
     @test V isa PCC.SetProgFunction
     # V(cx) = c² V(x), and the normalization `V ≥ ‖x‖²`
     @test V([2.0, 3.0]) ≈ 4 * V([1.0, 1.5]) rtol = 1e-6
     @test V([1.0, 1.0]) >= 2 - 1e-6
-    test_edges(ellipsoid, PCC.SetProgTemplate(Ellipsoid(symmetric = true)), MEMORYLESS)
+    test_edges(ELLIPSOID, PCC.SetProgTemplate(Ellipsoid(symmetric = true)), MEMORYLESS)
 end
 
 @testset "a polynomial set reproduces the sum-of-squares template" begin
@@ -120,7 +127,7 @@ end
     polyset = rate(template)
 
     @test PCC.is_feasible(polyset)
-    @test abs(polyset.rate - sos.rate) <= 1e-3
+    @test abs(polyset.rate - sos.rate) <= AGREE
     test_edges(polyset, template, MEMORYLESS)
 end
 
@@ -130,20 +137,24 @@ end
     polytope = rate(template)
 
     @test PCC.is_feasible(polytope)
-    @test abs(polytope.rate - conic.rate) <= 1e-3
+    @test abs(polytope.rate - conic.rate) <= AGREE
     test_edges(polytope, template, MEMORYLESS)
 end
 
 @testset "piecewise semi-ellipsoids" begin
-    ellipsoid = rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true))).rate
+    piecewise = Dict(
+        name => rate(
+            PCC.SetProgTemplate(Ellipsoid(symmetric = true, piecewise = partition)),
+        ) for (name, partition) in [("square", SQUARE), ("octagon", OCTAGON)]
+    )
 
     @testset "$name" for (name, partition) in [("square", SQUARE), ("octagon", OCTAGON)]
         template = PCC.SetProgTemplate(Ellipsoid(symmetric = true, piecewise = partition))
-        certificate = rate(template)
+        certificate = piecewise[name]
 
         @test PCC.is_feasible(certificate)
         # An ellipsoid is a piecewise semi-ellipsoid whose pieces are equal
-        @test certificate.rate <= ellipsoid + 1e-4
+        @test certificate.rate <= ELLIPSOID.rate + AGREE
         @test certificate.rate >= LOWER_BOUND - 1e-4
 
         V = only(PCC.functions(certificate))
@@ -152,9 +163,7 @@ end
     end
 
     @testset "more pieces, lower rate" begin
-        octagon =
-            rate(PCC.SetProgTemplate(Ellipsoid(symmetric = true, piecewise = OCTAGON)))
-        @test octagon.rate < ellipsoid - 1e-2
+        @test piecewise["octagon"].rate < ELLIPSOID.rate - 1e-2
     end
 
     @testset "one partition per node" begin

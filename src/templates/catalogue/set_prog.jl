@@ -43,6 +43,10 @@ polytope. The edge conditions are homogeneous, so this only fixes the scale.
     `cos(π / 2)`, can make the solver report an almost optimal solution that
     violates the edge inequalities. Round the normals, or use exact numbers.
 
+Build `P` with a Polyhedra library whose solver is a simplex one, such as
+HiGHS: SetProg runs many small linear programs on the partition at every
+solve, and an interior-point solver makes each of them slow.
+
 [`domination_slack`](@ref) is not implemented for this template, so neither
 are [`edge_slacks`](@ref) and what builds on it.
 """
