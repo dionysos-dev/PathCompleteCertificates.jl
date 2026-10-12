@@ -42,7 +42,7 @@ const ONE = PCC.common_graph(OneStateAutomaton(2))
 const TWO = PCC.de_bruijn(1, 2)
 
 # Every refinement and every lift, applied where it is defined: the four atoms
-# at a partial locus of the two-node graph, the rest on one of the two seeds.
+# at some edges of the two-node graph, the rest on one of the two seeds.
 const STEPS = [
     ("forward split", PCC.ForwardEdgeSplit(), TWO, PCC.outgoing_edges(TWO, 1)),
     ("backward split", PCC.BackwardEdgeSplit(), TWO, PCC.incoming_edges(TWO, 1)),
@@ -60,8 +60,8 @@ const LIFTS = [step for step in STEPS if step[2] isa PCC.AbstractLift]
 
 apply(refinement::PCC.AbstractRefinement, base, ::Nothing) =
     PCC.graph(PCC.refine(refinement, base))
-apply(refinement::PCC.AbstractRefinement, base, locus) =
-    PCC.graph(PCC.refine(refinement, base, locus))
+apply(refinement::PCC.AbstractRefinement, base, chosen) =
+    PCC.graph(PCC.refine(refinement, base, chosen))
 apply(lift::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(lift, base))
 
 bound(template, g, problem) = PCC.jsr_bound(
@@ -82,11 +82,11 @@ const BASE_RATES = Dict(
         name,
         step,
         base,
-        locus,
+        chosen,
     ) in STEPS,
     (template, system) in CASES
 
-    g = apply(step, base, locus)
+    g = apply(step, base, chosen)
     problem = PCC.StabilityProblem(system)
     primal = bound(template, g, problem)
     @test PCC.is_feasible(primal)

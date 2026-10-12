@@ -1,7 +1,7 @@
 """
     ForwardEdgeProduct()
 
-Replace each edge `(s, d, w)` of the locus by the edges `(s, d′, w·u)` for every
+Replace each edge `(s, d, w)` listed by the edges `(s, d′, w·u)` for every
 edge `(d, d′, u)` leaving its destination (Athanasopoulos & Jungers, Def. 4, the
 partial T-lift). The result is a [`WordGraph`](@ref): one inequality on a
 product of modes replaces one on a single step, and no node is added. At every
@@ -14,10 +14,10 @@ struct ForwardEdgeProduct <: AbstractRefinement end
 function refine(
     ::ForwardEdgeProduct,
     g::CertificateGraph,
-    locus::AbstractVector{<:_HS.GraphTransition},
+    selected::AbstractVector{<:_HS.GraphTransition},
 )
-    _check_locus(g, locus)
-    chosen = Set(locus)
+    _check_edges(g, selected)
+    chosen = Set(selected)
     refined = WordGraph(n_nodes(g))
     seen = Set{Tuple{Int, Int, Vector{Int}}}()
 

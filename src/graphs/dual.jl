@@ -10,12 +10,12 @@ dual(graph::CertificateGraph) = first(_dual_with_images(graph))
     dual(graph, edges) -> (dual_graph, dual_edges)
 
 The dual graph together with the edges of it that `edges` became, in order:
-what applying a refinement at a locus of the dual graph needs.
+what applying a refinement at those edges of the dual graph needs.
 """
-function dual(graph::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
+function dual(graph::CertificateGraph, edges::AbstractVector{<:_HS.GraphTransition})
     dualised, image = _dual_with_images(graph)
 
-    return dualised, [image[edge] for edge in locus]
+    return dualised, [image[edge] for edge in edges]
 end
 
 # The dual graph and, for every edge of the original, the reversed edge it

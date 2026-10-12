@@ -8,7 +8,7 @@ Ninite & Jungers, Thm. 3). Applied where a certificate is tight it is the step
 of [`refine`](@ref); applied everywhere it is one of the classical hierarchies.
 
 A refinement is an instance, applied by [`refine`](@ref): a local one at a
-locus of edges, `refine(refinement, graph, edges)`, or at every edge when none
+list of edges, `refine(refinement, graph, edges)`, or at every edge when none
 is given; a global one to the whole graph, `refine(refinement, graph)`. Both
 return a [`Refined`](@ref). A new refinement is one file answering `refine`.
 """
@@ -42,9 +42,9 @@ origins(refined::Refined) = refined.origins
     refine(refinement, graph, edges) -> Refined
     refine(refinement, graph) -> Refined
 
-Apply one refinement: at a locus of edges for a local one, to the whole graph
-for a global one. A local refinement given no locus is applied at every edge.
-The iterated form, driven by a certificate, is `refine(template, graph,
+Apply one refinement: at the `edges` listed for a local one, to the whole
+graph for a global one. A local refinement given no edges is applied at every
+one. The iterated form, driven by a certificate, is `refine(template, graph,
 problem)`.
 """
 function refine end
@@ -55,10 +55,10 @@ refine(refinement::AbstractRefinement, g::CertificateGraph, edge::_HS.GraphTrans
 refine(refinement::AbstractRefinement, g::CertificateGraph) =
     refine(refinement, g, collect(edges(g)))
 
-function _check_locus(g::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
-    isempty(locus) && throw(ArgumentError("the locus is empty"))
-    allunique(locus) || throw(ArgumentError("the locus lists an edge twice"))
-    all(edge -> has_edge(g, edge), locus) ||
-        throw(ArgumentError("the locus contains an edge that is not in the graph"))
+function _check_edges(g::CertificateGraph, selected::AbstractVector{<:_HS.GraphTransition})
+    isempty(selected) && throw(ArgumentError("no edge was given"))
+    allunique(selected) || throw(ArgumentError("an edge is listed twice"))
+    all(edge -> has_edge(g, edge), selected) ||
+        throw(ArgumentError("an edge is not in the graph"))
     return nothing
 end
