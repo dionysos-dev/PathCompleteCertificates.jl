@@ -19,7 +19,7 @@ function lift(::MinLift, g::CertificateGraph)
     _check_lift_size(g, "min lift", big(2)^n_nodes(g) - 1)
 
     n = n_nodes(g)
-    modes = sort(alphabet(g))
+    modes = alphabet(g)
     index = _successors(_letter_graph(g, "the min lift"))
     masks = collect(_masks(n))
 
@@ -44,4 +44,4 @@ function lift(::MinLift, g::CertificateGraph)
 end
 
 simulation(::MinLift, G::CertificateGraph, H::CertificateGraph; optimizer = nothing) =
-    _simulation_relation(G, H)
+    _simulation_relation(_letter_graph(G, "the min lift"), _letter_graph(H, "the min lift"))

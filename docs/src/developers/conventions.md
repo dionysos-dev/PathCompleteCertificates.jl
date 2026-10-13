@@ -23,15 +23,14 @@ supplies primitives, a problem composes them, and neither names the other.
 
 ```julia
 # Template axis: one file per template, answering all of it.
-add_function_variables!(model, template, dim, node)        # the node function V_s
-add_decrease!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
+add_function_variables!(model, template, dim, node)        # the node function V_s, well defined
+add_decrease!(model, template, V_src, V_dst, map; scale = 1)
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ 0
 decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
-add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
-check_dynamics(template, system)                           # is the template applicable at all?
+is_applicable(template, system)                            # default true; does the template apply at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
 reindex(template, origins)                                 # per-node data follows a refined graph
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
@@ -100,9 +99,10 @@ refine(template, graph, problem; algorithm)  # the entry point: the loop
 
 What a lift supports is the methods it has, never a flag. Validity is read
 from the closures a template declares, never by dispatching on its concrete
-type, which would need a method per pair. The one override, the min lift on
-the linear copositive template, has a theorem behind it; add another only with
-one to cite. The min, max and sum lifts are never built to decide an order: a
+type, which would need a method per pair. A lift valid on a template that is
+not closed under its requirements is read through the dual template: the min
+lift is valid on the linear copositive template because its dual is closed
+under `max`. The min, max and sum lifts are never built to decide an order: a
 relation decides the first two and a linear program the third. An algorithm
 chooses its candidates and how to select among them; the loop owns solving,
 the stopping rules and the trace.

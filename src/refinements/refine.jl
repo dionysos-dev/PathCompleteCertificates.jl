@@ -30,7 +30,7 @@ STALLED
 """
     DEPTH_REACHED
 
-`depth_max` certificates were solved.
+The run visited `depth_max` graphs, its limit.
 """
 DEPTH_REACHED
 
@@ -104,7 +104,7 @@ gives the next graph, a lift of the current one.
 
 - The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
   `stall_max` steps in a row fail to improve the objective by `rtol`,
-  `depth_max` certificates are solved, or no candidate is left.
+  `depth_max` graphs are visited, or no candidate is left.
 - `rtol` is the solve tolerance and `atol` decides tightness, with
   `atol ≥ 10 rtol`.
 - `path_complete = false` skips the path-completeness check of the starting
@@ -138,6 +138,13 @@ function refine(
     path_complete::Bool = true,
     kwargs...,
 )
+    _refinable(problem) || throw(
+        ArgumentError(
+            "refine reads the objective and the edge slacks of a certificate, " *
+            "which $(nameof(typeof(problem))) does not define",
+        ),
+    )
+
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
 

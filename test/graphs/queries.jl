@@ -1,3 +1,5 @@
+module TestGraphQueries
+
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -48,4 +50,6 @@ end
 
     @test_throws ArgumentError PCC.incoming_edges(graph, 0)
     @test_throws ArgumentError PCC.incoming_edges(graph, 4)
+end
+
 end

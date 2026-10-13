@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     DualCopositiveTemplate(; min_weight = 1e-3)
 
@@ -28,25 +25,21 @@ end
 
 (V::DualCopositiveFunction)(x::AbstractVector{<:Real}) = maximum(x ./ V.v)
 
+# The weights are a denominator, so they are bounded away from zero.
 function add_function_variables!(
     model::JuMP.Model,
-    ::DualCopositiveTemplate,
+    template::DualCopositiveTemplate,
     dimension::Integer,
     node::Integer,
 )
     @assert dimension > 0
-    return DualCopositiveFunction(
-        JuMP.@variable(model, [1:dimension], base_name = "v_$(node)")
+    v = JuMP.@variable(
+        model,
+        [1:dimension],
+        lower_bound = template.min_weight,
+        base_name = "v_$(node)",
     )
-end
-
-function add_nonnegativity!(
-    model::JuMP.Model,
-    template::DualCopositiveTemplate,
-    V::DualCopositiveFunction,
-)
-    JuMP.@constraint(model, V.v .>= template.min_weight)
-    return nothing
+    return DualCopositiveFunction(v)
 end
 
 solution_value(::DualCopositiveTemplate, V::DualCopositiveFunction) =
@@ -54,7 +47,7 @@ solution_value(::DualCopositiveTemplate, V::DualCopositiveFunction) =
 
 homogeneity_degree(::DualCopositiveTemplate) = 1
 
-# The lower bound min_weight on v already excludes V = 0.
+# The bounded weights already make V positive on the orthant.
 add_normalization!(::JuMP.Model, ::DualCopositiveTemplate, ::DualCopositiveFunction) =
     nothing
 
@@ -65,32 +58,15 @@ function add_decrease!(
     V_dst::DualCopositiveFunction,
     map::AbstractMatrix;
     scale = 1,
-    margin = 0,
 )
-    margin == 0 || throw(
-        ArgumentError(
-            "DualCopositiveTemplate cannot express a margin: the weights sit in a " *
-            "denominator, so the margin term is not linear in them",
-        ),
-    )
-
     # V_dst(A x) ≤ scale · V_src(x) for every x ≥ 0 is A v_src ≤ scale · v_dst.
     JuMP.@constraint(model, map * V_src.v .<= scale * V_dst.v)
 
     return nothing
 end
 
-function check_dynamics(::DualCopositiveTemplate, system)
-    is_positive(system) || throw(
-        ArgumentError(
-            "DualCopositiveTemplate requires entrywise nonnegative matrices: " *
-            "max_i x_i / v_i certifies nothing about a system that leaves the " *
-            "nonnegative orthant",
-        ),
-    )
-
-    return nothing
-end
+# On the orthant only: a positive system never leaves it.
+is_applicable(::DualCopositiveTemplate, system) = is_positive(system)
 
 function decrease_slack(
     ::DualCopositiveTemplate,

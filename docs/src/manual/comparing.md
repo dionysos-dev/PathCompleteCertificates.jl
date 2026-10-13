@@ -61,8 +61,9 @@ finds the order. The products give graphs with words on their edges, which
 | [`BackwardCompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i^{-1}``, invertible system | the forward one on the dual graphs | a map | no | [debauche2024thesis](@cite), Def. 7.61, Thm. 7.66 |
 
 ¹ The linear copositive norms are not closed under `min`, yet the min lift is
-valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43),
-the one override of [`is_valid`](@ref).
+valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43):
+[`is_valid`](@ref) reads it through their dual, [`DualCopositiveTemplate`](@ref),
+closed under `max`.
 
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
 graphs ordered for every composition-closed template that no composition lift

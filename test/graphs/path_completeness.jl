@@ -1,3 +1,5 @@
+module TestGraphPathCompleteness
+
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -43,6 +45,9 @@ end
     de_bruijn = PCC.de_bruijn(2, 2)
     @test PCC.is_path_complete(de_bruijn, 1:2)
     @test !PCC.is_path_complete(de_bruijn, 1:3)
+
+    # A graph with no node reads no word at all.
+    @test !PCC.is_path_complete(PCC.empty_graph(0), 1:2)
 end
 
 @testset "path-completeness is strictly weaker than completeness" begin
@@ -76,4 +81,6 @@ end
     add_transition!(broken, 1, 2, 1)
     add_transition!(broken, 1, 1, 2)
     @test !PCC.is_path_complete(broken, 1:2)
+end
+
 end

@@ -10,6 +10,7 @@ struct StabilityProblem{S} <: AbstractProblem
     function StabilityProblem(system::S) where {S}
         has_input(system) &&
             throw(ArgumentError("StabilityProblem requires an input-free system"))
+        _check_mode_matrices(mode_matrices(system))
 
         return new{S}(system)
     end
@@ -69,7 +70,6 @@ function optimization_model(
     Vs = [add_function_variables!(model, template, dimension, a) for a in nodes(graph)]
 
     for V in Vs
-        add_nonnegativity!(model, template, V)
         add_normalization!(model, template, V)
     end
 
@@ -227,7 +227,13 @@ function _check_stability_data(
     path_complete::Bool = true,
 )
     dimension = _check_modes(graph, problem.system; path_complete = path_complete)
-    check_dynamics(template, problem.system)
+
+    is_applicable(template, problem.system) || throw(
+        ArgumentError(
+            "$(nameof(typeof(template))) does not apply to this system's dynamics; " *
+            "see its docstring",
+        ),
+    )
 
     return dimension
 end
@@ -246,6 +252,8 @@ end
 objective(certificate::StabilityCertificate) = certificate.rate
 
 _accepts_words(::StabilityProblem) = true
+
+_refinable(::StabilityProblem) = true
 
 """
     optimality_gap(certificate::StabilityCertificate; atol = 1e-4, max_length = nothing)
@@ -268,23 +276,8 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-function edge_slacks(certificate::StabilityCertificate)
-    is_feasible(certificate) ||
-        throw(ArgumentError("an infeasible certificate has no functions to measure"))
-
-    problem_ = problem(certificate)
-    graph_ = graph(certificate)
-    template_ = template(certificate)
-    V = functions(certificate)
-    A = mode_matrices(problem_.system)
-    rate = certificate.rate
-    degree = homogeneity_degree(template_)
-
-    return map(edges(graph_)) do edge
-        dynamics, scale = _edge_decrease(problem_, graph_, edge, A; rate, degree)
-        return decrease_slack(template_, V[source(edge)], V[dest(edge)], dynamics; scale)
-    end
-end
+edge_slacks(certificate::StabilityCertificate) =
+    _edge_slacks(certificate; rate = certificate.rate)
 
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool

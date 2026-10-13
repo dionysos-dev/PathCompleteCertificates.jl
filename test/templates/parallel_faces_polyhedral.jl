@@ -40,6 +40,11 @@ add_transition!(GRAPH, 2, 1, 1)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])          # singular
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([ones(2, 3)])           # not square
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(2, 2; min_weight = 0.0)
+
+    # Integer face normals take the default floor in floating point.
+    integer = PCC.ParallelFacesPolyhedralTemplate([[1 0; 0 1]])
+    @test integer.min_weight > 0
+    @test only(integer.G) == LinearAlgebra.I
 end
 
 @testset "the node function is a weighted infinity norm" begin

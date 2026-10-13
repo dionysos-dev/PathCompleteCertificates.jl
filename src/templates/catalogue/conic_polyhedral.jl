@@ -1,5 +1,3 @@
-import JuMP
-
 """
     ConicPolyhedralTemplate(cones; min_scale = 1e-3)
 
@@ -46,22 +44,26 @@ struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
             end
         end
 
-        return new{T}(
-            [collect(Matrix{T}, node_cones) for node_cones in cones],
-            convert(T, min_scale),
+        # Floating point, so that integer rays take the default bound.
+        F = float(promote_type(T, typeof(min_scale)))
+
+        return new{F}(
+            [collect(Matrix{F}, node_cones) for node_cones in cones],
+            convert(F, min_scale),
         )
     end
 end
 
 """
-    ConicPolyhedralFunction(cones, P, scale)
+    ConicPolyhedralFunction(cones, P, c)
 
-A node function `V(x) = max_i |(P x)_i|` of a [`ConicPolyhedralTemplate`](@ref).
+A node function `V(x) = max_i |(P x)_i|` of a [`ConicPolyhedralTemplate`](@ref),
+with `V(x) ≥ c ‖x‖_∞`.
 """
 struct ConicPolyhedralFunction{C, M, S}
     cones::C
     P::M
-    scale::S
+    c::S
 end
 
 (V::ConicPolyhedralFunction)(x::AbstractVector{<:Real}) = maximum(abs.(V.P * x))
@@ -74,14 +76,7 @@ function add_function_variables!(
 )
     @assert dimension > 0
 
-    node <= length(template.cones) || throw(
-        ArgumentError(
-            "the template carries $(length(template.cones)) node partitions but " *
-            "the graph has at least $node nodes",
-        ),
-    )
-
-    cones = template.cones[node]
+    cones = _node_datum(template.cones, node, "node partitions")
 
     size(first(cones), 1) == dimension || throw(
         ArgumentError(
@@ -91,44 +86,23 @@ function add_function_variables!(
     )
 
     P = JuMP.@variable(model, [1:length(cones), 1:dimension], base_name = "P_$(node)")
+    c = JuMP.@variable(model, base_name = "c_$(node)")
 
-    scale =
-        JuMP.@variable(model, base_name = "c_$(node)", lower_bound = template.min_scale,)
-
-    return ConicPolyhedralFunction(cones, P, scale)
-end
-
-function add_nonnegativity!(
-    model::JuMP.Model,
-    ::ConicPolyhedralTemplate,
-    V::ConicPolyhedralFunction,
-)
-    dimension = size(V.P, 2)
-
-    for (i, cone) in enumerate(V.cones)
-        for ray in eachcol(cone)
-            values = V.P * ray
-
-            # Row i is at least scale * ||x||_inf on cone i.
-            for j in 1:dimension
-                JuMP.@constraint(model, values[i] + V.scale * ray[j] >= 0)
-                JuMP.@constraint(model, values[i] - V.scale * ray[j] >= 0)
-            end
-
-            # Row i attains the maximum on cone i.
-            for k in eachindex(V.cones)
-                k == i && continue
-                JuMP.@constraint(model, values[i] + values[k] >= 0)
-                JuMP.@constraint(model, values[i] - values[k] >= 0)
-            end
+    # Row i attains the maximum on cone i, which makes V linear on each cone.
+    for (i, cone) in enumerate(cones), ray in eachcol(cone)
+        values = P * ray
+        for k in eachindex(cones)
+            k == i && continue
+            JuMP.@constraint(model, values[i] + values[k] >= 0)
+            JuMP.@constraint(model, values[i] - values[k] >= 0)
         end
     end
 
-    return nothing
+    return ConicPolyhedralFunction(cones, P, c)
 end
 
 solution_value(::ConicPolyhedralTemplate, V::ConicPolyhedralFunction) =
-    ConicPolyhedralFunction(V.cones, JuMP.value.(V.P), JuMP.value(V.scale))
+    ConicPolyhedralFunction(V.cones, JuMP.value.(V.P), JuMP.value(V.c))
 
 """
     planar_conic_partition(order)
@@ -163,12 +137,22 @@ end
 
 homogeneity_degree(::ConicPolyhedralTemplate) = 1
 
+# V(x) ≥ c ‖x‖_∞ with c ≥ min_scale: on cone i, row i is at least c |x_j|.
 function add_normalization!(
     model::JuMP.Model,
-    ::ConicPolyhedralTemplate,
-    ::ConicPolyhedralFunction,
+    template::ConicPolyhedralTemplate,
+    V::ConicPolyhedralFunction,
 )
-    # The lower bound min_scale on the scale variable already excludes V = 0.
+    JuMP.@constraint(model, V.c >= template.min_scale)
+
+    for (i, cone) in enumerate(V.cones), ray in eachcol(cone)
+        value = (V.P * ray)[i]
+        for coordinate in ray
+            JuMP.@constraint(model, value + V.c * coordinate >= 0)
+            JuMP.@constraint(model, value - V.c * coordinate >= 0)
+        end
+    end
+
     return nothing
 end
 
@@ -179,19 +163,15 @@ function add_decrease!(
     V_dst::ConicPolyhedralFunction,
     map::AbstractMatrix;
     scale = 1,
-    margin = 0,
 )
     # On cone i, V_src is row i, so the condition is linear; imposing it on the
     # extreme rays covers the cone by homogeneity and convexity.
-    for (i, cone) in enumerate(V_src.cones)
-        for ray in eachcol(cone)
-            source_value = (V_src.P * ray)[i]
-            destination_values = V_dst.P * (map * ray)
-            slack = margin * maximum(abs, ray)
+    for (i, cone) in enumerate(V_src.cones), ray in eachcol(cone)
+        source_value = (V_src.P * ray)[i]
+        destination_values = V_dst.P * (map * ray)
 
-            JuMP.@constraint(model, scale * source_value .+ destination_values .>= slack)
-            JuMP.@constraint(model, scale * source_value .- destination_values .>= slack)
-        end
+        JuMP.@constraint(model, scale * source_value .+ destination_values .>= 0)
+        JuMP.@constraint(model, scale * source_value .- destination_values .>= 0)
     end
 
     return nothing

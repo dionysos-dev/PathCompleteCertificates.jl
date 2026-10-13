@@ -50,8 +50,8 @@ one row of ``n`` variables per cone.
 
 **The two copositive templates** are each other's duals, the dual norm of
 ``c^\top x`` on the orthant being ``\max_i x_i / c_i``. Both are defined on
-the nonnegative orthant, so they apply to positive systems only;
-[`check_dynamics`](@ref) throws on any other.
+the nonnegative orthant, so they apply to positive systems only: on any other,
+[`is_applicable`](@ref) is `false` and stability throws.
 
 ## Classes and solvers
 
@@ -91,8 +91,9 @@ the template. [`is_closed_under`](@ref) returns the closures of a template:
 | [`SetProgTemplate`](@ref) | ✓ if the nodes share the set variable | | | |
 
 ¹ Not closed as a set of functions, yet the min lift is valid for it on
-positive linear systems ([debauche2024thesis](@cite), Thm. 7.43), the one
-override of [`is_valid`](@ref).
+positive linear systems ([debauche2024thesis](@cite), Thm. 7.43):
+[`is_valid`](@ref) reads it through the dual template,
+[`DualCopositiveTemplate`](@ref), closed under `max`.
 
 Closure is a property of the template as implemented. Polyhedral norms are
 closed under maximum, but the maximum of two members of the parallel-faces

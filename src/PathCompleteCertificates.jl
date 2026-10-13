@@ -6,6 +6,15 @@ graph, a function from a template at each node, and one inequality per edge.
 """
 module PathCompleteCertificates
 
+import HybridSystems
+import JuMP
+import LinearAlgebra
+import MathematicalSystems
+import Random
+
+const _HS = HybridSystems
+const _MS = MathematicalSystems
+
 include("graphs/queries.jl")
 include("graphs/words.jl")
 include("graphs/path_completeness.jl")
@@ -51,8 +60,6 @@ include("templates/catalogue/set_prog.jl")
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")
 include("problems/catalogue/optimal_control.jl")
-
-include("systems/closed_loop.jl")
 
 include("refinements/abstract.jl")
 include("refinements/catalogue/tight_node_splitting.jl")

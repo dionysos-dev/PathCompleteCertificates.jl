@@ -20,24 +20,25 @@ node it came from.
 """
 struct ForwardSplitLift <: AbstractLift end
 
-function lift(
-    ::ForwardSplitLift,
-    g::CertificateGraph,
-    edge_list::AbstractVector{<:_HS.GraphTransition},
-)
+function lift(::ForwardSplitLift, g::CertificateGraph, edge_list::AbstractVector{<:_Edge})
     _check_edge_list(g, edge_list)
     return _split(g, [[edge] for edge in edge_list])
 end
 
 function lift(::ForwardSplitLift, g::CertificateGraph, node::Integer)
-    1 <= node <= n_nodes(g) || throw(ArgumentError("node $node is not in the graph"))
-
     out = outgoing_edges(g, node)
     isempty(out) && throw(ArgumentError("node $node has no successor to split it along"))
 
     successors = sort!(unique(dest.(out)))
     return _split(g, [filter(edge -> dest(edge) == w, out) for w in successors])
 end
+
+# At an edge, a second outgoing edge must stay with the node; at a node, a
+# second successor must get its own copy.
+_changes(::ForwardSplitLift, g::CertificateGraph, edge::_Edge) =
+    outdegree(g, source(edge)) >= 2
+_changes(::ForwardSplitLift, g::CertificateGraph, node::Integer) =
+    length(unique(dest.(outgoing_edges(g, node)))) >= 2
 
 # One copy of the source per group of outgoing edges, owning the group.
 function _split(g::CertificateGraph, groups::AbstractVector)
@@ -62,7 +63,7 @@ function _split(g::CertificateGraph, groups::AbstractVector)
         keeps[node] && push!(images[node], survivor[node])
     end
 
-    copy_of = Dict{_HS.GraphTransition, Int}()
+    copy_of = Dict{_Edge, Int}()
     for group in groups
         s = source(first(group))
         push!(origin, s)

@@ -47,9 +47,9 @@ algorithms start from it; see [Graph refinement](@ref).
 [`simulate`](@ref)`(system, x0, modes; u)` runs a switching sequence from a
 state and returns a [`Trajectory`](@ref): [`states`](@ref),
 [`switching`](@ref) and, when there is an input, [`inputs`](@ref).
-`simulate(certificate, x0, horizon)` closes the loop with the feedback of an
-optimal-control certificate under a random switching sequence. Random
-sequences draw each mode uniformly. A trajectory
+`simulate(certificate, x0, modes)` closes the loop with the feedback of an
+optimal-control certificate. Given a horizon instead of modes, either draws
+each mode uniformly at random. A trajectory
 has a plot recipe, available once Plots is loaded;
 [Switched systems: building and running one](@ref) draws one.
 

@@ -22,6 +22,11 @@ struct Lifted{G <: CertificateGraph, O}
     origins::Vector{O}
 end
 
+"""
+    graph(lifted)
+
+The lifted graph of a [`Lifted`](@ref).
+"""
 graph(lifted::Lifted) = lifted.graph
 
 """
@@ -45,7 +50,7 @@ function lift end
 
 lift(L::AbstractLift, g::CertificateGraph) = lift(L, g, collect(edges(g)))
 
-lift(L::AbstractLift, g::CertificateGraph, edge::_HS.GraphTransition) = lift(L, g, [edge])
+lift(L::AbstractLift, g::CertificateGraph, edge::_Edge) = lift(L, g, [edge])
 
 """
     requirements(L) -> Tuple
@@ -72,9 +77,9 @@ function simulation(
     optimizer = nothing,
 )
     lifted = lift(L, G)
-    map = simulation(graph(lifted), H)
-    map === nothing && return nothing
-    return origins(lifted)[map]
+    assignment = simulation(graph(lifted), H)
+    assignment === nothing && return nothing
+    return origins(lifted)[assignment]
 end
 
 """
@@ -86,6 +91,7 @@ dual under `requirements(dual(L))` on the dual system
 [debauche2024thesis; Prop. 7.5](@cite).
 """
 function is_valid(L::AbstractLift, template, system)
+    is_applicable(template, system) || return false
     all(op -> is_closed_under(template, op, system), requirements(L)) && return true
 
     has_dual(template) && !has_input(system) || return false
@@ -99,23 +105,31 @@ end
 const _LIFT_NODE_LIMIT = 1024
 
 function _check_lift_size(g::CertificateGraph, what::AbstractString, lifted_nodes)
-    _require_one_mode_per_edge(g, "the $what")
-
     lifted_nodes <= _LIFT_NODE_LIMIT || throw(
         ArgumentError(
             "the $what of a graph with $(n_nodes(g)) nodes has $lifted_nodes nodes, " *
-            "more than the $_LIFT_NODE_LIMIT this builds; `simulation` decides the " *
-            "ordering without building it",
+            "more than the $_LIFT_NODE_LIMIT this builds; `simulation` with " *
+            "`MinLift()`, `MaxLift()` or `SumLift()` decides the order without " *
+            "building a lift",
         ),
     )
 
     return nothing
 end
 
-function _check_edge_list(
-    g::CertificateGraph,
-    edge_list::AbstractVector{<:_HS.GraphTransition},
-)
+# Whether `L` applied at `place`, an edge or a node, changes the graph; each
+# local lift says so in its own file.
+_changes(::AbstractLift, g::CertificateGraph, place) = true
+
+# Add the edge `(s, d, word)` to the word graph `g` unless `seen` has it.
+function _add_once!(g::WordGraph, seen::Set, s::Integer, d::Integer, word)
+    (s, d, word) in seen && return nothing
+    push!(seen, (s, d, word))
+    add_edge!(g, s, d, word)
+    return nothing
+end
+
+function _check_edge_list(g::CertificateGraph, edge_list::AbstractVector{<:_Edge})
     isempty(edge_list) && throw(ArgumentError("the edge list is empty"))
     allunique(edge_list) || throw(ArgumentError("the edge list repeats an edge"))
     all(edge -> has_edge(g, edge), edge_list) ||

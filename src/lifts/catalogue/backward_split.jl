@@ -10,3 +10,6 @@ at each given edge, the partial P-lift of
 const BackwardSplitLift = DualLift{ForwardSplitLift}
 
 BackwardSplitLift() = DualLift(ForwardSplitLift())
+
+_changes(::BackwardSplitLift, g::CertificateGraph, edge::_Edge) =
+    indegree(g, dest(edge)) >= 2

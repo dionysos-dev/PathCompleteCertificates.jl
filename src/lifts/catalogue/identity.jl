@@ -8,5 +8,4 @@ struct IdentityLift <: AbstractLift end
 
 lift(::IdentityLift, g::CertificateGraph) = Lifted(g, collect(nodes(g)))
 
-simulation(::IdentityLift, G::CertificateGraph, H::CertificateGraph; optimizer = nothing) =
-    simulation(G, H)
+dual(L::IdentityLift) = L

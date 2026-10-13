@@ -25,15 +25,14 @@ type, because some carry per-node data. Every primitive is public, since a user 
 
 ```julia
 # Template axis: one file per template, answering all of it.
-add_function_variables!(model, template, dim, node)        # the node function V_s
-add_decrease!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
+add_function_variables!(model, template, dim, node)        # the node function V_s, well defined
+add_decrease!(model, template, V_src, V_dst, map; scale = 1)
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ 0
 decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
-add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
-check_dynamics(template, system)                           # is the template applicable at all?
+is_applicable(template, system)                            # default true; does the template apply at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
 reindex(template, origins)                                 # per-node data follows a refined graph
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
@@ -111,8 +110,10 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   experiments do: on the one-node graph the forward lift changes nothing.
 - **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
   the duals decides max, a linear program decides the sum lift over every size.
-- **One override of `is_valid`** exists, the min lift on the linear copositive template
-  (Debauche, Thm. 7.43). Add another only with a theorem to cite.
+- **No override of `is_valid`.** A lift valid on a template that is not closed under its
+  requirements is read through the dual: the min lift is valid on the linear copositive template
+  (Debauche, Thm. 7.43) because the dual copositive template is closed under max. Declare a
+  closure, never an override.
 - **Duality is an involution on everything**: graphs, systems, templates, certificates, lifts,
   operations. Every backward lift is `dual` of a forward one.
 - **A word graph is sound for stability only.** Safety, optimal control and `common` throw on a

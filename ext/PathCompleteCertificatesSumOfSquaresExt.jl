@@ -13,7 +13,7 @@ function PCC.add_function_variables!(
     model::JuMP.Model,
     template::PCC.SumOfSquaresTemplate,
     dimension::Integer,
-    node,
+    node::Integer,
 )
     dimension == length(template.variables) || throw(
         ArgumentError(
@@ -32,15 +32,11 @@ function PCC.add_function_variables!(
 end
 
 # V(x) >= min_scale * ||x||^(2 degree).
-function PCC.add_normalization!(
-    model::JuMP.Model,
-    template::PCC.SumOfSquaresTemplate,
-    V;
-    min_scale::Real = 1e-3,
-)
+function PCC.add_normalization!(model::JuMP.Model, template::PCC.SumOfSquaresTemplate, V)
     x = template.variables
+    bound = template.min_scale * sum(x .^ 2)^template.degree
 
-    JuMP.@constraint(model, V - min_scale * sum(x .^ 2)^template.degree in SOSCone())
+    JuMP.@constraint(model, V - bound in SOSCone())
 
     return nothing
 end
@@ -51,23 +47,14 @@ function PCC.add_decrease!(
     V_src,
     V_dst,
     map::AbstractMatrix;
-    scale = 1,
-    margin = 0,
+    scale::Real = 1,
 )
     x = template.variables
 
-    # For a numeric scale = gamma^(2d), impose V_src(x) - V_dst((A/gamma) x) >= 0,
-    # which is better conditioned; a JuMP expression has no root to take.
-    residual = if scale isa Real
-        gamma = scale^(1 / PCC.homogeneity_degree(template))
-        V_src - subs(V_dst, x => (map ./ gamma) * x)
-    else
-        scale * V_src - subs(V_dst, x => map * x)
-    end
-
-    margin == 0 || (residual -= margin * sum(x .^ 2)^template.degree)
-
-    JuMP.@constraint(model, residual in SOSCone())
+    # With scale = gamma^(2d), V_src(x) - V_dst((A/gamma) x) >= 0 is better
+    # conditioned than scale * V_src(x) - V_dst(A x) >= 0.
+    gamma = scale^(1 / PCC.homogeneity_degree(template))
+    JuMP.@constraint(model, V_src - subs(V_dst, x => (map ./ gamma) * x) in SOSCone())
 
     return nothing
 end

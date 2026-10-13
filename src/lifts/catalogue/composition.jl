@@ -19,7 +19,7 @@ requirements(::CompositionLift) = (Composition(),)
 function lift(L::CompositionLift, g::CertificateGraph)
     _require_one_mode_per_edge(g, "the composition lift")
 
-    modes = sort(alphabet(g))
+    modes = alphabet(g)
     tuples = vec(collect(Iterators.product(ntuple(_ -> modes, L.length)...)))
 
     origins = [(node, collect(Int, tuple)) for node in nodes(g) for tuple in tuples]

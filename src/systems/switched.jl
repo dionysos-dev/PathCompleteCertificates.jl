@@ -1,10 +1,3 @@
-import HybridSystems
-import LinearAlgebra
-import MathematicalSystems
-
-const _HS = HybridSystems
-const _MS = MathematicalSystems
-
 """
     switched_system(A)
     switched_system(A, B)
@@ -39,11 +32,7 @@ end
 
 The state matrices `A`, indexed by mode.
 """
-function mode_matrices(system::_HS.HybridSystem)
-    maps = _maps_by_mode(system)
-
-    return [maps[σ].A for σ in 1:length(maps)]
-end
+mode_matrices(system::_HS.HybridSystem) = [map.A for map in _maps_by_mode(system)]
 
 """
     input_matrices(system)
@@ -54,9 +43,7 @@ function input_matrices(system::_HS.HybridSystem)
     has_input(system) ||
         throw(ArgumentError("the system has no input, so it has no B matrices"))
 
-    maps = _maps_by_mode(system)
-
-    return [maps[σ].B for σ in 1:length(maps)]
+    return [map.B for map in _maps_by_mode(system)]
 end
 
 """
@@ -64,12 +51,8 @@ end
 
 Whether `system` has an input, `x⁺ = A_σ x + B_σ u`.
 """
-function has_input(system::_HS.HybridSystem)
-    return all(
-        hasfield(typeof(_HS.resetmap(system, t)), :B) for
-        t in _HS.transitions(system.automaton)
-    )
-end
+has_input(system::_HS.HybridSystem) =
+    all(map -> hasfield(typeof(map), :B), _maps_by_mode(system))
 
 """
     n_modes(system)
@@ -77,28 +60,23 @@ end
 The number of modes of `system`. Throws on a system whose automaton restricts
 the switching: constrained switching is not supported.
 """
-function n_modes(system::_HS.HybridSystem)
-    _require_arbitrary_switching(system)
-    return _HS.ntransitions(system.automaton)
-end
+n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
 
-# A system built with HybridSystems may restrict the switching to an automaton.
-function _require_arbitrary_switching(system::_HS.HybridSystem)
-    system.automaton isa _HS.OneStateAutomaton || throw(
+# The reset map of each mode, indexed by mode: the one place that reads the
+# system's automaton, so the one place that rejects constrained switching, which
+# a system built with HybridSystems directly may have.
+function _maps_by_mode(system::_HS.HybridSystem)
+    automaton = system.automaton
+    automaton isa _HS.OneStateAutomaton || throw(
         ArgumentError(
             "constrained switching is not supported: the system's automaton must " *
             "be a `OneStateAutomaton`, which admits every switching sequence",
         ),
     )
-    return nothing
-end
 
-function _maps_by_mode(system::_HS.HybridSystem)
-    maps = Dict{Int, Any}()
-    for t in _HS.transitions(system.automaton)
-        maps[_HS.event(system.automaton, t)] = _HS.resetmap(system, t)
-    end
-    return maps
+    transitions =
+        sort!(collect(_HS.transitions(automaton)); by = t -> _HS.event(automaton, t))
+    return [_HS.resetmap(system, t) for t in transitions]
 end
 
 # Validate the state matrices, square and of one positive size, and return it.
@@ -182,7 +160,6 @@ The system with every mode matrix transposed. Throws on a system with input.
 function dual(system::_HS.HybridSystem)
     has_input(system) &&
         throw(ArgumentError("the dual of a controlled system is not defined"))
-    _require_arbitrary_switching(system)
 
     return switched_system([collect(transpose(A_mode)) for A_mode in mode_matrices(system)])
 end

@@ -9,3 +9,6 @@ edge `(s′, s, u)`: the partial T\\*-lift of
 const BackwardProductLift = DualLift{ForwardProductLift}
 
 BackwardProductLift() = DualLift(ForwardProductLift())
+
+_changes(::BackwardProductLift, g::CertificateGraph, edge::_Edge) =
+    indegree(g, source(edge)) >= 1

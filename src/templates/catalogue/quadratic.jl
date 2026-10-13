@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     QuadraticTemplate(; conditioning_bound = Inf)
 
@@ -54,15 +51,6 @@ function add_function_variables!(
     )
 end
 
-function add_nonnegativity!(
-    model::JuMP.Model,
-    ::QuadraticTemplate,
-    P::LinearAlgebra.Symmetric,
-)
-    JuMP.@constraint(model, P in JuMP.PSDCone())
-    return nothing
-end
-
 solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
 homogeneity_degree(::QuadraticTemplate) = 2
@@ -88,15 +76,8 @@ function add_decrease!(
     P_dst::LinearAlgebra.Symmetric,
     map::AbstractMatrix;
     scale = 1,
-    margin = 0,
 )
-    dimension = size(map, 1)
-
-    JuMP.@constraint(
-        model,
-        scale * P_src - transpose(map) * P_dst * map -
-        margin * LinearAlgebra.I(dimension) in JuMP.PSDCone()
-    )
+    JuMP.@constraint(model, scale * P_src - transpose(map) * P_dst * map in JuMP.PSDCone())
 
     return nothing
 end

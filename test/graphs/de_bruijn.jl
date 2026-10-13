@@ -1,3 +1,5 @@
+module TestGraphDeBruijn
+
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -46,4 +48,6 @@ end
     @test_throws ArgumentError PCC.common_graph(
         HybridSystems.discreteswitchedsystem(A[1:2], constraint),
     )
+end
+
 end

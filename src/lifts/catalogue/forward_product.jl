@@ -9,18 +9,12 @@ product's.
 """
 struct ForwardProductLift <: AbstractLift end
 
-function lift(
-    ::ForwardProductLift,
-    g::CertificateGraph,
-    edge_list::AbstractVector{<:_HS.GraphTransition},
-)
+function lift(::ForwardProductLift, g::CertificateGraph, edge_list::AbstractVector{<:_Edge})
     _check_edge_list(g, edge_list)
     chosen = Set(edge_list)
     lifted = WordGraph(n_nodes(g))
     seen = Set{Tuple{Int, Int, Vector{Int}}}()
-
-    add!(s, d, word) =
-        (s, d, word) in seen || (push!(seen, (s, d, word)); add_edge!(lifted, s, d, word))
+    add!(s, d, word) = _add_once!(lifted, seen, s, d, word)
 
     for edge in edges(g)
         word = collect(Int, letters(label(g, edge)))
@@ -48,3 +42,7 @@ function lift(
 
     return Lifted(lifted, collect(nodes(g)))
 end
+
+# The destination needs an edge to continue with.
+_changes(::ForwardProductLift, g::CertificateGraph, edge::_Edge) =
+    outdegree(g, dest(edge)) >= 1

@@ -15,10 +15,9 @@ const PROBLEM = PCC.StabilityProblem(SYSTEM)
 const OPTIMIZER = Clarabel.Optimizer
 
 @testset "a graph that is not path-complete for the system is rejected" begin
-    # The soundness condition, and the one the old `is_complete` could not see:
-    # this graph never mentions mode 2, so it constrains nothing about a mode
-    # that diverges at rate 3. Before the alphabet argument it returned a JSR
-    # bound of 0.906 for a system whose JSR is at least 3.
+    # The soundness condition: this graph never mentions mode 2, so it
+    # constrains nothing about a mode that diverges at rate 3, and would certify
+    # a bound below 1 for a system whose JSR is at least 3.
     two_modes = PCC.switched_system([[0.9 0.0; 0.0 0.9], [3.0 0.0; 0.0 3.0]])
     problem = PCC.StabilityProblem(two_modes)
 

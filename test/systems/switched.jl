@@ -9,15 +9,6 @@ import MathematicalSystems as MS
 const A = [[1.0 0.0; 0.0 0.5], [0.5 0.0; 0.0 1.0]]
 const B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
 
-"Reset maps of `s` keyed by mode -- `resetmap` is indexed by the transition's event."
-function maps_by_mode(s)
-    out = Dict{Int, Any}()
-    for t in HS.transitions(s.automaton)
-        out[HS.event(s.automaton, t)] = HS.resetmap(s, t)
-    end
-    return out
-end
-
 @testset "input-free path is untouched" begin
     s = PCC.switched_system(A)
     # Must stay exactly what HybridSystems builds, so anything already consuming
@@ -26,7 +17,7 @@ end
     @test !PCC.has_input(s)
     @test PCC.mode_matrices(s) == A
 
-    rm = maps_by_mode(s)
+    rm = PCC._maps_by_mode(s)
     @test length(rm) == 2
     @test rm[1] isa MS.LinearMap
 end
@@ -40,7 +31,7 @@ end
     # type from the same call.
     @test PCC.has_input(s)
 
-    rm = maps_by_mode(s)
+    rm = PCC._maps_by_mode(s)
     for σ in 1:2
         @test rm[σ] isa MS.LinearControlMap
         @test rm[σ].A == A[σ]
@@ -82,7 +73,10 @@ end
     HS.add_transition!(g, 1, 1, 1)
     HS.add_transition!(g, 1, 2, 2)
     HS.add_transition!(g, 2, 1, 1)
-    @test_throws ArgumentError PCC.n_modes(HS.discreteswitchedsystem(A, g))
+    constrained = HS.discreteswitchedsystem(A, g)
+    @test_throws ArgumentError PCC.n_modes(constrained)
+    @test_throws ArgumentError PCC.mode_matrices(constrained)
+    @test_throws ArgumentError PCC.has_input(constrained)
 end
 
 @testset "dimension errors are caught at construction" begin

@@ -18,7 +18,7 @@ dual(graph::CertificateGraph) = first(_dual_with_images(graph))
 # became.
 function _dual_with_images(graph::CertificateGraph)
     dualised = _empty_like(graph, n_nodes(graph))
-    image = Dict{_HS.GraphTransition, _HS.GraphTransition}()
+    image = Dict{_Edge, _Edge}()
 
     for edge in edges(graph)
         image[edge] =

@@ -237,15 +237,7 @@ end
     model = JuMP.Model()
     template = PCC.SetProgTemplate(Ellipsoid(symmetric = true))
     S = PCC.add_function_variables!(model, template, 2, 1)
-    @test_throws ArgumentError PCC.add_decrease!(model, template, S, S, A[1]; margin = 1)
-    @test_throws ArgumentError PCC.add_decrease!(
-        model,
-        template,
-        S,
-        S,
-        A[1];
-        scale = JuMP.@variable(model),
-    )
+    @test_throws ArgumentError PCC.add_decrease!(model, template, S, S, A[1]; scale = 0)
 end
 
 end

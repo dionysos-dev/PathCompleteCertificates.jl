@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     SafetyProblem(system, S0, Su)
 
@@ -50,11 +47,17 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
 end
 
 # The decrease condition of `edge`, `B_dst(A x) <= B_src(x)` in homogeneous
-# coordinates, with scale 1 and no margin: every lifted map fixes [0, …, 0, 1],
-# so a margin would sum to `0 >= L * margin` around a cycle. Written once, for
-# the model and for the slacks.
-_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
-    _homogeneous_dynamics(A[only(letters(label(graph, edge)))])
+# coordinates: the barrier need only not increase, so the scale is 1 and the
+# rate and degree the slacks pass are ignored. Written once, for the model and
+# for the slacks.
+_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A; kwargs...) =
+    (_homogeneous_dynamics(A[only(letters(label(graph, edge)))]), 1)
+
+# The matrices the S-procedure keeps above `margin * I` at each node, so that
+# the barrier is negative on the initial set and positive on the unsafe set.
+# Written once, for the model and for the check of its solution.
+_initial_separation(problem::SafetyProblem, P, γ) = -(P + γ * problem.S0)
+_unsafe_separation(problem::SafetyProblem, P, γ) = P - γ * problem.Su
 
 """
     optimization_model(template, graph, problem; optimizer)
@@ -96,12 +99,14 @@ function optimization_model(
     for i in nodes(graph)
         JuMP.@constraint(
             model,
-            -(Ps[i] + gamma0[i] * problem.S0) - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
+            _initial_separation(problem, Ps[i], gamma0[i]) - eps * LinearAlgebra.I(d) in
+            JuMP.PSDCone()
         )
 
         JuMP.@constraint(
             model,
-            Ps[i] - gammau[i] * problem.Su - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
+            _unsafe_separation(problem, Ps[i], gammau[i]) - eps * LinearAlgebra.I(d) in
+            JuMP.PSDCone()
         )
 
         # -I ⪯ P ⪯ I: the rest is homogeneous, so `max eps` is otherwise unbounded.
@@ -110,8 +115,8 @@ function optimization_model(
     end
 
     for edge in edges(graph)
-        dynamics = _edge_decrease(problem, graph, edge, A)
-        add_decrease!(model, template, Ps[source(edge)], Ps[dest(edge)], dynamics)
+        dynamics, scale = _edge_decrease(problem, graph, edge, A)
+        add_decrease!(model, template, Ps[source(edge)], Ps[dest(edge)], dynamics; scale)
     end
 
     JuMP.@objective(model, Max, eps)
@@ -165,22 +170,19 @@ function certify(
     eps_val = JuMP.value(eps)
 
     # Re-check on the returned numbers rather than trusting the status.
-    feas = eps_val > _SAFETY_MARGIN_TOLERANCE
+    separated(S) =
+        minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(S))) >=
+        eps_val - _SAFETY_CHECK_TOLERANCE
 
-    for i in eachindex(Pval)
-        initial_margin = LinearAlgebra.Symmetric(-(Pval[i].P + gamma0_val[i] * problem.S0))
-
-        unsafe_margin = LinearAlgebra.Symmetric(Pval[i].P - gammau_val[i] * problem.Su)
-
-        if minimum(LinearAlgebra.eigvals(initial_margin)) < eps_val - 1e-7 ||
-           minimum(LinearAlgebra.eigvals(unsafe_margin)) < eps_val - 1e-7
-            feas = false
-            break
+    feasible =
+        eps_val > _SAFETY_MARGIN_TOLERANCE && all(eachindex(Pval)) do i
+            P = Matrix(Pval[i])
+            return separated(_initial_separation(problem, P, gamma0_val[i])) &&
+                   separated(_unsafe_separation(problem, P, gammau_val[i]))
         end
-    end
 
     return SafetyCertificate(
-        CertificateData(problem, template, graph, Pval, termination, feas),
+        CertificateData(problem, template, graph, Pval, termination, feasible),
         eps_val,
         gamma0_val,
         gammau_val,
@@ -189,6 +191,10 @@ end
 
 # Smallest margin counted as a separation; below it is solver noise.
 const _SAFETY_MARGIN_TOLERANCE = 1e-8
+
+# How far below the margin a separation of the solution may fall, as solver
+# error.
+const _SAFETY_CHECK_TOLERANCE = 1e-7
 
 # The map x⁺ = A x in homogeneous coordinates.
 function _homogeneous_dynamics(A::AbstractMatrix)
@@ -211,31 +217,13 @@ function _check_safety_data(
 end
 
 # A barrier lives in homogeneous coordinates.
-function node_value(
-    ::QuadraticTemplate,
-    ::SafetyProblem,
-    V::QuadraticFunction,
-    x::AbstractVector{<:Real},
-)
-    return V([x; one(eltype(x))])
-end
+node_value(::AbstractTemplate, ::SafetyProblem, V, x::AbstractVector{<:Real}) =
+    V([x; one(eltype(x))])
 
 # --- What refine reads: smaller is better, and where the barrier is held -----
 
 objective(certificate::SafetyCertificate) = -certificate.margin
 
-function edge_slacks(certificate::SafetyCertificate)
-    is_feasible(certificate) ||
-        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+_refinable(::SafetyProblem) = true
 
-    problem_ = problem(certificate)
-    graph_ = graph(certificate)
-    template_ = template(certificate)
-    B = functions(certificate)
-    A = mode_matrices(problem_.system)
-
-    return map(edges(graph_)) do edge
-        dynamics = _edge_decrease(problem_, graph_, edge, A)
-        return decrease_slack(template_, B[source(edge)], B[dest(edge)], dynamics)
-    end
-end
+edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)

@@ -9,7 +9,7 @@ const FAST_TESTS = "--fast" in ARGS
 # (path, tags...). Tag a suite `:slow` to exclude it from `--fast`.
 const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
-    ("./docstrings.jl",),  # the no-export replacement for checkdocs
+    ("./docstrings.jl",),  # every reachable name has a docstring
     ("./graphs/queries.jl",),
     ("./graphs/path_completeness.jl",),
     ("./graphs/de_bruijn.jl",),
@@ -26,7 +26,6 @@ const TEST_FILES = [
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
-    ("./systems/closed_loop.jl", :slow),
     ("./templates/parallel_faces_polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),

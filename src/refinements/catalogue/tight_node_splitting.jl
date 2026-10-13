@@ -1,5 +1,3 @@
-import Random
-
 """
     TightNodeSplitting(; rng = nothing)
 
@@ -33,11 +31,10 @@ function next_graph(
     subgraph = tight_subgraph(certificate; atol = atol)
 
     held = [outdegree(subgraph, node) for node in nodes(graph_)]
-    successors =
-        [length(unique(dest.(outgoing_edges(graph_, node)))) for node in nodes(graph_)]
+    lift_ = ForwardSplitLift()
 
     candidates =
-        [node for node in nodes(graph_) if held[node] >= 2 && successors[node] >= 2]
+        [node for node in nodes(graph_) if held[node] >= 2 && _changes(lift_, graph_, node)]
     isempty(candidates) && return nothing
 
     most = maximum(held[node] for node in candidates)
@@ -48,5 +45,5 @@ function next_graph(
 
     node = algorithm.rng === nothing ? first(candidates) : rand(algorithm.rng, candidates)
 
-    return lift(ForwardSplitLift(), graph_, node), nothing
+    return lift(lift_, graph_, node), nothing
 end

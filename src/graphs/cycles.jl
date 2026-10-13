@@ -9,8 +9,8 @@ sequence of its edges.
 function simple_cycles(graph::CertificateGraph; max_length::Integer = n_nodes(graph))
     max_length > 0 || throw(ArgumentError("max_length must be positive"))
 
-    cycles = Vector{Vector{_HS.GraphTransition}}()
-    path = _HS.GraphTransition[]
+    cycles = Vector{Vector{_Edge}}()
+    path = _Edge[]
     on_path = falses(n_nodes(graph))
 
     for start in nodes(graph)
@@ -23,11 +23,11 @@ end
 # Depth-first from `start`; `next > start` finds each cycle once, from its
 # smallest node.
 function _extend_cycles!(
-    cycles::Vector{Vector{_HS.GraphTransition}},
+    cycles::Vector{Vector{_Edge}},
     graph::CertificateGraph,
     start::Integer,
     current::Integer,
-    path::Vector{_HS.GraphTransition},
+    path::Vector{_Edge},
     on_path::BitVector,
     max_length::Integer,
 )
@@ -47,5 +47,5 @@ function _extend_cycles!(
 
     on_path[current] = false
 
-    return cycles
+    return nothing
 end

@@ -2,7 +2,8 @@
     Trajectory
 
 One run of a switched system: the states visited, the switching sequence taken
-and the inputs applied, `nothing` if there were none.
+and the inputs applied, `nothing` if there were none. Its `length` is the
+number of steps.
 """
 struct Trajectory{T <: Real, U <: Union{Nothing, Vector{Vector{T}}}}
     states::Vector{Vector{T}}
@@ -67,5 +68,4 @@ Whether the run applied an input.
 """
 has_input(trajectory::Trajectory) = trajectory.inputs !== nothing
 
-# The number of steps. No docstring, or `checkdocs` would demand a manual entry.
 Base.length(trajectory::Trajectory) = length(trajectory.switching)

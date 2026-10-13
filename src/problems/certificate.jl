@@ -88,7 +88,8 @@ function common(
     x::AbstractVector{<:Real},
 )
     values = [node_value(template, problem, V, x) for V in Vs]
-    return _common(graph, 1:n_modes(problem.system), values)
+    states = _common_states(graph, 1:n_modes(problem.system))
+    return minimum(maximum(values[node] for node in state) for state in states)
 end
 
 function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
@@ -133,3 +134,22 @@ The slack of every edge inequality, in `edges(graph(certificate))` order; zero
 means tight. Throws on an infeasible certificate.
 """
 function edge_slacks end
+
+# The slack of the condition `_edge_decrease` gives each edge, at `rate`: the
+# same condition the problem's model imposed.
+function _edge_slacks(certificate::AbstractCertificate; rate::Real = 1)
+    is_feasible(certificate) ||
+        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+
+    problem_ = problem(certificate)
+    graph_ = graph(certificate)
+    template_ = template(certificate)
+    V = functions(certificate)
+    A = mode_matrices(problem_.system)
+    degree = homogeneity_degree(template_)
+
+    return map(edges(graph_)) do edge
+        dynamics, scale = _edge_decrease(problem_, graph_, edge, A; rate, degree)
+        return decrease_slack(template_, V[source(edge)], V[dest(edge)], dynamics; scale)
+    end
+end

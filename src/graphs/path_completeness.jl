@@ -13,11 +13,17 @@ is_path_complete(graph::CertificateGraph) = is_path_complete(graph, alphabet(gra
 is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_path_complete(expanded_form(graph), alphabet)
 
-function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
-    (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
+function is_path_complete(graph::_LetterGraph, alphabet::AbstractVector)
+    # A graph with no node reads no word.
+    n_nodes(graph) == 0 && return isempty(alphabet)
+
+    successors = _successors(graph)
+    _covers_every_letter(graph, alphabet, successors) && return true
+    is_co_complete(graph, alphabet) && return true
 
     # A word the graph cannot read leads the subset construction to the empty set.
-    _, _, reads_every_word = _subset_construction(graph, alphabet; stop_at_empty = true)
+    _, _, reads_every_word =
+        _subset_construction(graph, alphabet, successors; stop_at_empty = true)
 
     return reads_every_word
 end
@@ -32,11 +38,11 @@ with a word of several modes.
 """
 is_complete(graph::CertificateGraph) = is_complete(graph, alphabet(graph))
 
-is_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
+is_complete(graph::_LetterGraph, alphabet::AbstractVector) =
     _covers_every_letter(graph, alphabet, _successors(graph))
 
 is_complete(graph::WordGraph, alphabet::AbstractVector) =
-    !has_words(graph) && is_complete(_letter_graph(graph, "is_complete"), alphabet)
+    !has_words(graph) && is_complete(_as_letter_graph(graph), alphabet)
 
 """
     is_co_complete(graph)
@@ -48,13 +54,13 @@ with a word of several modes.
 """
 is_co_complete(graph::CertificateGraph) = is_co_complete(graph, alphabet(graph))
 
-is_co_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector) =
+is_co_complete(graph::_LetterGraph, alphabet::AbstractVector) =
     _covers_every_letter(graph, alphabet, _predecessors(graph))
 
 is_co_complete(graph::WordGraph, alphabet::AbstractVector) =
-    !has_words(graph) && is_co_complete(_letter_graph(graph, "is_co_complete"), alphabet)
+    !has_words(graph) && is_co_complete(_as_letter_graph(graph), alphabet)
 
-function _covers_every_letter(graph::_HS.GraphAutomaton, alphabet, neighbours)
+function _covers_every_letter(graph::_LetterGraph, alphabet, neighbours)
     for node in nodes(graph), letter in alphabet
         haskey(neighbours, (node, letter)) || return false
     end

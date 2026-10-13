@@ -44,11 +44,3 @@ function next_graph(
 
     return candidates[best], solved[best]
 end
-
-# Whether `L` at `edge` changes the graph: a split needs a second edge to keep
-# apart, a forward product an edge to continue with.
-_changes(::ForwardSplitLift, g, edge) = outdegree(g, source(edge)) >= 2
-_changes(::BackwardSplitLift, g, edge) = indegree(g, dest(edge)) >= 2
-_changes(::ForwardProductLift, g, edge) = outdegree(g, dest(edge)) >= 1
-_changes(::BackwardProductLift, g, edge) = indegree(g, source(edge)) >= 1
-_changes(::AbstractLift, g, edge) = true

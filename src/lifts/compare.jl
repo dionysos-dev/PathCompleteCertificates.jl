@@ -4,9 +4,7 @@
 What [`compare`](@ref) returns: the [`lifts`](@ref) tried, the
 [`simulations`](@ref) found and the [`templates`](@ref) proved.
 """
-struct Comparison{G <: CertificateGraph, H <: CertificateGraph}
-    G::G
-    H::H
+struct Comparison
     lifts::Vector{AbstractLift}
     simulations::Vector{Pair{AbstractLift, Any}}
     templates::Vector{AbstractTemplate}
@@ -45,11 +43,14 @@ const _LIFTS = (
 )
 
 """
-    compare(G, H; templates = (), system = nothing, optimizer = nothing, lifts = …)
+    compare(G, H; templates = (), system = nothing, optimizer = nothing,
+            lifts = (IdentityLift(), MinLift(), MaxLift(), SumLift(),
+                     CompositionLift(1), BackwardCompositionLift(1)))
 
 Whether ``G ≤_V H``, and for which of `templates`, as a [`Comparison`](@ref).
-The sum lift is tried only with an `optimizer`, and `system` is required when
-`templates` is nonempty.
+The lifts are tried in order, and the identity lift's simulation ends the
+search. The sum lift is tried only with an `optimizer`, and `system` is
+required when `templates` is nonempty. Both graphs need one mode per edge.
 """
 function compare(
     G::CertificateGraph,
@@ -59,8 +60,8 @@ function compare(
     optimizer = nothing,
     lifts = _LIFTS,
 )
-    _require_one_mode_per_edge(G, "compare")
-    _require_one_mode_per_edge(H, "compare")
+    G = _letter_graph(G, "compare")
+    H = _letter_graph(H, "compare")
     isempty(templates) ||
         system !== nothing ||
         throw(ArgumentError("reading the templates' closures needs the system"))
@@ -84,5 +85,5 @@ function compare(
         template in templates if any(is_valid(L, template, system) for (L, _) in found)
     ]
 
-    return Comparison(G, H, tried, found, proven)
+    return Comparison(tried, found, proven)
 end

@@ -1,5 +1,3 @@
-import JuMP
-
 """
     SumLift(T)
     SumLift()
@@ -37,7 +35,7 @@ lift(::SumLift{Nothing}, ::CertificateGraph) = throw(
 function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
-    modes = sort(alphabet(g))
+    modes = alphabet(g)
     index = _successors(_letter_graph(g, "the sum lift"))
     multisets = _multisets(n_nodes(g), L.terms)
 
@@ -107,10 +105,12 @@ function simulation(
     JuMP.optimize!(model)
     JuMP.is_solved_and_feasible(model; allow_almost = true) || return nothing
 
-    # The rounded matrix is what is returned, so it is what is checked.
+    # The rounded matrix is what is returned, so it is what is checked, row sums
+    # included.
     integers = _integerise(JuMP.value.(C))
     check, _ = _sum_program(G, H, optimizer, integers)
     JuMP.optimize!(check)
+    all(>(0), sum(integers; dims = 2)) &&
     JuMP.is_solved_and_feasible(check; allow_almost = true) || error(
         "the linear program is feasible, but its solution did not round to an " *
         "integer matrix that still satisfies it",
@@ -130,7 +130,7 @@ function _sum_program(G, H, optimizer, C)
         JuMP.@constraint(model, [h in 1:n_nodes(H)], sum(C[h, :]) >= 1)
     end
 
-    for letter in union(alphabet(G), alphabet(H))
+    for letter in alphabet(H)
         edges_G = [e for e in edges(G) if label(G, e) == letter]
         edges_H = [e for e in edges(H) if label(H, e) == letter]
 
@@ -166,7 +166,7 @@ function _integerise(C::AbstractMatrix{<:Real}; tol = 1e-8)
     rationals = rationalize.(Int, scaled; tol = tol)
     denominators = lcm(denominator.(rationals)...)
     integers = Int.(rationals .* denominators)
-    divisor = gcd(integers...)
 
-    return divisor == 0 ? integers : integers .÷ divisor
+    # The largest entry scales to 1, so the gcd is positive.
+    return integers .÷ gcd(integers...)
 end

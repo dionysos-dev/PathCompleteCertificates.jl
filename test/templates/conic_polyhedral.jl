@@ -52,9 +52,9 @@ end
     @test PCC.is_feasible(result)
     @test abs(result.rate - 0.5) <= 0.01
 
-    # One facet row per cone, and the scale that keeps V away from zero.
+    # One facet row per cone, and the bound `c` that keeps V away from zero.
     @test size(PCC.functions(result)[1].P) == (length(cones), 2)
-    @test PCC.functions(result)[1].scale >= 1e-3 - 1e-9
+    @test PCC.functions(result)[1].c >= 1e-3 - 1e-9
 
     # The edge condition is imposed only on the cones' extreme rays; check it
     # actually holds everywhere, which is the point of the dominance
@@ -118,6 +118,11 @@ end
     # A partition for fewer nodes than the graph has.
     single = PCC.ConicPolyhedralTemplate([cones])
     @test_throws ArgumentError PCC.jsr_bound(single, GRAPH, PROBLEM; optimizer = OPTIMIZER)
+
+    # Integer rays take the default bound in floating point.
+    integer = PCC.ConicPolyhedralTemplate([[[1 0; 0 1]]])
+    @test integer.min_scale > 0
+    @test only(only(integer.cones)) == [1 0; 0 1]
 end
 
 end

@@ -22,8 +22,7 @@ function lift(L::ProductLift, g::CertificateGraph)
 
     function extend(start, current, word, remaining)
         if remaining == 0
-            key = (start, current, word)
-            key in seen || (push!(seen, key); add_edge!(lifted, start, current, word))
+            _add_once!(lifted, seen, start, current, word)
             return nothing
         end
 

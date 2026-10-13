@@ -1,4 +1,4 @@
-module TestRefinementStability
+module TestRefine
 
 using Test
 using HybridSystems
@@ -58,7 +58,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
     @test isapprox(PCC.rates(trace)[1], 0.9; atol = 1e-3)
 end
 
-@testset "until_stability stops the loop before convergence is even checked" begin
+@testset "stop ends the loop before convergence is even checked" begin
     trace = PCC.refine(
         TEMPLATE,
         ONE_NODE,
@@ -68,9 +68,8 @@ end
         stop = c -> c.rate < 1,
     )
 
-    # The certified rate is already < 1, so this exits through the
-    # `until_stability` branch rather than the "nothing left to tighten"
-    # branch -- the status tells the two apart.
+    # The certified rate is already < 1, so this exits through `stop` rather
+    # than through the gap check -- the status tells the two apart.
     @test PCC.status(trace) == PCC.STOPPED
     @test length(PCC.graphs(trace)) == 1
     @test PCC.rates(trace)[1] < 1
@@ -123,6 +122,25 @@ end
         ONE_MODE_PROBLEM;
         optimizer = OPTIMIZER,
         depth_max = 0,
+    )
+
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        ONE_NODE,
+        ONE_MODE_PROBLEM;
+        optimizer = OPTIMIZER,
+        stall_max = 0,
+    )
+
+    # Optimal control has no objective or edge slacks to read, and says so
+    # before solving anything.
+    controlled = PCC.switched_system([ROTATED], [reshape([1.0, 0.0], 2, 1)])
+    control = PCC.OptimalControlProblem(controlled, [1.0 0.0; 0.0 1.0], [1.0;;])
+    @test_throws ArgumentError PCC.refine(
+        TEMPLATE,
+        ONE_NODE,
+        control;
+        optimizer = OPTIMIZER,
     )
 end
 
@@ -211,9 +229,8 @@ end
     @test !PCC.is_jsr_exact(PCC.certificates(trace)[end]; atol = 1e-4)
 
     # With the bracket switched off -- `gap_tol` below zero can never be met --
-    # the same system exercises the stall path on its own, which is how it
-    # behaved before the bracket existed: it grows at a constant bound until
-    # `stall_max` says stop.
+    # the same system exercises the stall path on its own: it grows at a
+    # constant bound until `stall_max` says stop.
     stalling = PCC.refine(
         TEMPLATE,
         TWO_NODES,
@@ -283,27 +300,6 @@ end
     @test length(PCC.graphs(exhausted)) == 1
 end
 
-@testset "the two tolerances must be orders apart, and it is enforced" begin
-    # At atol <= rtol the bisection residual alone makes every edge look tight,
-    # so the test never discriminates -- a silent early stop, hence the throw.
-    @test_throws ArgumentError PCC.refine(
-        TEMPLATE,
-        ONE_NODE,
-        ONE_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-        atol = 1e-6,
-        rtol = 1e-6,
-    )
-
-    @test_throws ArgumentError PCC.refine(
-        TEMPLATE,
-        ONE_NODE,
-        ONE_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-        stall_max = 0,
-    )
-end
-
 @testset "path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings = (optimizer = OPTIMIZER, depth_max = 3, algorithm = PCC.TightNodeSplitting())
     start = PCC.dual(PCC.de_bruijn(1, 2))
@@ -332,11 +328,9 @@ end
 end
 
 @testset "the tightness tolerance must clear the bisection residual by a decade" begin
-    # Below a decade the tight subgraph can come out EMPTY: the starting graph's two
-    # self-loops measure 2.9e-6 and 3.5e-6 at rtol = 1e-6, so an atol of 2e-6
-    # sees neither. Every node then satisfies Theorem 4 vacuously and the run
-    # certifies the memoryless bound as the joint spectral radius -- measured,
-    # before this guard existed. Rejected up front rather than repaired later.
+    # Below a decade the tight subgraph can come out empty: the starting graph's
+    # two self-loops measure 2.9e-6 and 3.5e-6 at rtol = 1e-6, so an atol of
+    # 2e-6 sees neither and the run would stop with nothing to split.
     @test_throws ArgumentError PCC.refine(
         TEMPLATE,
         MEMORYLESS,

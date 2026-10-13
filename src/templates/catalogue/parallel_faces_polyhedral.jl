@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     ParallelFacesPolyhedralTemplate(G; min_weight = 1e-3)
     ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
@@ -41,9 +38,10 @@ struct ParallelFacesPolyhedralTemplate{T <: Real} <: AbstractTemplate
                 throw(ArgumentError("G[$node] is singular; it must have full rank"))
         end
 
-        weight = convert(T, min_weight)
+        # Floating point, so that integer node matrices take the default bound.
+        F = float(promote_type(T, typeof(min_weight)))
 
-        return new{T}(collect(Matrix{T}, G), weight)
+        return new{F}(collect(Matrix{F}, G), convert(F, min_weight))
     end
 end
 
@@ -84,14 +82,7 @@ function add_function_variables!(
 )
     @assert dimension > 0
 
-    node <= length(template.G) || throw(
-        ArgumentError(
-            "the template carries $(length(template.G)) node matrices but the " *
-            "graph has at least $node nodes",
-        ),
-    )
-
-    G = template.G[node]
+    G = _node_datum(template.G, node, "node matrices")
 
     size(G, 1) == dimension || throw(
         ArgumentError(
@@ -100,19 +91,15 @@ function add_function_variables!(
         ),
     )
 
-    w = JuMP.@variable(model, [1:dimension], base_name = "w_$(node)")
+    # The weights are a denominator, so they are bounded away from zero.
+    w = JuMP.@variable(
+        model,
+        [1:dimension],
+        lower_bound = template.min_weight,
+        base_name = "w_$(node)",
+    )
 
     return ParallelFacesPolyhedralFunction(G, w)
-end
-
-function add_nonnegativity!(
-    model::JuMP.Model,
-    template::ParallelFacesPolyhedralTemplate,
-    V::ParallelFacesPolyhedralFunction,
-)
-    # The weights are a denominator, so they must be bounded away from zero.
-    JuMP.@constraint(model, V.w .>= template.min_weight)
-    return nothing
 end
 
 solution_value(::ParallelFacesPolyhedralTemplate, V::ParallelFacesPolyhedralFunction) =
@@ -125,7 +112,7 @@ function add_normalization!(
     ::ParallelFacesPolyhedralTemplate,
     ::ParallelFacesPolyhedralFunction,
 )
-    # The lower bound min_weight from `add_nonnegativity!` already excludes V = 0.
+    # The bounded weights and the invertible G already make V positive.
     return nothing
 end
 
@@ -136,15 +123,7 @@ function add_decrease!(
     V_dst::ParallelFacesPolyhedralFunction,
     map::AbstractMatrix;
     scale = 1,
-    margin = 0,
 )
-    margin == 0 || throw(
-        ArgumentError(
-            "ParallelFacesPolyhedralTemplate cannot express a margin: the weights sit in a " *
-            "denominator, so the margin term is not linear in them",
-        ),
-    )
-
     # The induced infinity-norm bound |G_dst map G_src^-1| w_src <= scale * w_dst;
     # w_dst carries the scale since w is a denominator.
     M = abs.(V_dst.G * map * inv(V_src.G))

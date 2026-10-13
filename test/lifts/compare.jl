@@ -200,6 +200,13 @@ end
     @test_throws ArgumentError PCC.compare(G1, G2; templates = (QUADRATIC,))
     words = PCC.graph(PCC.lift(PCC.ProductLift(2), G1))
     @test_throws ArgumentError PCC.compare(words, G2)
+
+    # A word graph whose words are single modes is compared as the plain graph.
+    single_modes = PCC.WordGraph(1)
+    PCC.add_edge!(single_modes, 1, 1, [1])
+    PCC.add_edge!(single_modes, 1, 1, [2])
+    @test PCC.simulations(PCC.compare(single_modes, G0)) ==
+          PCC.simulations(PCC.compare(G0, G0))
 end
 
 @testset "the ten rates of the capsule" begin

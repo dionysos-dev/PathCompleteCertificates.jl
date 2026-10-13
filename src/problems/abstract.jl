@@ -1,5 +1,3 @@
-import JuMP
-
 """
     AbstractProblem
 
@@ -9,6 +7,10 @@ abstract type AbstractProblem end
 
 # Whether the problem accepts words on the edges; only stability does.
 _accepts_words(::AbstractProblem) = false
+
+# Whether `refine` runs on the problem: its certificate has an `objective` and
+# `edge_slacks`.
+_refinable(::AbstractProblem) = false
 
 """
     node_value(template, problem, V, x)
@@ -34,11 +36,12 @@ Build and solve the model, and return an [`AbstractCertificate`](@ref). Check
 function certify end
 
 """
-    best_certificate(template, graph, problem; optimizer, kwargs...)
+    best_certificate(template, graph, problem; optimizer, rtol, kwargs...)
 
-The certificate [`refine`](@ref) solves on each graph: that of
-[`certify`](@ref), or for stability that of smallest rate, from
-[`jsr_bound`](@ref).
+The certificate [`refine`](@ref) solves on each graph: for stability that of
+smallest rate, from [`jsr_bound`](@ref) to relative tolerance `rtol`; for a
+problem certified by one solve, that of [`certify`](@ref), and `rtol` is
+ignored.
 """
 function best_certificate(
     template::AbstractTemplate,
@@ -59,8 +62,8 @@ The problem on the dual system. Throws for every problem but stability.
 dual(problem::AbstractProblem) =
     throw(ArgumentError("no dual is defined for $(nameof(typeof(problem)))"))
 
-# Validate the modes against the graph and return the state dimension. The system
-# may come from HybridSystems directly, so its matrices are checked here too.
+# Validate the modes against the graph and return the state dimension; the
+# matrices themselves were checked when the problem was built.
 # `path_complete = false` skips the path-completeness test, which is expensive.
 function _check_modes(
     graph::CertificateGraph,
@@ -68,22 +71,21 @@ function _check_modes(
     path_complete::Bool = true,
 )
     A = mode_matrices(system)
-    dimension = _check_mode_matrices(A)
 
     for edge in edges(graph), mode in letters(label(graph, edge))
         1 <= mode <= length(A) ||
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    if path_complete && !is_path_complete(graph, 1:n_modes(system))
+    if path_complete && !is_path_complete(graph, 1:length(A))
         throw(
             ArgumentError(
                 "the graph is not path-complete for the system's modes, " *
                 "so its edge inequalities would certify the property for part of it " *
-                "only; the graph reads the modes $(sort(alphabet(graph)))",
+                "only; the graph reads the modes $(alphabet(graph))",
             ),
         )
     end
 
-    return dimension
+    return size(first(A), 1)
 end

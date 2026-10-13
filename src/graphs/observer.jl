@@ -7,10 +7,11 @@ The observer graph of `graph`. Its nodes are nonempty subsets of the nodes of
 when `Q` is the set of successors by `σ` of the nodes in `P`. `states[k]` is
 the subset that observer node `k` stands for.
 """
-observer_graph(graph::_HS.GraphAutomaton) = observer_graph(graph, sort(alphabet(graph)))
+observer_graph(graph::_LetterGraph) = observer_graph(graph, alphabet(graph))
 
-function observer_graph(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
-    states, transitions, _ = _subset_construction(graph, alphabet; stop_at_empty = false)
+function observer_graph(graph::_LetterGraph, alphabet::AbstractVector)
+    states, transitions, _ =
+        _subset_construction(graph, alphabet, _successors(graph); stop_at_empty = false)
 
     observer = empty_graph(length(states))
     for (p, q, letter) in transitions
@@ -23,13 +24,14 @@ end
 # The subsets of nodes where a path reading a word can end, from the set of all
 # nodes, letter by letter, and the transitions between them; empty subsets are
 # dropped. Also returns whether every word is read: no letter ever leads to the
-# empty subset. With `stop_at_empty`, returns at the first that does.
+# empty subset. With `stop_at_empty`, returns at the first that does. `index` is
+# `_successors(graph)`, built by the caller.
 function _subset_construction(
-    graph::_HS.GraphAutomaton,
-    alphabet::AbstractVector;
+    graph::_LetterGraph,
+    alphabet::AbstractVector,
+    index;
     stop_at_empty::Bool,
 )
-    index = _successors(graph)
     start = Set(nodes(graph))
 
     states = [start]
@@ -74,21 +76,19 @@ function _step(index, subset, letter::Integer)
     return reachable
 end
 
-# The key type is written out where the dictionary is made, so the arity is free.
+# A subset as a dictionary key: its nodes, sorted, as a tuple.
 _key(subset) = Tuple(sort!(collect(subset)))
 
-# The common function as a graph construction [philippe2017path]: from the values
-# of the node functions at one point, their minimum on a complete graph
-# (Cor. III.3), their maximum on a co-complete one, and otherwise the minimum
-# over the observer states of the maximum within each (Thm. III.8). A word graph
-# has none: no state is constrained inside a word.
-function _common(graph::CertificateGraph, alphabet::AbstractVector, values::AbstractVector)
+# The common function [philippe2017path] is the minimum over these subsets of
+# the maximum of the node functions within each: every node alone on a complete
+# graph (Cor. III.3), all nodes together on a co-complete one, the observer
+# states otherwise (Thm. III.8). A word graph has none: no state is constrained
+# inside a word.
+function _common_states(graph::CertificateGraph, alphabet::AbstractVector)
     letter_graph = _letter_graph(graph, "common")
 
-    is_complete(letter_graph, alphabet) && return minimum(values)
-    is_co_complete(letter_graph, alphabet) && return maximum(values)
+    is_complete(letter_graph, alphabet) && return [[node] for node in nodes(letter_graph)]
+    is_co_complete(letter_graph, alphabet) && return [collect(nodes(letter_graph))]
 
-    _, states = observer_graph(letter_graph, alphabet)
-
-    return minimum(maximum(values[node] for node in state) for state in states)
+    return last(observer_graph(letter_graph, alphabet))
 end

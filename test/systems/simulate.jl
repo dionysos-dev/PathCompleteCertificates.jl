@@ -130,6 +130,14 @@ end
     run = PCC.simulate(exact, [1//1, 1//1], [1])
 
     @test eltype(first(PCC.states(run))) == Rational{Int}
+
+    # An integer system driven by a real input, given as inputs or as a law.
+    integer = PCC.switched_system([[1 0; 0 1]], [reshape([1, 0], 2, 1)])
+    by_inputs = PCC.simulate(integer, [1, 1], [1]; u = [[0.5]])
+    by_law = PCC.simulate(integer, [1, 1], [1]; u = x -> [x[1] / 2])
+
+    @test PCC.states(by_inputs)[2] == [1.5, 1.0]
+    @test PCC.states(by_law) == PCC.states(by_inputs)
 end
 
 @testset "a mismatched x0 is named, not left to the matmul" begin
