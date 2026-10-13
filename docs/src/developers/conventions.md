@@ -76,7 +76,7 @@ of a refinement algorithm and a test of `compare`, where a simulation of ``H``
 by the lifted ``G`` proves ``G \le_V H``.
 
 ```julia
-# src/operations.jl: what a template is closed under and a lift requires.
+# src/lifts/operations.jl: what a template is closed under and a lift requires.
 Addition(), Maximum(), Minimum(), Composition(), InverseComposition()
 
 # A lift, src/lifts/catalogue/: the forms its definition gives it.

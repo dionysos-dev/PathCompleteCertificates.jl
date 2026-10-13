@@ -6,8 +6,6 @@ graph, a function from a template at each node, and one inequality per edge.
 """
 module PathCompleteCertificates
 
-include("operations.jl")
-
 include("graphs/queries.jl")
 include("graphs/words.jl")
 include("graphs/path_completeness.jl")
@@ -18,6 +16,7 @@ include("graphs/observer.jl")
 include("graphs/cycles.jl")
 include("graphs/simulation.jl")
 
+include("lifts/operations.jl")
 include("lifts/abstract.jl")
 include("lifts/dual.jl")
 include("lifts/catalogue/identity.jl")

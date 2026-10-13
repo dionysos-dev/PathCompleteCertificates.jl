@@ -20,7 +20,7 @@ Pages   = ["lifts/abstract.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["operations.jl"]
+Pages   = ["lifts/operations.jl"]
 ```
 
 ## The dual of a lift

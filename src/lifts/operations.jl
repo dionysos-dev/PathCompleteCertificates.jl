@@ -1,5 +1,3 @@
-# Operations on node functions, shared by templates and lifts.
-
 """
     Operation
 
@@ -43,14 +41,6 @@ Composition with the inverse dynamics, `V ∘ A_i⁻¹`, required by
 [`BackwardCompositionLift`](@ref).
 """
 struct InverseComposition <: Operation end
-
-"""
-    dual(x)
-
-The dual of a graph, lift, operation, template, system, problem or certificate;
-`dual(template, V)` is the dual of one node function.
-"""
-function dual end
 
 dual(::Addition) = Addition()
 dual(::Maximum) = Minimum()

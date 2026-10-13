@@ -1,4 +1,12 @@
 """
+    dual(x)
+
+The dual of a graph, lift, operation, template, system, problem or certificate;
+`dual(template, V)` is the dual of one node function.
+"""
+function dual end
+
+"""
     dual(graph)
 
 The dual graph: every edge `s → d` reversed into `d → s`, every word reversed.

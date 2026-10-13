@@ -66,14 +66,15 @@ per inhabitant under `catalogue/`, named after the type without the directory's 
 
 ```
 src/
-├── operations.jl        Addition, Maximum, Minimum, Composition, InverseComposition; `dual`
 ├── systems/             switched systems, runs, the dual system
 ├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words,
-│                        path_completeness, dual, de_bruijn, common_graph, observer,
-│                        cycles, simulation
+│                        path_completeness, dual (also declares `dual` for everything),
+│                        de_bruijn, common_graph, observer, cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
 ├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
-├── lifts/               the lifts of a graph: abstract.jl, dual.jl, compare.jl + catalogue/
+├── lifts/               the lifts of a graph: operations.jl (Addition, Maximum, Minimum,
+│                        Composition, InverseComposition: what a lift requires of a template),
+│                        abstract.jl, dual.jl, compare.jl + catalogue/
 ├── refinements/         the algorithms that apply lifts: abstract.jl, refine.jl + catalogue/
 └── common.jl            `common`: reads graph, template and problem, so belongs to neither axis
 ```
