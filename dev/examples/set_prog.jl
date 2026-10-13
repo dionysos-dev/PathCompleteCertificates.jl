@@ -5,10 +5,11 @@
 # are one of these on each cone of a partition. [`SetProgTemplate`](@ref)
 # makes such a set the node function of a node, the function whose unit
 # sublevel set it is, and the stability inequality
-# ``V_d(A_i x) \le \gamma^d V_s(x)`` becomes the inclusion
+# ``V_d(A_i x) \le \gamma^p V_s(x)`` becomes the inclusion
 # ``(A_i / \gamma)\, S_s \subseteq S_d``, which SetProg imposes. Three of its
-# sets are templates this package already has, and the example checks that;
-# the fourth, the piecewise semi-ellipsoid, is new.
+# sets give templates this package already has, and the example checks that
+# they certify the same rates; the fourth, the piecewise semi-ellipsoid, does
+# not.
 
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
@@ -20,7 +21,7 @@ using Plots
 const OPTIMIZER = Clarabel.Optimizer
 
 # The rotation and shear of the other examples, on the one-node graph, so that
-# the template alone decides the rate.
+# the rates differ only by the template.
 
 A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
@@ -29,10 +30,10 @@ graph = PCC.common_graph(problem.system)
 bound(template) =
     PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-3)
 
-# A partition is a polytope with the origin inside: its pieces are the cones
-# over its facets. The polytope is built with Polyhedra on a linear programming
-# solver, which SetProg works on the pieces with; a simplex solver such as
-# HiGHS keeps that cheap.
+# A partition is given by a polytope with the origin in its interior; its
+# pieces are the cones over its facets. The polytope is built with Polyhedra on
+# a linear programming solver, which SetProg uses on the pieces; HiGHS is a
+# simplex solver.
 
 LIBRARY = Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
@@ -78,9 +79,9 @@ pairs = [
 # ## The piecewise semi-ellipsoid
 #
 # `Ellipsoid(symmetric = true, piecewise = P)` is a function quadratic on each
-# cone of `P` and continuous across them, a template none of the others gives.
-# Refining the partition can only help, since a function on the coarser one is
-# a function on the finer one too.
+# cone of `P` and continuous across them; no other template gives it.
+# Refining the partition cannot increase the rate, since a function quadratic
+# on each cone of a partition is quadratic on each cone of a finer one.
 
 square = polygon([[1, 0], [0, 1], [-1, 0], [0, -1]])
 sixteen = polygon([
@@ -116,7 +117,8 @@ piecewise = [
 
 # On the four cones of the square the piecewise function certifies the rate of
 # the plain ellipsoid; the octagon's eight cones improve on it, and sixteen
-# cones of degree two beat the polynomial of degree four above.
+# cones of degree two give a lower rate than the polynomial of degree four
+# above.
 
 # ## Drawing it
 #

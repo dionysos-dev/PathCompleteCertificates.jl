@@ -46,7 +46,7 @@ plot(
     ylabel = "certified rate",
     xticks = sizes,
     legend = :topright,
-    title = "the same budget, spent better",
+    title = "refine against De Bruijn",
 )
 plot!(
     first.(de_bruijn),

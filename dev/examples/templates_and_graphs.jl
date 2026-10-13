@@ -1,11 +1,11 @@
 # # Templates and graphs: the two axes
 #
-# A certificate is a template and a graph. This example moves one while
-# holding the other: one graph under three templates, then one template over
-# four graphs, and finally a third template that reaches past degree two.
+# This example changes the template on a fixed graph, then the graph for a
+# fixed template, and finally compares sum-of-squares node functions of degree
+# 4 with quadratic ones.
 #
 # Each panel shows the sublevel set ``\{x : V(x) \le 1\}`` of the common
-# function, which is what `certificate(x)` evaluates.
+# function ``V``, evaluated by calling the certificate on ``x``.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -15,10 +15,9 @@ using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
 
-# Every node function is homogeneous of degree ``d`` =
+# Every node function is homogeneous of degree ``p`` =
 # [`homogeneity_degree`](@ref), and so is the common function built from them,
-# so the radius of the sublevel set in direction ``u`` is ``V(u)^{-1/d}``. The
-# same three lines draw every template.
+# so the radius of the sublevel set in direction ``u`` is ``V(u)^{-1/p}``.
 
 function sublevel_boundary(certificate; samples = 721)
     degree = PCC.homogeneity_degree(PCC.template(certificate))
@@ -31,15 +30,16 @@ end
 
 # !!! warning "Only the shape is comparable"
 #     A certificate is determined up to scale, and each template pins that
-#     scale differently, so the sets are drawn normalised. The quality of a
-#     certificate is its **rate**, which is in the legend.
+#     scale differently, so the sets are drawn normalised to maximal radius 1.
+#     The rate of each certificate is in the legend.
 
 # ## One graph, three templates
 #
 # One mode, a rotation scaled by `0.9`, on a single self-loop. Its joint
-# spectral radius is `0.9`, and the templates disagree about how close they
-# get: a rotation is exactly quadratically stable, badly approximated by a
-# polytope with fixed facets, and well approximated once the facets are free.
+# spectral radius is `0.9`. The quadratic template certifies it exactly, since
+# the rotation maps circles to circles; the polyhedral template with fixed
+# facets certifies a larger rate, and the one with free facets a rate closer to
+# `0.9`.
 
 THETA = pi / 3
 ROTATION = [0.9 * [cos(THETA) -sin(THETA); sin(THETA) cos(THETA)]]
@@ -86,12 +86,11 @@ left
 
 # ## One template, four graphs
 #
-# A rotation and a shear. One quadratic function for the whole system is
-# conservative; letting the certificate remember the last ``k`` modes, with
-# the De Bruijn graph of order ``k``, is less so. The sublevel sets are unions
-# of ellipses, non-convex and richer with memory: a path-complete Lyapunov
-# function is a common one built from minima and maxima
-# ([philippe2017path](@cite)).
+# A rotation and a shear, with quadratic node functions, on the one-node graph
+# and on the De Bruijn graphs of order ``k = 1, 2, 3``, whose nodes record the
+# last ``k`` modes. The common function is a minimum of the node functions
+# ([philippe2017path](@cite)), so its sublevel sets are unions of ellipses and
+# need not be convex.
 
 MIXED = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 mixed_problem = PCC.StabilityProblem(PCC.switched_system(MIXED))
@@ -130,20 +129,16 @@ end
 
 plot(left, right; layout = (1, 2), size = (1100, 620))
 
-# The template decides the shape of the certificate and how conservative it
-# is; the graph decides how much history it may use. The rates are ordered
-# along each axis; the sets are not nested, since a certificate is only
-# determined up to scale.
+# On the right the rate does not increase with the order ``k``. The sets are
+# not nested, since each is normalised.
 
-# ## A third template: sums of squares
+# ## Sums of squares
 #
-# [`SumOfSquaresTemplate`](@ref) raises the degree of the node functions
-# instead of the memory of the graph ([parrilo2008approximation](@cite)); it is
-# behind a package extension, loaded with SumOfSquares, and the polynomial
-# variables are created once and shared by every node. Degree 2 is exactly the
-# quadratic template; degree 4 bulges where the dynamics need room. The two
-# axes compose: enriching the template and enriching the graph are alternative
-# routes, and doing both is better than either.
+# [`SumOfSquaresTemplate`](@ref) takes polynomial node functions of higher
+# degree ([parrilo2008approximation](@cite)). It is defined in a package
+# extension loaded with SumOfSquares, and the polynomial variables are created
+# once and shared by every node. Degree 2 is the quadratic template. The table
+# gives the rates of degrees 2 and 4 on one node and on `de_bruijn(1, 2)`.
 
 @polyvar x[1:2]
 

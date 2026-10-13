@@ -44,7 +44,7 @@ plane = plot(;
     aspect_ratio = :equal,
     framestyle = :origin,
     legend = :outerbottom,
-    title = "the run never leaves the set it starts in",
+    title = "closed-loop run and the initial level set",
 )
 
 plot!(
@@ -75,7 +75,7 @@ descent = plot(
     legend = false,
     xlabel = "step",
     ylabel = "bound at the state",
-    title = "and never back out",
+    title = "bound along the run",
 )
 
 plot(plane, descent; layout = (1, 2), size = (900, 460))

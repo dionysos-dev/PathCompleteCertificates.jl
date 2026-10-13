@@ -1,11 +1,11 @@
-# # Comparing graphs: which one is better?
+# # Comparing graphs: five graphs, three templates
 #
 # Two path-complete graphs and one template: is a certificate on the first
 # guaranteed to give one on the second, whatever the system? That is the
 # ordering of [debauche2021comparison](@cite), and its answer depends on what
 # the template is closed under. This example decides it on the five graphs of
-# [debauche2023ordering](@cite) with one call, reads the simulation behind
-# every verdict, and confirms each with certified rates.
+# [debauche2023ordering](@cite) with [`compare`](@ref), prints the simulations
+# that justify each answer, and compares them with certified rates.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -114,7 +114,7 @@ NAMES = ["G0", "G1", "G2", "G3", "G4"]
 # on `H` in the same template. It tries every lift of the literature, cheapest
 # first, and records which ones found a simulation of `H` by the lifted `G`.
 # Given templates and the system they will be read on, it also says for which
-# of them the verdict holds.
+# of them the order holds.
 
 A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
 system = PCC.switched_system(A)
@@ -136,11 +136,11 @@ PCC.lifts(c12)
 
 first.(PCC.simulations(c12))
 
-# The sum lift's is the verdict the paper is about, and it carries the other
-# two with it: whenever a sum lift of `G1` simulates `G2`, so do its min and
-# max lifts ([debauche2024thesis](@cite), Cor. 7.80). Together they settle the
-# three templates: the quadratic and copositive norms add, the dual copositive
-# norms are closed under maximum.
+# The sum lift's simulation is the one the paper constructs, and it implies
+# the other two: whenever a sum lift of `G1` simulates `G2`, so do its min and
+# max lifts ([debauche2024thesis](@cite), Cor. 7.80). The order then holds for
+# the three templates, since quadratic and copositive norms are closed under
+# addition and dual copositive norms under maximum.
 
 PCC.templates(c12)
 
@@ -163,9 +163,9 @@ combination(row) = join(
 
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:PCC.n_nodes(G2)]
 
-# A matrix is what you check by hand. Take a quadratic certificate on `G1`,
-# combine its node matrices with ``C``, and every edge inequality of `G2` holds
-# at the same rate: the slack of each is nonnegative.
+# The code below takes a quadratic certificate on `G1`, combines its node
+# matrices with ``C``, and checks that every edge inequality of `G2` holds at
+# the same rate, that is, that every slack is nonnegative.
 
 bound(template, g) = PCC.jsr_bound(
     template,
@@ -196,21 +196,22 @@ slacks = [
 
 all(>=(-1e-6), slacks)
 
-# ## The template decides
+# ## Dependence on the template
 #
 # `G4` against the one-node graph. It is complete and co-complete, so the min
 # and max lifts simulate `G0` by the full set of its nodes: the minimum of its
 # node functions is a common function, and so is the maximum. No sum lift
-# does, and the linear program, being complete, says so. Hence `G4` buys
-# nothing over a common function for the copositive templates and is strictly
-# better for the quadratic one.
+# does, and the linear program, being complete, says so. Hence `G4` gives no
+# better bound than a common Lyapunov function for the copositive templates,
+# and a strictly better one for the quadratic template.
 
 c40 = PCC.compare(G4, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
 first.(PCC.simulations(c40)), PCC.templates(c40)
 
-# `G3`, also five nodes and twelve edges, buys nothing for any addition-closed
-# template: the program has a solution, a single row, ``2V_a + V_b + V_c + 2V_d + 2V_e``
-# being a common Lyapunov function whenever ``V`` certifies `G3`.
+# `G3`, also with five nodes and twelve edges, is no better than `G0` for any
+# template closed under addition: the program returns a single row, and
+# ``2V_a + V_b + V_c + 2V_d + 2V_e`` is a common Lyapunov function whenever
+# ``V`` is a certificate on `G3`.
 
 c30 = PCC.compare(G3, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
 Dict(PCC.simulations(c30))[PCC.SumLift()]
@@ -221,11 +222,11 @@ Dict(PCC.simulations(c30))[PCC.SumLift()]
 c04 = PCC.compare(G0, G4; templates = TEMPLATES, system)
 PCC.lifts(c04), PCC.templates(c04)
 
-# ## The rates agree
+# ## Certified rates
 #
-# Every verdict above holds for every system. On the paper's system, a
-# positive one so that the copositive templates apply, the certified rates say
-# the same thing: the quadratic rate falls from `G1` to `G2`, is equal on `G3`
+# The orders above hold for every system. On the paper's system, which is
+# positive so that the copositive templates apply, the certified rates agree
+# with them: the quadratic rate falls from `G1` to `G2`, is equal on `G3`
 # and `G0`, and is strictly lower on `G4` than on `G0`; the dual copositive
 # rate is equal on `G0`, `G3` and `G4`.
 
@@ -254,8 +255,8 @@ for (name, rates) in RATES
 end
 figure
 
-# Nothing above built an exponential lift: the relation and the linear program
-# decide in polynomial time what the min, max and sum lifts exhibit in
-# exponential size. [Graph comparison via lifts](@ref) is the account;
-# [Refinement: letting the graph design itself](@ref) is the other direction,
-# building a better graph rather than ordering two.
+# No lifted graph was built above: a relation decides the min and max lifts
+# and a linear program the sum lift, in polynomial time, while the lifted
+# graphs have exponential size. [Graph comparison via lifts](@ref) explains
+# the method; [Refinement: splitting nodes at tight edges](@ref) constructs a
+# better graph instead of ordering two given ones.

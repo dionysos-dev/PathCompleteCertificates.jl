@@ -1,8 +1,9 @@
 # # Optimal control: a feedback per node
 #
 # The value-function upper bound of [ninite2026path](@cite), for a switched
-# system **with an input**: the mode is adversarial, the input is ours. The
-# certificate carries both the bound and a state-feedback gain per node.
+# system with an input, where the mode is chosen by an adversary and the input
+# by the controller. The certificate holds the bound and a state-feedback gain
+# per node.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -27,8 +28,8 @@ OPTIMIZER = JuMP.optimizer_with_attributes(
 system = PCC.switched_system(A, B)
 problem = PCC.OptimalControlProblem(system, Q, R)
 
-# Optimal control needs a **complete** graph, not merely a path-complete one:
-# the bound is read off the plain minimum over the nodes.
+# The graph must be complete, which is stronger than path-complete, because
+# the bound is the minimum of the node functions.
 
 graph = PCC.de_bruijn(1, 2)
 
@@ -40,7 +41,8 @@ PCC.is_feasible(certificate)
 
 certificate.gains
 
-# The bound is a function of the state, and `certificate(x)` evaluates it.
+# The bound is a function of the state. A certificate is callable:
+# `certificate(x)` evaluates the bound at `x`.
 
 x = [1.0, 1.0]
 certificate(x)
@@ -49,8 +51,8 @@ certificate(x)
 #
 # `simulate` closes the loop: at each step it draws an admissible mode, applies
 # the gain of the node the certificate graph is currently in, and advances that
-# node along the mode observed. Which node you are in is part of the state of
-# the controller.
+# node along the mode observed. The current node is part of the state of the
+# controller.
 
 run = PCC.simulate(certificate, [3.0, -2.0], 25; rng = MersenneTwister(1))
 
@@ -70,7 +72,7 @@ plane = plot(;
     aspect_ratio = :equal,
     framestyle = :origin,
     legend = :outerbottom,
-    title = "the run never leaves the set it starts in",
+    title = "closed-loop run and the initial level set",
 )
 
 plot!(
@@ -101,13 +103,13 @@ descent = plot(
     legend = false,
     xlabel = "step",
     ylabel = "bound at the state",
-    title = "and never back out",
+    title = "bound along the run",
 )
 
 plot(plane, descent; layout = (1, 2), size = (900, 460))
 
-# The dashed curve is the level set of the bound through the initial state.
-# The run stays inside it for good, and the right panel is why: the bound
-# falls at every step, because the edge inequality makes each transition spend
-# at least the stage cost. That holds for every admissible switching sequence,
-# not only the one drawn.
+# The dashed curve is the level set of the bound through the initial state,
+# and the run stays inside it. The right panel shows that the bound decreases
+# at every step, by at least the stage cost, as the edge inequality requires.
+# The edge inequality holds for every admissible switching sequence, so this
+# is true of every run.
