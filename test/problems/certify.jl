@@ -50,10 +50,7 @@ end
 
 @testset "a failed solve names no function type" begin
     # `functions` is empty, so there is no fitted function to take a type from.
-    # Claiming one is how this used to report `QuadraticFunction` for a
-    # template that was nothing of the kind -- reachable now that stability
-    # accepts every template.
-    template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     tight = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.01)
 
     @test !PCC.is_feasible(tight)

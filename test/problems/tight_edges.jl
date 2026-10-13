@@ -98,7 +98,7 @@ end
     @test PCC.edge_slacks(quadratic) isa Vector
 
     polyhedral = PCC.certify(
-        PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+        PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,

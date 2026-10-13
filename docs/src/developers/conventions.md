@@ -54,7 +54,7 @@ inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,
 so it cannot be written against `V_src` and `V_dst`; it works on the quadratic
 template's variables directly, and a comment in the code says so.
 
-A template is an **instance**, never a type: `PolyhedralTemplate` carries a
+A template is an **instance**, never a type: `ParallelFacesPolyhedralTemplate` carries a
 matrix per node, and `::Type{T}` has nowhere to put it. An `AbstractTemplate`
 is the family; the fitted node function is what `solution_value` returns.
 

@@ -53,7 +53,11 @@ end
     @test PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), invertible)
     @test !PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), singular)
     @test PCC.is_valid(PCC.BackwardCompositionLift(1), PCC.QuadraticTemplate(), invertible)
-    @test !PCC.is_valid(PCC.CompositionLift(1), PCC.PolyhedralTemplate(1, 2), invertible)
+    @test !PCC.is_valid(
+        PCC.CompositionLift(1),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        invertible,
+    )
 end
 
 @testset "a larger graph has |S|·M^T nodes" begin

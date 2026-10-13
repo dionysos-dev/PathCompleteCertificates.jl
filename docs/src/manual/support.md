@@ -12,7 +12,7 @@ for the quadratic one.
 | [`QuadraticTemplate`](@ref)         | ✓ | ✓ | ✓ |
 | [`LinearCopositiveTemplate`](@ref)  | ✓ ¹ | ✗ | ✗ |
 | [`DualCopositiveTemplate`](@ref)    | ✓ ¹ | ✗ | ✗ |
-| [`PolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
+| [`ParallelFacesPolyhedralTemplate`](@ref)        | ✓ | ✗ | ✗ |
 | [`ConicPolyhedralTemplate`](@ref)   | ✓ | ✗ | ✗ |
 | [`SumOfSquaresTemplate`](@ref)      | ✓ ² | ✗ | ✗ |
 | [`SetProgTemplate`](@ref)           | ✓ ² | ✗ | ✗ |
@@ -38,7 +38,7 @@ implements [`domination_slack`](@ref), from which the edge slacks are computed:
 | [`QuadraticTemplate`](@ref) | ✓ | identity, sum; composition if invertible |
 | [`LinearCopositiveTemplate`](@ref) | ✓ ¹ | identity, sum, min without closure; composition if nonnegative with no zero column |
 | [`DualCopositiveTemplate`](@ref) | ✓ ¹ | identity, max; sum through its dual |
-| [`PolyhedralTemplate`](@ref) | ✓ | identity; max when the node matrices coincide |
+| [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | identity; max when the node matrices coincide |
 | [`ConicPolyhedralTemplate`](@ref) | ✓ | identity |
 | [`SumOfSquaresTemplate`](@ref) | ✗ ³ | identity, sum; composition if invertible |
 | [`SetProgTemplate`](@ref) | ✗ ³ | identity; sum when the nodes share the set variable |

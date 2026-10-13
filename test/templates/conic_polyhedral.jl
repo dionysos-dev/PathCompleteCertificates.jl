@@ -1,8 +1,7 @@
 module TestConicPolyhedral
 
-# The general polyhedral template of Dionysos `compute_polyhedral_pieces_pclf`:
-# the facets are decision variables, and each node carries a conic partition of
-# the state space so that the max can be linearised.
+# The conic polyhedral template: the facets are variables, and each node
+# carries a conic partition on which the max is linear.
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -86,7 +85,7 @@ end
     problem = PCC.StabilityProblem(PCC.switched_system([rotated]))
 
     fixed = PCC.jsr_bound(
-        PCC.PolyhedralTemplate(1, 2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
         graph,
         problem;
         optimizer = OPTIMIZER,

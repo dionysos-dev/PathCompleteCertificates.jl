@@ -19,7 +19,7 @@ number quoted in the manual was read in the paper it is attributed to.
 
 | | |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@cite) | [`PolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`ForwardEdgeSplit`](@ref), [`BackwardEdgeSplit`](@ref), [`ForwardEdgeProduct`](@ref) and [`BackwardEdgeProduct`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`ForwardEdgeSplit`](@ref), [`BackwardEdgeSplit`](@ref), [`ForwardEdgeProduct`](@ref) and [`BackwardEdgeProduct`](@ref) |
 | [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2024thesis](@cite) | [`DualCopositiveTemplate`](@ref), Def. 2.30 |
 

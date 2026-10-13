@@ -1,10 +1,7 @@
-module TestPolyhedral
+module TestParallelFacesPolyhedral
 
-# The symmetric 2n-face polyhedral template of Athanasopoulos et al., ported
-# from Dionysos `src/utils/pclf.jl` as an extensibility test of the two-axis
-# design. It is the first template that is not determined by its type -- it
-# carries one fixed matrix per node -- and the first whose functions are
-# homogeneous of degree 1 rather than 2.
+# The parallel-faces polyhedral template: one fixed matrix per node, functions
+# homogeneous of degree 1.
 
 using Test
 using HybridSystems
@@ -26,25 +23,28 @@ add_transition!(GRAPH, 1, 2, 1)
 add_transition!(GRAPH, 2, 1, 1)
 
 @testset "the template carries per-node data" begin
-    template = PCC.PolyhedralTemplate(2, 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(2, 2)
 
     @test length(template.G) == 2
     @test all(G == LinearAlgebra.I for G in template.G)
     @test template.min_weight > 0
 
     rotation = [0.0 -1.0; 1.0 0.0]
-    rotated = PCC.PolyhedralTemplate([rotation, Matrix{Float64}(LinearAlgebra.I, 2, 2)])
+    rotated = PCC.ParallelFacesPolyhedralTemplate([
+        rotation,
+        Matrix{Float64}(LinearAlgebra.I, 2, 2),
+    ])
     @test rotated.G[1] == rotation
 
-    @test_throws ArgumentError PCC.PolyhedralTemplate(Matrix{Float64}[])
-    @test_throws ArgumentError PCC.PolyhedralTemplate([zeros(2, 2)])          # singular
-    @test_throws ArgumentError PCC.PolyhedralTemplate([ones(2, 3)])           # not square
-    @test_throws ArgumentError PCC.PolyhedralTemplate(2, 2; min_weight = 0.0)
+    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(Matrix{Float64}[])
+    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])          # singular
+    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([ones(2, 3)])           # not square
+    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(2, 2; min_weight = 0.0)
 end
 
 @testset "the node function is a weighted infinity norm" begin
     G = [2.0 0.0; 0.0 1.0]
-    V = PCC.PolyhedralFunction(G, [1.0, 4.0])
+    V = PCC.ParallelFacesPolyhedralFunction(G, [1.0, 4.0])
 
     # max(|2*3|/1, |1*2|/4) = max(6, 0.5) = 6
     @test V([3.0, 2.0]) ≈ 6.0
@@ -55,7 +55,7 @@ end
 end
 
 @testset "synthesis recovers the rate" begin
-    template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
 
     @test PCC.is_feasible(
         PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.6),
@@ -74,7 +74,7 @@ end
 @testset "the certificate satisfies the edge condition it claims" begin
     # Not the solver's status: check V_dst(A x) <= gamma * V_src(x) directly,
     # on the fitted weights, at sampled states.
-    template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     fitted = PCC.functions(result)
@@ -96,7 +96,7 @@ end
     # graph. It must still produce a sound bound.
     theta = pi / 6
     rotation = [cos(theta) -sin(theta); sin(theta) cos(theta)]
-    template = PCC.PolyhedralTemplate([copy(rotation), copy(rotation)])
+    template = PCC.ParallelFacesPolyhedralTemplate([copy(rotation), copy(rotation)])
 
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
@@ -106,7 +106,7 @@ end
 end
 
 @testset "the common function works for this template too" begin
-    template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     fitted = PCC.functions(result)
@@ -124,7 +124,7 @@ end
     # `w` sits in a denominator. The LinearCopositive method would impose
     # `w >= 0` and leave V undefined; dispatching on the template is what stops
     # that, so check the floor is actually in force.
-    template = PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2; min_weight = 2.5)
+    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2; min_weight = 2.5)
     result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test PCC.is_feasible(result)

@@ -254,7 +254,7 @@ end
 
 @testset "a template with per-node data follows the split" begin
     graph = PCC.de_bruijn(1, 2)
-    template = PCC.PolyhedralTemplate([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
+    template = PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
     lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))

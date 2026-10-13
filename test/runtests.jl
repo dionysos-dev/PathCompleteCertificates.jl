@@ -28,7 +28,7 @@ const TEST_FILES = [
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
     ("./systems/closed_loop.jl", :slow),
-    ("./templates/polyhedral.jl", :slow),
+    ("./templates/parallel_faces_polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),
     ("./templates/set_prog.jl", :slow),

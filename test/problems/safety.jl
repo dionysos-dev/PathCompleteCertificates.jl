@@ -39,11 +39,9 @@ end
 end
 
 @testset "the separation margin is a real quantity" begin
-    # `eps` used to be pinned to zero: it sat on the edge condition, where the
-    # constant direction of the homogeneous lift telescopes around any cycle to
-    # force `eps <= 0`. It now sits only on the initial- and unsafe-set
-    # conditions, where it can be positive, with the barriers scale-normalised
-    # so that maximising it is bounded.
+    # The margin sits on the initial- and unsafe-set conditions only: on the
+    # edges, the constant direction of the homogeneous lift would telescope
+    # around any cycle and force it to zero.
     for order in 1:3
         res = certificate(PCC.de_bruijn(order, 2))
 

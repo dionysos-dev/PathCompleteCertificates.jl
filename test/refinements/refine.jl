@@ -353,12 +353,12 @@ end
     @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2]
 end
 
-@testset "every local lift at every tight edge, best candidate, polyhedral template" begin
+@testset "every local lift at every tight edge, best candidate, parallel-faces template" begin
     # Athanasopoulos & Jungers, Example 2, on the plane: the four partial lifts
     # at every tight edge, each candidate solved, the best kept. The products
     # write words on the edges, so the graph gains edges rather than nodes.
     problem = SHEARED
-    template = PCC.PolyhedralTemplate(1, 2)
+    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
 
     trace = PCC.refine(
         template,
@@ -463,7 +463,7 @@ end
     @test_throws ArgumentError composition(on_singular; atol = 1e-4)
 
     polyhedral = PCC.jsr_bound(
-        PCC.PolyhedralTemplate(1, 2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
         MEMORYLESS,
         SHEARED;
         optimizer = OPTIMIZER,

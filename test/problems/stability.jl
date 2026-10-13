@@ -148,10 +148,8 @@ end
 
 @testset "linear copositive stability" begin
     # `V(x) = c'x` is homogeneous of degree 1, so its edge condition is
-    # `V_dst(Ax) <= gamma * V_src(x)` and `gamma` is the contraction rate
-    # directly. The driver used to raise every template's rate to the square,
-    # which made this bound sqrt(rho(A)) = 0.707 rather than rho(A) = 0.5 --
-    # `jsr_bound` returned different quantities for different templates.
+    # `V_dst(Ax) <= gamma * V_src(x)` and the bound is rho(A) = 0.5, not its
+    # square root.
 
     @test PCC.is_feasible(
         PCC.certify(
@@ -191,12 +189,12 @@ end
     # of two different degrees, one answer.
     @test PCC.homogeneity_degree(PCC.QuadraticTemplate()) == 2
     @test PCC.homogeneity_degree(PCC.LinearCopositiveTemplate()) == 1
-    @test PCC.homogeneity_degree(PCC.PolyhedralTemplate(2, 2)) == 1
+    @test PCC.homogeneity_degree(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 1
 
     bounds = map((
         PCC.QuadraticTemplate(),
         PCC.LinearCopositiveTemplate(),
-        PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+        PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
         PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
     end
@@ -208,9 +206,8 @@ end
 
 @testset "the conditioning cap is opt-in, because it changes the answer" begin
     # A rotation in coordinates stretched by 20: rho = 0.9, and the only
-    # quadratic certificates have cond(P) = 400. The normalisation used to cap
-    # that at 100 unconditionally, so `jsr_bound` returned 1.5 for a system
-    # whose true rate is 0.9 and `certify` came back infeasible for a stable system.
+    # quadratic certificates have cond(P) = 400, so a cap at 100 must make the
+    # rate 0.9 unreachable.
     stretch = [1.0 0.0; 0.0 20.0]
     theta = pi / 4
     stretched =

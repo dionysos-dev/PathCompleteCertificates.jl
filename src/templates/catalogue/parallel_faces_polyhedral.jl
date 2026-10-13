@@ -2,11 +2,11 @@ import JuMP
 import LinearAlgebra
 
 """
-    PolyhedralTemplate(G; min_weight = 1e-3)
-    PolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
+    ParallelFacesPolyhedralTemplate(G; min_weight = 1e-3)
+    ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
 
-The polyhedral template of [athanasopoulos2019polyhedral](@citet): at node
-``s``,
+The polytopes with pairs of parallel faces of
+[athanasopoulos2019polyhedral](@citet), eq. (10): at node ``s``,
 
 ```math
 V_s(x) = \\max_k \\frac{|(G_s x)_k|}{w_{s,k}},
@@ -15,11 +15,11 @@ V_s(x) = \\max_k \\frac{|(G_s x)_k|}{w_{s,k}},
 where `G` holds one fixed invertible matrix per node (the identity by default)
 and the weights ``w_{s,k}``, at least `min_weight`, are the variables.
 """
-struct PolyhedralTemplate{T <: Real} <: AbstractTemplate
+struct ParallelFacesPolyhedralTemplate{T <: Real} <: AbstractTemplate
     G::Vector{Matrix{T}}
     min_weight::T
 
-    function PolyhedralTemplate(
+    function ParallelFacesPolyhedralTemplate(
         G::AbstractVector{<:AbstractMatrix{T}};
         min_weight::Real = 1e-3,
     ) where {T <: Real}
@@ -47,30 +47,38 @@ struct PolyhedralTemplate{T <: Real} <: AbstractTemplate
     end
 end
 
-function PolyhedralTemplate(n_nodes::Integer, dimension::Integer; min_weight::Real = 1e-3)
+function ParallelFacesPolyhedralTemplate(
+    n_nodes::Integer,
+    dimension::Integer;
+    min_weight::Real = 1e-3,
+)
     n_nodes > 0 || throw(ArgumentError("n_nodes must be positive"))
     dimension > 0 || throw(ArgumentError("dimension must be positive"))
 
     identity = Matrix{Float64}(LinearAlgebra.I, dimension, dimension)
 
-    return PolyhedralTemplate([copy(identity) for _ in 1:n_nodes]; min_weight = min_weight)
+    return ParallelFacesPolyhedralTemplate(
+        [copy(identity) for _ in 1:n_nodes];
+        min_weight = min_weight,
+    )
 end
 
 """
-    PolyhedralFunction(G, w)
+    ParallelFacesPolyhedralFunction(G, w)
 
-A node function `V(x) = max_k |(Gx)_k| / w_k` of a [`PolyhedralTemplate`](@ref).
+A node function `V(x) = max_k |(Gx)_k| / w_k` of a [`ParallelFacesPolyhedralTemplate`](@ref).
 """
-struct PolyhedralFunction{M <: AbstractMatrix, W <: AbstractVector}
+struct ParallelFacesPolyhedralFunction{M <: AbstractMatrix, W <: AbstractVector}
     G::M
     w::W
 end
 
-(V::PolyhedralFunction)(x::AbstractVector{<:Real}) = maximum(abs.(V.G * x) ./ V.w)
+(V::ParallelFacesPolyhedralFunction)(x::AbstractVector{<:Real}) =
+    maximum(abs.(V.G * x) ./ V.w)
 
 function add_function_variables!(
     model::JuMP.Model,
-    template::PolyhedralTemplate,
+    template::ParallelFacesPolyhedralTemplate,
     dimension::Integer,
     node::Integer,
 )
@@ -94,41 +102,45 @@ function add_function_variables!(
 
     w = JuMP.@variable(model, [1:dimension], base_name = "w_$(node)")
 
-    return PolyhedralFunction(G, w)
+    return ParallelFacesPolyhedralFunction(G, w)
 end
 
 function add_nonnegativity!(
     model::JuMP.Model,
-    template::PolyhedralTemplate,
-    V::PolyhedralFunction,
+    template::ParallelFacesPolyhedralTemplate,
+    V::ParallelFacesPolyhedralFunction,
 )
     # The weights are a denominator, so they must be bounded away from zero.
     JuMP.@constraint(model, V.w .>= template.min_weight)
     return nothing
 end
 
-solution_value(::PolyhedralTemplate, V::PolyhedralFunction) =
-    PolyhedralFunction(V.G, JuMP.value.(V.w))
+solution_value(::ParallelFacesPolyhedralTemplate, V::ParallelFacesPolyhedralFunction) =
+    ParallelFacesPolyhedralFunction(V.G, JuMP.value.(V.w))
 
-homogeneity_degree(::PolyhedralTemplate) = 1
+homogeneity_degree(::ParallelFacesPolyhedralTemplate) = 1
 
-function add_normalization!(model::JuMP.Model, ::PolyhedralTemplate, ::PolyhedralFunction)
+function add_normalization!(
+    model::JuMP.Model,
+    ::ParallelFacesPolyhedralTemplate,
+    ::ParallelFacesPolyhedralFunction,
+)
     # The lower bound min_weight from `add_nonnegativity!` already excludes V = 0.
     return nothing
 end
 
 function add_domination!(
     model::JuMP.Model,
-    ::PolyhedralTemplate,
-    V_src::PolyhedralFunction,
-    V_dst::PolyhedralFunction,
+    ::ParallelFacesPolyhedralTemplate,
+    V_src::ParallelFacesPolyhedralFunction,
+    V_dst::ParallelFacesPolyhedralFunction,
     map::AbstractMatrix;
     scale = 1,
     margin = 0,
 )
     margin == 0 || throw(
         ArgumentError(
-            "PolyhedralTemplate cannot express a margin: the weights sit in a " *
+            "ParallelFacesPolyhedralTemplate cannot express a margin: the weights sit in a " *
             "denominator, so the margin term is not linear in them",
         ),
     )
@@ -143,9 +155,9 @@ function add_domination!(
 end
 
 function domination_slack(
-    ::PolyhedralTemplate,
-    V_src::PolyhedralFunction,
-    V_dst::PolyhedralFunction,
+    ::ParallelFacesPolyhedralTemplate,
+    V_src::ParallelFacesPolyhedralFunction,
+    V_dst::ParallelFacesPolyhedralFunction,
     map::AbstractMatrix;
     scale = 1,
 )
@@ -155,9 +167,11 @@ function domination_slack(
 end
 
 # The max of two such norms with the same G is one, with the smaller weights.
-is_closed_under(template::PolyhedralTemplate, ::Maximum, system) = allequal(template.G)
+is_closed_under(template::ParallelFacesPolyhedralTemplate, ::Maximum, system) =
+    allequal(template.G)
 
-reindex(template::PolyhedralTemplate, origins::AbstractVector) = PolyhedralTemplate(
-    _reindexed_data(template.G, origins, "node matrices");
-    min_weight = template.min_weight,
-)
+reindex(template::ParallelFacesPolyhedralTemplate, origins::AbstractVector) =
+    ParallelFacesPolyhedralTemplate(
+        _reindexed_data(template.G, origins, "node matrices");
+        min_weight = template.min_weight,
+    )
