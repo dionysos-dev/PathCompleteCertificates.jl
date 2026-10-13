@@ -87,7 +87,7 @@ end
     end
 end
 
-@testset "every template answers domination_slack" begin
+@testset "every template answers decrease_slack" begin
     quadratic = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,

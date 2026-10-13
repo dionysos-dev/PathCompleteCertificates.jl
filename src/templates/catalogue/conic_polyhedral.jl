@@ -172,7 +172,7 @@ function add_normalization!(
     return nothing
 end
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::ConicPolyhedralTemplate,
     V_src::ConicPolyhedralFunction,
@@ -197,7 +197,7 @@ function add_domination!(
     return nothing
 end
 
-function domination_slack(
+function decrease_slack(
     ::ConicPolyhedralTemplate,
     V_src::ConicPolyhedralFunction,
     V_dst::ConicPolyhedralFunction,

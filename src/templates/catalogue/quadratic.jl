@@ -81,7 +81,7 @@ function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
     return nothing
 end
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::QuadraticTemplate,
     P_src::LinearAlgebra.Symmetric,
@@ -101,7 +101,7 @@ function add_domination!(
     return nothing
 end
 
-function domination_slack(
+function decrease_slack(
     ::QuadraticTemplate,
     V_src::QuadraticFunction,
     V_dst::QuadraticFunction,

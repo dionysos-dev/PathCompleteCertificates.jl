@@ -24,9 +24,9 @@ supplies primitives, a problem composes them, and neither names the other.
 ```julia
 # Template axis: one file per template, answering all of it.
 add_function_variables!(model, template, dim, node)        # the node function V_s
-add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
+add_decrease!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                            # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
-domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
+decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
 add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
@@ -48,7 +48,7 @@ common(template, graph, problem, Vs, x)
 ```
 
 Every primitive is public, since a user implements it. Problems express
-their edge inequality through `add_domination!`: quantifying an inequality over
+their edge inequality through `add_decrease!`: quantifying an inequality over
 every ``x`` needs a cone that depends only on the template, so stability's edge
 condition is one call with `scale = γᵖ`. Optimal control is the exception. Its
 inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,

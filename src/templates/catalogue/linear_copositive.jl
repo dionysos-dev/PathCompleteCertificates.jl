@@ -49,7 +49,7 @@ function add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
     return nothing
 end
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::LinearCopositiveTemplate,
     c_src,
@@ -76,7 +76,7 @@ function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:Abstract
     return nothing
 end
 
-function domination_slack(
+function decrease_slack(
     ::LinearCopositiveTemplate,
     V_src::LinearCopositiveFunction,
     V_dst::LinearCopositiveFunction,

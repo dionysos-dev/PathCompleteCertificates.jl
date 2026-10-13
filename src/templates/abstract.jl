@@ -38,9 +38,10 @@ Constrain `V` to exclude the trivial function `V ≡ 0`.
 function add_normalization! end
 
 """
-    add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
+    add_decrease!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
 
-Constrain, for every ``x``,
+The decrease condition of an edge: `V_dst` after `map` is at most `scale`
+times `V_src`. Constrain, for every ``x``,
 
 ```math
 \\text{scale} \\cdot V_{src}(x) - V_{dst}(\\text{map} \\cdot x)
@@ -50,7 +51,7 @@ Constrain, for every ``x``,
 where ``p`` is [`homogeneity_degree`](@ref). A template that cannot express
 `margin` throws unless `margin = 0`.
 """
-function add_domination! end
+function add_decrease! end
 
 """
     solution_value(template, V)
@@ -69,13 +70,14 @@ function check_dynamics end
 check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
 
 """
-    domination_slack(template, V_src, V_dst, map; scale = 1)
+    decrease_slack(template, V_src, V_dst, map; scale = 1)
 
-The slack of `scale · V_src(x) ≥ V_dst(map · x)` for fitted node functions:
-nonnegative when it holds, zero exactly when it is tight. It is in the units of
-the fitted functions, so compare slacks within one certificate only.
+The slack of the decrease condition `scale · V_src(x) ≥ V_dst(map · x)` for
+fitted node functions: nonnegative when it holds, zero exactly when it is
+tight. It is in the units of the fitted functions, so compare slacks within
+one certificate only.
 """
-function domination_slack end
+function decrease_slack end
 
 """
     is_closed_under(template, operation, system) -> Bool

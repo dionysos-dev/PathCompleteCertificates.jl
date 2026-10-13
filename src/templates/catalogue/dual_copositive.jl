@@ -58,7 +58,7 @@ homogeneity_degree(::DualCopositiveTemplate) = 1
 add_normalization!(::JuMP.Model, ::DualCopositiveTemplate, ::DualCopositiveFunction) =
     nothing
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::DualCopositiveTemplate,
     V_src::DualCopositiveFunction,
@@ -92,7 +92,7 @@ function check_dynamics(::DualCopositiveTemplate, A::AbstractVector{<:AbstractMa
     return nothing
 end
 
-function domination_slack(
+function decrease_slack(
     ::DualCopositiveTemplate,
     V_src::DualCopositiveFunction,
     V_dst::DualCopositiveFunction,

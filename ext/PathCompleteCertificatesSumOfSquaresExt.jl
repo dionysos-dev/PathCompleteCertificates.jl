@@ -45,7 +45,7 @@ function PCC.add_normalization!(
     return nothing
 end
 
-function PCC.add_domination!(
+function PCC.add_decrease!(
     model::JuMP.Model,
     template::PCC.SumOfSquaresTemplate,
     V_src,

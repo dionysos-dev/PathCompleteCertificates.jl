@@ -31,7 +31,7 @@ a **complete** graph, not merely a path-complete one. Stability accepts a
 [`compare`](@ref) is stated for stability, as in the literature; which of its
 results hold for a template depends on the template's closure properties.
 [`refine`](@ref) runs on stability and safety, for every template that
-implements [`domination_slack`](@ref), from which the edge slacks are computed:
+implements [`decrease_slack`](@ref), from which the edge slacks are computed:
 
 | | [`refine`](@ref) | lifts valid for [`compare`](@ref) |
 | :-- | :-: | :-- |
@@ -43,7 +43,7 @@ implements [`domination_slack`](@ref), from which the edge slacks are computed:
 | [`SumOfSquaresTemplate`](@ref) | ✗ ³ | identity, sum; composition if invertible |
 | [`SetProgTemplate`](@ref) | ✗ ³ | identity; sum when the nodes share the set variable |
 
-³ No `domination_slack` yet, so the loop cannot read where these templates are
+³ No `decrease_slack` yet, so the loop cannot read where these templates are
 tight.
 
 ## The gaps

@@ -173,7 +173,7 @@ function PCC.add_normalization!(
     return nothing
 end
 
-function PCC.add_domination!(
+function PCC.add_decrease!(
     model::JuMP.Model,
     template::PCC.SetProgTemplate,
     S_src::SetProg.SetVariableRef,

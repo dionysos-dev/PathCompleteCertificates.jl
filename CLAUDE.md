@@ -26,9 +26,9 @@ type, because some carry per-node data. Every primitive is public, since a user 
 ```julia
 # Template axis: one file per template, answering all of it.
 add_function_variables!(model, template, dim, node)        # the node function V_s
-add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
+add_decrease!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
                                                            # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
-domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
+decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
 add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
@@ -49,7 +49,7 @@ best_certificate, objective, optimality_gap, edge_slacks       # what refine rea
 common(template, graph, problem, Vs, x)
 ```
 
-`add_domination!` is the load-bearing primitive: the cone that quantifies an inequality over
+`add_decrease!` is the load-bearing primitive: the cone that quantifies an inequality over
 all `x` depends on the template and on nothing else, so stability's whole edge condition is one
 call with `scale = γᵖ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
 `Y = KS`, and says so in place.

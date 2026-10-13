@@ -64,7 +64,7 @@ function add_edge_constraint!(
     A::AbstractMatrix;
     scale::Real = 1,
 )
-    add_domination!(model, template, P_src, P_dst, _homogeneous_dynamics(A))
+    add_decrease!(model, template, P_src, P_dst, _homogeneous_dynamics(A))
 
     return nothing
 end
@@ -263,7 +263,7 @@ function edge_slacks(certificate::SafetyCertificate)
     A = mode_matrices(problem(certificate).system)
 
     return map(edges(graph_)) do edge
-        return domination_slack(
+        return decrease_slack(
             template_,
             B[source(edge)],
             B[dest(edge)],

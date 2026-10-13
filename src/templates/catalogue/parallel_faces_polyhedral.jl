@@ -129,7 +129,7 @@ function add_normalization!(
     return nothing
 end
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::ParallelFacesPolyhedralTemplate,
     V_src::ParallelFacesPolyhedralFunction,
@@ -154,7 +154,7 @@ function add_domination!(
     return nothing
 end
 
-function domination_slack(
+function decrease_slack(
     ::ParallelFacesPolyhedralTemplate,
     V_src::ParallelFacesPolyhedralFunction,
     V_dst::ParallelFacesPolyhedralFunction,

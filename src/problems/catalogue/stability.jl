@@ -37,7 +37,7 @@ function add_edge_constraint!(
     A::AbstractMatrix;
     scale::Real = 1,
 )
-    add_domination!(model, template, V_src, V_dst, A; scale)
+    add_decrease!(model, template, V_src, V_dst, A; scale)
 
     return nothing
 end
@@ -293,7 +293,7 @@ function edge_slacks(certificate::StabilityCertificate)
     return map(edges(graph_)) do edge
         word = letters(label(graph_, edge))
 
-        return domination_slack(
+        return decrease_slack(
             template_,
             V[source(edge)],
             V[dest(edge)],
