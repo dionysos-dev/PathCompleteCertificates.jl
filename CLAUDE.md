@@ -143,5 +143,5 @@ Never commit to `master`; branch per change; format before committing; the user 
 Commit message: `ACTION module: description`, lowercase, no trailing period, ≤ 60 chars, with
 `ACTION` one of `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV` and the module the touched
 subsystem (`graphs`, `templates`, `problems`, `systems`, `lifts`, `refinements`, `common`,
-`test`, `docs`, `examples`, `meta`). Do **not** add a `Co-Authored-By` line. `plan*.md`, the
-`lifts/` folder and reviewers' documents stay untracked.
+`test`, `docs`, `examples`, `meta`). Do **not** add a `Co-Authored-By` line. `plan.md` and
+the `sources/` folder, the papers and reviewers' documents, stay untracked.
