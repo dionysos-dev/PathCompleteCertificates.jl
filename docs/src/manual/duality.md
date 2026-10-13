@@ -14,7 +14,7 @@ package, and every backward construction is the dual of a forward one.
 | Object | `dual` of it | Source |
 | :-- | :-- | :-- |
 | graph | every edge and every word reversed; path-complete exactly when the original is | [debauche2024thesis](@cite), Def. 6.3 and Prop. 6.6 |
-| system | every mode matrix transposed; the automaton reversed under constrained switching | [debauche2024thesis](@cite), Lemma 6.25 |
+| system | every mode matrix transposed | [debauche2024thesis](@cite), Lemma 6.25 |
 | template | the family of dual norms: quadratic forms are their own, the two copositive templates each other's | [debauche2024thesis](@cite), Def. 1.32 |
 | node function | `dual(template, V)`, the dual norm of a fitted function; it satisfies the reversed edge inequality | [debauche2024thesis](@cite), Lemma 1.28 |
 | certificate | the dual norms on the dual graph for the dual system, at the same rate, nothing solved | [debauche2024thesis](@cite), Lemmas 6.25 and 6.26 |

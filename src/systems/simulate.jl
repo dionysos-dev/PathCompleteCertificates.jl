@@ -2,10 +2,10 @@ import Random
 
 """
     simulate(system, x0, modes; u = nothing)
-    simulate(system, x0, horizon::Integer; u = nothing, discrete_state = 1, rng = Random.default_rng())
+    simulate(system, x0, horizon::Integer; u = nothing, rng = Random.default_rng())
 
-Run `system` from `x0` along `modes`, or along a uniform random walk of length
-`horizon` on its automaton from `discrete_state`, and return a
+Run `system` from `x0` along `modes`, or along `horizon` modes drawn uniformly
+at random, and return a
 [`Trajectory`](@ref). `u`, a vector of inputs or a feedback law `u(x)`, is
 required exactly when [`has_input`](@ref)`(system)`; otherwise it throws.
 """
@@ -57,31 +57,13 @@ function simulate(
     x0::AbstractVector,
     horizon::Integer;
     u = nothing,
-    discrete_state::Integer = 1,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
-    modes = _random_modes(system.automaton, discrete_state, horizon, rng)
+    horizon >= 0 || throw(ArgumentError("horizon must be nonnegative, got $horizon"))
+    modes = rand(rng, 1:n_modes(system), horizon)
 
     return simulate(system, x0, modes; u = u)
 end
 
 _input_at(u::AbstractVector, k, x) = u[k]
 _input_at(u, k, x) = u(x)
-
-function _random_modes(automaton, node::Integer, horizon::Integer, rng::Random.AbstractRNG)
-    modes = Vector{Int}(undef, horizon)
-    for k in 1:horizon
-        # Not `outgoing_edges`, which rejects a `OneStateAutomaton`.
-        options = collect(_HS.out_transitions(automaton, node))
-        isempty(options) && throw(
-            ArgumentError(
-                "node $node has no outgoing transition; the switching " *
-                "sequence cannot be continued",
-            ),
-        )
-        transition = rand(rng, options)
-        modes[k] = _HS.event(automaton, transition)
-        node = _HS.target(automaton, transition)
-    end
-    return modes
-end

@@ -120,9 +120,9 @@ special case of the loop.
 
 ### Where it starts
 
-`refine(template, problem)` starts from [`common_graph`](@ref) of the system:
-the common Lyapunov function graph, or the automaton under constrained
-switching, so the loop reads the right language from the first step.
+`refine(template, problem)` starts from [`common_graph`](@ref) of the system,
+the common Lyapunov function graph, so the loop reads every sequence of modes
+from the first step.
 `refine(template, graph, problem)` starts from a graph of yours.
 Path-completeness is checked on that first graph only; every refinement
 preserves it.

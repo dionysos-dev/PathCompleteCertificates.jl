@@ -6,27 +6,22 @@ const _HS = HybridSystems
 const _MS = MathematicalSystems
 
 """
-    switched_system(A; automaton = nothing)
-    switched_system(A, B; automaton = nothing)
+    switched_system(A)
+    switched_system(A, B)
 
 The discrete-time switched linear system `x⁺ = A_σ x` or `x⁺ = A_σ x + B_σ u`,
-with `A` and `B` indexed by mode. `automaton` restricts the admissible switching
-sequences; the default admits all of them.
+with `A` and `B` indexed by mode, under arbitrary switching.
 """
 function switched_system end
 
-function switched_system(A::AbstractVector{<:AbstractMatrix}; automaton = nothing)
-    return automaton === nothing ? _HS.discreteswitchedsystem(A) :
-           _HS.discreteswitchedsystem(A, automaton)
-end
+switched_system(A::AbstractVector{<:AbstractMatrix}) = _HS.discreteswitchedsystem(A)
 
 function switched_system(
     A::AbstractVector{<:AbstractMatrix},
-    B::AbstractVector{<:AbstractMatrix};
-    automaton = nothing,
+    B::AbstractVector{<:AbstractMatrix},
 )
     n = _check_dimensions(A, B)
-    graph = automaton === nothing ? _HS.OneStateAutomaton(length(A)) : automaton
+    graph = _HS.OneStateAutomaton(length(A))
 
     # Modes carry no dynamics; the reset maps do, indexed by transition event.
     modes = [_MS.ContinuousIdentitySystem(n) for _ in _HS.states(graph)]
@@ -74,12 +69,21 @@ function has_input(system::_HS.HybridSystem)
 end
 
 """
-    language(system)
+    n_modes(system)
 
-The switching sequences admitted by `system`, to pass to
-[`is_path_complete`](@ref).
+The number of modes of `system`. Throws on a system whose automaton restricts
+the switching: constrained switching is not supported.
 """
-language(system::_HS.HybridSystem) = system.automaton
+function n_modes(system::_HS.HybridSystem)
+    system.automaton isa _HS.OneStateAutomaton || throw(
+        ArgumentError(
+            "constrained switching is not supported: the system's automaton must " *
+            "be a `OneStateAutomaton`, which admits every switching sequence",
+        ),
+    )
+
+    return _HS.ntransitions(system.automaton)
+end
 
 function _maps_by_mode(system::_HS.HybridSystem)
     maps = Dict{Int, Any}()
@@ -157,16 +161,12 @@ is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(sy
 """
     dual(system)
 
-The system with every mode matrix transposed and the constraint automaton, if
-any, reversed. Throws on a system with input.
+The system with every mode matrix transposed. Throws on a system with input.
 """
 function dual(system::_HS.HybridSystem)
     has_input(system) &&
         throw(ArgumentError("the dual of a controlled system is not defined"))
+    n_modes(system)
 
-    A = [collect(transpose(A_mode)) for A_mode in mode_matrices(system)]
-    automaton = language(system)
-
-    return automaton isa _HS.OneStateAutomaton ? switched_system(A) :
-           switched_system(A; automaton = dual(automaton))
+    return switched_system([collect(transpose(A_mode)) for A_mode in mode_matrices(system)])
 end

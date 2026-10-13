@@ -6,20 +6,19 @@ CurrentModule = PathCompleteCertificates
 
 A certificate graph is a directed graph with a mode on every edge: nodes
 `1:n`, and an edge `(s, d, i)` reading "from node `s`, mode `i` leads to node
-`d`". It is a `GraphAutomaton` of HybridSystems.jl, like the automaton of a
-constrained system. Build one with [`empty_graph`](@ref) and
+`d`". It is a `GraphAutomaton` of HybridSystems.jl. Build one with [`empty_graph`](@ref) and
 [`add_edge!`](@ref), and read it with [`nodes`](@ref), [`edges`](@ref),
 [`source`](@ref), [`dest`](@ref), [`label`](@ref), [`outgoing_edges`](@ref),
 [`incoming_edges`](@ref) and [`alphabet`](@ref).
 
 ## Path-completeness
 
-A graph is **path-complete** for a language when every sequence of the
-language can be read as a path in it ([ahmadi2014joint](@cite), Def. 2.2). A
+A graph is **path-complete** for an alphabet of modes when every sequence over
+it can be read as a path in it ([ahmadi2014joint](@cite), Def. 2.2). A
 certificate on a graph proves the property for the sequences the graph reads.
-On a path-complete graph these include every admissible sequence; on another
-graph the certificate covers part of them only. Every problem tests the graph
-against the system's [`language`](@ref) before solving.
+On a path-complete graph these are all of them; on another graph the
+certificate covers part of them only. Every problem tests the graph against
+the system's modes, `1:`[`n_modes`](@ref)`(system)`, before solving.
 
 ```@docs; canonical=false
 is_path_complete
@@ -32,10 +31,10 @@ construction guarantees the property, such as a refinement of a path-complete
 graph. If the graph is in fact not path-complete, the result is not a
 certificate and no error is raised.
 
-!!! warning "Ask about the system's language"
+!!! warning "Ask about the system's modes"
     `is_path_complete(graph)` alone asks about the modes the graph happens to
     use, so a graph that never mentions a mode passes trivially. Ask
-    `is_path_complete(graph, language(system))`, or let the problems do it.
+    `is_path_complete(graph, 1:n_modes(system))`, or let the problems do it.
 
 ## Complete, co-complete, and the common function
 
@@ -72,8 +71,7 @@ backward split at every edge, so the certified bound never gets worse
 ([philippe2016stability](@cite)), with `M` times as many nodes.
 
 [`common_graph`](@ref)`(system)` is order zero: the common Lyapunov function
-graph ``G_0`` under arbitrary switching, the automaton itself under
-constrained switching.
+graph ``G_0``, one node with a loop per mode.
 
 ```@docs; canonical=false
 de_bruijn

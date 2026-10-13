@@ -1,26 +1,18 @@
 """
     common_graph(system)
+    common_graph(n_modes)
 
-The graph of a common Lyapunov function: one node with a loop per mode under
-arbitrary switching, a copy of the constraint automaton otherwise.
+The graph of a common Lyapunov function: one node with a loop per mode.
 """
-common_graph(system::_HS.HybridSystem) = common_graph(language(system))
+common_graph(system::_HS.HybridSystem) = common_graph(n_modes(system))
 
-function common_graph(automaton::_HS.OneStateAutomaton)
+function common_graph(n_modes::Integer)
+    n_modes >= 1 || throw(ArgumentError("the number of modes must be positive"))
+
     graph = empty_graph(1)
 
-    for mode in 1:_HS.ntransitions(automaton)
+    for mode in 1:n_modes
         add_edge!(graph, 1, 1, mode)
-    end
-
-    return graph
-end
-
-function common_graph(automaton::_HS.GraphAutomaton)
-    graph = empty_graph(n_nodes(automaton))
-
-    for edge in edges(automaton)
-        add_edge!(graph, source(edge), dest(edge), label(automaton, edge))
     end
 
     return graph

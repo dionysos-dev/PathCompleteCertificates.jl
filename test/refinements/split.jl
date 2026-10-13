@@ -92,7 +92,7 @@ end
     # The one-node graph split at its mode-1 loop, as Athanasopoulos & Jungers
     # define it: the copy reads 1 back to the node, the node reads 1 into the
     # copy, and the node's other loop enters both.
-    one = PCC.common_graph(OneStateAutomaton(2))
+    one = PCC.common_graph(2)
     loop = only(PCC.outgoing_edges(one, 1, 1))
     g = PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), one, loop))
 
@@ -132,7 +132,7 @@ end
 end
 
 @testset "the path-dependent lift from the one-node graph is De Bruijn" begin
-    one = PCC.common_graph(OneStateAutomaton(2))
+    one = PCC.common_graph(2)
 
     for k in 1:3
         lifted = PCC.refine(PCC.PathDependentRefinement(k), one)
@@ -151,7 +151,7 @@ end
 end
 
 @testset "the dual of the path-dependent lift is the dual De Bruijn hierarchy" begin
-    one = PCC.common_graph(OneStateAutomaton(2))
+    one = PCC.common_graph(2)
 
     for k in 1:2
         lifted = PCC.refine(PCC.dual(PCC.PathDependentRefinement(k)), one)
@@ -168,7 +168,7 @@ end
           PCC.PathDependentRefinement(1)
 end
 
-@testset "the path-dependent lift of an automaton: its nodes are the edges" begin
+@testset "the path-dependent lift: its nodes are the edges" begin
     a = GraphAutomaton(2)
     add_transition!(a, 1, 1, 1)
     add_transition!(a, 1, 2, 2)
@@ -180,7 +180,19 @@ end
     # Nodes are the edges, edges the paths of length two.
     @test PCC.n_nodes(g) == PCC.n_edges(a)
     @test PCC.n_edges(g) == 5
-    @test PCC.is_path_complete(g, a)
+
+    # Both read the same words: here, every word without `2, 2`.
+    function reads(graph, word)
+        ends = Set(PCC.nodes(graph))
+        for mode in word
+            ends =
+                Set(PCC.dest(e) for n in ends for e in PCC.outgoing_edges(graph, n, mode))
+        end
+        return !isempty(ends)
+    end
+    for k in 1:5, word in Iterators.product(ntuple(_ -> 1:2, k)...)
+        @test reads(g, word) == reads(a, word)
+    end
     @test PCC.origins(lifted) == [PCC.dest(e) for e in PCC.edges(a)]
 end
 
@@ -224,7 +236,7 @@ end
         PCC.edges(PCC.graph(refined)),
     )
 
-    for g in (PCC.de_bruijn(2, 2), loops, PCC.common_graph(OneStateAutomaton(2)))
+    for g in (PCC.de_bruijn(2, 2), loops, PCC.common_graph(2))
         edge_lists = [[e] for e in PCC.edges(g)]
         push!(edge_lists, collect(PCC.edges(g)))
 

@@ -14,8 +14,8 @@ certificate.
 
 A switched linear system evolves according to
 ``x_{k+1} = A_{\sigma(k)}\, x_k``, where ``\sigma`` is a switching signal taking
-values in a finite set of modes, either arbitrary or constrained to the paths of
-an automaton. A certificate must hold for every admissible switching sequence.
+values in a finite set of modes, under arbitrary switching. A certificate must
+hold for every switching sequence.
 In the path-complete framework ([ahmadi2014joint](@cite))
 a certificate is specified by three ingredients:
 
@@ -39,7 +39,7 @@ the conditions on the node functions:
 | | Takes | Gives |
 | :-- | :-- | :-- |
 | **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`), and the common function, evaluated by calling the certificate `c` as `c(x)` |
-| **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, the automaton of a constrained system as a graph, graphs with words on their edges |
+| **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, graphs with words on their edges |
 | **Compare** | two graphs, and optionally templates and a system | whether the second graph is no worse than the first, for which templates, and the simulation that proves it |
 | **Refine** | a template, a graph and a problem | a sequence of graphs, each refined where its certificate is tight, until the bound is proved exact or a budget is reached |
 

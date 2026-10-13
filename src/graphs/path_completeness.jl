@@ -3,66 +3,42 @@
 """
     is_path_complete(graph)
     is_path_complete(graph, alphabet)
-    is_path_complete(graph, automaton)
 
-Whether every switching sequence of the language (an alphabet, or a constraint
-automaton) labels a path of `graph`. Without a second argument the alphabet is
-the modes `graph` uses; pass [`language`](@ref)`(system)` to ask about a system.
+Whether every switching sequence over `alphabet` labels a path of `graph`.
+Without a second argument the alphabet is the modes `graph` uses; pass
+`1:`[`n_modes`](@ref)`(system)` to ask about a system.
 """
 is_path_complete(graph::CertificateGraph) = is_path_complete(graph, alphabet(graph))
 
-# Arbitrary switching is the constraint automaton with one node and a loop per mode.
-function is_path_complete(graph::CertificateGraph, alphabet::AbstractVector)
-    constraint = empty_graph(1)
+is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
+    is_path_complete(expanded_form(graph), alphabet)
 
-    for mode in alphabet
-        add_edge!(constraint, 1, 1, mode)
-    end
-
-    return is_path_complete(graph, constraint)
-end
-
-is_path_complete(graph::CertificateGraph, automaton::_HS.OneStateAutomaton) =
-    is_path_complete(graph, 1:_HS.ntransitions(automaton))
-
-is_path_complete(graph::WordGraph, constraint::_HS.GraphAutomaton) =
-    is_path_complete(expanded_form(graph), constraint)
-
-function is_path_complete(graph::_HS.GraphAutomaton, constraint::_HS.GraphAutomaton)
-    modes = alphabet(constraint)
-
-    # A graph reading every word reads any language over the same modes.
-    (is_complete(graph, modes) || is_co_complete(graph, modes)) && return true
+function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
+    (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
 
     successors = _successors(graph)
 
-    # Read the admissible words letter by letter. After a word `w`, track a pair
-    # `(q, S)`: `q` is the constraint node reached by reading `w`, which says what
-    # may come next, and `S` the graph nodes where a path of the graph reading `w`
-    # can end. Before any letter, `S` is all nodes; a transition `q --σ--> q′`
-    # sends `S` to its successors by `σ`. An empty `S` is an admissible word the
-    # graph cannot read. There are finitely many pairs, so the search ends.
-    seen = Set{Tuple{Int, Tuple{Vararg{Int}}}}()
-    pending = Tuple{Int, Set{Int}}[]
-
-    for q in nodes(constraint)
-        start = Set(nodes(graph))
-        push!(seen, (q, _key(start)))
-        push!(pending, (q, start))
-    end
+    # Read the words letter by letter. After a word `w`, track `S`, the nodes
+    # where a path of the graph reading `w` can end. Before any letter, `S` is
+    # all nodes; a mode `σ` sends `S` to its successors by `σ`. An empty `S` is
+    # a word the graph cannot read. There are finitely many sets, so the search
+    # ends.
+    start = Set(nodes(graph))
+    seen = Set{Tuple{Vararg{Int}}}([_key(start)])
+    pending = [start]
 
     while !isempty(pending)
-        q, subset = pop!(pending)
+        subset = pop!(pending)
 
-        for transition in outgoing_edges(constraint, q)
-            reachable = _step(successors, subset, label(constraint, transition))
+        for mode in alphabet
+            reachable = _step(successors, subset, mode)
 
             isempty(reachable) && return false
 
-            key = (dest(transition), _key(reachable))
+            key = _key(reachable)
             if !(key in seen)
                 push!(seen, key)
-                push!(pending, (dest(transition), reachable))
+                push!(pending, reachable)
             end
         end
     end

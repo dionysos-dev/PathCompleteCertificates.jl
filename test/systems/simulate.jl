@@ -83,13 +83,11 @@ end
     @test length(trajectory) == 0
 end
 
-@testset "a random switching sequence, unconstrained automaton" begin
-    g = HS.GraphAutomaton(1)
-    HS.add_transition!(g, 1, 1, 1)
-    HS.add_transition!(g, 1, 1, 2)
-    s = PCC.switched_system(A; automaton = g)
-    x0 = [1.0, 2.0]
+@testset "a random switching sequence" begin
+    s = PCC.switched_system(A)
     rng = Random.MersenneTwister(1)
+
+    x0 = [1.0, 2.0]
 
     trajectory = PCC.simulate(s, x0, 5; rng = rng)
     modes = PCC.switching(trajectory)
@@ -98,44 +96,23 @@ end
     @test all(σ -> σ in (1, 2), modes)
     # Replaying the drawn sequence reproduces the run exactly.
     @test PCC.states(PCC.simulate(s, x0, modes)) == PCC.states(trajectory)
+
+    # With an input, the same draw.
+    controlled = PCC.switched_system(A, B)
+    run = PCC.simulate(controlled, x0, 20; u = x -> [0.0], rng = Random.MersenneTwister(1))
+    @test length(PCC.switching(run)) == 20
+
+    @test_throws ArgumentError PCC.simulate(s, x0, -1)
 end
 
-@testset "a random switching sequence respects a constrained automaton" begin
-    # Mode 2 may not follow mode 2.
+@testset "a system with constrained switching is refused" begin
     g = HS.GraphAutomaton(2)
     HS.add_transition!(g, 1, 1, 1)
     HS.add_transition!(g, 1, 2, 2)
     HS.add_transition!(g, 2, 1, 1)
+    constrained = HS.discreteswitchedsystem(A, g)
 
-    s = PCC.switched_system(A, B; automaton = g)
-    x0 = [1.0, 2.0]
-    rng = Random.MersenneTwister(1)
-
-    modes = PCC.switching(PCC.simulate(s, x0, 20; u = x -> [0.0], rng = rng))
-
-    @test length(modes) == 20
-    @test !any(k -> modes[k] == 2 && modes[k + 1] == 2, 1:(length(modes) - 1))
-end
-
-@testset "an exhausted automaton throws" begin
-    g = HS.GraphAutomaton(2)
-    HS.add_transition!(g, 1, 2, 1)
-    s = PCC.switched_system(A; automaton = g)
-
-    @test_throws ArgumentError PCC.simulate(s, [1.0, 2.0], 3)
-end
-
-@testset "a random sequence on a system built without a restriction" begin
-    # The default `switched_system(A)` carries a `OneStateAutomaton`, not a
-    # `GraphAutomaton`. Every other random-walk test here builds the automaton
-    # by hand, so this most ordinary of calls was the one not covered.
-    s = PCC.switched_system(A)
-    rng = Random.MersenneTwister(1)
-
-    modes = PCC.switching(PCC.simulate(s, [1.0, 2.0], 5; rng = rng))
-
-    @test length(modes) == 5
-    @test all(σ -> σ in (1, 2), modes)
+    @test_throws ArgumentError PCC.simulate(constrained, [1.0, 2.0], 3)
 end
 
 @testset "the number type is promoted, not taken from x0" begin

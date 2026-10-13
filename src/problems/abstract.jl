@@ -54,10 +54,10 @@ function _check_modes(
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    if path_complete && !is_path_complete(graph, language(system))
+    if path_complete && !is_path_complete(graph, 1:n_modes(system))
         throw(
             ArgumentError(
-                "the graph is not path-complete for the system's switching language, " *
+                "the graph is not path-complete for the system's modes, " *
                 "so its edge inequalities would certify the property for part of it " *
                 "only; the graph reads the modes $(sort(alphabet(graph)))",
             ),

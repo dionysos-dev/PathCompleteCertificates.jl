@@ -103,8 +103,9 @@ the loop is any callable `(certificate; atol) -> Vector{Refined}`.
 
 ## The graph layer
 
-The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as
-the automaton of a constrained system, or a `WordGraph` when edges read words.
+The certificate graph is a `HybridSystems.GraphAutomaton`, or a `WordGraph`
+when edges read words. Constrained switching is not supported: `n_modes`
+refuses a system whose automaton is not a `OneStateAutomaton`.
 `graphs/queries.jl` is the only file that touches the backing store, so this
 stays empty:
 
@@ -115,15 +116,14 @@ grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries
 Build graphs with `empty_graph`, `WordGraph` or `_empty_like`, which picks the
 kind by dispatch; a constructor returning either kind by keyword is not
 type-stable, and `Base.return_types(de_bruijn, (Int, Int))` must stay one
-concrete type. Keep the arguments named `graph` and `system`, never
-`automaton`, since nothing but the name tells the two apart.
+concrete type.
 
 There are three predicates. `is_path_complete`, every admissible
 sequence readable as a path, is the soundness question, decided by the subset
 construction; `is_complete` and `is_co_complete` are sufficient only, and
 decide the form of the common function. Always ask with the system's
-language: `is_path_complete(graph)` alone asks about the modes the graph
-happens to use. Path-completeness is PSPACE-complete, so it is checked once
+modes, `1:n_modes(system)`: `is_path_complete(graph)` alone asks about the
+modes the graph happens to use. Path-completeness is PSPACE-complete, so it is checked once
 per solve, and `path_complete = false` waives it; never make that the default.
 Index adjacency with `_successors` and `_predecessors` rather than calling the
 star queries in a loop.

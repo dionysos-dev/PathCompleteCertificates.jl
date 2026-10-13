@@ -38,7 +38,7 @@ const CASES = [
     (PCC.DualCopositiveTemplate(), POSITIVE),
 ]
 
-const ONE = PCC.common_graph(OneStateAutomaton(2))
+const ONE = PCC.common_graph(2)
 const TWO = PCC.de_bruijn(1, 2)
 
 # Every refinement and every lift, applied where it is defined: the four atoms

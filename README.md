@@ -40,7 +40,7 @@ What the package adds to that framework is the graph as an object in its own rig
 | | |
 | :-- | :-- |
 | **Certify** | stability, safety or optimal control on a graph you supply, with quadratic, copositive, polyhedral or sum-of-squares templates |
-| **Build** | De Bruijn graphs, the common Lyapunov function graph, duals, graphs reading words, graphs for constrained switching |
+| **Build** | De Bruijn graphs, the common Lyapunov function graph, duals, graphs reading words |
 | **Compare** | decide whether one graph is guaranteed no worse than another for a template, with the simulation that proves it: a map, a relation or an integer matrix |
 | **Refine** | grow a graph where its certificate is tight, with every refinement of the literature, until the bound is proved to be the joint spectral radius |
 

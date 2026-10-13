@@ -3,8 +3,8 @@
 """
     simulate(certificate, x0, steps; rng = Random.default_rng(), node = nothing)
 
-Run the closed loop under the policy of `certificate` along a random admissible
-switching sequence, and return a [`Trajectory`](@ref). The gain applied is that
+Run the closed loop under the policy of `certificate` along modes drawn uniformly
+at random, and return a [`Trajectory`](@ref). The gain applied is that
 of the current graph node, which follows the observed modes from `node`, by
 default the node whose function is smallest at `x0`.
 """
@@ -38,7 +38,7 @@ function simulate(
     node = something(node, argmin([V(x0) for V in functions(certificate)]))
     _check_node(certificate_graph, node)
 
-    modes = _random_modes(system.automaton, first(_HS.states(system.automaton)), steps, rng)
+    modes = rand(rng, 1:n_modes(system), steps)
 
     T = promote_type(eltype(x0), eltype(first(A)), eltype(first(B)), eltype(first(gains)))
 

@@ -112,8 +112,9 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   by dispatch, never by keyword, so the constructors stay type-stable.
 - **Three predicates.** `is_path_complete` is the soundness question, decided by the subset
   construction; `is_complete` and `is_co_complete` are sufficient only, and decide the form of
-  `common`. Always pass the system's language: `is_path_complete(graph)` alone asks about the
-  modes the graph happens to use.
+  `common`. Always pass the system's modes, `1:n_modes(system)`: `is_path_complete(graph)` alone
+  asks about the modes the graph happens to use. Constrained switching is not supported;
+  `n_modes` refuses a system whose automaton is not a `OneStateAutomaton`.
 - **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
   the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
   solve; `path_complete = false` waives it and must never become the default.

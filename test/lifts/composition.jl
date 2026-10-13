@@ -18,7 +18,7 @@ end
 # 1-composition lifts of the one-node graph (their Example III.2).
 const JJ_G1 = graph([(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2)], 2)
 const JJ_G2 = graph([(1, 1, 1), (1, 2, 1), (2, 2, 2), (2, 1, 2)], 2)
-const ONE = PCC.common_graph(OneStateAutomaton(2))
+const ONE = PCC.common_graph(2)
 
 @testset "the composition lift of the one-node graph, forward and backward" begin
     forward = PCC.lift(PCC.CompositionLift(1), ONE)
