@@ -114,7 +114,7 @@ isempty(EXAMPLE_PAGES) || push!(PAGES, "Examples" => EXAMPLE_PAGES)
 push!(
     PAGES,
     "API Reference" => [
-        "Systems and the common function" => "reference/systems.md",
+        "Systems" => "reference/systems.md",
         "Graphs" => "reference/graphs.md",
         "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",

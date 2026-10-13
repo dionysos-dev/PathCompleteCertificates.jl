@@ -29,6 +29,25 @@ Evaluate the node function `V` at `x`: `V(x)`, or `V([x; 1])` for
 """
 node_value(::AbstractTemplate, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 
+"""
+    common(template, graph, problem, Vs, x)
+
+The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
+minimum of maxima of the `Vs` [philippe2017path](@cite). Depending on `problem`,
+a common Lyapunov function, a common barrier function or a bound on the value
+function.
+"""
+function common(
+    template::AbstractTemplate,
+    graph::CertificateGraph,
+    problem::AbstractProblem,
+    Vs::AbstractVector,
+    x::AbstractVector{<:Real},
+)
+    values = [node_value(template, problem, V, x) for V in Vs]
+    return _common(graph, 1:_n_modes(problem), values)
+end
+
 # Validate the modes against the graph and return the state dimension.
 # `path_complete = false` skips the path-completeness test, which is expensive.
 function _check_modes(

@@ -42,7 +42,8 @@ optimization_model(template, graph, problem; optimizer, ...)   # build, do not s
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
+# The common function: each node value from the problem (node_value), their combination
+# from the graph alone (graphs/common.jl); the public method is in problems/abstract.jl.
 common(template, graph, problem, Vs, x)
 ```
 

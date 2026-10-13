@@ -39,7 +39,7 @@ const TEST_FILES = [
     ("./problems/optimal_control.jl", :slow),
     ("./problems/certificate.jl", :slow),
     ("./problems/dual.jl", :slow),
-    ("./common.jl",),
+    ("./graphs/common.jl",),
     ("./lifts/compare.jl", :slow),
     ("./refinements/refine.jl", :slow),
 ]

@@ -44,7 +44,8 @@ optimization_model(template, graph, problem; optimizer, ...)   # build, do not s
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
+# The common function: each node value from the problem (node_value), their combination
+# from the graph alone (graphs/common.jl); the public method is in problems/abstract.jl.
 common(template, graph, problem, Vs, x)
 ```
 
@@ -69,15 +70,18 @@ src/
 ├── systems/             switched systems, runs, the dual system
 ├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words,
 │                        path_completeness, dual (also declares `dual` for everything),
-│                        de_bruijn, common_graph, observer, cycles, simulation
+│                        de_bruijn, common_graph, common (the combination rule of `common`),
+│                        observer, cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
-├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
+├── problems/            abstract.jl (also the public `common`) + catalogue/ (stability, safety,
+│                        optimal_control)
 ├── lifts/               the lifts of a graph: operations.jl (Addition, Maximum, Minimum,
 │                        Composition, InverseComposition: what a lift requires of a template),
 │                        abstract.jl, dual.jl, compare.jl + catalogue/
-├── refinements/         the algorithms that apply lifts: abstract.jl, refine.jl + catalogue/
-└── common.jl            `common`: reads graph, template and problem, so belongs to neither axis
+└── refinements/         the algorithms that apply lifts: abstract.jl, refine.jl + catalogue/
 ```
+
+Only the module file sits at the top of `src/`; every other file belongs to a directory.
 
 `ext/` holds one extension per weak dependency. `test/` mirrors `src/` directory for directory,
 every file standalone-runnable and listed in `TEST_FILES`. `docs/src/examples/` are executed by
