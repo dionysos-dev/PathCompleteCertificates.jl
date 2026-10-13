@@ -4,11 +4,9 @@ CurrentModule = PathCompleteCertificates
 
 # Graph improvement via refinements
 
-Every other part of this package takes a graph you chose and solves on it.
-[`refine`](@ref) does the opposite: it starts from a graph you do not care
-about and grows the one the system needs, guided by where the certificate is
-under strain ([ninite2026lifting](@cite)).
-[Refinement: letting the graph design itself](@ref) runs it.
+[`refine`](@ref) starts from a small graph, adds nodes where the certificate
+is tight, and solves again ([ninite2026lifting](@cite)).
+[Refinement: splitting nodes at tight edges](@ref) runs it.
 
 A **refinement** is a transformation of a path-complete graph that is no worse
 for every template: a copy inherits its origin's function, a product chains
@@ -18,9 +16,10 @@ and the transformations that improve one are refinements.
 
 ## The four atoms
 
-Every refining construction in the literature is one of two local operations
-at an edge ``(s, d, w)``, forward or backward
-([athanasopoulos2019polyhedral](@cite), Defs. 4 to 7).
+The **atoms** are two local operations at an edge ``(s, d, w)``, a split and a
+product, each forward or backward ([athanasopoulos2019polyhedral](@cite),
+Defs. 4 to 7). The refining constructions of the literature are built from
+them.
 
 | Refinement | At one edge `(s, d, w)` | Paper's name |
 | :-- | :-- | :-- |
@@ -71,9 +70,9 @@ hierarchies are the atoms at every edge:
 - either product on `edges(graph)` is [`ProductRefinement`](@ref)`(2)`, the
   product lift of [philippe2016stability](@cite), Def. 2.
 
-None of this needs anything from the template: give every copy the function of
-the node it came from and the old certificate is still feasible
-([ninite2026lifting](@cite), Thm. 3); two chained edge inequalities imply the
+The atoms are valid for every template: giving every copy the function of the
+node it came from keeps the old certificate feasible
+([ninite2026lifting](@cite), Thm. 3), and two chained edge inequalities imply the
 product's ([athanasopoulos2019polyhedral](@cite), Thm. 1). The one step that is
 not an atom is a lift, [`CompositionLift`](@ref), which can strictly improve a
 graph for templates closed under composition ([jongeneel2025ordering](@cite),
@@ -84,15 +83,14 @@ Ex. IV.4) and which [`Hierarchy`](@ref) accepts where it is valid.
 A path-complete graph with a quadratic function at each node gives an upper
 bound ``γ^*(G)`` on the joint spectral radius, the optimum of ``\min γ``
 subject to ``γ^2 P_a \succeq A_i^\top P_b A_i`` on every edge ``(a, b, i)``
-and ``P_a \succ 0``; [`jsr_bound`](@ref) bisects on ``γ``. More nodes give a
-tighter bound and cost more, so the question is **where the next node should
-go**. [`de_bruijn`](@ref) answers by brute force, remembering the last `k`
-modes at `mᵏ` nodes. Refinement answers by looking at the solution. At each
-step:
+and ``P_a \succ 0``; [`jsr_bound`](@ref) bisects on ``γ``. A refined graph
+gives a bound at least as good, with a larger program. [`de_bruijn`](@ref)
+adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
+[`refine`](@ref) adds them where the solution is tight. At each step:
 
 1. **Solve.** [`jsr_bound`](@ref) returns a certificate: the rate and one
    function per node.
-2. **Read the strain.** An edge is **tight** when its inequality is active.
+2. **Find the tight edges.** An edge is **tight** when its inequality is active.
    [`edge_slacks`](@ref) measures them, [`tight_edges`](@ref) names them,
    [`tight_subgraph`](@ref) keeps only them ([ninite2026lifting](@cite),
    Def. 4).
@@ -100,7 +98,7 @@ step:
    graphs.
 4. **Refine.** With `select = :first` the first proposal is taken; with
    `select = :best` every proposal is solved and the lowest rate kept.
-5. **Repeat** on the bigger graph.
+5. **Repeat** on the refined graph.
 
 A refinement never makes the bound worse, so the sequence of rates is
 monotone.
@@ -108,17 +106,17 @@ monotone.
 ### Strategies
 
 A strategy is any callable `(certificate; atol) -> Vector{Refined}`. The
-package ships the three rules of the literature.
+package provides three, from the literature.
 
 | Strategy | Proposes | Source |
 | :-- | :-- | :-- |
-| [`SplitTightNode`](@ref), the default | one candidate: [`ForwardEdgeSplit`](@ref) on the out-star of the node held at the most tight outgoing edges; ties go to the cheapest split, then the lowest node | [ninite2026lifting](@cite), Def. 3 |
+| [`SplitTightNode`](@ref), the default | one candidate: [`ForwardEdgeSplit`](@ref) on the out-star of the node with the most tight outgoing edges; ties go to the node with fewest outgoing edges, then the lowest index | [ninite2026lifting](@cite), Def. 3 |
 | [`RefineTightEdges`](@ref) | every atom at every tight edge; with `select = :best` the one with the smallest rate is kept | [athanasopoulos2019polyhedral](@cite), Example 2 |
 | [`Hierarchy`](@ref)`(step)` | one candidate: a global refinement, a local one at every edge, or a lift | [philippe2016stability](@cite); [jongeneel2025ordering](@cite), §IV-A |
 
-`Hierarchy(PathDependentRefinement(1))` from the one-node graph walks the De
-Bruijn hierarchy one order per step, which makes [`de_bruijn`](@ref) a special
-case of the loop and a baseline inside it.
+`Hierarchy(PathDependentRefinement(1))` from the one-node graph goes up the De
+Bruijn hierarchy one order per step, so the [`de_bruijn`](@ref) graphs are a
+special case of the loop.
 
 ### Where it starts
 
@@ -137,39 +135,37 @@ things happened.
 | | |
 | :-- | :-- |
 | [`OPTIMAL`](@ref) | the rate **is** the joint spectral radius |
-| [`STALLED`](@ref) | `stall_max` steps in a row bought nothing |
+| [`STALLED`](@ref) | `stall_max` steps in a row did not improve the objective by `rtol` |
 | [`DEPTH_REACHED`](@ref) | `depth_max` reached with the bound still falling |
-| [`STOPPED`](@ref) | the `stop` predicate held, `c -> c.rate < 1` being the usual one |
+| [`STOPPED`](@ref) | the `stop` predicate returned `true`, for example `c -> c.rate < 1` |
 | [`EXHAUSTED`](@ref) | the strategy proposed nothing, and the gap had not closed |
 
-Only the first is a certified answer. The trace keeps every certificate and
+Only `OPTIMAL` proves the rate equal to the joint spectral radius. The trace keeps every certificate and
 every [`Refined`](@ref) step, so a run can be read back: [`rates`](@ref),
 [`graphs`](@ref), [`steps`](@ref) and the [`origins`](@ref) of each node.
 
 ## Two certificates of optimality
 
-The rate is an upper bound. To know it is *the* answer you must meet it from
-below, and there are two independent ways, both checked at every step.
+The rate is an upper bound on the joint spectral radius. Two independent
+tests, run at every step, can prove it equal.
 
 **Structural.** If every node has at most one outgoing edge in the tight
 subgraph, then ``γ^*(G) = ρ(\mathcal{A})`` ([ninite2026lifting](@cite),
-Thm. 4). That is [`is_jsr_exact`](@ref): a combinatorial property of which
-constraints are active proves the bound exact. It is sufficient, not
-necessary, so `false` means *unknown*; and it depends on reading tightness
-correctly.
+Thm. 4). [`is_jsr_exact`](@ref) tests this condition. It is sufficient, not
+necessary, so `false` means *unknown*, and its answer depends on the tightness
+tolerance.
 
 **Numerical.** A cycle ``(a_1,a_2,i_1) \dots (a_k,a_1,i_k)`` of the tight
 subgraph forces ``γ \ge ρ(A_{i_k} \cdots A_{i_1})^{1/k}``, and any product of
 modes bounds the joint spectral radius from below. [`jsr_lower_bound`](@ref)
-takes the best cycle, and rate minus bound is a certified interval that does
-not depend on the tightness tolerance at all, since a cycle of the tight
-subgraph is still a cycle of the graph.
+returns the largest such bound over the cycles of the tight subgraph. The
+interval between it and the rate contains the joint spectral radius whatever
+the tolerance, since a cycle of the tight subgraph is a cycle of the graph.
 
-The two catch different cases. Two opposite rotations scaled by `0.9` have
-``P = I`` exact on any graph, so every edge is tight, Theorem 4 can never
-fire, and the loop would split forever at a constant bound; the bracket closes
-at the first step. Whenever the graph is *already* right, only the bracket
-sees it.
+The two tests apply in different cases. For two opposite rotations scaled by
+`0.9`, ``P = I`` is optimal on any graph and every edge is tight, so Theorem 4
+never applies and the loop would split indefinitely at a constant bound; the
+lower bound equals the rate at the first step.
 
 ## The tolerances
 
@@ -177,21 +173,19 @@ sees it.
 | :-- | :-- |
 | `rtol` | bisection tolerance of each [`jsr_bound`](@ref) call |
 | `atol` | how close to zero counts as tight |
-| `gap_tol` | how close the bracket must come to count as closed |
+| `gap_tol` | the gap between the rate and the lower bound at which the run stops |
 
-`atol` is the delicate one. Bisection stops just *above* the optimum, so an
-active edge does not measure zero but about the bisection gap. Set `atol` too
-low and the tight subgraph comes out empty, every node satisfies Theorem 4
-vacuously, and the run certifies a bound that is not the joint spectral
-radius. [`refine`](@ref) therefore enforces `atol ≥ 10 rtol`.
+Bisection stops *above* the optimum, so the slack of an active edge is of the
+order of the bisection gap, not zero. With `atol` too small the tight subgraph
+is empty, every node satisfies the condition of Theorem 4 vacuously, and the
+run reports as exact a bound that is not the joint spectral radius.
+[`refine`](@ref) therefore requires `atol ≥ 10 rtol`.
 
-## Generic in the problem
+## Other problems
 
-The loop names no problem. It reads [`best_certificate`](@ref) to solve a
-step, [`objective`](@ref) to compare two steps, [`edge_slacks`](@ref) to see
-where a certificate is held and [`optimality_gap`](@ref) to stop; a problem
-that answers them joins the loop with the strategies and the trace unchanged.
-Stability and safety do. Safety has no lower bound, so its runs end on a stall
+[`refine`](@ref) runs on every problem that implements
+[`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
+[`optimality_gap`](@ref); stability and safety do. Safety has no lower bound, so its runs end on a stall
 or the depth budget rather than [`OPTIMAL`](@ref), with the margin read as
 `c.margin` on each certificate of the trace.
 [What works with what](@ref) says which templates the loop runs on.

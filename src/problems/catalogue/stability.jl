@@ -45,8 +45,8 @@ end
 """
     optimization_model(template, graph, problem; optimizer, rate = 1)
 
-The feasibility problem `V_b(A_w x) <= rate^(d |w|) * V_a(x)` for every edge
-`(a, b, w)`, with `d` the template's degree and `|w|` the length of the word.
+The feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
+`(a, b, w)`, with `p` the template's degree and `|w|` the length of the word.
 """
 function optimization_model(
     template::AbstractTemplate,

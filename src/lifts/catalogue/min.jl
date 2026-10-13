@@ -20,7 +20,7 @@ function lift(::MinLift, g::CertificateGraph)
 
     n = n_nodes(g)
     letters = sort(alphabet(g))
-    index = _successors(_letter_graph(g))
+    index = _successors(_letter_graph(g, "the min lift"))
     masks = collect(_masks(n))
 
     reach = Dict{Tuple{Int, Int}, Int}()

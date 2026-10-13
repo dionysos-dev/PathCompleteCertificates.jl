@@ -6,7 +6,8 @@ CurrentModule = PathCompleteCertificates
 
 A switched system is the input to every problem. The common function,
 [`common`](@ref), combines the node functions of a certificate into a single
-function; `certificate(x)` evaluates it.
+function. A certificate `c` is callable: `c(x)` evaluates its common function
+at `x`.
 
 ## Systems
 

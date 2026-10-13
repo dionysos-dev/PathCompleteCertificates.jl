@@ -1,4 +1,4 @@
-module TestGraphLanguages
+module TestCommonGraph
 
 using Test
 using HybridSystems
@@ -24,15 +24,6 @@ function failure_automaton()
     add_transition!(a, 2, 3, 3)
     add_transition!(a, 1, 4, 4)
     return a
-end
-
-@testset "the language of a system is its automaton" begin
-    arbitrary = PCC.switched_system(MODES)
-    @test PCC.language(arbitrary) isa OneStateAutomaton
-
-    constrained = PCC.switched_system(MODES; automaton = failure_automaton())
-    @test PCC.language(constrained) isa GraphAutomaton
-    @test PCC.n_nodes(PCC.language(constrained)) == 4
 end
 
 @testset "the common graph reads the language by construction" begin

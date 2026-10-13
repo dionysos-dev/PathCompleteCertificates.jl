@@ -73,6 +73,14 @@ function has_input(system::_HS.HybridSystem)
     )
 end
 
+"""
+    language(system)
+
+The switching sequences admitted by `system`, to pass to
+[`is_path_complete`](@ref).
+"""
+language(system::_HS.HybridSystem) = system.automaton
+
 function _maps_by_mode(system::_HS.HybridSystem)
     maps = Dict{Int, Any}()
     for t in _HS.transitions(system.automaton)

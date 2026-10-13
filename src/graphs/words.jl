@@ -1,23 +1,21 @@
 """
-    expanded_form(graph) -> (expanded, origins)
+    expanded_form(graph)
 
 The graph with one mode per edge obtained by breaking every word edge
 `(s, d, i₁…iₖ)` into a chain `s → m₁ → ⋯ → mₖ₋₁ → d` through `k − 1` new
-nodes. `origins[m]` is the node of `graph` that `m` came from, `0` for a new
-one.
+nodes. Nodes `1:n_nodes(graph)` keep their number; the new ones follow.
 """
-expanded_form(graph::_HS.GraphAutomaton) = (graph, collect(nodes(graph)))
+expanded_form(graph::_HS.GraphAutomaton) = graph
 
 function expanded_form(graph::WordGraph)
     n = n_nodes(graph)
     n_new = sum(edge -> _word_length(graph, edge) - 1, edges(graph); init = 0)
 
     expanded = empty_graph(n + n_new)
-    origins = [collect(nodes(graph)); zeros(Int, n_new)]
     next = n
 
     for edge in edges(graph)
-        word = letters(label(graph, edge))
+        word = label(graph, edge)
         previous = source(edge)
 
         for (k, mode) in enumerate(word)
@@ -31,5 +29,5 @@ function expanded_form(graph::WordGraph)
         end
     end
 
-    return expanded, origins
+    return expanded
 end

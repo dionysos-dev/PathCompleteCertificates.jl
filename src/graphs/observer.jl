@@ -2,10 +2,10 @@
     observer_graph(graph) -> (observer, states)
     observer_graph(graph, alphabet) -> (observer, states)
 
-The subset construction of `graph` started from all its nodes, with empty
-subsets dropped: an edge `(P, Q, σ)` when `Q` is the set of successors by `σ`
-of the nodes in `P`. `states[k]` is the subset of nodes of `graph` that
-observer node `k` stands for.
+The observer graph of `graph`. Its nodes are nonempty subsets of the nodes of
+`graph`, starting from the set of all of them, and there is an edge `(P, Q, σ)`
+when `Q` is the set of successors by `σ` of the nodes in `P`. `states[k]` is
+the subset that observer node `k` stands for.
 """
 observer_graph(graph::_HS.GraphAutomaton) = observer_graph(graph, sort(alphabet(graph)))
 

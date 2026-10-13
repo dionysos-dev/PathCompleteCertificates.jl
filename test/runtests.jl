@@ -11,12 +11,12 @@ const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
     ("./docstrings.jl",),  # the no-export replacement for checkdocs
     ("./graphs/queries.jl",),
-    ("./graphs/predicates.jl",),
+    ("./graphs/path_completeness.jl",),
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
     ("./graphs/cycles.jl",),
     ("./graphs/words.jl",),
-    ("./graphs/languages.jl",),
+    ("./graphs/common_graph.jl",),
     ("./refinements/split.jl",),
     ("./refinements/reference.jl",),
     ("./refinements/product.jl", :slow),

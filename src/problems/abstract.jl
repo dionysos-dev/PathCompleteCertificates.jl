@@ -54,7 +54,15 @@ function _check_modes(
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    path_complete && _check_path_complete(graph, language(system))
+    if path_complete && !is_path_complete(graph, language(system))
+        throw(
+            ArgumentError(
+                "the graph is not path-complete for the system's switching language, " *
+                "so its edge inequalities would certify the property for part of it " *
+                "only; the graph reads the modes $(sort(alphabet(graph)))",
+            ),
+        )
+    end
 
     return dimension
 end
@@ -71,8 +79,8 @@ const _FEASIBLE_TERMINATION_STATUSES = (
     AbstractCertificate
 
 The result of [`certify`](@ref): node functions on a graph, and the value
-certified (`rate`, `margin` or `gains`). `certificate(x)` evaluates
-[`common`](@ref) at `x`.
+certified (`rate`, `margin` or `gains`). A certificate `c` is callable: `c(x)`
+is [`common`](@ref)`(template(c), graph(c), problem(c), functions(c), x)`.
 """
 abstract type AbstractCertificate end
 

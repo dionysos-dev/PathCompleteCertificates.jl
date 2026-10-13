@@ -38,7 +38,7 @@ function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
     letters = sort(alphabet(g))
-    index = _successors(_letter_graph(g))
+    index = _successors(_letter_graph(g, "the sum lift"))
     multisets = _multisets(n_nodes(g), L.terms)
 
     lifted = empty_graph(length(multisets))
@@ -98,7 +98,7 @@ function simulation(
     optimizer === nothing && throw(
         ArgumentError("the sum lift is decided by a linear program and needs an optimizer"),
     )
-    G, H = _letter_graph(G), _letter_graph(H)
+    G, H = _letter_graph(G, "the sum lift"), _letter_graph(H, "the sum lift")
 
     program = _sum_program(G, H, optimizer, nothing)
     program === nothing && return nothing

@@ -12,7 +12,7 @@ abstract type AbstractTemplate end
 """
     homogeneity_degree(template) -> Int
 
-The degree `d` such that `V(cx) = cᵈ V(x)` for every function of the template.
+The degree `p` such that `V(cx) = cᵖ V(x)` for every function of the template.
 """
 function homogeneity_degree end
 
@@ -44,10 +44,10 @@ Constrain, for every ``x``,
 
 ```math
 \\text{scale} \\cdot V_{src}(x) - V_{dst}(\\text{map} \\cdot x)
-    - \\text{margin}\\,\\|x\\|^d \\ge 0,
+    - \\text{margin}\\,\\|x\\|^p \\ge 0,
 ```
 
-where ``d`` is [`homogeneity_degree`](@ref). A template that cannot express
+where ``p`` is [`homogeneity_degree`](@ref). A template that cannot express
 `margin` throws unless `margin = 0`.
 """
 function add_domination! end

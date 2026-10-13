@@ -4,19 +4,19 @@ CurrentModule = PathCompleteCertificates
 
 # PathCompleteCertificates.jl
 
-Tools for constructing, comparing and refining certificates for switched
-systems within the path-complete framework. A certificate has two
-complementary components, a **template** and a **graph**; the package makes
-both explicit, so that their interplay, for stability, safety and optimal
-control, can be studied rather than left inside a solver.
+Certificates of stability, safety and optimal control for switched systems in
+the path-complete framework. A certificate consists of a **graph** and a
+**template**, both chosen by the user. The package solves for a certificate on
+a given graph and template, compares two graphs, and refines a graph using its
+certificate.
 
-## One structure, three problems
+## Path-complete certificates
 
 A switched linear system evolves according to
 ``x_{k+1} = A_{\sigma(k)}\, x_k``, where ``\sigma`` is a switching signal taking
 values in a finite set of modes, either arbitrary or constrained to the paths of
-an automaton. A certificate must therefore hold uniformly over all admissible
-switching sequences. In the path-complete framework ([ahmadi2014joint](@cite))
+an automaton. A certificate must hold for every admissible switching sequence.
+In the path-complete framework ([ahmadi2014joint](@cite))
 a certificate is specified by three ingredients:
 
 1. a **labelled graph** whose labels are the modes;
@@ -25,12 +25,12 @@ a certificate is specified by three ingredients:
 
 When the graph is **path-complete**, meaning that every admissible switching
 sequence can be read as a path in it, these local inequalities imply a property
-of the whole system. The same structure serves every certification problem;
-only the edge inequality and the conditions on the node functions change:
+of the whole system. The three problems differ in the edge inequality and in
+the conditions on the node functions:
 
 | Problem | Edge inequality on ``(s, d, i)`` | Conditions on the node functions | The certificate carries |
 | :-- | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` | positive definite, homogeneous of degree ``d`` | `rate`, an upper bound on the joint spectral radius |
+| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` | positive definite, homogeneous of degree ``p`` | `rate`, an upper bound on the joint spectral radius |
 | [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)`` | negative on the initial set, positive on the unsafe set | `margin`, how strictly the two sets are separated |
 | [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | positive definite quadratic | `gains`, a feedback per node, and the bound ``V`` on the cost |
 
@@ -38,7 +38,7 @@ only the edge inequality and the conditions on the node functions change:
 
 | | Takes | Gives |
 | :-- | :-- | :-- |
-| **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`) and the common function `certificate(x)` |
+| **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`), and the common function, evaluated by calling the certificate `c` as `c(x)` |
 | **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, the automaton of a constrained system as a graph, graphs with words on their edges |
 | **Compare** | two graphs, and optionally templates and a system | whether the second graph is no worse than the first, for which templates, and the simulation that proves it |
 | **Refine** | a template, a graph and a problem | a sequence of graphs, each refined where its certificate is tight, until the bound is proved exact or a budget is reached |
@@ -56,37 +56,34 @@ In reading order:
    system and a run of one.
 2. [Stability: a first certificate](@ref), one system, one graph, one bound.
 3. [Templates and graphs: the two axes](@ref), three templates on one graph,
-   one template on four graphs, and a third template past degree two.
-4. [Comparing graphs: which one is better?](@ref), five graphs, three
-   templates, a simulation for every verdict.
-5. [Refinement: letting the graph design itself](@ref), the graph grown from
-   its certificate, against De Bruijn at equal size.
+   one template on four graphs, and a sum-of-squares template.
+4. [Comparing graphs: five graphs, three templates](@ref), the five graphs of
+   [debauche2023ordering](@cite) compared for three templates, with the
+   simulation behind each result.
+5. [Refinement: splitting nodes at tight edges](@ref), [`refine`](@ref) from
+   the one-node graph, compared with a De Bruijn graph of the same size.
 
-The two other problems have an example each:
+Safety and optimal control have one example each,
 [Safety: a barrier certificate](@ref) and
-[Optimal control: a feedback per node](@ref). A template from another
-package has one too:
-[Piecewise semi-ellipsoids: a template from SetProg](@ref).
+[Optimal control: a feedback per node](@ref), and so does the SetProg
+template, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
 
 ## Scope
 
-The path-complete framework has been developed for several problems and
-several templates, not always together. Here stability runs on every
-template, safety and optimal control on the quadratic one, and comparing and
-refining graphs is written for stability, where the theory is;
-[What works with what](@ref) is the table. Three things to know before reading
-a result: a template is passed as an instance, never as a type; a bound is
-always an upper bound; a negative answer means no certificate was found in this
-template on this graph, never that the property fails.
+Stability is implemented for every template, safety and optimal control for
+the quadratic one. [`compare`](@ref) is stated for stability, as in the
+literature, and [`refine`](@ref) runs on stability and safety;
+[What works with what](@ref) gives the full table. A bound is always an upper
+bound, and a negative answer means that no certificate was found in this
+template on this graph, not that the property fails.
 
 ## Other tools
 
 [SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl) and the MATLAB
 [JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)
-compute joint-spectral-radius bounds with methods beyond path-complete graphs,
-and use such a graph, when they do, as an internal device. This package treats
-the graph as an object in its own right, to be built, compared and refined,
-and the three problems as instances of one structure.
+compute bounds on the joint spectral radius by several methods, some of which
+use path-complete graphs. This package is restricted to path-complete
+certificates, and adds the comparison and refinement of their graphs.
 
 ## Installation
 

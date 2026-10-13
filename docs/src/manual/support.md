@@ -4,9 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # What works with what
 
-Every template composes with every problem in principle. In practice,
-stability runs on all seven templates, and the two other problems on the
-quadratic one.
+Stability is implemented for all seven templates, safety and optimal control
+for the quadratic one.
 
 |                                | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
 | :----------------------------- | :------------------------: | :---------------------: | :-----------------------------: |
@@ -21,7 +20,7 @@ quadratic one.
 ¹ Positive systems only: entrywise nonnegative mode matrices.
 
 ² Behind a package extension: `using SumOfSquares` first, or `using SetProg`
-for [`SetProgTemplate`](@ref), or its primitives are not defined.
+for [`SetProgTemplate`](@ref).
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control needs
 a **complete** graph, not merely a path-complete one. Stability accepts a
@@ -29,11 +28,10 @@ a **complete** graph, not merely a path-complete one. Stability accepts a
 
 ## Comparing and refining
 
-[`compare`](@ref) is written for stability, where the theory is; it asks a
-question about graphs, and which of its verdicts hold for a template is read
-from the template's closure properties. [`refine`](@ref) runs on stability and
-safety, for every template that answers [`domination_slack`](@ref), which is
-how the loop reads where a certificate is tight:
+[`compare`](@ref) is stated for stability, as in the literature; which of its
+results hold for a template depends on the template's closure properties.
+[`refine`](@ref) runs on stability and safety, for every template that
+implements [`domination_slack`](@ref), from which the edge slacks are computed:
 
 | | [`refine`](@ref) | lifts valid for [`compare`](@ref) |
 | :-- | :-: | :-- |
@@ -50,10 +48,10 @@ tight.
 
 ## The gaps
 
-Safety with the polyhedral templates is possible in principle, by the same
-construction in homogeneous coordinates; it is not implemented. Optimal
+Safety with the polyhedral templates is possible by the same construction in
+homogeneous coordinates; it is not implemented. Optimal
 control is tied to the quadratic template by the mathematics, the substitution
 ``S = P^{-1}``, ``Y = KS`` that makes it convex ([ninite2026path](@cite)). A
-new template gives the whole stability column at once, and the two other
-problems once it answers their primitives; see the
+new template that implements the template primitives works with stability;
+safety and optimal control need further primitives; see the
 [developer conventions](@ref "Conventions").

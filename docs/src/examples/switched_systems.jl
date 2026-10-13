@@ -1,19 +1,17 @@
 # # Switched systems: building and running one
 #
-# A switched linear system is the input to every problem. Two independent
-# questions decide which kind you have: does the plant switch freely between
-# its modes or along the paths of an automaton, and is there a continuous input
-# to design. [`switched_system`](@ref) builds all four combinations, and
-# [`simulate`](@ref) runs one along a switching sequence.
+# Every problem takes a switched linear system. Its switching is arbitrary or
+# constrained by an automaton, and it has a continuous input or not.
+# [`switched_system`](@ref) builds the four combinations, and
+# [`simulate`](@ref) computes a trajectory along a switching sequence.
 
 import PathCompleteCertificates as PCC
 using HybridSystems
 using Random
 using Plots
 
-# Two modes on the plane: one contracts along `y`, the other along `x`. Neither
-# is stable on its own under arbitrary switching, which is what makes the
-# switched case interesting.
+# Two modes on the plane: the first contracts along `y` and fixes `x`, the
+# second contracts along `x` and fixes `y`.
 
 A = [[1.0 0.0; 0.0 0.5], [0.5 0.0; 0.0 1.0]]
 B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
@@ -57,13 +55,13 @@ PCC.mode_matrix(controlled, [1, 2]) == A[2] * A[1]
 # !!! note "Two automata, easily confused"
 #     The automaton of a constrained system describes which switching
 #     sequences the *plant* can produce. The path-complete graph handed to a
-#     certificate is a different object that happens to share its type; the
-#     argument name says which is wanted.
+#     certificate is a different object of the same type; the argument name
+#     says which is wanted.
 
 # ## Running one
 #
-# A certificate quantifies over *every* admissible switching sequence; a run
-# takes *one*. Pass the sequence and you get exactly that run.
+# Given a sequence of modes, `simulate` computes the trajectory along that
+# sequence.
 
 system = systems[3][2]
 
@@ -71,8 +69,8 @@ trajectory = PCC.simulate(system, [1.0, 1.0], [1, 2, 1, 1, 2])
 
 PCC.switching(trajectory), length(PCC.states(trajectory))
 
-# Pass a horizon instead and the modes are drawn at random from what the
-# automaton admits: no two consecutive `2`s here, by construction.
+# Given a horizon instead, it draws the modes at random among the sequences
+# the automaton admits, so no two consecutive modes are `2`.
 
 word = PCC.switching(PCC.simulate(system, [1.0, 1.0], 20; rng = MersenneTwister(42)))
 
@@ -86,6 +84,6 @@ plot(
     lw = 2,
 )
 
-# A run is a sample, never a proof. It can show that a bound is loose or that a
-# trajectory leaves a set; it cannot show that none does. The proofs are the
-# certificates, starting with [Stability: a first certificate](@ref).
+# A trajectory follows one switching sequence. It can show that a bound is
+# loose or that a trajectory leaves a set, but not that no trajectory does;
+# that requires a certificate, as in [Stability: a first certificate](@ref).

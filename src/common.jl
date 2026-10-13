@@ -4,7 +4,8 @@
 The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
 minimum of maxima of the `Vs` [philippe2017path](@cite). Depending on `problem`,
 a common Lyapunov function, a common barrier function or a bound on the value
-function.
+function. Calling a certificate `c` as `c(x)` evaluates it with the node
+functions of `c`.
 """
 function common(
     template::AbstractTemplate,
@@ -39,7 +40,5 @@ function common(
     Vs::AbstractVector,
     x::AbstractVector{<:Real},
 )
-    _require_one_mode_per_edge(graph, "common")
-
-    return common(template, _letter_graph(graph), problem, Vs, x)
+    return common(template, _letter_graph(graph, "common"), problem, Vs, x)
 end

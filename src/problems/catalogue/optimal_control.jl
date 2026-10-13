@@ -45,8 +45,9 @@ end
 """
     OptimalControlCertificate
 
-A state-feedback policy, `u = gains[a] * x` at node `a`, and an upper bound
-`certificate(x)` on its value function, the minimum of the node quadratic forms.
+A state-feedback policy, `u = gains[a] * x` at node `a`, and an upper bound on
+its value function, the minimum of the node quadratic forms. Calling the
+certificate `c` as `c(x)` evaluates this bound.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D

@@ -4,7 +4,7 @@ CurrentModule = PathCompleteCertificates
 
 # Bibliography
 
-What each paper underwrites in the package. Every definition and theorem
+What the package takes from each paper. Every definition and theorem
 number quoted in the manual was read in the paper it is attributed to.
 
 ## Path-complete graphs and stability
@@ -41,7 +41,7 @@ entry yet.
 | [philippe2019complete](@cite) | the order that holds for every template, decided by a [`simulation`](@ref) |
 | [debauche2021comparison](@cite) | the order ``G \le_V H``, lifts and their validity, [`is_valid`](@ref), and the [`SumLift`](@ref), [`MinLift`](@ref), [`MaxLift`](@ref) and [`CompositionLift`](@ref) |
 | [debauche2022necessary](@cite) | the min and max lifts decided by a simulation relation, without building them |
-| [debauche2023ordering](@cite) | the linear program of the sum lift proved complete, and the five graphs of [Comparing graphs: which one is better?](@ref) |
+| [debauche2023ordering](@cite) | the linear program of the sum lift proved complete, and the five graphs of [Comparing graphs: five graphs, three templates](@ref) |
 | [debauche2024thesis](@cite) | [Duality](@ref) throughout: the dual graph, system, template, certificate and lift; the De Bruijn graphs; [`BackwardCompositionLift`](@ref); the validity of the min lift for the copositive template |
 | [jongeneel2025ordering](@cite) | the ``T``-fold [`CompositionLift`](@ref), the counterexample to its completeness, and its use as a step of [`refine`](@ref) |
 

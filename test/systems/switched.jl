@@ -101,6 +101,16 @@ end
     @test !PCC.has_input(plain)
 end
 
+@testset "the language of a system is its automaton" begin
+    @test PCC.language(PCC.switched_system(A)) isa HS.OneStateAutomaton
+
+    g = HS.GraphAutomaton(2)
+    HS.add_transition!(g, 1, 1, 1)
+    HS.add_transition!(g, 1, 2, 2)
+    HS.add_transition!(g, 2, 1, 1)
+    @test PCC.language(PCC.switched_system(A; automaton = g)) === g
+end
+
 @testset "dimension errors are caught at construction" begin
     @test_throws ArgumentError PCC.switched_system(typeof(A)(), typeof(B)())
     @test_throws ArgumentError PCC.switched_system(A, B[1:1])                # mode count

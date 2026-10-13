@@ -115,7 +115,7 @@ end
     one = PCC.common_graph(OneStateAutomaton(2))
     lifted = PCC.refine(PCC.ProductRefinement(2), one)
     w = PCC.graph(lifted)
-    expanded, _ = PCC.expanded_form(w)
+    expanded = PCC.expanded_form(w)
 
     on_words = PCC.jsr_bound(
         PCC.QuadraticTemplate(),

@@ -14,7 +14,8 @@ dual(refinement::DualRefinement) = refinement.primal
 # as the edges of `g`.
 function refine(refinement::DualRefinement, g::CertificateGraph)
     primal = refinement.primal
-    dualised, edge_list = dual(g, collect(edges(g)))
+    dualised, image = _dual_with_images(g)
+    edge_list = [image[edge] for edge in edges(g)]
 
     refined = if applicable(refine, primal, dualised, edge_list)
         refine(primal, dualised, edge_list)
@@ -30,7 +31,7 @@ function refine(
     g::CertificateGraph,
     edge_list::AbstractVector{<:_HS.GraphTransition},
 )
-    dualised, dual_edge_list = dual(g, edge_list)
-    refined = refine(refinement.primal, dualised, dual_edge_list)
+    dualised, image = _dual_with_images(g)
+    refined = refine(refinement.primal, dualised, [image[edge] for edge in edge_list])
     return Refined(dual(graph(refined)), origins(refined))
 end

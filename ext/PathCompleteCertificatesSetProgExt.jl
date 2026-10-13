@@ -31,7 +31,7 @@ _degree(::SetProg.Polytope) = 1
 function PCC.homogeneity_degree(template::PCC.SetProgTemplate)
     degrees = unique(_degree.(template.variables))
 
-    # One rate gamma^d for the whole graph needs one degree d.
+    # One rate gamma^p for the whole graph needs one degree p.
     length(degrees) == 1 ||
         throw(ArgumentError("the set variables of every node must have the same degree"))
 
@@ -127,7 +127,7 @@ end
 _identity(dimension) =
     LinearAlgebra.Symmetric(Matrix(1.0LinearAlgebra.I, dimension, dimension))
 
-# The 1-sublevel set of `‖x‖₂^d`, or of the gauge of the partition for a
+# The 1-sublevel set of `‖x‖₂^p`, or of the gauge of the partition for a
 # polytope, in the representation of the set variable.
 function _unit(variable::SetProg.Ellipsoid)
     ball = Sets.Ellipsoid(_identity(variable.dimension))
@@ -167,7 +167,7 @@ function PCC.add_normalization!(
     ::PCC.SetProgTemplate,
     S::SetProg.SetVariableRef,
 )
-    # `S ⊆ unit` is `V ≥ ‖x‖₂^d`, which only fixes the scale.
+    # `S ⊆ unit` is `V ≥ ‖x‖₂^p`, which only fixes the scale.
     JuMP.@constraint(model, S ⊆ _unit(S.set))
 
     return nothing
@@ -185,7 +185,7 @@ function PCC.add_domination!(
     margin == 0 ||
         throw(ArgumentError("SetProgTemplate does not support a positive margin"))
 
-    # `V_dst(A x) ≤ γᵈ V_src(x)` is `(A / γ) S_src ⊆ S_dst`, so γ must be a number.
+    # `V_dst(A x) ≤ γᵖ V_src(x)` is `(A / γ) S_src ⊆ S_dst`, so γ must be a number.
     scale isa Real ||
         throw(ArgumentError("SetProgTemplate needs a constant scale, got $scale"))
     scale > 0 || throw(ArgumentError("the scale must be positive, got $scale"))
