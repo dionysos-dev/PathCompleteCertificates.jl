@@ -113,4 +113,32 @@ end
     @test haskey(model, :optimal_control_Y)
 end
 
+@testset "a problem checks the graph against the system's modes" begin
+    modes = [[0.5 0.0; 0.0 0.5], [0.0 0.5; 0.5 0.0], [0.5 0.5; 0.0 0.5]]
+    problem = PCC.StabilityProblem(PCC.switched_system(modes))
+
+    # The common graph is accepted ...
+    model = PCC.optimization_model(
+        PCC.QuadraticTemplate(),
+        PCC.common_graph(problem.system),
+        problem;
+        rate = 1.0,
+        optimizer = nothing,
+    )
+    @test model isa JuMP.Model
+
+    # ... and a graph missing a mode is not.
+    partial = GraphAutomaton(1)
+    for mode in 1:2
+        add_transition!(partial, 1, 1, mode)
+    end
+    @test_throws ArgumentError PCC.optimization_model(
+        PCC.QuadraticTemplate(),
+        partial,
+        problem;
+        rate = 1.0,
+        optimizer = nothing,
+    )
+end
+
 end

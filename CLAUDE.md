@@ -45,7 +45,7 @@ certify(template, graph, problem; optimizer, ...)             # build, solve, ex
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
 # The common function: each node value from the problem (node_value), their combination
-# from the graph alone (graphs/common.jl); the public method is in problems/abstract.jl.
+# from the graph alone (graphs/observer.jl); the public method is in problems/abstract.jl.
 common(template, graph, problem, Vs, x)
 ```
 
@@ -70,8 +70,8 @@ src/
 ├── systems/             switched systems, runs, the dual system
 ├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words,
 │                        path_completeness, dual (also declares `dual` for everything),
-│                        de_bruijn, common_graph, common (the combination rule of `common`),
-│                        observer, cycles, simulation
+│                        de_bruijn (common_graph is order 0), observer (and the combination
+│                        rule of `common`), cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
 ├── problems/            abstract.jl (also the public `common`) + catalogue/ (stability, safety,
 │                        optimal_control)

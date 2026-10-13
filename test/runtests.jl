@@ -16,7 +16,6 @@ const TEST_FILES = [
     ("./graphs/observer.jl",),
     ("./graphs/cycles.jl",),
     ("./graphs/words.jl",),
-    ("./graphs/common_graph.jl",),
     ("./lifts/split.jl",),
     ("./lifts/reference.jl",),
     ("./lifts/product.jl", :slow),

@@ -70,8 +70,8 @@ path-complete graphs ([ahmadi2014joint](@cite)); going one order up is the
 backward split at every edge, so the certified bound never gets worse
 ([philippe2016stability](@cite)), with `M` times as many nodes.
 
-[`common_graph`](@ref)`(system)` is order zero: the common Lyapunov function
-graph ``G_0``, one node with a loop per mode.
+[`common_graph`](@ref)`(system)` is order zero, `de_bruijn(0, M)`: the common
+Lyapunov function graph ``G_0``, one node with a loop per mode.
 
 ```@docs; canonical=false
 de_bruijn
