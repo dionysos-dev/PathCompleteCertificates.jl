@@ -2,8 +2,9 @@
 #
 # The path-complete barrier functions of [anand2024barrier](@cite): one
 # function per node, negative on the initial set, positive on the unsafe set,
-# and non-increasing along every edge, so that the region they cut out is
-# invariant, contains the initial set and never reaches the unsafe one.
+# and non-increasing along every edge. The region where the common barrier is
+# negative is then invariant, contains the initial set and does not meet the
+# unsafe set.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -33,10 +34,10 @@ certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = O
 
 PCC.is_feasible(certificate), certificate.margin
 
-# `margin` is how strictly the barrier separates the two sets. The edge
-# inequality itself is non-strict, since a strict one would collapse around
-# any cycle and every path-complete graph has one; the strictness sits on the
-# separation instead.
+# `margin` is the margin by which the barrier separates the two sets. The edge
+# inequality has no margin: every lifted map fixes ``[0; 1]``, so a margin
+# summed around a cycle would be nonpositive, and every path-complete graph
+# has a cycle.
 
 # ## Drawing it
 #
@@ -79,11 +80,10 @@ plot!(figure, [NaN], [NaN]; lw = 2, color = :black, label = "barrier, B(x) = 0")
 figure
 
 # The solid curve is ``\{x : B(x) = 0\}``, where ``B`` is the common barrier
-# the graph and template induce; `certificate(x)` evaluates it. ``B < 0``
+# the graph and template induce; calling the certificate, `certificate(x)`,
+# evaluates it. ``B < 0``
 # inside, so the region it encloses contains the initial set, is invariant
-# under both modes, and never reaches the unsafe set. That is a certificate,
-# not a sampled check: the inequality holds for every state in the region and
-# every mode.
+# under arbitrary switching, and does not meet the unsafe set.
 
 # !!! note "Safety is quadratic-only for now"
 #     Only [`QuadraticTemplate`](@ref) is wired up for the barrier inequality;

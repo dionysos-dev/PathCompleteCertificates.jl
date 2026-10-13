@@ -31,12 +31,11 @@ end
     PCC.add_edge!(g, 1, 1, [1, 2])
     PCC.add_edge!(g, 1, 1, 1)
 
-    expanded, origins = PCC.expanded_form(g)
+    expanded = PCC.expanded_form(g)
 
     @test expanded isa GraphAutomaton
     @test PCC.n_nodes(expanded) == 2            # one silent node for the two-letter word
     @test PCC.n_edges(expanded) == 3
-    @test origins == [1, 0]
     @test !PCC.has_words(expanded)
 
     # Factor sense: "2" is a factor of the path label "12", but "22" is a factor
@@ -48,13 +47,11 @@ end
     # One loop reading 2 on its own, and every word is a factor.
     PCC.add_edge!(g, 1, 1, [2])
     @test PCC.is_path_complete(g, 1:2)
-    @test PCC.is_path_complete(first(PCC.expanded_form(g)), 1:2)
+    @test PCC.is_path_complete(PCC.expanded_form(g), 1:2)
 
     # A graph with one mode per edge expands to itself.
     letter = PCC.de_bruijn(1, 2)
-    same, ids = PCC.expanded_form(letter)
-    @test same === letter
-    @test ids == [1, 2]
+    @test PCC.expanded_form(letter) === letter
 end
 
 @testset "a word graph is complete or co-complete only as a graph with one mode per edge" begin
@@ -65,13 +62,13 @@ end
     @test !PCC.has_words(g)
     @test PCC.is_complete(g, 1:2)
     @test PCC.is_co_complete(g, 1:2)
-    @test PCC._letter_graph(g) isa GraphAutomaton
-    @test PCC.n_edges(PCC._letter_graph(g)) == 2
+    @test PCC._letter_graph(g, "a test") isa GraphAutomaton
+    @test PCC.n_edges(PCC._letter_graph(g, "a test")) == 2
 
     PCC.add_edge!(g, 1, 1, [1, 2])
     @test !PCC.is_complete(g, 1:2)
     @test PCC.is_path_complete(g, 1:2)
-    @test_throws ArgumentError PCC._letter_graph(g)
+    @test_throws ArgumentError PCC._letter_graph(g, "a test")
 end
 
 @testset "the dual reverses edges and words" begin
@@ -99,12 +96,13 @@ end
     # Path-completeness is preserved by duality.
     @test PCC.is_path_complete(PCC.dual(PCC.de_bruijn(2, 2)), 1:2)
 
-    # The edge correspondence at a locus.
+    # The edge correspondence at some edges.
     primal = PCC.de_bruijn(1, 2)
-    locus = PCC.outgoing_edges(primal, 1)
-    dualised, images = PCC.dual(primal, locus)
-    @test length(images) == length(locus)
-    for (e, f) in zip(locus, images)
+    edge_list = PCC.outgoing_edges(primal, 1)
+    dualised, image = PCC._dual_with_images(primal)
+    images = [image[e] for e in edge_list]
+    @test length(images) == length(edge_list)
+    for (e, f) in zip(edge_list, images)
         @test PCC.source(f) == PCC.dest(e) && PCC.dest(f) == PCC.source(e)
         @test PCC.label(dualised, f) == PCC.label(primal, e)
     end

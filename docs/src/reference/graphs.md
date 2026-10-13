@@ -4,11 +4,9 @@ CurrentModule = PathCompleteCertificates
 
 # Graph reference
 
-The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as the
-automaton of a constrained system, or a [`WordGraph`](@ref) when its edges read
-words. The argument name says which is wanted: `graph` is the certificate's,
-`system` carries its own. See [Path-complete graphs](@ref) for what the
-predicates mean.
+A certificate is built on a labelled graph: a `HybridSystems.GraphAutomaton`,
+one mode per edge, or a [`WordGraph`](@ref), one word per edge. See
+[Path-complete graphs](@ref) for what the predicates mean.
 
 ## Queries
 
@@ -24,18 +22,11 @@ Modules = [PathCompleteCertificates]
 Pages   = ["graphs/words.jl"]
 ```
 
-## Predicates
+## Path-completeness
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["graphs/predicates.jl"]
-```
-
-## Languages
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["graphs/languages.jl"]
+Pages   = ["graphs/path_completeness.jl"]
 ```
 
 ## Dual graphs
@@ -56,5 +47,5 @@ Pages   = ["graphs/simulation.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["graphs/de_bruijn.jl", "graphs/observer.jl", "graphs/cycles.jl"]
+Pages   = ["graphs/de_bruijn.jl", "graphs/common_graph.jl", "graphs/observer.jl", "graphs/cycles.jl"]
 ```

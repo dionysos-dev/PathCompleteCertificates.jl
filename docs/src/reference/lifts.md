@@ -4,13 +4,12 @@ CurrentModule = PathCompleteCertificates
 
 # Lift reference
 
-A **lift** is the lift of an operation: a map from path-complete graphs to
-path-complete graphs whose nodes stand for combinations of the original nodes
-([debauche2021comparison](@cite), Defs. 5 and 7). It exists to compare graphs:
-when the lifted `G` simulates `H`, `H` is no worse than `G` for every template
-closed under the operation. [`compare`](@ref) runs every lift on a pair of
-graphs; see [Graph comparison via lifts](@ref) for the picture. A new lift is one file in
-`src/lifts/catalogue/` answering [`lift`](@ref) and [`requirements`](@ref).
+A **lift** maps a path-complete graph to a path-complete graph whose nodes
+stand for combinations of the original nodes ([debauche2021comparison](@cite),
+Defs. 5 and 7). Lifts are used to compare graphs. When the lifted `G` simulates
+`H`, `H` is no worse than `G` for every template closed under the operation of
+the lift. [`compare`](@ref) tries every lift on a pair of graphs; see
+[Graph comparison via lifts](@ref).
 
 ## The interface
 

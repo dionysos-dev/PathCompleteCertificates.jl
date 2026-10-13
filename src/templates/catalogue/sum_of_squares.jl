@@ -2,29 +2,8 @@
     SumOfSquaresTemplate(degree, variables)
 
 The template of polynomials ``V(x) = z(x)^\\top Q z(x)`` with ``Q \\succeq 0``,
-where ``z`` runs over the monomials of degree `degree`. Node functions are
-therefore sums of squares, homogeneous of degree ``2\\,`` `degree`.
-
-`variables` are the polynomial variables the node functions are written in, and
-**every node shares them** — an edge inequality relates two node functions, so
-they have to live in the same ring. Create them once and pass them in:
-
-```julia
-using SumOfSquares, DynamicPolynomials   # both, and before this is usable
-@polyvar x[1:2]
-template = SumOfSquaresTemplate(2, x)    # quartic node functions on the plane
-```
-
-!!! note "The methods live in a package extension"
-    Everything this template does is behind `SumOfSquares`, which pulls a large
-    polynomial stack. Without `using SumOfSquares` the type exists but its
-    primitives are not defined, and a solve fails with a `MethodError` naming
-    one of them.
-
-`degree = 1` recovers the quadratic template, more expensively:
-[`QuadraticTemplate`](@ref) writes the same cone directly. Raise the degree to
-certify a rate that no quadratic can — the price is a Gram matrix of size
-``\\binom{n + d - 1}{d}`` per node.
+where ``z`` runs over the monomials of degree `degree` in the polynomial
+`variables`, shared by every node. Requires `using SumOfSquares`.
 """
 struct SumOfSquaresTemplate{V <: AbstractVector} <: AbstractTemplate
     degree::Int
@@ -41,8 +20,8 @@ end
 """
     SumOfSquaresFunction(polynomial, variables)
 
-A fitted [`SumOfSquaresTemplate`](@ref) node function: the solved polynomial,
-plus the variables to substitute into. Callable, like every node function.
+A fitted node function of a [`SumOfSquaresTemplate`](@ref): a polynomial in
+`variables`.
 """
 struct SumOfSquaresFunction{P, V <: AbstractVector}
     polynomial::P
@@ -54,12 +33,9 @@ end
 
 homogeneity_degree(template::SumOfSquaresTemplate) = 2 * template.degree
 
-# A `SOSPoly` variable is a Gram matrix constrained positive semidefinite, so
-# the node function is nonnegative by construction and there is nothing to add.
+# A `SOSPoly` variable is nonnegative by construction.
 add_nonnegativity!(::JuMP.Model, ::SumOfSquaresTemplate, _) = nothing
 
-# Sums of squares add to sums of squares, and compose with an invertible linear
-# map to sums of squares of the same degree.
 is_closed_under(::SumOfSquaresTemplate, ::Addition, system) = true
 is_closed_under(::SumOfSquaresTemplate, ::Composition, system) = is_invertible(system)
 is_closed_under(::SumOfSquaresTemplate, ::InverseComposition, system) =

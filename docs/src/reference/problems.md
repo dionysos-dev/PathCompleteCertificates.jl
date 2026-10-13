@@ -4,8 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # Problem reference
 
-The second axis: what the edge inequality says. See [Problems](@ref) for the
-concepts.
+A problem fixes the inequality imposed along each edge of the graph. See
+[Problems](@ref) for the concepts.
 
 ## The interface and the certificates
 

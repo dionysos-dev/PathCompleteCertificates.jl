@@ -6,17 +6,9 @@ import LinearAlgebra
 
 The template ``V(x) = x^\\top P x``, with ``P`` positive definite.
 
-`conditioning_bound` caps the conditioning of the fitted matrices,
-``I \\preceq P_s \\preceq \\text{conditioning\\_bound} \\cdot I``. The lower half is
-free — the edge conditions are homogeneous in ``P``, so ``P \\succeq I`` is only
-a choice of scale — but **the cap is not**: it excludes certificates rather
-than normalising them. A system whose only quadratic certificate needs
-``\\operatorname{cond}(P)`` above the cap is then reported as having none, and
-`certify` returns an infeasible certificate for a stable system.
-
-The default is therefore `Inf`, which imposes nothing. Set it only to help a
-solver that is struggling, and read a negative answer as "no certificate within
-this box" rather than "no certificate".
+A finite `conditioning_bound` also imposes
+``P_s \\preceq \\text{conditioning\\_bound} \\cdot I``, which can exclude every
+certificate of a stable system.
 """
 struct QuadraticTemplate{T <: Real} <: AbstractTemplate
     conditioning_bound::T
@@ -36,10 +28,8 @@ end
 """
     QuadraticFunction(P)
 
-One fitted node function of a [`QuadraticTemplate`](@ref), `V(x) = x'Px`,
-callable like every node function; `Matrix(V)` is `P`. While a model is being
-built the template hands out the bare `Symmetric` matrix of variables instead,
-since the problems do matrix arithmetic with it.
+A fitted node function `V(x) = x'Px` of a [`QuadraticTemplate`](@ref);
+`Matrix(V)` is `P`.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M
@@ -78,12 +68,9 @@ solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 homogeneity_degree(::QuadraticTemplate) = 2
 
 function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
-    # Scale only: the edge conditions are homogeneous, so any feasible family
-    # can be scaled until every member dominates I. This excludes P = 0 and
-    # nothing else.
+    # The edge conditions are homogeneous, so this only fixes the scale.
     JuMP.@constraint(model, P - LinearAlgebra.I in JuMP.PSDCone())
 
-    # The cap is a genuine restriction, so it is opt-in. See the docstring.
     if isfinite(template.conditioning_bound)
         JuMP.@constraint(
             model,
@@ -126,14 +113,12 @@ function domination_slack(
     return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(residual))))
 end
 
-# Closed under addition, and under composition with a map that keeps a form
-# positive definite, which is an invertible one: AᵀPA ⊁ 0 when A is singular.
+# AᵀPA is positive definite only when A is invertible.
 is_closed_under(::QuadraticTemplate, ::Addition, system) = true
 is_closed_under(::QuadraticTemplate, ::Composition, system) = is_invertible(system)
 is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = is_invertible(system)
 
-# The dual norm of x ↦ xᵀPx is x ↦ xᵀP⁻¹x: the family is its own dual, and so
-# is the conditioning box.
+# The dual norm of xᵀPx is xᵀP⁻¹x, and the conditioning box is self-dual.
 has_dual(::QuadraticTemplate) = true
 dual(template::QuadraticTemplate) = template
 dual(::QuadraticTemplate, V::QuadraticFunction) = QuadraticFunction(inv(V.P))

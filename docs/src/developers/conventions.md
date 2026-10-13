@@ -12,11 +12,11 @@ between problems:
 
 | Problem | Edge inequality on ``(s, d, i)`` |
 | :-- | :-- |
-| Stability | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` |
+| Stability | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` |
 | Safety | ``B_d(A_i x) \le B_s(x)`` |
 | Optimal control | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` |
 
-So the package has two independent axes rather than one type hierarchy: the
+Templates and problems are therefore two independent type hierarchies. The
 **template**, `src/templates/`, says what the node functions are, and the
 **problem**, `src/problems/`, says what the edge inequality is. A template
 supplies primitives, a problem composes them, and neither names the other.
@@ -25,11 +25,11 @@ supplies primitives, a problem composes them, and neither names the other.
 # Template axis: one file per template, answering all of it.
 add_function_variables!(model, template, dim, node)        # the node function V_s
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
 domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
 add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
-homogeneity_degree(template)                               # d: V(cx) = cᵈ V(x)
+homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
 check_dynamics(template, A)                                # is the template applicable at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
@@ -46,19 +46,17 @@ best_certificate, objective, optimality_gap, edge_slacks       # what refine rea
 common(template, graph, problem, Vs, x)
 ```
 
-Every primitive is public, since a user implements it. `add_domination!` is
-the one that matters: quantifying an inequality over every ``x`` needs a cone
-that depends on the template and on nothing else, so stability's edge
-condition is that one call with `scale = γᵈ`, for every template there is or
-will be. Optimal control is the exception: its inequality is convex only after
-the substitution ``S = P^{-1}``, ``Y = KS``, so it cannot be written against
-`V_src` and `V_dst`, works on the quadratic template's variables directly, and
-says so in place.
+Every primitive is public, since a user implements it. Problems express
+their edge inequality through `add_domination!`: quantifying an inequality over
+every ``x`` needs a cone that depends only on the template, so stability's edge
+condition is one call with `scale = γᵖ`. Optimal control is the exception. Its
+inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,
+so it cannot be written against `V_src` and `V_dst`; it works on the quadratic
+template's variables directly, and a comment in the code says so.
 
 A template is an **instance**, never a type: `PolyhedralTemplate` carries a
-matrix per node, and `::Type{T}` has nowhere to put it. The family and the
-fitted member are different things, `AbstractTemplate` and what
-`solution_value` returns.
+matrix per node, and `::Type{T}` has nowhere to put it. An `AbstractTemplate`
+is the family; the fitted node function is what `solution_value` returns.
 
 Each problem has its own certificate type. The shared fields live once in
 `CertificateData`; what the problem certifies is a typed field of its own,
@@ -71,11 +69,11 @@ under `catalogue/`, named after the type without the directory's suffix.
 
 ## Lifts and refinements
 
-Both map a path-complete graph to a path-complete graph; they are kept apart
-by purpose. A **lift** compares graphs: it is the lift of an operation, and
+Both map a path-complete graph to a path-complete graph. A **lift** compares
+graphs: it is the lift of an operation, and
 when the lifted ``G`` simulates ``H`` then ``G \le_V H`` for every template
-closed under that operation. A **refinement** improves a graph, and is no
-worse for every template by construction.
+closed under that operation. A **refinement** improves a graph, and by
+construction gives a certificate no worse than before, for every template.
 
 ```julia
 # src/operations.jl: what a template is closed under and a lift requires.
@@ -105,8 +103,9 @@ the loop is any callable `(certificate; atol) -> Vector{Refined}`.
 
 ## The graph layer
 
-The certificate graph is a `HybridSystems.GraphAutomaton`, the same type as
-the automaton of a constrained system, or a `WordGraph` when edges read words.
+The certificate graph is a `HybridSystems.GraphAutomaton`, or a `WordGraph`
+when edges read words. Constrained switching is not supported: `n_modes`
+refuses a system whose automaton is not a `OneStateAutomaton`.
 `graphs/queries.jl` is the only file that touches the backing store, so this
 stays empty:
 
@@ -117,15 +116,14 @@ grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries
 Build graphs with `empty_graph`, `WordGraph` or `_empty_like`, which picks the
 kind by dispatch; a constructor returning either kind by keyword is not
 type-stable, and `Base.return_types(de_bruijn, (Int, Int))` must stay one
-concrete type. Keep the arguments named `graph` and `system`, never
-`automaton`, since nothing but the name tells the two apart.
+concrete type.
 
-Three predicates, and what they license. `is_path_complete`, every admissible
+There are three predicates. `is_path_complete`, every admissible
 sequence readable as a path, is the soundness question, decided by the subset
 construction; `is_complete` and `is_co_complete` are sufficient only, and
 decide the form of the common function. Always ask with the system's
-language: `is_path_complete(graph)` alone asks about the modes the graph
-happens to use. Path-completeness is PSPACE-complete, so it is checked once
+modes, `1:n_modes(system)`: `is_path_complete(graph)` alone asks about the
+modes the graph happens to use. Path-completeness is PSPACE-complete, so it is checked once
 per solve, and `path_complete = false` waives it; never make that the default.
 Index adjacency with `_successors` and `_predecessors` rather than calling the
 star queries in a loop.
@@ -138,8 +136,8 @@ throw on one and name `expanded_form`.
 - Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public
   names `_`-prefixed.
 - Mutating functions end in `!`; predicates are `is_*`.
-- No `get_`, `compute_`, `build_` or `generate_` prefixes: the noun is the
-  function.
+- No `get_`, `compute_`, `build_` or `generate_` prefixes; name a function
+  after what it returns.
 - No acronyms in public names.
 - One word per concept, and the papers' word when one exists: `common`,
   `valid`, `simulation`, `tight`, `common_graph`, `alphabet`.
@@ -158,5 +156,5 @@ throw on one and name `expanded_form`.
 
 ## Citations
 
-Every definition and theorem number in a docstring or a page was read in the
-paper it is attributed to. Keep it that way.
+Before citing a definition or theorem number in a docstring or a page, read
+it in the paper it is attributed to.

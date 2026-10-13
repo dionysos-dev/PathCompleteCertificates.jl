@@ -5,8 +5,9 @@ CurrentModule = PathCompleteCertificates
 # Systems and the common function
 
 A switched system is the input to every problem. The common function,
-[`common`](@ref), is the single function the node functions of a certificate
-combine into, which `certificate(x)` evaluates.
+[`common`](@ref), combines the node functions of a certificate into a single
+function. A certificate `c` is callable: `c(x)` evaluates its common function
+at `x`.
 
 ## Systems
 

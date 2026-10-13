@@ -24,13 +24,13 @@ Every test file is standalone. Run the narrowest scope that can fail, and the
 whole suite before opening a pull request.
 
 ```
-julia --project=test test/graphs/predicates.jl                       # one file
+julia --project=test test/graphs/path_completeness.jl                # one file
 julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips the :slow suites
 julia --project -e 'using Pkg; Pkg.test()'                           # everything
 ```
 
 The `:slow` suites are the ones that solve programs, and most regressions
-surface there, so `--fast` passing is not a result. A new test file goes in
+surface there, so a change is not tested until they pass. A new test file goes in
 `TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it solves.
 
 While iterating, keep one Julia session open with Revise and `include` the
@@ -52,12 +52,12 @@ julia --project=docs docs/make.jl                          # runs the examples, 
 PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl   # prose only
 ```
 
-The build executes every example under `docs/src/examples/`, which is what
-keeps their output true of the code. With the examples skipped, a page not
+The build executes every example under `docs/src/examples/`. With the
+examples skipped, a page not
 already generated is dropped from the navigation, so run a full build before
 opening a pull request.
 
-Two gates on docstrings. Nothing is exported, so `test/docstrings.jl` fails
+Docstrings are checked twice. Nothing is exported, so `test/docstrings.jl` fails
 on any name reachable as `PathCompleteCertificates.name` without one. And the
 build fails on a docstring that no `@autodocs` block under
 `docs/src/reference/` picks up, so a new file in `src/` needs a `Pages` entry

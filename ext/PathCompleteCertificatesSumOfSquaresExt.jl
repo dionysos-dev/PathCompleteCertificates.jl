@@ -1,5 +1,4 @@
-# The sum-of-squares template, as a package extension: SumOfSquares pulls a
-# large polynomial stack, and most of the package solves linear programs.
+# The methods of `SumOfSquaresTemplate`.
 module PathCompleteCertificatesSumOfSquaresExt
 
 import JuMP
@@ -23,8 +22,7 @@ function PCC.add_function_variables!(
         ),
     )
 
-    # `SOSModel` is exactly `Model` plus this call, so the template can adapt an
-    # ordinary JuMP model rather than the problem having to build a special one.
+    # Turns the plain JuMP model into a `SOSModel`.
     SumOfSquares.PolyJuMP.setpolymodule!(model, SumOfSquares)
 
     return JuMP.@variable(
@@ -33,8 +31,7 @@ function PCC.add_function_variables!(
     )
 end
 
-# Excludes V = 0 by asking for V(x) >= min_scale * ||x||^(2 degree), which is
-# homogeneous of the same degree as V and so costs no extra conditioning.
+# V(x) >= min_scale * ||x||^(2 degree).
 function PCC.add_normalization!(
     model::JuMP.Model,
     template::PCC.SumOfSquaresTemplate,
@@ -59,15 +56,8 @@ function PCC.add_domination!(
 )
     x = template.variables
 
-    # Divide the map rather than scale the inequality. V is homogeneous of
-    # degree 2d and scale is gamma^(2d), so
-    #     scale * V_src(x) - V_dst(A x)  =  gamma^(2d) * (V_src(x) - V_dst((A/gamma) x))
-    # and the two constraints are equivalent. The second is far better
-    # conditioned when gamma is not near 1.
-    #
-    # `scale` is allowed to be a JuMP expression, and a fractional root of one
-    # is not expressible. Then there is nothing to fold into the map and the
-    # inequality is imposed as written, conditioning and all.
+    # For a numeric scale = gamma^(2d), impose V_src(x) - V_dst((A/gamma) x) >= 0,
+    # which is better conditioned; a JuMP expression has no root to take.
     residual = if scale isa Real
         gamma = scale^(1 / PCC.homogeneity_degree(template))
         V_src - subs(V_dst, x => (map ./ gamma) * x)

@@ -1,10 +1,8 @@
 """
     BackwardEdgeSplit()
 
-Split the destination of each edge of the locus: a copy of it owning that one
-incoming edge and every outgoing edge (Athanasopoulos & Jungers, Def. 6, the
-partial P-lift). The dual of [`ForwardEdgeSplit`](@ref); at every edge it is
-[`PathDependentRefinement`](@ref)`(1)`.
+Split the destination of each given edge into a copy owning that incoming edge
+and every outgoing edge. The dual of [`ForwardEdgeSplit`](@ref).
 """
 const BackwardEdgeSplit = DualRefinement{ForwardEdgeSplit}
 

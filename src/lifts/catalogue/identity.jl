@@ -1,11 +1,8 @@
 """
     IdentityLift()
 
-The lift that returns the graph. Its simulation is the plain
-[`simulation`](@ref) map, which decides the order for every template and every
-system (Philippe & Jungers, Thm. 3.5): when `G` simulates `H`, a certificate on
-`G` read through the map is one on `H` in the same template. Requires nothing,
-and is the first lift [`compare`](@ref) tries.
+The lift that returns the graph; its simulation decides `G ≤_V H` for every
+template [philippe2019complete; Thm. 3.5](@cite).
 """
 struct IdentityLift <: AbstractLift end
 

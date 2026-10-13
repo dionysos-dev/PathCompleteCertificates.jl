@@ -11,20 +11,18 @@ if every switched system admitting a certificate on ``G`` with functions in
 any bound on the joint spectral radius obtained with ``G`` can also be obtained
 with ``H`` ([debauche2021comparison](@cite), Def. 4).
 
-This ordering depends on the template. Under suitable closure properties it is
-characterised by a simulation between a transformation of ``G``, a **lift**, and
-``H``. These criteria generalise the classical simulation condition and give
-procedures for deciding when one graph dominates another. The package
-implements them, one per lift, and [`compare`](@ref) runs them all, reading
-from the closures a template declares which verdicts apply to it.
-[Comparing graphs: which one is better?](@ref) does this on the five graphs of
-[debauche2023ordering](@cite).
+This order depends on the template. When the template is closed under an
+operation, the order is characterised by a simulation of ``H`` by a
+transformation of ``G``, the **lift** of that operation. [`compare`](@ref)
+tests every lift, and the closures of a template determine which of the results
+hold for it. [Comparing graphs: five graphs, three templates](@ref) does this
+on the five graphs of [debauche2023ordering](@cite).
 
-The theory is stated for arbitrary switching. [`compare`](@ref) reads graphs
-only, so a simulation it finds holds whatever the language, and a certificate
-on ``G`` read through it is one on ``H`` for every system both graphs are
-path-complete for; that no order holds without a simulation is proved for
-arbitrary switching.
+The theory is stated for arbitrary switching. A simulation found by
+[`compare`](@ref) depends on the graphs only, so it transfers a certificate on
+``G`` to one on ``H`` for every system for which both graphs are path-complete.
+The converse, that the graphs are not ordered when there is no simulation, is
+proved for arbitrary switching only.
 
 ## The template-free order
 
@@ -36,18 +34,17 @@ converse holds too: ``G \le_{\mathcal V} H`` for every template exactly when
 ``G`` simulates ``H`` (Thm. 3.5). [`simulation`](@ref)`(G, H)` returns the
 map, or `nothing`.
 
-When no map exists the graphs may still be ordered for a particular template,
-and that is what lifts are for.
+When no map exists, the graphs may still be ordered for a particular template;
+the lifts below decide this.
 
-## Lifts: one per closure
+## Lifts
 
 A lift replaces the nodes of ``G`` by combinations of them under one operation,
 and the lifted graph encodes the inequalities those combinations inherit
 ([debauche2021comparison](@cite), Defs. 5 to 9). When the lifted ``G``
 simulates ``H``, ``G \le_{\mathcal V} H`` for every template closed under the
 operation; for the min, max and sum lifts the converse holds as well.
-`simulation(lift, G, H)` decides it, and each lift does so without building
-anything exponential where the theory allows.
+`simulation(lift, G, H)` decides it, by the method in the third column.
 
 | Lift | Decides ``G \le_{\mathcal V} H`` for | How | Simulation | Complete | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -66,13 +63,13 @@ the one override of [`is_valid`](@ref).
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
 graphs ordered for every composition-closed template that no composition lift
 simulates. The composition lift is also the one lift that can strictly improve
-a graph (their Ex. IV.4), which is why [`Hierarchy`](@ref) accepts it as a
-step of [`refine`](@ref).
+a graph (their Ex. IV.4), and [`Hierarchy`](@ref) accepts it as a step of
+[`refine`](@ref).
 
-Which lifts a template is entitled to is what it declares with
-[`is_closed_under`](@ref), read by [`is_valid`](@ref); the table of
-declarations is on the [Templates](@ref) page, and a closure declared on
-either of a dual pair of templates serves both ([Duality](@ref)).
+[`is_valid`](@ref) decides whether a lift is valid for a template from the
+closures returned by [`is_closed_under`](@ref), tabulated on the
+[Templates](@ref) page. A closure of one template of a dual pair is used for
+both ([Duality](@ref)).
 
 ## `compare`
 
@@ -83,22 +80,22 @@ simulations(c)  # lift => simulation, for each lift whose lifted G simulates H
 templates(c)    # the templates given for which H is proved no worse than G
 ```
 
-The lifts are tried cheapest and strongest first: the identity lift, whose
-map settles the question for every template and stops the search; the min and
-max lifts, by a relation; the sum lift, by the linear program, only when an
-`optimizer` is given; the two composition lifts of length one. Pass your own
-`lifts` to go further. A template is proved when some lift with a simulation
-is valid for it on the `system`, which is required with `templates`.
+The lifts are tried in this order: the identity lift, whose map settles the
+question for every template and ends the search; the min and max lifts, by a
+relation; the sum lift, by the linear program, only when an `optimizer` is
+given; the two composition lifts of length one. Other lifts are passed with
+`lifts`. A template is listed in `templates(c)` when some lift with a
+simulation is valid for it on `system`, which is required with `templates`.
 
-Read without templates, a [`Comparison`](@ref) is the literature's statement:
-``H`` is no worse than ``G`` for every template closed under the
+Without templates, a [`Comparison`](@ref) states that ``H`` is no worse than ``G`` for every template closed under the
 [`requirements`](@ref) of each lift in [`simulations`](@ref).
 
-## When a graph buys nothing
+## Graphs no better than a common Lyapunov function
 
 The one-node graph, [`common_graph`](@ref) of the system, simulates every
 graph, so ``G_0 \le_{\mathcal V} G`` always. The other direction,
-`compare(G, common_graph(system))`, asks whether ``G`` is worth its nodes. For
+`compare(G, common_graph(system))`, asks whether every certificate on ``G``
+yields a common Lyapunov function with the same rate. For
 a `min`-closed template it holds exactly when the min lift simulates the
 one-node graph ([debauche2024thesis](@cite), Thm. 8.1): when some set of nodes
 of ``G`` has, from each of its nodes and for each mode, an edge reading that
@@ -107,14 +104,14 @@ function. A complete graph always has one, the whole graph
 ([debauche2021comparison](@cite), Prop. 3; [debauche2024thesis](@cite),
 Cor. 7.53). The relation of the min lift finds the largest such set, and the
 max lift asks the same of the reversed edges for `max`-closed templates.
-[Comparing graphs: which one is better?](@ref) shows both answers on the five
-graphs.
+[Comparing graphs: five graphs, three templates](@ref) shows both answers on
+the five graphs.
 
 ## Under duality
 
 ``G \le_{\mathcal V} H`` holds exactly when
 ``\mathrm{dual}(G) \le_{\mathcal V^*} \mathrm{dual}(H)``
-([debauche2024thesis](@cite), Prop. 6.27). That is why every backward lift is
-the dual of a forward one and decides its order on the dual graphs, and why a
-question asked of the dual copositive template can be asked of the primal one
-on the transposed system. See [Duality](@ref).
+([debauche2024thesis](@cite), Prop. 6.27). Every backward lift is therefore
+the dual of a forward one and decides its order on the dual graphs, and a
+question about the dual copositive template is the same question about the
+linear copositive template on the transposed system. See [Duality](@ref).

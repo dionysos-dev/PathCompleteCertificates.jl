@@ -2,7 +2,7 @@
 
 An example is a Julia file in `docs/src/examples/`, rendered into the manual by
 [Literate.jl](https://github.com/fredrikekre/Literate.jl) and executed by the
-docs build, so one that breaks fails the build instead of going stale.
+docs build, so a broken example fails the build.
 
 ## The shape of a file
 

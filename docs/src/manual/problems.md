@@ -4,14 +4,12 @@ CurrentModule = PathCompleteCertificates
 
 # Problems
 
-A problem specifies the meaning of an edge: the inequality that the node
-functions at its two ends must satisfy. The template defines the search space
-for these functions; the problem defines the constraints the graph imposes on
-them, and hence the property the certificate establishes.
+A problem specifies the inequality that the node functions at the two ends of
+an edge must satisfy, and therefore the property a certificate proves.
 
 | Problem | Edge inequality on ``(s, d, i)`` | Entry points |
 | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{d}\, V_s(x)`` | [`certify`](@ref), [`jsr_bound`](@ref) |
+| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` | [`certify`](@ref), [`jsr_bound`](@ref) |
 | [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)``, plus the separation of the two sets | [`certify`](@ref) |
 | [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | [`certify`](@ref) |
 
@@ -30,9 +28,9 @@ stable:
 - [`jsr_bound`](@ref) bisects on the rate and returns the certificate at the
   smallest rate found, to the tolerance `rtol`.
 
-The edge inequality scales as ``\gamma^d`` with ``d`` the template's
+The edge inequality scales as ``\gamma^p`` with ``p`` the template's
 [`homogeneity_degree`](@ref), so that ``\gamma`` is a per-step bound whatever
-the template, and as ``\gamma^{dk}`` on an edge reading a word of ``k`` modes.
+the template, and as ``\gamma^{pk}`` on an edge reading a word of ``k`` modes.
 
 ```@docs; canonical=false
 jsr_bound
@@ -57,10 +55,11 @@ Safety is implemented for the quadratic template, the barriers being
 the same homogeneous coordinates, as ``\{x : [x; 1]^\top S [x; 1] \ge 0\}``.
 
 !!! note "What `margin` is"
-    The edge inequality is non-strict; a strict one would collapse around any
-    cycle, and every path-complete graph has one. The strictness sits on the
-    separation of the sets instead, and `certificate.margin` is how much of it
-    the solver achieved. Zero means the sets are not separated.
+    The edge inequality is non-strict: at ``x = 0`` it reads
+    ``B_d(0) \le B_s(0)``, so a strict version would fail around any cycle,
+    and every path-complete graph has one. The strict inequality is imposed on
+    the separation of the sets instead, and `certificate.margin` is its value
+    in the solution. Zero means the sets are not separated.
 
 ## Optimal control
 
@@ -77,30 +76,29 @@ certify
 
 ## Reading a certificate
 
-Every entry point returns a certificate object, feasible or not, so that "no
-certificate exists here" can be told from "the solver gave up". Read it in
-this order:
+Every entry point returns a certificate, feasible or not, and its status tells
+an infeasible problem from a solver failure. Read it in this order:
 
 | | |
 | :-- | :-- |
 | [`is_feasible`](@ref)`(c)` | was anything certified at all? Check this first |
 | [`status`](@ref)`(c)` | the solver's termination status, when it was not |
-| `c.rate`, `c.margin`, `c.gains` | what the problem certifies, a typed field of its own certificate |
+| `c.rate`, `c.margin`, `c.gains` | what the problem certifies |
 | [`functions`](@ref)`(c)` | the fitted node functions, one per node, each callable |
-| `c(x)` | the [`common`](@ref) function, what graph and template certify together |
+| `c(x)` | the [`common`](@ref) function |
 
-A certificate says more than its number, and the graph layer is built on what
-it says. The first two rows are read on stability and safety certificates, the
-rest on stability's:
+The following functions read further information from a certificate. The
+first two rows apply to stability and safety certificates, the others to
+stability certificates only:
 
 | | |
 | :-- | :-- |
 | [`edge_slacks`](@ref) | how far each edge inequality is from being active |
-| [`tight_edges`](@ref), [`tight_subgraph`](@ref) | the edges that hold the certificate up ([ninite2026lifting](@cite), Def. 4) |
+| [`tight_edges`](@ref), [`tight_subgraph`](@ref) | the edges whose inequality is active ([ninite2026lifting](@cite), Def. 4) |
 | [`is_jsr_exact`](@ref) | the rate **is** the joint spectral radius when every node has at most one tight outgoing edge ([ninite2026lifting](@cite), Thm. 4) |
-| [`jsr_lower_bound`](@ref) | the bound from below given by the cycles of the tight subgraph, bracketing the rate |
+| [`jsr_lower_bound`](@ref) | a lower bound on the joint spectral radius, from the cycles of the tight subgraph |
 | [`dual`](@ref)`(c)` | the same certificate on the dual graph, for the transposed system, in the dual template ([debauche2024thesis](@cite), Lemma 6.25) |
 
 Tightness is read against a tolerance, since a bisected solution never reaches
 an exact zero; [Graph improvement via refinements](@ref) explains how to set
-it, and how the loop uses these readings.
+it, and how [`refine`](@ref) uses these functions.

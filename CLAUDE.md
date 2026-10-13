@@ -27,11 +27,11 @@ type, because some carry per-node data. Every primitive is public, since a user 
 # Template axis: one file per template, answering all of it.
 add_function_variables!(model, template, dim, node)        # the node function V_s
 add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵈ
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
 domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
 add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
-homogeneity_degree(template)                               # d: V(cx) = cᵈ V(x)
+homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
 check_dynamics(template, A)                                # is the template applicable at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
@@ -50,7 +50,7 @@ common(template, graph, problem, Vs, x)
 
 `add_domination!` is the load-bearing primitive: the cone that quantifies an inequality over
 all `x` depends on the template and on nothing else, so stability's whole edge condition is one
-call with `scale = γᵈ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
+call with `scale = γᵖ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
 `Y = KS`, and says so in place.
 
 Each problem owns its certificate type; what it certifies is a typed field (`rate`, `margin`,
@@ -68,8 +68,9 @@ per inhabitant under `catalogue/`, named after the type without the directory's 
 src/
 ├── operations.jl        Addition, Maximum, Minimum, Composition, InverseComposition; `dual`
 ├── systems/             switched systems, runs, the dual system
-├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words, predicates,
-│                        languages, dual, de_bruijn, observer, cycles, simulation
+├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words,
+│                        path_completeness, dual, de_bruijn, common_graph, observer,
+│                        cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
 ├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
 ├── lifts/               COMPARING graphs: abstract.jl, dual.jl, compare.jl + catalogue/
@@ -111,8 +112,9 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   by dispatch, never by keyword, so the constructors stay type-stable.
 - **Three predicates.** `is_path_complete` is the soundness question, decided by the subset
   construction; `is_complete` and `is_co_complete` are sufficient only, and decide the form of
-  `common`. Always pass the system's language: `is_path_complete(graph)` alone asks about the
-  modes the graph happens to use.
+  `common`. Always pass the system's modes, `1:n_modes(system)`: `is_path_complete(graph)` alone
+  asks about the modes the graph happens to use. Constrained switching is not supported;
+  `n_modes` refuses a system whose automaton is not a `OneStateAutomaton`.
 - **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
   the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
   solve; `path_complete = false` waives it and must never become the default.
@@ -121,7 +123,7 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
 ## 6. Commands
 
 ```
-julia --project=test test/graphs/predicates.jl                       # one file
+julia --project=test test/graphs/path_completeness.jl                # one file
 julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips :slow suites
 julia --project -e 'using Pkg; Pkg.test()'                           # the gate, before committing
 julia -e 'using JuliaFormatter; format(".")'                         # required before every commit

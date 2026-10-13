@@ -9,22 +9,10 @@ The general polyhedral template: at node ``s``,
 V_s(x) = \\max_i |p_{s,i}^\\top x|,
 ```
 
-whose sublevel sets are polytopes whose **facets are themselves solved for**,
-rather than fixed as in [`PolyhedralTemplate`](@ref). Less conservative, and
-correspondingly larger.
-
-`max` is not linear, so the program cannot be written without knowing which row
-attains it. `cones[s]` supplies that: a partition of the state space into
-cones, one per row of ``P_s``, each given as a matrix whose **columns are its
-extreme rays**. Row ``i`` is then constrained to dominate on cone ``i``, and
-every condition is imposed on the extreme rays — which is enough, because all
-of them are positively homogeneous.
-
-The construction is dimension-general; only [`planar_conic_partition`](@ref),
-the ready-made partition, is two-dimensional.
-
-`min_scale` is the floor on the auxiliary scale ``c_s`` in
-``V_s(x) \\ge c_s \\|x\\|_\\infty``, which is what rules out ``V_s \\equiv 0``.
+with the rows of ``P_s`` as variables. `cones[s]` partitions the state space
+into cones, one per row of ``P_s``, each a matrix whose columns are its extreme
+rays; row ``i`` is constrained to attain the maximum on cone ``i``. `min_scale`
+is the lower bound on ``c_s`` in ``V_s(x) \\ge c_s \\|x\\|_\\infty``.
 """
 struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
     cones::Vector{Vector{Matrix{T}}}
@@ -37,7 +25,6 @@ struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
         isempty(cones) && throw(ArgumentError("at least one node partition is required"))
         min_scale > 0 || throw(ArgumentError("min_scale must be positive"))
 
-        # Non-empty before any can be asked for its dimension.
         for (node, node_cones) in enumerate(cones)
             isempty(node_cones) &&
                 throw(ArgumentError("node $node must have at least one cone"))
@@ -69,12 +56,7 @@ end
 """
     ConicPolyhedralFunction(cones, P, scale)
 
-One fitted node function of a [`ConicPolyhedralTemplate`](@ref),
-`V(x) = max_i |(P x)_i|`.
-
-It carries the node's `cones` because the edge condition is imposed on their
-extreme rays, and `scale` because the positivity condition is stated against
-it.
+A node function `V(x) = max_i |(P x)_i|` of a [`ConicPolyhedralTemplate`](@ref).
 """
 struct ConicPolyhedralFunction{C, M, S}
     cones::C
@@ -108,7 +90,6 @@ function add_function_variables!(
         ),
     )
 
-    # One facet row per cone: row i is the one that attains the maximum there.
     P = JuMP.@variable(model, [1:length(cones), 1:dimension], base_name = "P_$(node)")
 
     scale =
@@ -128,15 +109,13 @@ function add_nonnegativity!(
         for ray in eachcol(cone)
             values = V.P * ray
 
-            # On its own cone the active row is at least scale * ||x||_inf,
-            # written coordinatewise to stay linear.
+            # Row i is at least scale * ||x||_inf on cone i.
             for j in 1:dimension
                 JuMP.@constraint(model, values[i] + V.scale * ray[j] >= 0)
                 JuMP.@constraint(model, values[i] - V.scale * ray[j] >= 0)
             end
 
-            # Row i really is the maximum on cone i -- without this the program
-            # constrains a different function.
+            # Row i attains the maximum on cone i.
             for k in eachindex(V.cones)
                 k == i && continue
                 JuMP.@constraint(model, values[i] + values[k] >= 0)
@@ -151,22 +130,12 @@ end
 solution_value(::ConicPolyhedralTemplate, V::ConicPolyhedralFunction) =
     ConicPolyhedralFunction(V.cones, JuMP.value.(V.P), JuMP.value(V.scale))
 
-# Template data, not a graph construction: it partitions the state space and
-# is indexed by node only because each node gets one.
-
 """
     planar_conic_partition(order)
 
-A partition of the plane into `4 * 2^(order - 1)` cones, each returned as a
-`2 x 2` matrix whose columns are its two extreme rays.
-
-Only the upper half-plane is covered, from `(1, 0)` round to `(-1, 0)`: the
-functions of [`ConicPolyhedralTemplate`](@ref) are symmetric, so the lower half
-is determined. `order = 1` is the four base cones, and each further order
-bisects every cone.
-
-Two-dimensional, unlike the template it feeds — a partition in higher dimension
-has to be supplied by the caller.
+A partition of the upper half-plane into `4 * 2^(order - 1)` cones, each a
+`2 x 2` matrix whose columns are its extreme rays; enough since the functions
+of [`ConicPolyhedralTemplate`](@ref) are symmetric.
 """
 function planar_conic_partition(order::Integer)
     order >= 1 || throw(ArgumentError("The order must be positive."))
@@ -199,8 +168,7 @@ function add_normalization!(
     ::ConicPolyhedralTemplate,
     ::ConicPolyhedralFunction,
 )
-    # The scale variable's own lower bound is the normalization: it forces
-    # V >= min_scale * ||x||_inf, so V = 0 is excluded before this hook runs.
+    # The lower bound min_scale on the scale variable already excludes V = 0.
     return nothing
 end
 
@@ -213,10 +181,8 @@ function add_domination!(
     scale = 1,
     margin = 0,
 )
-    # On cone i the source is the single row i, so the condition is linear:
-    # |row_r of P_dst . map x| <= scale * row_i of P_src . x for every r.
-    # Imposing it on the extreme rays covers the cone -- both sides are
-    # positively homogeneous and the constraint set convex.
+    # On cone i, V_src is row i, so the condition is linear; imposing it on the
+    # extreme rays covers the cone by homogeneity and convexity.
     for (i, cone) in enumerate(V_src.cones)
         for ray in eachcol(cone)
             source_value = (V_src.P * ray)[i]
@@ -238,8 +204,6 @@ function domination_slack(
     map::AbstractMatrix;
     scale = 1,
 )
-    # `add_domination!` imposes both signs of the destination row, so the pair
-    # is equivalent to scale * source - |destination| >= 0 on every ray.
     worst = Inf
 
     for (i, cone) in enumerate(V_src.cones)

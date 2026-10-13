@@ -5,7 +5,7 @@ module TestLiftReference
 # repository, Python on edge lists, and compared with ours at every edge of
 # five graphs. Agreement is exact wherever the paper defines the lift. What the
 # paper leaves open is pinned here as well: a node left without edges, which
-# its degree assumptions exclude, is deleted; and a locus of several edges is
+# its degree assumptions exclude, is deleted; and several given edges are
 # the lift applied edge by edge, with the self-loop last.
 
 using Test
@@ -153,7 +153,7 @@ const G4 = graph(
 )
 const LOOPS =
     graph([(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (2, 3, 1), (3, 1, 2), (3, 3, 2)], 3)
-const ONE = PCC.common_graph(OneStateAutomaton(2))
+const ONE = PCC.common_graph(2)
 const WORDS = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G2))
 
 const GRAPHS = [("G1", G1), ("G2", G2), ("G4", G4), ("loops", LOOPS), ("one", ONE)]
@@ -206,18 +206,18 @@ end
     end
 end
 
-# The reference applied at the edges of a locus one after the other, each on
+# The reference applied at the given edges one after the other, each on
 # the graph the previous one produced.
-function sequential(kind, g, locus)
+function sequential(kind, g, edge_list)
     current = nfa(g)
-    for e in locus
+    for e in edge_list
         current = REFERENCE[kind](current, triple(g, e)...)
     end
     return Set(current)
 end
 
-@testset "a locus at a surviving node is the reference edge by edge, loop last" begin
-    # Node 2 of LOOPS keeps (2, 3, 1); the locus is its other edge and its loop.
+@testset "edges at a surviving node are the reference edge by edge, loop last" begin
+    # Node 2 of LOOPS keeps (2, 3, 1); the given edges are its other edge and its loop.
     across = only(filter(e -> PCC.dest(e) == 1, PCC.outgoing_edges(LOOPS, 2, 1)))
     loop = only(PCC.outgoing_edges(LOOPS, 2, 2))
     @test PCC.source(across) == 2 && PCC.dest(across) == 1
@@ -231,7 +231,7 @@ end
     @test sequential("P*", LOOPS, [loop, across]) != sequential("P*", LOOPS, loop_last)
 
     # Without a loop the order only renumbers the copies, and ours -- which
-    # numbers them in locus order -- agrees with the reference in either.
+    # numbers them in the given order -- agrees with the reference in either.
     out = PCC.outgoing_edges(G4, 1)
     @test length(out) == 3
     for order in (out[1:2], reverse(out[1:2]))

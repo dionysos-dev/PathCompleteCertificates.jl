@@ -1,15 +1,8 @@
 """
     simulation(G, H) -> Union{Nothing, Vector{Int}}
 
-A map `R` from the nodes of `H` to those of `G` with `(R(a), R(b), i)` an edge
-of `G` for every edge `(a, b, i)` of `H` — Definition 3.1 of Philippe & Jungers
-— or `nothing` when none exists. `G` then *simulates* `H`.
-
-Simulation decides the ordering that holds for every template and every
-system (their Theorem 3.5): `H` is no worse than `G` for all of them exactly
-when `G` simulates `H`. The map is found by backtracking inside the greatest
-simulation relation between the nodes, the one [`MinLift`](@ref) decides with.
-One mode per edge.
+A map `R` from the nodes of `H` to those of `G` such that `(R(a), R(b), i)` is
+an edge of `G` for every edge `(a, b, i)` of `H`, or `nothing` if none exists.
 """
 function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     relation = _simulation_relation(G, H)
@@ -42,11 +35,8 @@ function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     return extend(1) ? assignment : nothing
 end
 
-# The greatest relation between the nodes of H and those of G in which every
-# move of H is matched by a move of G, as relation[h], the nodes of G related
-# to h, or nothing when some node of H is related to none. A greatest fixed
-# point, polynomial, and read as a map into subsets it is the simulation of H
-# by the min lift of G (Debauche, Thm. 8.1).
+# The greatest simulation relation: relation[h] lists the nodes of G that can
+# match h, or nothing when some h has none.
 function _simulation_relation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     index = _successors(G)
     edges_H = [(source(e), dest(e), label(H, e)) for e in edges(H)]

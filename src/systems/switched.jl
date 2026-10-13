@@ -6,39 +6,22 @@ const _HS = HybridSystems
 const _MS = MathematicalSystems
 
 """
-    switched_system(A; automaton = nothing)
-    switched_system(A, B; automaton = nothing)
+    switched_system(A)
+    switched_system(A, B)
 
-A discrete-time switched linear system, `x⁺ = A_σ x` or `x⁺ = A_σ x + B_σ u`,
-as a `HybridSystems.HybridSystem`.
-
-`A` and `B` are indexed by mode. `automaton` restricts which switching sequences
-are admissible; the default admits every sequence. The switching signal is
-never chosen; the input `u`, when there is one, is.
-
-Read the matrices back with [`mode_matrices`](@ref) and
-[`input_matrices`](@ref).
-
-```julia
-A = [[1.0 0.0; 0.0 0.5], [0.5 0.0; 0.0 1.0]]
-B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
-switched_system(A, B)
-```
+The discrete-time switched linear system `x⁺ = A_σ x` or `x⁺ = A_σ x + B_σ u`,
+with `A` and `B` indexed by mode, under arbitrary switching.
 """
 function switched_system end
 
-function switched_system(A::AbstractVector{<:AbstractMatrix}; automaton = nothing)
-    return automaton === nothing ? _HS.discreteswitchedsystem(A) :
-           _HS.discreteswitchedsystem(A, automaton)
-end
+switched_system(A::AbstractVector{<:AbstractMatrix}) = _HS.discreteswitchedsystem(A)
 
 function switched_system(
     A::AbstractVector{<:AbstractMatrix},
-    B::AbstractVector{<:AbstractMatrix};
-    automaton = nothing,
+    B::AbstractVector{<:AbstractMatrix},
 )
     n = _check_dimensions(A, B)
-    graph = automaton === nothing ? _HS.OneStateAutomaton(length(A)) : automaton
+    graph = _HS.OneStateAutomaton(length(A))
 
     # Modes carry no dynamics; the reset maps do, indexed by transition event.
     modes = [_MS.ContinuousIdentitySystem(n) for _ in _HS.states(graph)]
@@ -51,7 +34,7 @@ end
 """
     mode_matrices(system)
 
-The state matrices `A`, indexed by mode; [`input_matrices`](@ref) gives `B`.
+The state matrices `A`, indexed by mode.
 """
 function mode_matrices(system::_HS.HybridSystem)
     maps = _maps_by_mode(system)
@@ -85,7 +68,23 @@ function has_input(system::_HS.HybridSystem)
     )
 end
 
-# Reset maps keyed by mode, i.e. by the transition's event.
+"""
+    n_modes(system)
+
+The number of modes of `system`. Throws on a system whose automaton restricts
+the switching: constrained switching is not supported.
+"""
+function n_modes(system::_HS.HybridSystem)
+    system.automaton isa _HS.OneStateAutomaton || throw(
+        ArgumentError(
+            "constrained switching is not supported: the system's automaton must " *
+            "be a `OneStateAutomaton`, which admits every switching sequence",
+        ),
+    )
+
+    return _HS.ntransitions(system.automaton)
+end
+
 function _maps_by_mode(system::_HS.HybridSystem)
     maps = Dict{Int, Any}()
     for t in _HS.transitions(system.automaton)
@@ -124,16 +123,14 @@ end
     mode_matrix(system, word)
 
 The state matrix of one mode, or the product ``A_{i_k} ⋯ A_{i_1}`` along a word
-`(i_1, …, i_k)` — the dynamics an edge of a [`WordGraph`](@ref) imposes its
-inequality on.
+`(i_1, …, i_k)`.
 """
 mode_matrix(system::_HS.HybridSystem, mode::Integer) = mode_matrices(system)[mode]
 
 mode_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
     _product(mode_matrices(system), word)
 
-# The product along a word, on matrices already extracted: the model builders
-# call this per edge and must not rebuild the mode table each time.
+# Takes the extracted matrices so that per-edge callers do not rebuild them.
 function _product(A::AbstractVector{<:AbstractMatrix}, word)
     isempty(word) && throw(ArgumentError("a word must read at least one mode"))
 
@@ -149,9 +146,7 @@ end
 """
     is_invertible(system) -> Bool
 
-Whether every mode matrix has full rank. Composition with the dynamics keeps a
-node function positive definite only then, which is what the composition lifts
-require.
+Whether every mode matrix has full rank.
 """
 is_invertible(system::_HS.HybridSystem) =
     all(A -> LinearAlgebra.rank(A) == size(A, 1), mode_matrices(system))
@@ -159,27 +154,19 @@ is_invertible(system::_HS.HybridSystem) =
 """
     is_positive(system) -> Bool
 
-Whether every mode matrix is entrywise nonnegative — a positive system, the
-setting of the copositive templates.
+Whether every mode matrix is entrywise nonnegative.
 """
 is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(system))
 
 """
     dual(system)
 
-The system with every mode matrix transposed and, when switching is
-constrained, the automaton reversed. A certificate for it on the dual graph in
-the dual template is a certificate for `system` (Debauche, Lemma 6.25).
-
-Defined for input-free systems only.
+The system with every mode matrix transposed. Throws on a system with input.
 """
 function dual(system::_HS.HybridSystem)
     has_input(system) &&
         throw(ArgumentError("the dual of a controlled system is not defined"))
+    n_modes(system)
 
-    A = [collect(transpose(A_mode)) for A_mode in mode_matrices(system)]
-    automaton = language(system)
-
-    return automaton isa _HS.OneStateAutomaton ? switched_system(A) :
-           switched_system(A; automaton = dual(automaton))
+    return switched_system([collect(transpose(A_mode)) for A_mode in mode_matrices(system)])
 end

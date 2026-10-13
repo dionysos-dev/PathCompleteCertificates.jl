@@ -1,15 +1,6 @@
-# The SetProg template, as a package extension.
-#
-# SetProg pulls SumOfSquares, Polyhedra and the polynomial stack, so it stays
-# weak for the same reason as the sum-of-squares template. What it adds over
-# that one is the sets SetProg already knows how to constrain, the piecewise
-# semi-ellipsoids and the piecewise polytopes in particular.
-#
-# A node function is the gauge-like function of a set, so every primitive is a
-# set inclusion. All of them are modeled in SetProg's primal space, where a set
-# is represented by that function: the normalization `S ⊆ unit` needs it (a
-# constant polynomial or piecewise superset has no dual representation) and
-# the edge inclusions accept either space.
+# The methods of `SetProgTemplate`. Every primitive is a set inclusion, modeled
+# in SetProg's primal space, the only one where the normalization `S ⊆ unit`
+# can be written.
 module PathCompleteCertificatesSetProgExt
 
 import JuMP
@@ -40,16 +31,14 @@ _degree(::SetProg.Polytope) = 1
 function PCC.homogeneity_degree(template::PCC.SetProgTemplate)
     degrees = unique(_degree.(template.variables))
 
-    # One rate for the whole graph needs one degree: the edge condition scales
-    # `V_src` by gamma^d and `V_dst` would need a different power otherwise.
+    # One rate gamma^p for the whole graph needs one degree p.
     length(degrees) == 1 ||
         throw(ArgumentError("the set variables of every node must have the same degree"))
 
     return only(degrees)
 end
 
-# The variable with its dimension filled in, so that the normalization, which
-# is not given the dimension, can build the unit set.
+# The variable with its dimension filled in, for `_unit` to read.
 function _with_dimension(variable::SetProg.Ellipsoid, dimension)
     variable.point === nothing && variable.superset === nothing ||
         throw(ArgumentError("`point` and `superset` are not supported by SetProgTemplate"))
@@ -86,8 +75,7 @@ function _with_dimension(variable::SetProg.PolySet, dimension)
     variable.symmetric ||
         throw(ArgumentError("SetProgTemplate needs `PolySet(symmetric = true)`"))
 
-    # The unit set is a polynomial, and it has to be written in the variables of
-    # the set variable for the two to be compared.
+    # The unit set must be written in the same polynomial variables.
     variable.variables === nothing && throw(
         ArgumentError(
             "SetProgTemplate needs the polynomial variables, " *
@@ -139,7 +127,7 @@ end
 _identity(dimension) =
     LinearAlgebra.Symmetric(Matrix(1.0LinearAlgebra.I, dimension, dimension))
 
-# The 1-sublevel set of `‖x‖₂^d`, or of the gauge of the partition for a
+# The 1-sublevel set of `‖x‖₂^p`, or of the gauge of the partition for a
 # polytope, in the representation of the set variable.
 function _unit(variable::SetProg.Ellipsoid)
     ball = Sets.Ellipsoid(_identity(variable.dimension))
@@ -179,8 +167,7 @@ function PCC.add_normalization!(
     ::PCC.SetProgTemplate,
     S::SetProg.SetVariableRef,
 )
-    # `S ⊆ unit` is `V ≥ ‖x‖₂^d`. Any bounded set containing the origin in its
-    # interior can be scaled into it, so this excludes `V ≡ 0` and nothing else.
+    # `S ⊆ unit` is `V ≥ ‖x‖₂^p`, which only fixes the scale.
     JuMP.@constraint(model, S ⊆ _unit(S.set))
 
     return nothing
@@ -198,9 +185,7 @@ function PCC.add_domination!(
     margin == 0 ||
         throw(ArgumentError("SetProgTemplate does not support a positive margin"))
 
-    # The scale is folded into the map, `V_dst(A x) ≤ γᵈ V_src(x)` being
-    # `(A / γ) S_src ⊆ S_dst`, and a fractional root of a JuMP expression is
-    # not expressible.
+    # `V_dst(A x) ≤ γᵖ V_src(x)` is `(A / γ) S_src ⊆ S_dst`, so γ must be a number.
     scale isa Real ||
         throw(ArgumentError("SetProgTemplate needs a constant scale, got $scale"))
     scale > 0 || throw(ArgumentError("the scale must be positive, got $scale"))
@@ -225,8 +210,7 @@ _evaluate(set::Union{Sets.PolySet, Sets.ConvexPolySet}, x) =
 _evaluate(set::Sets.PolarPoint, x) = LinearAlgebra.dot(set.a, x)
 
 function _evaluate(set::Sets.Piecewise, x)
-    # The function is continuous, so a point on the boundary between two pieces
-    # can be evaluated in either of them.
+    # Continuous, so a point on a boundary may use either piece.
     piece = findfirst(piece -> x in piece, set.pieces)
     piece === nothing && throw(ArgumentError("$x is in none of the pieces"))
 

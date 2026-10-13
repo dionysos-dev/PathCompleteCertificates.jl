@@ -4,16 +4,15 @@ import LinearAlgebra
 """
     LinearCopositiveTemplate()
 
-The template ``V(x) = c^\\top x`` on the nonnegative orthant.  It is applicable
-to positive switched systems only: every mode matrix must map ``\\mathbb{R}^n_+``
-into itself.
+The template ``V(x) = c^\\top x`` on the nonnegative orthant, for positive
+systems only.
 """
 struct LinearCopositiveTemplate <: AbstractTemplate end
 
 """
     LinearCopositiveFunction(c)
 
-One fitted node function of a [`LinearCopositiveTemplate`](@ref), `V(x) = c'x`.
+A node function `V(x) = c'x` of a [`LinearCopositiveTemplate`](@ref).
 """
 struct LinearCopositiveFunction{C <: AbstractVector}
     c::C
@@ -59,8 +58,7 @@ function add_domination!(
     scale = 1,
     margin = 0,
 )
-    # On the nonnegative orthant the gauge is linear, so the margin term
-    # `margin * ||x||_1 = margin * sum(x)` is linear too and costs nothing.
+    # On the orthant, margin * ||x||_1 = margin * sum(x) is linear.
     JuMP.@constraint(model, transpose(map) * c_dst .<= scale * c_src .- margin)
 
     return nothing
@@ -88,9 +86,8 @@ function domination_slack(
     return minimum(scale * V_src.c - transpose(map) * V_dst.c)
 end
 
-# Closed under addition (Debauche, Della Rossa & Jungers, Prop. 6). Under
-# composition, cᵀAx = (Aᵀc)ᵀx stays strictly positive on the orthant when A is
-# nonnegative with no zero column; under the inverse, when A⁻¹ is nonnegative.
+# Under composition, (Aᵀc)ᵀx stays positive when A ≥ 0 has no zero column;
+# under the inverse, when A⁻¹ ≥ 0.
 is_closed_under(::LinearCopositiveTemplate, ::Addition, system) = true
 
 function is_closed_under(::LinearCopositiveTemplate, ::Composition, system)
@@ -102,16 +99,10 @@ function is_closed_under(::LinearCopositiveTemplate, ::InverseComposition, syste
     return all(A -> all(>=(0), inv(A)), mode_matrices(system))
 end
 
-# The dual norm of cᵀx on the orthant is max_i x_i / c_i (Debauche, Def. 2.30).
 has_dual(::LinearCopositiveTemplate) = true
 dual(::LinearCopositiveTemplate) = DualCopositiveTemplate()
 dual(::LinearCopositiveTemplate, V::LinearCopositiveFunction) = DualCopositiveFunction(V.c)
 
-# Valid without closure: the template is not closed under the pointwise minimum
-# as a set of functions, yet G ≤ G_min holds for it on positive linear systems
-# by a different construction (Debauche, Thm. 7.43, through Cor. 2.36) -- the
-# one documented override of the closure rule. Positive systems are the whole
-# domain of the template (`check_dynamics`), so the theorem's hypothesis is not
-# re-tested here: the answer must agree with the dual side, where the max lift
-# is valid for the dual norms by closure (Prop. 7.5).
+# Not closed under minimum, yet G ≤ G_min holds on positive systems
+# [debauche2024thesis, Thm. 7.43], which `check_dynamics` already enforces.
 is_valid(::MinLift, ::LinearCopositiveTemplate, system) = true

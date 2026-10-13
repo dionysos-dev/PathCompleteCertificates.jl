@@ -69,36 +69,20 @@ end
 end
 
 @testset "the alias covers every system with an input" begin
-    g = HS.GraphAutomaton(2)
-    HS.add_transition!(g, 1, 1, 1)
-    HS.add_transition!(g, 1, 2, 2)
-    HS.add_transition!(g, 2, 1, 1)
-
-    # It is a test of shape, and the shape must not depend on whether the
-    # switching happens to be restricted -- the automaton parameter is open.
     @test PCC.has_input(PCC.switched_system(A, B))
-    @test PCC.has_input(PCC.switched_system(A, B; automaton = g))
-
-    # No input, no match, constrained or not.
     @test !PCC.has_input(PCC.switched_system(A))
-    @test !PCC.has_input(PCC.switched_system(A; automaton = g))
 end
 
-@testset "constrained switching" begin
-    # Mode 2 may not follow mode 2 -- an automaton the default cannot express.
+@testset "the number of modes, under arbitrary switching only" begin
+    @test PCC.n_modes(PCC.switched_system(A)) == 2
+    @test PCC.n_modes(PCC.switched_system(A, B)) == 2
+
+    # A system built directly on a restricting automaton is refused.
     g = HS.GraphAutomaton(2)
     HS.add_transition!(g, 1, 1, 1)
     HS.add_transition!(g, 1, 2, 2)
     HS.add_transition!(g, 2, 1, 1)
-
-    s = PCC.switched_system(A, B; automaton = g)
-    @test HS.nstates(s.automaton) == 2
-    @test HS.ntransitions(s.automaton) == 3
-    @test PCC.has_input(s)
-
-    # Constrained switching also works without an input.
-    plain = PCC.switched_system(A; automaton = g)
-    @test !PCC.has_input(plain)
+    @test_throws ArgumentError PCC.n_modes(HS.discreteswitchedsystem(A, g))
 end
 
 @testset "dimension errors are caught at construction" begin

@@ -5,7 +5,7 @@ import LinearAlgebra
     OptimalControlProblem(system, Q, R)
 
 Quadratic optimal-control problem for a switched linear system with an input
-(Ninite, Banse, Berger & Jungers). The stage cost is `x'Q*x + u'R*u`, with `Q`
+[ninite2026path](@cite). The stage cost is `x'Q*x + u'R*u`, with `Q`
 and `R` symmetric positive definite.
 """
 struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
@@ -19,8 +19,7 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         Q::AbstractMatrix,
         R::AbstractMatrix,
     ) where {S}
-        # Without this the destructuring below silently splits a two-mode
-        # autonomous system into A and B, reporting a nonsense dimension.
+        # Otherwise a two-mode autonomous system would be split into A and B.
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
@@ -46,28 +45,17 @@ end
 """
     OptimalControlCertificate
 
-A jointly synthesised state-feedback policy and the value-function bound it
-comes with.
-
-`gains` is one feedback matrix per node: at node `a` the policy is
-`u = gains[a] * x`. The bound on the closed-loop value function is
-`certificate(x)`, a function of the state, and `functions(certificate)` are the
-quadratic forms it is the minimum of.
+A state-feedback policy, `u = gains[a] * x` at node `a`, and an upper bound on
+its value function, the minimum of the node quadratic forms. Calling the
+certificate `c` as `c(x)` evaluates this bound.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
     gains::K
 end
 
-# The one edge condition that does not factor through `add_domination!`, so it
-# is not an `add_edge_constraint!` method: that signature takes two node
-# functions, and this inequality,
-#
-#     P_src >= Q + K'RK + (A + BK)' P_dst (A + BK),
-#
-# is convex only under S = P^-1, Y = K S. It is written on the quadratic
-# template's variables as the *inverse* of the node function, which is why only
-# that template supports it.
+# P_src >= Q + K'RK + (A + BK)' P_dst (A + BK), convex only under S = P^-1,
+# Y = K S; written on S, not P, so it is not an `add_edge_constraint!` method.
 function _add_edge_lmi!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
@@ -109,10 +97,9 @@ end
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build the optimal-control program without solving it.
-
-Supports complete graphs and `QuadraticTemplate` only; see
-[`certify`](@ref) for what the solved program yields.
+Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`.
+Only complete graphs and `QuadraticTemplate` are supported. `psd_margin` is the
+strictness of every matrix inequality.
 """
 function optimization_model(
     template::AbstractTemplate,
@@ -179,15 +166,9 @@ end
 """
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Synthesize a quadratic state-feedback policy and an upper bound on the closed-loop
-value function for `problem`. Supports complete graphs and `QuadraticTemplate`
-only.
-
-Returns an [`OptimalControlCertificate`](@ref): `functions(certificate)` are
-the node matrices and `gains` the feedback gains, one of each per node, and the
-value-function bound is `certificate(x)`, a function of the state. Among the
-feasible certificates the solver picks the one of largest volume, by the
-log-determinant objective `Σᵢ log det Pᵢ⁻¹`.
+Synthesise a state-feedback policy and a bound on its value function, returned
+as an [`OptimalControlCertificate`](@ref). Only complete graphs and
+`QuadraticTemplate` are supported; the solver maximises `Σᵢ log det Pᵢ⁻¹`.
 """
 function certify(
     template::AbstractTemplate,
@@ -240,9 +221,7 @@ function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
         size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
     end
 
-    # Stricter than `_check_path_complete`: the bound is read off the plain
-    # minimum of Corollary III.3, which needs a *complete* graph. The general
-    # case is sound (Theorem III.8) but needs the common function over the observer.
+    # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
     is_complete(graph, 1:length(A)) || throw(
         ArgumentError(
             "optimal control currently supports only complete graphs; " *

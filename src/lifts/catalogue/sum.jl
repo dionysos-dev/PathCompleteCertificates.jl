@@ -4,24 +4,14 @@ import JuMP
     SumLift(T)
     SumLift()
 
-The `T`-sum lift: nodes are the multisets of `T` original nodes, `(P, Q, i)`
-is an edge when the `i`-edges from `P` to `Q` admit a perfect matching
-(Debauche, Della Rossa & Jungers, Def. 8; Debauche, Prop. 7.16), and the node
-function is the sum over the multiset. Without `T` it is the sum lift over
-every size (Debauche, Della Rossa & Jungers, HSCC 2023, Def. 8), which cannot
-be built but whose simulation is decided by a linear program.
-
-Valid for templates closed under [`Addition`](@ref); self-dual (Debauche,
-Prop. 7.13). `simulation(SumLift(), G, H; optimizer)` returns a nonnegative
-integer matrix `C`, every row summing to at least one, such that `C·V` is a
-certificate on `H` whenever `V` is one on `G` (Philippe, Athanasopoulos,
-Angeli & Jungers, Def. IV.2 and Thm. IV.4). It is complete: feasible exactly
-when some `T`-sum lift of `G` simulates `H` (Debauche, Thm. 7.35 and
-Cor. 8.11). The solver's matrix is rounded to integers and checked against the
-program again before it is returned. `simulation(SumLift(T), G, H)` builds the
-`T`-th level and returns a map into multisets, which exists for some `T`
-whenever the program is feasible (HSCC 2023, Lemma 3). `origins` are the
-multisets as sorted vectors.
+The `T`-sum lift: nodes are the multisets of `T` nodes, with an `i`-edge from
+`P` to `Q` when the `i`-edges from `P` to `Q` admit a perfect matching.
+`SumLift()` stands for every `T` at once and is never built:
+`simulation(SumLift(), G, H; optimizer)` decides it
+[debauche2024thesis; Thm. 7.35 and Cor. 8.11](@cite) and returns an integer
+matrix `C` such that `C·V` is a certificate on `H` whenever `V` is one on `G`
+[philippe2017path; Def. IV.2 and Thm. IV.4](@cite). Requires
+[`Addition`](@ref).
 """
 struct SumLift{T <: Union{Nothing, Int}} <: AbstractLift
     terms::T
@@ -48,7 +38,7 @@ function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
     letters = sort(alphabet(g))
-    index = _successors(_letter_graph(g))
+    index = _successors(_letter_graph(g, "the sum lift"))
     multisets = _multisets(n_nodes(g), L.terms)
 
     lifted = empty_graph(length(multisets))
@@ -108,7 +98,7 @@ function simulation(
     optimizer === nothing && throw(
         ArgumentError("the sum lift is decided by a linear program and needs an optimizer"),
     )
-    G, H = _letter_graph(G), _letter_graph(H)
+    G, H = _letter_graph(G, "the sum lift"), _letter_graph(H, "the sum lift")
 
     program = _sum_program(G, H, optimizer, nothing)
     program === nothing && return nothing
@@ -117,8 +107,7 @@ function simulation(
     JuMP.optimize!(model)
     JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES || return nothing
 
-    # What is returned is the rounded matrix, so it is the rounded matrix that
-    # is checked against the program.
+    # The rounded matrix is what is returned, so it is what is checked.
     integers = _integerise(JuMP.value.(C))
     check, _ = _sum_program(G, H, optimizer, integers)
     JuMP.optimize!(check)
@@ -130,9 +119,8 @@ function simulation(
     return integers
 end
 
-# The program of Philippe et al., Def. IV.2: over the matrix `C` when `nothing`
-# is given, over the multipliers alone when `C` is. `nothing` when some mode of
-# `H` is read nowhere in `G`.
+# The program of [philippe2017path, Def. IV.2], over the multipliers alone when `C`
+# is given; `nothing` when some mode of `H` is read nowhere in `G`.
 function _sum_program(G, H, optimizer, C)
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)

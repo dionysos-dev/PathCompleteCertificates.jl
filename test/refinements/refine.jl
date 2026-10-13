@@ -471,28 +471,4 @@ end
     @test_throws ArgumentError composition(polyhedral; atol = 1e-4)
 end
 
-@testset "a constrained system is refined from its automaton" begin
-    # Mode 2 may never follow itself. The starting graph is the automaton; every graph of
-    # the run reads its language, and the bound is below the unconstrained one.
-    constraint = GraphAutomaton(2)
-    add_transition!(constraint, 1, 1, 1)
-    add_transition!(constraint, 1, 2, 2)
-    add_transition!(constraint, 2, 1, 1)
-
-    A = [0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]
-    constrained = PCC.StabilityProblem(PCC.switched_system(A; automaton = constraint))
-
-    trace = PCC.refine(TEMPLATE, constrained; optimizer = OPTIMIZER, depth_max = 3)
-
-    @test PCC.n_nodes(PCC.graphs(trace)[1]) == 2
-    @test all(
-        g -> PCC.is_path_complete(g, PCC.language(constrained.system)),
-        PCC.graphs(trace),
-    )
-    @test issorted(PCC.rates(trace); rev = true)
-
-    unconstrained = PCC.refine(TEMPLATE, SHEARED; optimizer = OPTIMIZER, depth_max = 3)
-    @test PCC.rates(trace)[end] <= PCC.rates(unconstrained)[end] + 1e-6
-end
-
 end # module

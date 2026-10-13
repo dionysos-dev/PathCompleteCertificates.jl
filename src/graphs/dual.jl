@@ -1,22 +1,10 @@
-# The dual graph: every edge reversed, every word reversed (Debauche, Def. 6.3).
-# Path-completeness is preserved (Prop. 6.6), and a certificate on the dual
-# graph for the transposed system in the dual template is a certificate on the
-# original (Lemma 6.25) -- which is what makes every "backward" lift the dual of
-# a "forward" one.
+"""
+    dual(graph)
 
+The dual graph: every edge `s → d` reversed into `d → s`, every word reversed.
+Path-completeness is preserved.
+"""
 dual(graph::CertificateGraph) = first(_dual_with_images(graph))
-
-"""
-    dual(graph, edges) -> (dual_graph, dual_edges)
-
-The dual graph together with the edges of it that `edges` became, in order:
-what applying a refinement at a locus of the dual graph needs.
-"""
-function dual(graph::CertificateGraph, locus::AbstractVector{<:_HS.GraphTransition})
-    dualised, image = _dual_with_images(graph)
-
-    return dualised, [image[edge] for edge in locus]
-end
 
 # The dual graph and, for every edge of the original, the reversed edge it
 # became.

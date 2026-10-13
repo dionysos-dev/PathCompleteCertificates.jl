@@ -4,15 +4,10 @@ import LinearAlgebra
 """
     SafetyProblem(system, S0, Su)
 
-Path-complete safety problem for an input-free switched linear system (Anand,
-Jungers, Zamani & Allgöwer, CDC 2024).
-
-`S0` and `Su` describe the initial and unsafe sets in homogeneous coordinates,
-as `{x : [x; 1]' S [x; 1] ≥ 0}`. The candidate barrier functions are
-
-    B_v(x) = [x; 1]' * P_v * [x; 1]
-
-where `P_v` is symmetric but not necessarily positive semidefinite.
+Safety problem for an input-free switched linear system [anand2024barrier](@cite),
+with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
+The barrier at node `v` is `[x; 1]' P_v [x; 1]` with `P_v` symmetric, not
+necessarily positive semidefinite.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem
     system::S
@@ -47,16 +42,9 @@ end
 """
     SafetyCertificate
 
-A path-complete barrier function and the separation it achieves.
-
-`margin` is how strictly the barrier is negative on the initial set and positive
-on the unsafe one. It is strictly positive exactly when the barrier certifies
-anything; at zero the two sets are not separated. The barriers are
-scale-normalised, so it is comparable between graphs rather than an arbitrary
-number.
-
-`initial_multipliers` and `unsafe_multipliers` are the S-procedure multipliers,
-one per node.
+A path-complete barrier function, its `margin` of separation between the
+initial and unsafe sets (positive when safety is certified), and the S-procedure
+multipliers `initial_multipliers` and `unsafe_multipliers`, one per node.
 """
 struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     data::D
@@ -65,13 +53,8 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     unsafe_multipliers::M
 end
 
-# `B_dst(A x) <= B_src(x)`: non-increasing, with no margin and no scale.
-#
-# A margin here is unsatisfiable, not merely unnecessary. The constant direction
-# e = [0, ..., 0, 1] is fixed by every lifted map, so reading the condition at e
-# gives P_src[end, end] >= P_dst[end, end] + margin, which telescopes around any
-# cycle to 0 >= L * margin. Every path-complete graph has a cycle. Strictness
-# belongs on the set separation, and the model builder puts it there.
+# `B_dst(A x) <= B_src(x)` with no margin: every lifted map fixes [0, …, 0, 1],
+# so a margin would sum to `0 >= L * margin` around a cycle.
 function add_edge_constraint!(
     model::JuMP.Model,
     ::SafetyProblem,
@@ -89,7 +72,7 @@ end
 """
     optimization_model(template, graph, problem; optimizer)
 
-Construct the path-complete barrier optimization model.
+Build, without solving, the barrier program; only `QuadraticTemplate` is supported.
 """
 function optimization_model(
     template::AbstractTemplate,
@@ -113,22 +96,17 @@ function optimization_model(
     n = size(first(A), 1)
     d = n + 1
 
-    # Barrier matrices: symmetric but sign-free, so no PSD constraint here --
-    # requiring it leaves P = 0 as the only solution.
+    # No PSD constraint on the barriers: it would force P = 0.
     Ps = [add_function_variables!(model, template, d, i) for i in 1:n_nodes]
 
-    # Initial-set and unsafe-set multipliers
     gamma0 =
         [JuMP.@variable(model, lower_bound = 0, base_name = "gamma0_$i") for i in 1:n_nodes]
 
     gammau =
         [JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for i in 1:n_nodes]
 
-    # How strictly the barrier separates the two sets. See
-    # `add_edge_constraint!` for why it cannot live on the transitions.
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
 
-    # Initial-set and unsafe-set constraints
     for i in 1:n_nodes
         JuMP.@constraint(
             model,
@@ -140,15 +118,11 @@ function optimization_model(
             Ps[i] - gammau[i] * problem.Su - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
         )
 
-        # Everything else is homogeneous of degree one in (P, gamma, eps), so
-        # without a scale `max eps` is unbounded whenever positive at all. Any
-        # feasible family can be scaled into this box, so it costs nothing and
-        # makes eps comparable between graphs.
+        # -I ⪯ P ⪯ I: the rest is homogeneous, so `max eps` is otherwise unbounded.
         JuMP.@constraint(model, LinearAlgebra.I(d) - Ps[i] in JuMP.PSDCone())
         JuMP.@constraint(model, Ps[i] + LinearAlgebra.I(d) in JuMP.PSDCone())
     end
 
-    # Transition constraints
     for edge in edges(graph)
         i = source(edge)
         j = dest(edge)
@@ -165,7 +139,6 @@ function optimization_model(
 
     JuMP.@objective(model, Max, eps)
 
-    # Store variables for result extraction
     model[:safety_P] = Ps
     model[:safety_gamma0] = gamma0
     model[:safety_gammau] = gammau
@@ -178,12 +151,7 @@ end
 """
     certify(template, graph, problem; optimizer)
 
-Solve the path-complete barrier optimization problem.
-
-Returns a [`SafetyCertificate`](@ref). Its `margin` is the separation achieved
-between the initial and unsafe sets, and it is strictly positive exactly when
-the barrier certifies anything; `initial_multipliers` and
-`unsafe_multipliers` are the S-procedure multipliers.
+Solve the barrier program and return a [`SafetyCertificate`](@ref).
 """
 function certify(
     template::AbstractTemplate,
@@ -223,8 +191,7 @@ function certify(
     gammau_val = JuMP.value.(gammau)
     eps_val = JuMP.value(eps)
 
-    # Re-check on the returned numbers rather than trusting the status. A
-    # margin of zero means the sets are not separated, so it certifies nothing.
+    # Re-check on the returned numbers rather than trusting the status.
     feas = eps_val > _SAFETY_MARGIN_TOLERANCE
 
     for i in eachindex(Pval)
@@ -247,9 +214,7 @@ function certify(
     )
 end
 
-# How positive the separation margin has to be before a barrier counts as one.
-# The barriers are scale-normalised, so a margin at solver noise means the sets
-# were not separated.
+# Smallest margin counted as a separation; below it is solver noise.
 const _SAFETY_MARGIN_TOLERANCE = 1e-8
 
 # The map x⁺ = A x in homogeneous coordinates.
@@ -274,8 +239,7 @@ function _check_safety_data(
     return nothing
 end
 
-# The one (template, problem) pair needing its own method: a barrier lives in
-# homogeneous coordinates, so it is evaluated at [x; 1].
+# A barrier lives in homogeneous coordinates.
 function node_value(
     ::QuadraticTemplate,
     ::SafetyProblem,

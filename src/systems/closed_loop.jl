@@ -1,24 +1,12 @@
-# The closed loop, kept apart from `simulate.jl` because it is the one part of
-# simulation that depends on the problem axis: it dispatches on a certificate.
+# Apart from `simulate.jl` because it depends on the certificate types.
 
 """
     simulate(certificate, x0, steps; rng = Random.default_rng(), node = nothing)
 
-Run the closed loop under the policy an [`OptimalControlCertificate`](@ref)
-carries, and return a [`Trajectory`](@ref) whose [`inputs`](@ref) are the
-inputs applied. The mode at each step is drawn from the modes the system's
-automaton admits, as in the open-loop method.
-
-The policy has memory: the gains are indexed by node of the certificate graph,
-and that node advances along the observed mode, so the run tracks the state,
-the automaton state and the graph node at once. A memoryless law `u(x)` cannot
-express it, which is why it is not the `u` keyword of the open-loop method.
-
-`node` is the node of the certificate graph the policy starts in. By default it
-is the node whose function attains `certificate(x0)`, so the run is bounded by
-the common bound at the initial state. Where the graph offers several
-successors for the observed mode the first is taken; on a De Bruijn graph the
-successor is unique.
+Run the closed loop under the policy of `certificate` along modes drawn uniformly
+at random, and return a [`Trajectory`](@ref). The gain applied is that
+of the current graph node, which follows the observed modes from `node`, by
+default the node whose function is smallest at `x0`.
 """
 function simulate(
     certificate::OptimalControlCertificate,
@@ -50,7 +38,7 @@ function simulate(
     node = something(node, argmin([V(x0) for V in functions(certificate)]))
     _check_node(certificate_graph, node)
 
-    modes = _random_modes(system.automaton, first(_HS.states(system.automaton)), steps, rng)
+    modes = rand(rng, 1:n_modes(system), steps)
 
     T = promote_type(eltype(x0), eltype(first(A)), eltype(first(B)), eltype(first(gains)))
 
