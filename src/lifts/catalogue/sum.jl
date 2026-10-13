@@ -37,13 +37,13 @@ lift(::SumLift{Nothing}, ::CertificateGraph) = throw(
 function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
-    letters = sort(alphabet(g))
+    modes = sort(alphabet(g))
     index = _successors(_letter_graph(g, "the sum lift"))
     multisets = _multisets(n_nodes(g), L.terms)
 
     lifted = empty_graph(length(multisets))
 
-    for (p, P) in enumerate(multisets), (q, Q) in enumerate(multisets), letter in letters
+    for (p, P) in enumerate(multisets), (q, Q) in enumerate(multisets), letter in modes
         _has_perfect_matching(P, Q, letter, index) && add_edge!(lifted, p, q, letter)
     end
 
@@ -105,13 +105,13 @@ function simulation(
 
     model, C = program
     JuMP.optimize!(model)
-    JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES || return nothing
+    JuMP.is_solved_and_feasible(model; allow_almost = true) || return nothing
 
     # The rounded matrix is what is returned, so it is what is checked.
     integers = _integerise(JuMP.value.(C))
     check, _ = _sum_program(G, H, optimizer, integers)
     JuMP.optimize!(check)
-    JuMP.termination_status(check) in _FEASIBLE_TERMINATION_STATUSES || error(
+    JuMP.is_solved_and_feasible(check; allow_almost = true) || error(
         "the linear program is feasible, but its solution did not round to an " *
         "integer matrix that still satisfies it",
     )
@@ -166,7 +166,7 @@ function _integerise(C::AbstractMatrix{<:Real}; tol = 1e-8)
     rationals = rationalize.(Int, scaled; tol = tol)
     denominators = lcm(denominator.(rationals)...)
     integers = Int.(rationals .* denominators)
-    common = gcd(integers...)
+    divisor = gcd(integers...)
 
-    return common == 0 ? integers : integers .÷ common
+    return divisor == 0 ? integers : integers .÷ divisor
 end

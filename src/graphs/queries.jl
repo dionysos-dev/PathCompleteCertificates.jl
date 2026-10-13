@@ -42,7 +42,7 @@ with [`add_edge!`](@ref), one mode per edge.
 empty_graph(n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
 
 # An empty graph of the same kind as `graph`.
-_empty_like(::_HS.GraphAutomaton, n_nodes::Integer) = _HS.GraphAutomaton(n_nodes)
+_empty_like(::_HS.GraphAutomaton, n_nodes::Integer) = empty_graph(n_nodes)
 _empty_like(::WordGraph, n_nodes::Integer) = WordGraph(n_nodes)
 
 """
@@ -245,21 +245,15 @@ The number of edges entering `node`.
 """
 indegree(graph::CertificateGraph, node::Integer) = length(incoming_edges(graph, node))
 
-function _successors(graph::_HS.GraphAutomaton)
+# The nodes reached from each node by each mode, forward or backward.
+_successors(graph::_HS.GraphAutomaton) = _adjacency(graph, source, dest)
+_predecessors(graph::_HS.GraphAutomaton) = _adjacency(graph, dest, source)
+
+function _adjacency(graph::_HS.GraphAutomaton, from, to)
     index = Dict{Tuple{Int, Int}, Vector{Int}}()
 
     for edge in edges(graph)
-        push!(get!(index, (source(edge), label(graph, edge)), Int[]), dest(edge))
-    end
-
-    return index
-end
-
-function _predecessors(graph::_HS.GraphAutomaton)
-    index = Dict{Tuple{Int, Int}, Vector{Int}}()
-
-    for edge in edges(graph)
-        push!(get!(index, (dest(edge), label(graph, edge)), Int[]), source(edge))
+        push!(get!(index, (from(edge), label(graph, edge)), Int[]), to(edge))
     end
 
     return index
@@ -274,7 +268,7 @@ _letter_graph(graph::_HS.GraphAutomaton, ::AbstractString) = graph
 function _letter_graph(graph::WordGraph, what::AbstractString)
     _require_one_mode_per_edge(graph, what)
 
-    result = _HS.GraphAutomaton(n_nodes(graph))
+    result = empty_graph(n_nodes(graph))
 
     for edge in edges(graph)
         add_edge!(result, source(edge), dest(edge), only(label(graph, edge)))

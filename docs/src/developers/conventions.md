@@ -37,7 +37,7 @@ reindex(template, origins)                                 # per-node data follo
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
@@ -53,7 +53,9 @@ every ``x`` needs a cone that depends only on the template, so stability's edge
 condition is one call with `scale = γᵖ`. Optimal control is the exception. Its
 inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,
 so it cannot be written against `V_src` and `V_dst`; it works on the quadratic
-template's variables directly, and a comment in the code says so.
+template's variables directly, and a comment in the code says so. Each problem
+writes its edge condition once, in a private `_edge_decrease` that both builds
+the model and measures the slacks.
 
 A template is an **instance**, never a type: `ParallelFacesPolyhedralTemplate` carries a
 matrix per node, and `::Type{T}` has nowhere to put it. An `AbstractTemplate`

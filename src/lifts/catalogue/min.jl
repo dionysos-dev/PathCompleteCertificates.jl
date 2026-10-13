@@ -19,7 +19,7 @@ function lift(::MinLift, g::CertificateGraph)
     _check_lift_size(g, "min lift", big(2)^n_nodes(g) - 1)
 
     n = n_nodes(g)
-    letters = sort(alphabet(g))
+    modes = sort(alphabet(g))
     index = _successors(_letter_graph(g, "the min lift"))
     masks = collect(_masks(n))
 
@@ -30,7 +30,7 @@ function lift(::MinLift, g::CertificateGraph)
 
     lifted = empty_graph(length(masks))
 
-    for (a, A) in enumerate(masks), letter in letters
+    for (a, A) in enumerate(masks), letter in modes
         members = _members(A, n)
         all(node -> haskey(reach, (node, letter)), members) || continue
 

@@ -49,21 +49,12 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     unsafe_multipliers::M
 end
 
-# `B_dst(A x) <= B_src(x)` with no margin: every lifted map fixes [0, …, 0, 1],
-# so a margin would sum to `0 >= L * margin` around a cycle.
-function add_edge_constraint!(
-    model::JuMP.Model,
-    ::SafetyProblem,
-    template::AbstractTemplate,
-    P_src,
-    P_dst,
-    A::AbstractMatrix;
-    scale::Real = 1,
-)
-    add_decrease!(model, template, P_src, P_dst, _homogeneous_dynamics(A))
-
-    return nothing
-end
+# The decrease condition of `edge`, `B_dst(A x) <= B_src(x)` in homogeneous
+# coordinates, with scale 1 and no margin: every lifted map fixes [0, …, 0, 1],
+# so a margin would sum to `0 >= L * margin` around a cycle. Written once, for
+# the model and for the slacks.
+_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
+    _homogeneous_dynamics(A[only(letters(label(graph, edge)))])
 
 """
     optimization_model(template, graph, problem; optimizer)
@@ -80,30 +71,29 @@ function optimization_model(
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
+    n = _check_safety_data(graph, problem; path_complete = path_complete)
     A = mode_matrices(problem.system)
-    _check_safety_data(graph, A, problem; path_complete = path_complete)
-
-    node_list = collect(nodes(graph))
-    n_nodes = length(node_list)
+    d = n + 1
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    n = size(first(A), 1)
-    d = n + 1
-
     # No PSD constraint on the barriers: it would force P = 0.
-    Ps = [add_function_variables!(model, template, d, i) for i in 1:n_nodes]
+    Ps = [add_function_variables!(model, template, d, i) for i in nodes(graph)]
 
-    gamma0 =
-        [JuMP.@variable(model, lower_bound = 0, base_name = "gamma0_$i") for i in 1:n_nodes]
+    gamma0 = [
+        JuMP.@variable(model, lower_bound = 0, base_name = "gamma0_$i") for
+        i in nodes(graph)
+    ]
 
-    gammau =
-        [JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for i in 1:n_nodes]
+    gammau = [
+        JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for
+        i in nodes(graph)
+    ]
 
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
 
-    for i in 1:n_nodes
+    for i in nodes(graph)
         JuMP.@constraint(
             model,
             -(Ps[i] + gamma0[i] * problem.S0) - eps * LinearAlgebra.I(d) in JuMP.PSDCone()
@@ -120,17 +110,8 @@ function optimization_model(
     end
 
     for edge in edges(graph)
-        i = source(edge)
-        j = dest(edge)
-
-        add_edge_constraint!(
-            model,
-            problem,
-            template,
-            Ps[i],
-            Ps[j],
-            A[only(letters(label(graph, edge)))],
-        )
+        dynamics = _edge_decrease(problem, graph, edge, A)
+        add_decrease!(model, template, Ps[source(edge)], Ps[dest(edge)], dynamics)
     end
 
     JuMP.@objective(model, Max, eps)
@@ -139,7 +120,6 @@ function optimization_model(
     model[:safety_gamma0] = gamma0
     model[:safety_gammau] = gammau
     model[:safety_eps] = eps
-    model[:safety_nodes] = node_list
 
     return model
 end
@@ -165,17 +145,14 @@ function certify(
     )
 
     JuMP.optimize!(model)
+    termination = JuMP.termination_status(model)
 
-    status = JuMP.termination_status(model)
-
-    if !(status in _FEASIBLE_TERMINATION_STATUSES)
-        return SafetyCertificate(
-            _failed(problem, template, graph, status),
-            nothing,
-            nothing,
-            nothing,
-        )
-    end
+    JuMP.is_solved_and_feasible(model; allow_almost = true) || return SafetyCertificate(
+        _failed(problem, template, graph, termination),
+        nothing,
+        nothing,
+        nothing,
+    )
 
     Ps = model[:safety_P]
     gamma0 = model[:safety_gamma0]
@@ -203,7 +180,7 @@ function certify(
     end
 
     return SafetyCertificate(
-        CertificateData(problem, template, graph, Pval, status, feas),
+        CertificateData(problem, template, graph, Pval, termination, feas),
         eps_val,
         gamma0_val,
         gammau_val,
@@ -223,16 +200,14 @@ function _homogeneous_dynamics(A::AbstractMatrix)
     ]
 end
 
+# Validate the data and return the state dimension.
 function _check_safety_data(
     graph::CertificateGraph,
-    A::AbstractVector{<:AbstractMatrix},
     problem::SafetyProblem;
     path_complete::Bool = true,
 )
     _require_one_mode_per_edge(graph, "SafetyProblem")
-    _check_modes(graph, problem.system; path_complete = path_complete)
-
-    return nothing
+    return _check_modes(graph, problem.system; path_complete = path_complete)
 end
 
 # A barrier lives in homogeneous coordinates.
@@ -253,17 +228,14 @@ function edge_slacks(certificate::SafetyCertificate)
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no functions to measure"))
 
+    problem_ = problem(certificate)
     graph_ = graph(certificate)
     template_ = template(certificate)
     B = functions(certificate)
-    A = mode_matrices(problem(certificate).system)
+    A = mode_matrices(problem_.system)
 
     return map(edges(graph_)) do edge
-        return decrease_slack(
-            template_,
-            B[source(edge)],
-            B[dest(edge)],
-            _homogeneous_dynamics(A[only(letters(label(graph_, edge)))]),
-        )
+        dynamics = _edge_decrease(problem_, graph_, edge, A)
+        return decrease_slack(template_, B[source(edge)], B[dest(edge)], dynamics)
     end
 end

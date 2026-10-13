@@ -7,14 +7,6 @@ A property to certify, defined by the inequality imposed along each edge.
 """
 abstract type AbstractProblem end
 
-"""
-    add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
-
-Add the problem's inequality for one edge, where `dynamics` is the product of
-the matrices of the modes the edge reads and `scale` multiplies the source side.
-"""
-function add_edge_constraint! end
-
 # Whether the problem accepts words on the edges; only stability does.
 _accepts_words(::AbstractProblem) = false
 

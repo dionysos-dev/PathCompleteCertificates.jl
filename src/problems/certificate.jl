@@ -21,14 +21,6 @@ struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
     feasible::Bool
 end
 
-# Termination statuses counted as a solution.
-const _FEASIBLE_TERMINATION_STATUSES = (
-    JuMP.MOI.OPTIMAL,
-    JuMP.MOI.LOCALLY_SOLVED,
-    JuMP.MOI.ALMOST_OPTIMAL,
-    JuMP.MOI.ALMOST_LOCALLY_SOLVED,
-)
-
 # The CertificateData of a failed solve.
 function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
     return CertificateData(problem, template, graph, Any[], status, false)

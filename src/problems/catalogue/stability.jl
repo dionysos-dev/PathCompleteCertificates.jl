@@ -28,18 +28,18 @@ struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertific
     rate::T
 end
 
-function add_edge_constraint!(
-    model::JuMP.Model,
+# The decrease condition of `edge`: the product of the matrices it reads, and the
+# scale of its source side. Written once, for the model and for the slacks.
+function _edge_decrease(
     ::StabilityProblem,
-    template::AbstractTemplate,
-    V_src,
-    V_dst,
-    A::AbstractMatrix;
-    scale::Real = 1,
+    graph::CertificateGraph,
+    edge,
+    A;
+    rate::Real,
+    degree::Integer,
 )
-    add_decrease!(model, template, V_src, V_dst, A; scale)
-
-    return nothing
+    word = letters(label(graph, edge))
+    return _product(A, word), rate^(degree * length(word))
 end
 
 """
@@ -58,14 +58,13 @@ function optimization_model(
 )
     rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
+    dimension =
+        _check_stability_data(template, graph, problem; path_complete = path_complete)
     A = mode_matrices(problem.system)
-
-    _check_stability_data(template, graph, problem; path_complete = path_complete)
+    degree = homogeneity_degree(template)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
-
-    dimension = size(first(A), 1)
 
     Vs = [add_function_variables!(model, template, dimension, a) for a in nodes(graph)]
 
@@ -74,20 +73,9 @@ function optimization_model(
         add_normalization!(model, template, V)
     end
 
-    degree = homogeneity_degree(template)
-
     for edge in edges(graph)
-        word = letters(label(graph, edge))
-
-        add_edge_constraint!(
-            model,
-            problem,
-            template,
-            Vs[source(edge)],
-            Vs[dest(edge)],
-            _product(A, word);
-            scale = rate^(degree * length(word)),
-        )
+        dynamics, scale = _edge_decrease(problem, graph, edge, A; rate, degree)
+        add_decrease!(model, template, Vs[source(edge)], Vs[dest(edge)], dynamics; scale)
     end
 
     model[:stability_V] = Vs
@@ -131,7 +119,7 @@ function jsr_bound(
             path_complete = false,
         )
         JuMP.optimize!(model)
-        return JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES
+        return JuMP.is_solved_and_feasible(model; allow_almost = true)
     end
 
     lower = zero(initial_upper)
@@ -187,15 +175,15 @@ function certify(
     model = optimization_model(template, graph, problem; optimizer, rate, path_complete)
 
     JuMP.optimize!(model)
-    status = JuMP.termination_status(model)
+    termination = JuMP.termination_status(model)
 
-    status in _FEASIBLE_TERMINATION_STATUSES ||
-        return StabilityCertificate(_failed(problem, template, graph, status), rate)
+    JuMP.is_solved_and_feasible(model; allow_almost = true) ||
+        return StabilityCertificate(_failed(problem, template, graph, termination), rate)
 
     V = [solution_value(template, v) for v in model[:stability_V]]
 
     return StabilityCertificate(
-        CertificateData(problem, template, graph, V, status, true),
+        CertificateData(problem, template, graph, V, termination, true),
         rate,
     )
 end
@@ -238,10 +226,10 @@ function _check_stability_data(
     problem::StabilityProblem;
     path_complete::Bool = true,
 )
-    _check_modes(graph, problem.system; path_complete = path_complete)
+    dimension = _check_modes(graph, problem.system; path_complete = path_complete)
     check_dynamics(template, problem.system)
 
-    return nothing
+    return dimension
 end
 
 function best_certificate(
@@ -284,22 +272,17 @@ function edge_slacks(certificate::StabilityCertificate)
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no functions to measure"))
 
+    problem_ = problem(certificate)
     graph_ = graph(certificate)
     template_ = template(certificate)
     V = functions(certificate)
-    A = mode_matrices(problem(certificate).system)
+    A = mode_matrices(problem_.system)
+    rate = certificate.rate
     degree = homogeneity_degree(template_)
 
     return map(edges(graph_)) do edge
-        word = letters(label(graph_, edge))
-
-        return decrease_slack(
-            template_,
-            V[source(edge)],
-            V[dest(edge)],
-            _product(A, word);
-            scale = certificate.rate^(degree * length(word)),
-        )
+        dynamics, scale = _edge_decrease(problem_, graph_, edge, A; rate, degree)
+        return decrease_slack(template_, V[source(edge)], V[dest(edge)], dynamics; scale)
     end
 end
 
@@ -342,18 +325,10 @@ function jsr_lower_bound(
     best = zero(float(eltype(first(A))))
 
     for cycle in simple_cycles(subgraph; max_length = length_bound)
-        # The first mode read acts first, so later modes multiply on the left.
-        product = LinearAlgebra.I
-        steps = 0
-
-        for edge in cycle
-            word = letters(label(subgraph, edge))
-            product = _product(A, word) * product
-            steps += length(word)
-        end
-
-        radius = maximum(abs, LinearAlgebra.eigvals(Matrix(product)))
-        best = max(best, radius^(1 / steps))
+        # The word read around the cycle, the first mode first.
+        word = [mode for edge in cycle for mode in letters(label(subgraph, edge))]
+        radius = maximum(abs, LinearAlgebra.eigvals(Matrix(_product(A, word))))
+        best = max(best, radius^(1 / length(word)))
     end
 
     return best

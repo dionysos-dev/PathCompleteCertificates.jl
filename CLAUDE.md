@@ -39,7 +39,7 @@ reindex(template, origins)                                 # per-node data follo
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
@@ -52,7 +52,8 @@ common(template, graph, problem, Vs, x)
 `add_decrease!` is the load-bearing primitive: the cone that quantifies an inequality over
 all `x` depends on the template and on nothing else, so stability's whole edge condition is one
 call with `scale = γᵖ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
-`Y = KS`, and says so in place.
+`Y = KS`, and says so in place. Each problem writes its edge condition once, in a private
+`_edge_decrease`, which both builds the model and measures the slacks.
 
 Each problem owns its certificate type; what it certifies is a typed field (`rate`, `margin`,
 `gains`), and the shared fields live once in `CertificateData`.

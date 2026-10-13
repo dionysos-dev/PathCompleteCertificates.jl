@@ -51,7 +51,7 @@ struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
 end
 
 # P_src >= Q + K'RK + (A + BK)' P_dst (A + BK), convex only under S = P^-1,
-# Y = K S; written on S, not P, so it is not an `add_edge_constraint!` method.
+# Y = K S; written on S, not P, so it is not an `add_decrease!` call.
 function _add_edge_lmi!(
     model::JuMP.Model,
     problem::OptimalControlProblem,
@@ -109,25 +109,20 @@ function optimization_model(
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
+    n = _check_optimal_control_data(graph, problem; path_complete = path_complete)
     A = mode_matrices(problem.system)
     B = input_matrices(problem.system)
-    _check_optimal_control_data(graph, problem; path_complete = path_complete)
-
-    node_list = collect(nodes(graph))
-    n = size(first(A), 1)
     m = size(first(B), 2)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, n, n)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    S = [add_function_variables!(model, template, n, i) for i in eachindex(node_list)]
-    Y = [
-        JuMP.@variable(model, [1:m, 1:n], base_name = "Y_$i") for i in eachindex(node_list)
-    ]
-    t = JuMP.@variable(model, [1:length(node_list)], base_name = "t")
+    S = [add_function_variables!(model, template, n, i) for i in nodes(graph)]
+    Y = [JuMP.@variable(model, [1:m, 1:n], base_name = "Y_$i") for i in nodes(graph)]
+    t = JuMP.@variable(model, [1:n_nodes(graph)], base_name = "t")
 
-    for i in eachindex(node_list)
+    for i in nodes(graph)
         JuMP.@constraint(model, S[i] - margin in JuMP.PSDCone())
         lower_triangular = [S[i][row, column] for row in 1:n for column in 1:row]
         JuMP.@constraint(
@@ -184,10 +179,13 @@ function certify(
     )
 
     JuMP.optimize!(model)
-    status = JuMP.termination_status(model)
+    termination = JuMP.termination_status(model)
 
-    status in _FEASIBLE_TERMINATION_STATUSES ||
-        return OptimalControlCertificate(_failed(problem, template, graph, status), nothing)
+    JuMP.is_solved_and_feasible(model; allow_almost = true) ||
+        return OptimalControlCertificate(
+            _failed(problem, template, graph, termination),
+            nothing,
+        )
 
     S = model[:optimal_control_S]
     Y = model[:optimal_control_Y]
@@ -197,34 +195,26 @@ function certify(
     K = [JuMP.value.(Y[i]) * P[i].P for i in eachindex(P)]
 
     return OptimalControlCertificate(
-        CertificateData(problem, template, graph, P, status, true),
+        CertificateData(problem, template, graph, P, termination, true),
         K,
     )
 end
 
+# Validate the data and return the state dimension.
 function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
-    n = _check_modes(graph, problem.system; path_complete = path_complete)
-    A = mode_matrices(problem.system)
-    B = input_matrices(problem.system)
-
-    length(A) == length(B) ||
-        throw(ArgumentError("A and B must have the same number of modes"))
-
-    m = size(first(B), 2)
-
-    for (mode, B_mode) in enumerate(B)
-        size(B_mode) == (n, m) || throw(ArgumentError("B[$mode] must have size ($n, $m)"))
-    end
+    _check_modes(graph, problem.system; path_complete = path_complete)
+    n = _check_dimensions(mode_matrices(problem.system), input_matrices(problem.system))
 
     # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
-    is_complete(graph, 1:length(A)) || throw(
+    modes = n_modes(problem.system)
+    is_complete(graph, 1:modes) || throw(
         ArgumentError(
             "optimal control currently supports only complete graphs; " *
             "the graph uses labels $(sort(collect(alphabet(graph)))) and the " *
-            "system has $(length(A)) modes",
+            "system has $modes modes",
         ),
     )
 
-    return nothing
+    return n
 end

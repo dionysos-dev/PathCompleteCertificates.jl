@@ -16,34 +16,10 @@ is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
 function is_path_complete(graph::_HS.GraphAutomaton, alphabet::AbstractVector)
     (is_complete(graph, alphabet) || is_co_complete(graph, alphabet)) && return true
 
-    successors = _successors(graph)
+    # A word the graph cannot read leads the subset construction to the empty set.
+    _, _, reads_every_word = _subset_construction(graph, alphabet; stop_at_empty = true)
 
-    # Read the words letter by letter. After a word `w`, track `S`, the nodes
-    # where a path of the graph reading `w` can end. Before any letter, `S` is
-    # all nodes; a mode `σ` sends `S` to its successors by `σ`. An empty `S` is
-    # a word the graph cannot read. There are finitely many sets, so the search
-    # ends.
-    start = Set(nodes(graph))
-    seen = Set{Tuple{Vararg{Int}}}([_key(start)])
-    pending = [start]
-
-    while !isempty(pending)
-        subset = pop!(pending)
-
-        for mode in alphabet
-            reachable = _step(successors, subset, mode)
-
-            isempty(reachable) && return false
-
-            key = _key(reachable)
-            if !(key in seen)
-                push!(seen, key)
-                push!(pending, reachable)
-            end
-        end
-    end
-
-    return true
+    return reads_every_word
 end
 
 """
