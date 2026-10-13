@@ -125,9 +125,13 @@ lower bound equals the rate at the first step.
 
 Bisection stops *above* the optimum, so the slack of an active edge is of the
 order of the bisection gap, not zero. With `atol` too small the tight subgraph
-is empty, every node satisfies the condition of Theorem 4 vacuously, and the
-run reports as exact a bound that is not the joint spectral radius.
-[`refine`](@ref) therefore requires `atol ≥ 10 rtol`.
+is empty and the loop learns nothing: there is no node to split, no cycle to
+bound the rate from below, and [`is_jsr_exact`](@ref) answers `false`, since
+at the optimum the tight subgraph contains a cycle
+([ninite2026lifting](@cite), Prop. 1). [`refine`](@ref) therefore requires
+`atol ≥ 10 rtol`. Every function reading tight edges shares the default
+`atol = 1e-4`; read a certificate from [`jsr_bound`](@ref) with an `atol` at
+least ten times the `rtol` it was computed to.
 
 ## Other problems
 

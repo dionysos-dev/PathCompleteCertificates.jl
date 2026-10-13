@@ -267,7 +267,7 @@ How far the rate is known to be from the joint spectral radius: `0` when
 """
 function optimality_gap(
     certificate::StabilityCertificate;
-    atol::Real = 1e-4,
+    atol::Real = _TIGHT_ATOL,
     max_length::Union{Nothing, Integer} = nothing,
 )
     !has_words(graph(certificate)) &&
@@ -304,23 +304,27 @@ function edge_slacks(certificate::StabilityCertificate)
 end
 
 """
-    is_jsr_exact(certificate; atol = 1e-6) -> Bool
+    is_jsr_exact(certificate; atol = 1e-4) -> Bool
 
 Whether every node has at most one outgoing edge in the
 [`tight_subgraph`](@ref), which proves the rate is the joint spectral radius
-[ninite2026lifting; Thm. 4](@cite). `false` means unknown; too small an `atol`
-can give a wrong `true`. Throws on a graph with words; use `expanded_form`.
+[ninite2026lifting; Thm. 4](@cite). `false` means unknown. At the optimal rate
+the tight subgraph keeps the rate [ninite2026lifting; Prop. 1](@cite), so it
+contains a cycle; without one, `atol` was too small to see the active edges and
+the answer is `false`. Throws on a graph with words; use `expanded_form`.
 """
-function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
+function is_jsr_exact(certificate::StabilityCertificate; atol::Real = _TIGHT_ATOL)
     _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
 
     subgraph = tight_subgraph(certificate; atol = atol)
 
-    return all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph))
+    all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph)) || return false
+
+    return !isempty(simple_cycles(subgraph))
 end
 
 """
-    jsr_lower_bound(certificate; atol = 1e-6, max_length = nothing)
+    jsr_lower_bound(certificate; atol = 1e-4, max_length = nothing)
 
 A lower bound on the joint spectral radius, valid for any `atol`: the largest
 `ρ(A_w)^{1/|w|}` over the words `w` read along the simple cycles of at most
@@ -328,7 +332,7 @@ A lower bound on the joint spectral radius, valid for any `atol`: the largest
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;
-    atol::Real = 1e-6,
+    atol::Real = _TIGHT_ATOL,
     max_length::Union{Nothing, Integer} = nothing,
 )
     subgraph = tight_subgraph(certificate; atol = atol)

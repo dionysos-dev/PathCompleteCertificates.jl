@@ -132,7 +132,7 @@ function refine(
     stop = Returns(false),
     depth_max::Integer = 5,
     stall_max::Integer = 1,
-    atol::Real = 1e-4,
+    atol::Real = _TIGHT_ATOL,
     gap_tol::Real = 1e-6,
     rtol::Real = 1e-6,
     path_complete::Bool = true,
