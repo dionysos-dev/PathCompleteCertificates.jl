@@ -51,7 +51,7 @@ const G4 = graph(
 @testset "folding one edge forward writes words on the edges" begin
     g = PCC.de_bruijn(1, 2)
     edge = first(PCC.outgoing_edges(g, 1, 1))     # the self-loop of node 1 reading 1
-    lifted = PCC.refine(PCC.ForwardEdgeProduct(), g, edge)
+    lifted = PCC.lift(PCC.ForwardProductLift(), g, edge)
     w = PCC.graph(lifted)
 
     @test w isa PCC.WordGraph
@@ -68,9 +68,9 @@ end
 @testset "forward and backward products at every edge are the 2-product lift" begin
     for g in (G1, G4)
         everywhere = collect(PCC.edges(g))
-        forward = PCC.graph(PCC.refine(PCC.ForwardEdgeProduct(), g, everywhere))
-        backward = PCC.graph(PCC.refine(PCC.BackwardEdgeProduct(), g, everywhere))
-        product = PCC.graph(PCC.refine(PCC.ProductRefinement(2), g))
+        forward = PCC.graph(PCC.lift(PCC.ForwardProductLift(), g, everywhere))
+        backward = PCC.graph(PCC.lift(PCC.BackwardProductLift(), g, everywhere))
+        product = PCC.graph(PCC.lift(PCC.ProductLift(2), g))
 
         @test edgeset(forward) == edgeset(backward) == edgeset(product)
         @test all(e -> PCC._word_length(product, e) == 2, PCC.edges(product))
@@ -78,17 +78,17 @@ end
 
         # Self-dual.
         @test edgeset(PCC.dual(product)) ==
-              edgeset(PCC.graph(PCC.refine(PCC.ProductRefinement(2), PCC.dual(g))))
+              edgeset(PCC.graph(PCC.lift(PCC.ProductLift(2), PCC.dual(g))))
     end
 
-    @test PCC.n_edges(PCC.graph(PCC.refine(PCC.ProductRefinement(2), G1))) == 20
-    @test PCC.n_edges(PCC.graph(PCC.refine(PCC.ProductRefinement(2), G4))) == 29
+    @test PCC.n_edges(PCC.graph(PCC.lift(PCC.ProductLift(2), G1))) == 20
+    @test PCC.n_edges(PCC.graph(PCC.lift(PCC.ProductLift(2), G4))) == 29
 end
 
 @testset "the product lift of length T reads every path of length T" begin
     one = PCC.common_graph(2)
     for T in 1:3
-        lifted = PCC.refine(PCC.ProductRefinement(T), one)
+        lifted = PCC.lift(PCC.ProductLift(T), one)
         w = PCC.graph(lifted)
         @test PCC.n_nodes(w) == 1
         @test PCC.n_edges(w) == 2^T
@@ -96,7 +96,7 @@ end
         @test PCC.is_path_complete(w, 1:2)
     end
 
-    @test_throws ArgumentError PCC.ProductRefinement(0)
+    @test_throws ArgumentError PCC.ProductLift(0)
 end
 
 @testset "folding into a dead end is refused" begin
@@ -104,7 +104,7 @@ end
     e = add_transition!(g, 1, 2, 1)
     add_transition!(g, 1, 1, 2)
 
-    @test_throws ArgumentError PCC.refine(PCC.ForwardEdgeProduct(), g, e)
+    @test_throws ArgumentError PCC.lift(PCC.ForwardProductLift(), g, e)
 end
 
 @testset "a product graph certifies the same rate as its expanded form" begin
@@ -113,7 +113,7 @@ end
     A = [0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]
     problem = PCC.StabilityProblem(PCC.switched_system(A))
     one = PCC.common_graph(2)
-    lifted = PCC.refine(PCC.ProductRefinement(2), one)
+    lifted = PCC.lift(PCC.ProductLift(2), one)
     w = PCC.graph(lifted)
     expanded = PCC.expanded_form(w)
 

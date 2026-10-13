@@ -78,7 +78,7 @@ de_bruijn
 common_graph
 ```
 
-[`refine`](@ref) adds nodes only where the certificate is tight; see [Graph improvement via refinements](@ref).
+[`refine`](@ref) adds nodes only where the certificate is tight; see [Graph refinement](@ref).
 
 ## Words on edges
 

@@ -13,13 +13,13 @@ number quoted in the manual was read in the paper it is attributed to.
 | :-- | :-- |
 | [ahmadi2014joint](@cite) | path-complete graph Lyapunov functions and the bound on the joint spectral radius: [`StabilityProblem`](@ref), [`is_path_complete`](@ref), [`expanded_form`](@ref) |
 | [philippe2017path](@cite) | complete and co-complete graphs, [`is_complete`](@ref) and [`is_co_complete`](@ref), the common function each licenses, [`common`](@ref), and the linear program of [`SumLift`](@ref)`()` |
-| [philippe2016stability](@cite) | [`common_graph`](@ref), [`ProductRefinement`](@ref) and [`PathDependentRefinement`](@ref), and the backward split that takes the De Bruijn hierarchy one order up |
+| [philippe2016stability](@cite) | [`common_graph`](@ref), [`ProductLift`](@ref) and [`PathDependentLift`](@ref), and the backward split that takes the De Bruijn hierarchy one order up |
 
 ## The templates
 
 | | |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`ForwardEdgeSplit`](@ref), [`BackwardEdgeSplit`](@ref), [`ForwardEdgeProduct`](@ref) and [`BackwardEdgeProduct`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`ForwardSplitLift`](@ref), [`BackwardSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
 | [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2024thesis](@cite) | [`DualCopositiveTemplate`](@ref), Def. 2.30 |
 
@@ -49,9 +49,10 @@ entry yet.
 
 | | |
 | :-- | :-- |
-| [ninite2026lifting](@cite) | [`refine`](@ref): the split at a node, the tight subgraph, [`tight_subgraph`](@ref), and the optimality certificate [`is_jsr_exact`](@ref) |
+| [ninite2026lifting](@cite) | [`TightNodeSplitting`](@ref), the default algorithm of [`refine`](@ref); the forward lift at a node, [`ForwardSplitLift`](@ref); the tight subgraph, [`tight_subgraph`](@ref), and the optimality certificate [`is_jsr_exact`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | [`BestTightEdgeLifting`](@ref), the procedure of its Example 2 |
 
-The refinements themselves come from [athanasopoulos2019polyhedral](@cite) and
+The lifts themselves come from [athanasopoulos2019polyhedral](@cite) and
 [philippe2016stability](@cite), listed above.
 
 ## Related work

@@ -244,8 +244,6 @@ function _check_stability_data(
     return nothing
 end
 
-# --- What refine reads: the driver, the objective and the optimality gap ------
-
 function best_certificate(
     template::AbstractTemplate,
     graph::CertificateGraph,
@@ -258,6 +256,8 @@ function best_certificate(
 end
 
 objective(certificate::StabilityCertificate) = certificate.rate
+
+_accepts_words(::StabilityProblem) = true
 
 """
     optimality_gap(certificate::StabilityCertificate; atol = 1e-4, max_length = nothing)

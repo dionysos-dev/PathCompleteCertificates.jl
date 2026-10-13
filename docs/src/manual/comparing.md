@@ -37,14 +37,18 @@ map, or `nothing`.
 When no map exists, the graphs may still be ordered for a particular template;
 the lifts below decide this.
 
-## Lifts
+## The lifts that decide the order
 
-A lift replaces the nodes of ``G`` by combinations of them under one operation,
-and the lifted graph encodes the inequalities those combinations inherit
-([debauche2021comparison](@cite), Defs. 5 to 9). When the lifted ``G``
-simulates ``H``, ``G \le_{\mathcal V} H`` for every template closed under the
-operation; for the min, max and sum lifts the converse holds as well.
-`simulation(lift, G, H)` decides it, by the method in the third column.
+A [lift](@ref "Lifts") that combines node functions under an operation encodes
+the inequalities those combinations inherit ([debauche2021comparison](@cite),
+Defs. 5 to 9). When the lifted ``G`` simulates ``H``,
+``G \le_{\mathcal V} H`` for every template closed under the operation; for the
+min, max and sum lifts the converse holds as well. `simulation(lift, G, H)`
+decides it, by the method in the third column. The splits add nothing here:
+their [`origins`](@ref) are a simulation of the lifted graph by ``G``, so
+whenever the lifted graph simulates ``H``, ``G`` does too and the identity lift
+finds the order. The products give graphs with words on their edges, which
+[`compare`](@ref) does not read.
 
 | Lift | Decides ``G \le_{\mathcal V} H`` for | How | Simulation | Complete | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -62,9 +66,8 @@ the one override of [`is_valid`](@ref).
 
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
 graphs ordered for every composition-closed template that no composition lift
-simulates. The composition lift is also the one lift that can strictly improve
-a graph (their Ex. IV.4), and [`Hierarchy`](@ref) accepts it as a step of
-[`refine`](@ref).
+simulates. The composition lift can also strictly improve a graph (their
+Ex. IV.4), and [`Hierarchy`](@ref) applies it as a step of [`refine`](@ref).
 
 [`is_valid`](@ref) decides whether a lift is valid for a template from the
 closures returned by [`is_closed_under`](@ref), tabulated on the

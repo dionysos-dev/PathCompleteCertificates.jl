@@ -127,7 +127,9 @@ end
 end
 
 @testset "refinement beats De Bruijn node for node" begin
-    trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 4)
+    # From the initial graph of Ninite & Jungers' algorithm, the dual De Bruijn
+    # graph of order 1.
+    trace = PCC.refine(TEMPLATE, SHEARED; optimizer = OPTIMIZER, depth_max = 3)
 
     rates = PCC.rates(trace)
 
@@ -135,29 +137,28 @@ end
     # split, so this trajectory is the same on every Julia version. Seeding an
     # `rng` would NOT give that -- `rand(rng, ::Vector)` may sample differently
     # between versions, and this assertion failed on 1.10 while passing on 1.12.
-    @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 3, 4]
+    @test PCC.n_nodes.(PCC.graphs(trace)) == [2, 3, 4]
 
     # The point of the whole loop: the bound genuinely falls, not merely fails to
     # rise. Anything weaker is satisfied by a lift that does nothing.
     @test all(<(0), diff(rates))
 
-    # Two nodes reached by lifting is De Bruijn of order 1, up to relabeling, so
-    # the bounds agree; four nodes reached by lifting is *not* De Bruijn of order
-    # 2, and is strictly better than it.
+    # On this system the dual De Bruijn graph of order 1 certifies the rate of
+    # De Bruijn of order 1; four nodes reached by lifting is *not* De Bruijn of
+    # order 2, and is strictly better than it.
     memory_1 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
     memory_2 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
 
-    @test isapprox(rates[2], memory_1.rate; rtol = 1e-3)
-    @test rates[4] < memory_2.rate
+    @test isapprox(rates[1], memory_1.rate; rtol = 1e-3)
+    @test rates[3] < memory_2.rate
 
     # An explicit rng still breaks the remaining ties, and still refines.
     random = PCC.refine(
         TEMPLATE,
-        MEMORYLESS,
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        strategy = PCC.SplitTightNode(; rng = MersenneTwister(1)),
+        algorithm = PCC.TightNodeSplitting(; rng = MersenneTwister(1)),
     )
 
     @test all(<(0), diff(PCC.rates(random)))
@@ -241,7 +242,7 @@ end
     @test length(PCC.graphs(patient)) == 4
 end
 
-@testset "the status tells the four outcomes apart" begin
+@testset "the status tells the outcomes apart" begin
     # One mode, one tight self-loop: Theorem 4's condition holds, and the cycle
     # through that self-loop meets the rate. Certified either way.
     @test PCC.status(
@@ -268,13 +269,18 @@ end
     @test PCC.status(
         PCC.refine(
             TEMPLATE,
-            MEMORYLESS,
             SHEARED;
             optimizer = OPTIMIZER,
             depth_max = 2,
-            strategy = PCC.SplitTightNode(),
+            algorithm = PCC.TightNodeSplitting(),
         ),
     ) == PCC.DEPTH_REACHED
+
+    # The one-node graph: both loops are tight, but its only successor is
+    # itself, so the forward lift would change nothing and no node is left.
+    exhausted = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER)
+    @test PCC.status(exhausted) == PCC.EXHAUSTED
+    @test length(PCC.graphs(exhausted)) == 1
 end
 
 @testset "the two tolerances must be orders apart, and it is enforced" begin
@@ -299,12 +305,13 @@ end
 end
 
 @testset "path_complete decides the starting graph, and the refinements are trusted after it" begin
-    settings = (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.SplitTightNode())
+    settings = (optimizer = OPTIMIZER, depth_max = 3, algorithm = PCC.TightNodeSplitting())
+    start = PCC.dual(PCC.de_bruijn(1, 2))
 
     # Waiving the check cannot change the answer on a graph that has the
     # property -- it only skips deciding it.
-    checked = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., path_complete = true)
-    waived = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; settings..., path_complete = false)
+    checked = PCC.refine(TEMPLATE, start, SHEARED; settings..., path_complete = true)
+    waived = PCC.refine(TEMPLATE, start, SHEARED; settings..., path_complete = false)
 
     @test PCC.rates(checked) == PCC.rates(waived)
     @test PCC.n_nodes.(PCC.graphs(checked)) == PCC.n_nodes.(PCC.graphs(waived))
@@ -342,7 +349,6 @@ end
     # Exactly a decade is accepted, and still finds the edges.
     decade = PCC.refine(
         TEMPLATE,
-        MEMORYLESS,
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 2,
@@ -350,7 +356,7 @@ end
         atol = 1e-5,
     )
 
-    @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2]
+    @test PCC.n_nodes.(PCC.graphs(decade)) == [2, 3]
 end
 
 @testset "every local lift at every tight edge, best candidate, parallel-faces template" begin
@@ -365,8 +371,7 @@ end
         MEMORYLESS,
         problem;
         optimizer = OPTIMIZER,
-        strategy = PCC.RefineTightEdges(),
-        select = :best,
+        algorithm = PCC.BestTightEdgeLifting(),
         depth_max = 4,
         atol = 1e-4,
     )
@@ -417,14 +422,14 @@ end
     )
 end
 
-@testset "a global refinement as the strategy walks a hierarchy" begin
+@testset "a hierarchy applies one lift to the whole graph at every step" begin
     # One path-dependent step from the one-node graph each time: De Bruijn of
     # growing order, so the rates are those of de_bruijn(k, 2).
     trace = PCC.refine(
         TEMPLATE,
         SHEARED;
         optimizer = OPTIMIZER,
-        strategy = PCC.Hierarchy(PCC.PathDependentRefinement(1)),
+        algorithm = PCC.Hierarchy(PCC.PathDependentLift(1)),
         depth_max = 3,
     )
 
@@ -449,7 +454,7 @@ end
         TEMPLATE,
         SHEARED;
         optimizer = OPTIMIZER,
-        strategy = composition,
+        algorithm = composition,
         depth_max = 2,
     )
     @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2]
@@ -460,7 +465,12 @@ end
     singular =
         PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.0], [0.0 0.5; 0.5 0.0]]))
     on_singular = PCC.jsr_bound(TEMPLATE, MEMORYLESS, singular; optimizer = OPTIMIZER)
-    @test_throws ArgumentError composition(on_singular; atol = 1e-4)
+    @test_throws ArgumentError PCC.next_graph(
+        composition,
+        on_singular;
+        atol = 1e-4,
+        solve = identity,
+    )
 
     polyhedral = PCC.jsr_bound(
         PCC.ParallelFacesPolyhedralTemplate(1, 2),
@@ -468,7 +478,12 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
     )
-    @test_throws ArgumentError composition(polyhedral; atol = 1e-4)
+    @test_throws ArgumentError PCC.next_graph(
+        composition,
+        polyhedral;
+        atol = 1e-4,
+        solve = identity,
+    )
 end
 
 end # module

@@ -1,17 +1,21 @@
 """
     AbstractLift
 
-The lift of an [`Operation`](@ref): a path-complete graph whose nodes are
-combinations of the original nodes. When `lift(L, G)` simulates `H`,
-`G ≤_V H` for every template closed under [`requirements`](@ref)`(L)`.
+An operation on graphs: `lift(L, G)` is path-complete when `G` is, and no
+worse than `G` for every template closed under [`requirements`](@ref)`(L)`,
+since a certificate on `G` gives one on `L(G)`. Lifts are the steps of
+[`refine`](@ref), and decide the order between two graphs in
+[`compare`](@ref): when `L(G)` simulates `H`, `G ≤_V H` for the same
+templates.
 """
 abstract type AbstractLift end
 
 """
     Lifted(graph, origins)
 
-The lifted `graph` and, for each of its nodes, the original nodes it stands
-for.
+The lifted `graph` and, for each of its nodes, what it stands for in the
+original: one node for a copy, a set of nodes for the min and max lifts, a
+multiset for the sum lift, a `(node, word)` pair for the composition lifts.
 """
 struct Lifted{G <: CertificateGraph, O}
     graph::G
@@ -19,20 +23,36 @@ struct Lifted{G <: CertificateGraph, O}
 end
 
 graph(lifted::Lifted) = lifted.graph
+
+"""
+    origins(lifted)
+
+What each node of a [`Lifted`](@ref) graph stands for in the original graph.
+"""
 origins(lifted::Lifted) = lifted.origins
 
 """
     lift(L, graph) -> Lifted
+    lift(L, graph, edges) -> Lifted
+    lift(L, graph, node) -> Lifted
 
-The lifted graph of `graph`, which must have one mode per edge.
+Apply `L` to the whole graph, at each of the given edges, or at a node. A lift
+applied at edges is applied at every edge when none are given; the splits are
+also applied at a node. A lift without the form asked for throws a
+`MethodError`.
 """
 function lift end
+
+lift(L::AbstractLift, g::CertificateGraph) = lift(L, g, collect(edges(g)))
+
+lift(L::AbstractLift, g::CertificateGraph, edge::_HS.GraphTransition) = lift(L, g, [edge])
 
 """
     requirements(L) -> Tuple
 
 The [`Operation`](@ref)s a template must be closed under for `L` to be valid
-on it.
+on it; none for a lift that copies node functions or chains edge
+inequalities.
 """
 requirements(::AbstractLift) = ()
 
@@ -89,5 +109,16 @@ function _check_lift_size(g::CertificateGraph, what::AbstractString, lifted_node
         ),
     )
 
+    return nothing
+end
+
+function _check_edge_list(
+    g::CertificateGraph,
+    edge_list::AbstractVector{<:_HS.GraphTransition},
+)
+    isempty(edge_list) && throw(ArgumentError("the edge list is empty"))
+    allunique(edge_list) || throw(ArgumentError("the edge list repeats an edge"))
+    all(edge -> has_edge(g, edge), edge_list) ||
+        throw(ArgumentError("the edge list contains an edge that is not in the graph"))
     return nothing
 end

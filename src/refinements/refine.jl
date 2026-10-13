@@ -16,7 +16,7 @@ OPTIMAL
 """
     EXHAUSTED
 
-The strategy proposed no candidate before the gap closed.
+The algorithm had no next graph before the gap closed.
 """
 EXHAUSTED
 
@@ -45,12 +45,12 @@ STOPPED
     RefinementTrace(certificates, steps, status)
 
 The certificates of a [`refine`](@ref) run, one per graph visited, the
-[`Refined`](@ref) step that produced each graph after the first, and a
+[`Lifted`](@ref) step that produced each graph after the first, and a
 [`RefinementStatus`](@ref).
 """
 struct RefinementTrace{C <: AbstractCertificate}
     certificates::Vector{C}
-    steps::Vector{Refined}
+    steps::Vector{Lifted}
     status::RefinementStatus
 end
 
@@ -71,7 +71,7 @@ graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.ce
 """
     steps(trace)
 
-The [`Refined`](@ref) of each step: `steps(trace)[k]` produced
+The [`Lifted`](@ref) graph of each step: `steps(trace)[k]` produced
 `graphs(trace)[k + 1]`.
 """
 steps(trace::RefinementTrace) = trace.steps
@@ -93,19 +93,15 @@ status(trace::RefinementTrace) = trace.status
 
 """
     refine(template, problem; optimizer, kwargs...)
-    refine(template, graph, problem; optimizer, strategy = SplitTightNode(),
-           select = :first, stop = Returns(false), depth_max = 5, stall_max = 1,
-           atol = 1e-4, gap_tol = 1e-6, rtol = 1e-6, path_complete = true,
-           kwargs...)
+    refine(template, graph, problem; optimizer, algorithm = TightNodeSplitting(),
+           stop = Returns(false), depth_max = 5, stall_max = 1, atol = 1e-4,
+           gap_tol = 1e-6, rtol = 1e-6, path_complete = true, kwargs...)
 
-Refine `graph`, by default [`common_graph`](@ref) of the system, until the
-[`optimality_gap`](@ref) of its certificate closes; returns a
-[`RefinementTrace`](@ref).
+Refine `graph`, by default [`initial_graph`](@ref)`(algorithm, system)`, until
+the [`optimality_gap`](@ref) of its certificate closes; returns a
+[`RefinementTrace`](@ref). At each step [`next_graph`](@ref) of `algorithm`
+gives the next graph, a lift of the current one.
 
-- `strategy(certificate; atol)` returns candidate [`Refined`](@ref) graphs,
-  best first.
-- `select = :best` solves every candidate and keeps the lowest
-  [`objective`](@ref); `:first` takes the first.
 - The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
   `stall_max` steps in a row fail to improve the objective by `rtol`,
   `depth_max` certificates are solved, or no candidate is left.
@@ -116,8 +112,15 @@ Refine `graph`, by default [`common_graph`](@ref) of the system, until the
 
 Other keywords go to [`best_certificate`](@ref).
 """
-function refine(template::AbstractTemplate, problem::AbstractProblem; optimizer, kwargs...)
-    return refine(template, common_graph(problem.system), problem; optimizer, kwargs...)
+function refine(
+    template::AbstractTemplate,
+    problem::AbstractProblem;
+    optimizer,
+    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
+    kwargs...,
+)
+    start = initial_graph(algorithm, problem.system)
+    return refine(template, start, problem; optimizer, algorithm, kwargs...)
 end
 
 function refine(
@@ -125,8 +128,7 @@ function refine(
     start::CertificateGraph,
     problem::AbstractProblem;
     optimizer,
-    strategy = SplitTightNode(),
-    select::Symbol = :first,
+    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
     stop = Returns(false),
     depth_max::Integer = 5,
     stall_max::Integer = 1,
@@ -138,7 +140,6 @@ function refine(
 )
     depth_max > 0 || throw(ArgumentError("depth_max must be positive"))
     stall_max > 0 || throw(ArgumentError("stall_max must be positive"))
-    select in (:first, :best) || throw(ArgumentError("select must be :first or :best"))
 
     atol >= 10 * rtol || throw(
         ArgumentError(
@@ -159,7 +160,7 @@ function refine(
     )
 
     trace = AbstractCertificate[]
-    taken = Refined[]
+    taken = Lifted[]
     outcome = DEPTH_REACHED
     stalled = 0
 
@@ -201,24 +202,18 @@ function refine(
 
         depth == depth_max && break
 
-        candidates = strategy(certificate; atol)
+        # A candidate is solved with the template following its origins.
+        solve_lifted = let template = template
+            lifted -> solve(reindex(template, origins(lifted)), graph(lifted), false)
+        end
+        result = next_graph(algorithm, certificate; atol, solve = solve_lifted)
 
-        if isempty(candidates)
+        if result === nothing
             outcome = EXHAUSTED
             break
         end
 
-        chosen = first(candidates)
-
-        if select == :best && length(candidates) > 1
-            solved = [
-                solve(reindex(template, origins(candidate)), graph(candidate), false)
-                for candidate in candidates
-            ]
-            best = argmin(objective.(solved))
-            chosen = candidates[best]
-            pending = solved[best]
-        end
+        chosen, pending = result
 
         push!(taken, chosen)
         current = graph(chosen)

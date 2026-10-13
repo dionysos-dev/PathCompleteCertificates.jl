@@ -1,28 +1,29 @@
 """
-    ProductRefinement(T)
+    ProductLift(T)
 
-The same nodes, and one edge per path of length `T` labelled by its word, as a
-[`WordGraph`](@ref).
+The `T`-product lift of [philippe2016stability; Def. 2](@cite): the same nodes,
+and one edge per path of length `T` labelled by its word, as a
+[`WordGraph`](@ref). Its own dual.
 """
-struct ProductRefinement <: AbstractRefinement
+struct ProductLift <: AbstractLift
     length::Int
 
-    function ProductRefinement(length::Integer)
+    function ProductLift(length::Integer)
         length >= 1 || throw(ArgumentError("the length must be positive"))
         return new(length)
     end
 end
 
-dual(refinement::ProductRefinement) = refinement
+dual(L::ProductLift) = L
 
-function refine(refinement::ProductRefinement, g::CertificateGraph)
-    refined = WordGraph(n_nodes(g))
+function lift(L::ProductLift, g::CertificateGraph)
+    lifted = WordGraph(n_nodes(g))
     seen = Set{Tuple{Int, Int, Vector{Int}}}()
 
     function extend(start, current, word, remaining)
         if remaining == 0
             key = (start, current, word)
-            key in seen || (push!(seen, key); add_edge!(refined, start, current, word))
+            key in seen || (push!(seen, key); add_edge!(lifted, start, current, word))
             return nothing
         end
 
@@ -39,8 +40,8 @@ function refine(refinement::ProductRefinement, g::CertificateGraph)
     end
 
     for node in nodes(g)
-        extend(node, node, Int[], refinement.length)
+        extend(node, node, Int[], L.length)
     end
 
-    return Refined(refined, collect(nodes(g)))
+    return Lifted(lifted, collect(nodes(g)))
 end

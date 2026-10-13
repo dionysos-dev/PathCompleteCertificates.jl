@@ -62,44 +62,47 @@ Each problem has its own certificate type. The shared fields live once in
 `CertificateData`; what the problem certifies is a typed field of its own,
 `rate`, `margin` or `gains`.
 
-**A new template, problem, lift or refinement is one file in the `catalogue/`
-of its directory, and touches nothing else.** Every directory with an
+**A new template, problem, lift or refinement algorithm is one file in the
+`catalogue/` of its directory, and touches nothing else.** Every directory with an
 interface has that shape: the interface at the top, one file per inhabitant
 under `catalogue/`, named after the type without the directory's suffix.
 
-## Lifts and refinements
+## Lifts and refinement algorithms
 
-Both map a path-complete graph to a path-complete graph. A **lift** compares
-graphs: it is the lift of an operation, and
-when the lifted ``G`` simulates ``H`` then ``G \le_V H`` for every template
-closed under that operation. A **refinement** improves a graph, and by
-construction gives a certificate no worse than before, for every template.
+**A lift is an operation on a graph; `refine` is an algorithm that applies
+lifts.** A lift maps a path-complete graph to a path-complete graph no worse
+for every template closed under its `requirements`. The same lift can be a step
+of a refinement algorithm and a test of `compare`, where a simulation of ``H``
+by the lifted ``G`` proves ``G \le_V H``.
 
 ```julia
 # src/operations.jl: what a template is closed under and a lift requires.
 Addition(), Maximum(), Minimum(), Composition(), InverseComposition()
 
-# A lift, src/lifts/catalogue/: two methods to write.
+# A lift, src/lifts/catalogue/: the forms its definition gives it.
 lift(L, graph)                               # a Lifted: the graph and what each node stands for
-requirements(L)                              # the operations it needs; () for the identity lift
+lift(L, graph, edges)                        # at each edge, for the splits and products
+lift(L, graph, node)                         # at a node, for the splits
+requirements(L)                              # the operations it needs; () by default
 simulation(L, G, H; optimizer)               # inherited; overridden where the theory decides cheaper
 is_valid(L, template, system)                # written once against the two
-dual(L)                                      # a DualLift, deciding on the dual graphs
-compare(G, H; templates, system, optimizer)  # the entry point
+dual(L)                                      # a DualLift, applied on the dual graph
+compare(G, H; templates, system, optimizer)  # the entry point of comparison
 
-# A refinement, src/refinements/catalogue/: one method to write.
-refine(R, graph, edges)                      # a Refined: the graph and the origin of every node
-dual(R)                                      # a DualRefinement
-refine(template, graph, problem; strategy)   # the entry point: the loop
+# A refinement algorithm, src/refinements/catalogue/: one method to write.
+next_graph(algorithm, certificate; atol, solve) # the next Lifted graph, or nothing
+initial_graph(algorithm, system)             # where it starts; common_graph by default
+refine(template, graph, problem; algorithm)  # the entry point: the loop
 ```
 
-Validity is read from the closures a template declares, never by dispatching
-on its concrete type, which would need a method per pair. The one override,
-the min lift on the linear copositive template, has a theorem behind it; add
-another only with one to cite. A refinement has no `requirements` and no
-`is_valid`. The min, max and sum lifts are never built to decide an order: a
-relation decides the first two and a linear program the third. A strategy for
-the loop is any callable `(certificate; atol) -> Vector{Refined}`.
+What a lift supports is the methods it has, never a flag. Validity is read
+from the closures a template declares, never by dispatching on its concrete
+type, which would need a method per pair. The one override, the min lift on
+the linear copositive template, has a theorem behind it; add another only with
+one to cite. The min, max and sum lifts are never built to decide an order: a
+relation decides the first two and a linear program the third. An algorithm
+chooses its candidates and how to select among them; the loop owns solving,
+the stopping rules and the trace.
 
 ## The graph layer
 

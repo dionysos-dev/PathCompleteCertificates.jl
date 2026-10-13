@@ -39,8 +39,8 @@ A certificate graph must read every sequence of modes. Every problem tests
 
 [`common_graph`](@ref)`(system)` is the smallest graph that does: the common
 Lyapunov function graph ``G_0``, one node with a loop per mode. Every
-path-complete graph gives a bound at least as good, and [`refine`](@ref)
-starts from it.
+path-complete graph gives a bound at least as good, and most refinement
+algorithms start from it; see [Graph refinement](@ref).
 
 ## Runs
 

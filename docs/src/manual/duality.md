@@ -18,7 +18,7 @@ package, and every backward construction is the dual of a forward one.
 | template | the family of dual norms: quadratic forms are their own, the two copositive templates each other's | [debauche2024thesis](@cite), Def. 1.32 |
 | node function | `dual(template, V)`, the dual norm of a fitted function; it satisfies the reversed edge inequality | [debauche2024thesis](@cite), Lemma 1.28 |
 | certificate | the dual norms on the dual graph for the dual system, at the same rate, nothing solved | [debauche2024thesis](@cite), Lemmas 6.25 and 6.26 |
-| lift, refinement | `dual(L)(G) = dual(L(dual(G)))`; a lift's simulation becomes the same on the dual graphs | [debauche2024thesis](@cite), Def. 7.4 |
+| lift | `dual(L)(G) = dual(L(dual(G)))`; a lift's simulation becomes the same on the dual graphs | [debauche2024thesis](@cite), Def. 7.4 |
 | operation | what the dual lift requires: `min` and `max` exchange, `+` is fixed, composition becomes composition with the inverse | [debauche2024thesis](@cite), Lemma 7.45, Prop. 7.13 and Prop. 7.64 |
 
 `dual` is an involution on each: applied twice it gives the object back, down
@@ -28,10 +28,10 @@ give the same bound ([ahmadi2014joint](@cite), Thm. 5.1).
 
 ## Consequences
 
-- **Backward constructions.** [`BackwardEdgeSplit`](@ref),
-  [`BackwardEdgeProduct`](@ref), [`MaxLift`](@ref) and
+- **Backward lifts.** [`BackwardSplitLift`](@ref),
+  [`BackwardProductLift`](@ref), [`MaxLift`](@ref) and
   [`BackwardCompositionLift`](@ref) are `dual` of their forward counterparts,
-  and the sum and product constructions are self-dual.
+  and [`SumLift`](@ref) and [`ProductLift`](@ref) are their own duals.
 - **Validity of lifts.** A lift valid for a template has a dual valid for the
   dual template ([debauche2024thesis](@cite), Prop. 7.5), so
   [`is_valid`](@ref) also reads the closures of the dual template: the sum lift

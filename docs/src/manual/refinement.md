@@ -2,88 +2,24 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Graph improvement via refinements
+# Graph refinement
 
-[`refine`](@ref) starts from a small graph, adds nodes where the certificate
-is tight, and solves again ([ninite2026lifting](@cite)).
+[`refine`](@ref) is an algorithm that applies [lifts](@ref "Lifts"): it solves
+a certificate, reads where it is tight, applies a lift there, and solves
+again. A lift never makes the certificate worse, so the bound can only improve.
 [Refinement: splitting nodes at tight edges](@ref) runs it.
 
-A **refinement** is a transformation of a path-complete graph that is no worse
-for every template: a copy inherits its origin's function, a product chains
-two edge inequalities. The literature calls these lifts too; here the word
-*lift* is kept for the [lifts that compare graphs](@ref "Graph comparison via lifts"),
-and the transformations that improve one are refinements.
-
-## The four atoms
-
-The **atoms** are two local operations at an edge ``(s, d, w)``, a split and a
-product, each forward or backward ([athanasopoulos2019polyhedral](@cite),
-Defs. 4 to 7). The refining constructions of the literature are built from
-them.
-
-| Refinement | At one edge `(s, d, w)` | Paper's name |
-| :-- | :-- | :-- |
-| [`ForwardEdgeSplit`](@ref) | a copy of `s` owning that outgoing edge and every incoming one | partial P\*-lift, Def. 7 |
-| [`BackwardEdgeSplit`](@ref) | a copy of `d` owning that incoming edge and every outgoing one | partial P-lift, Def. 6 |
-| [`ForwardEdgeProduct`](@ref) | replace it by `(s, d′, w·u)` for every `(d, d′, u)` | partial T-lift, Def. 4 |
-| [`BackwardEdgeProduct`](@ref) | replace it by `(s′, d, u·w)` for every `(s′, s, u)` | partial T\*-lift, Def. 5 |
-
-Drawn at the edge `s ─w─▶ d` of a graph where `s` also reads `u` to `f` and
-is entered by `a`, and `d` is also entered by `b` and leaves for `e`:
-
-```
-      before                      ForwardEdgeSplit               BackwardEdgeSplit
-
- a ──v──▶ s ──w──▶ d ──x──▶ e     a ──v──▶ s′ ──w──▶ d ──x──▶ e   a ──v──▶ s ──w──▶ d′ ──x──▶ e
-          │        ▲              │                  ▲                     │
-          u        t              v                  t                     u    b ──t──▶ d ──x──▶ e
-          ▼        │              ▼                  │                     ▼
-          f        b              s ──u──▶ f         b                     f
-
-      ForwardEdgeProduct                              BackwardEdgeProduct
-
- a ──v──▶ s ──w·x──▶ e                                a ──v·w──▶ d ──x──▶ e
-          │                                           │          ▲
-          u          b ──t──▶ d ──x──▶ e              v          t
-          ▼                                           ▼          │
-          f                                           s ──u──▶ f b
-```
-
-A split adds a node and splits the inequalities that passed through it. A
-product adds no node and writes a **word** on an edge: one inequality on
-``A_x A_w`` with nothing imposed on the state in between, which is sound for
-stability only. A [`WordGraph`](@ref) carries words, and its
-[`expanded_form`](@ref) reads the same language with one mode per edge; for a
-template closed under composition the two certify the same rate, the word
-graph with fewer variables ([debauche2024thesis](@cite), Prop. 7.70).
-
-Each backward atom is the [`dual`](@ref) of the forward one, and the classical
-hierarchies are the atoms at every edge:
-
-- `ForwardEdgeSplit` on `outgoing_edges(graph, s)`, the default step of the
-  loop, gives `s` one copy per outgoing edge: the forward lift at a node of
-  [ninite2026lifting](@cite), Def. 3, whenever no two edges of `s` share a
-  destination, which gives one copy per successor;
-- `BackwardEdgeSplit` on `edges(graph)` is the path-dependent lift of
-  [philippe2016stability](@cite), Def. 3, [`PathDependentRefinement`](@ref)`(1)`;
-  iterated from the one-node graph it is [`de_bruijn`](@ref);
-- either product on `edges(graph)` is [`ProductRefinement`](@ref)`(2)`, the
-  product lift of [philippe2016stability](@cite), Def. 2.
-
-The atoms are valid for every template: giving every copy the function of the
-node it came from keeps the old certificate feasible
-([ninite2026lifting](@cite), Thm. 3), and two chained edge inequalities imply the
-product's ([athanasopoulos2019polyhedral](@cite), Thm. 1). The one step that is
-not an atom is a lift, [`CompositionLift`](@ref), which can strictly improve a
-graph for templates closed under composition ([jongeneel2025ordering](@cite),
-Ex. IV.4) and which [`Hierarchy`](@ref) accepts where it is valid.
+Refinement is a stability tool: each algorithm below comes from a paper on
+the joint spectral radius, the bound is an upper bound on it, and it can be
+proved exact. It also runs on safety, where the margin never decreases but no
+run is ever certified optimal; see [Other problems](@ref).
 
 ## The loop
 
 A path-complete graph with a quadratic function at each node gives an upper
 bound ``γ^*(G)`` on the joint spectral radius, the optimum of ``\min γ``
 subject to ``γ^2 P_a \succeq A_i^\top P_b A_i`` on every edge ``(a, b, i)``
-and ``P_a \succ 0``; [`jsr_bound`](@ref) bisects on ``γ``. A refined graph
+and ``P_a \succ 0``; [`jsr_bound`](@ref) bisects on ``γ``. A lifted graph
 gives a bound at least as good, with a larger program. [`de_bruijn`](@ref)
 adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
 [`refine`](@ref) adds them where the solution is tight. At each step:
@@ -94,38 +30,49 @@ adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
    [`edge_slacks`](@ref) measures them, [`tight_edges`](@ref) names them,
    [`tight_subgraph`](@ref) keeps only them ([ninite2026lifting](@cite),
    Def. 4).
-3. **Propose.** A *strategy* reads the certificate and proposes refined
-   graphs.
-4. **Refine.** With `select = :first` the first proposal is taken; with
-   `select = :best` every proposal is solved and the lowest rate kept.
-5. **Repeat** on the refined graph.
+3. **Lift.** [`next_graph`](@ref) of the `algorithm` reads the certificate
+   and returns the next graph, a lift of the current one.
+4. **Repeat** on the lifted graph.
 
-A refinement never makes the bound worse, so the sequence of rates is
-monotone.
+## The algorithms
 
-### Strategies
+| Algorithm | At each step | Starts from | Source |
+| :-- | :-- | :-- | :-- |
+| [`TightNodeSplitting`](@ref), the default | the forward lift of the node with the most tight outgoing edges, at least two | the dual of `de_bruijn(1, M)` | [ninite2026lifting](@cite), Algorithm 1 |
+| [`BestTightEdgeLifting`](@ref) | the four splits and products at every tight edge, each solved, the lowest objective kept | the one-node graph | [athanasopoulos2019polyhedral](@cite), Example 2 |
+| [`Hierarchy`](@ref)`(lift)` | `lift` applied to the whole graph | the one-node graph | [philippe2016stability](@cite); [jongeneel2025ordering](@cite), §IV-A |
 
-A strategy is any callable `(certificate; atol) -> Vector{Refined}`. The
-package provides three, from the literature.
+**[`TightNodeSplitting`](@ref)** follows Algorithm 1 of [ninite2026lifting](@cite).
+Its step is the forward lift at a node, one copy per successor, so a node
+whose only successor is itself cannot be split: on the one-node graph the
+lift changes nothing. The algorithm passes such nodes over and starts, as the
+paper's experiments do, from the dual De Bruijn graph of order 1. Ties go to
+the node with the fewest outgoing edges, then the lowest index, so a run is
+deterministic; `rng` breaks them at random instead.
 
-| Strategy | Proposes | Source |
-| :-- | :-- | :-- |
-| [`SplitTightNode`](@ref), the default | one candidate: [`ForwardEdgeSplit`](@ref) on the out-star of the node with the most tight outgoing edges; ties go to the node with fewest outgoing edges, then the lowest index | [ninite2026lifting](@cite), Def. 3 |
-| [`RefineTightEdges`](@ref) | every atom at every tight edge; with `select = :best` the one with the smallest rate is kept | [athanasopoulos2019polyhedral](@cite), Example 2 |
-| [`Hierarchy`](@ref)`(step)` | one candidate: a global refinement, a local one at every edge, or a lift | [philippe2016stability](@cite); [jongeneel2025ordering](@cite), §IV-A |
+**[`BestTightEdgeLifting`](@ref)** follows Example 2 of
+[athanasopoulos2019polyhedral](@cite): every candidate is solved, one solve each
+at every step, and the best is kept. The products write words on the edges,
+which only stability accepts, so they are left out on other problems.
 
-`Hierarchy(PathDependentRefinement(1))` from the one-node graph goes up the De
-Bruijn hierarchy one order per step, so the [`de_bruijn`](@ref) graphs are a
-special case of the loop.
+**[`Hierarchy`](@ref)** lifts the whole graph at every step.
+`Hierarchy(PathDependentLift(1))` from the one-node graph goes up the De Bruijn
+hierarchy one order per step, so the [`de_bruijn`](@ref) graphs are a special
+case of the loop. `Hierarchy(CompositionLift(1))` applies the composition lift,
+which can strictly improve a graph for templates closed under composition
+([jongeneel2025ordering](@cite), Ex. IV.4); it throws where the lift is not
+valid.
+
+A new algorithm is a subtype of [`AbstractRefinementAlgorithm`](@ref) that
+implements [`next_graph`](@ref), and [`initial_graph`](@ref) when it starts
+elsewhere than the one-node graph.
 
 ### Where it starts
 
-`refine(template, problem)` starts from [`common_graph`](@ref) of the system,
-the common Lyapunov function graph, so the loop reads every sequence of modes
-from the first step.
-`refine(template, graph, problem)` starts from a graph of yours.
-Path-completeness is checked on that first graph only; every refinement
-preserves it.
+`refine(template, problem)` starts from [`initial_graph`](@ref) of the
+algorithm. `refine(template, graph, problem)` starts from a graph of yours.
+Path-completeness is checked on that first graph only; every lift preserves
+it.
 
 ### When it stops
 
@@ -138,11 +85,12 @@ things happened.
 | [`STALLED`](@ref) | `stall_max` steps in a row did not improve the objective by `rtol` |
 | [`DEPTH_REACHED`](@ref) | `depth_max` reached with the bound still falling |
 | [`STOPPED`](@ref) | the `stop` predicate returned `true`, for example `c -> c.rate < 1` |
-| [`EXHAUSTED`](@ref) | the strategy proposed nothing, and the gap had not closed |
+| [`EXHAUSTED`](@ref) | the algorithm had no next graph, and the gap had not closed |
 
-Only `OPTIMAL` proves the rate equal to the joint spectral radius. The trace keeps every certificate and
-every [`Refined`](@ref) step, so a run can be read back: [`rates`](@ref),
-[`graphs`](@ref), [`steps`](@ref) and the [`origins`](@ref) of each node.
+Only `OPTIMAL` proves the rate equal to the joint spectral radius. The trace
+keeps every certificate and every [`Lifted`](@ref) step, so a run can be read
+back: [`rates`](@ref), [`graphs`](@ref), [`steps`](@ref) and the
+[`origins`](@ref) of each node.
 
 ## Two certificates of optimality
 
@@ -185,9 +133,11 @@ run reports as exact a bound that is not the joint spectral radius.
 
 [`refine`](@ref) runs on every problem that implements
 [`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref); stability and safety do. Safety has no lower bound, so its runs end on a stall
-or the depth budget rather than [`OPTIMAL`](@ref), with the margin read as
-`c.margin` on each certificate of the trace.
+[`optimality_gap`](@ref); stability and safety do. On safety each node of a
+lifted graph can keep the barrier of the node it came from, so the margin,
+read as `c.margin` on each certificate of the trace, never decreases. Safety
+has no lower bound, so its runs end on a stall, the depth budget or an
+exhausted algorithm, never on [`OPTIMAL`](@ref).
 [What works with what](@ref) says which templates the loop runs on.
 
 ```@docs; canonical=false

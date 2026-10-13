@@ -89,7 +89,7 @@ is_closed_under(::AbstractTemplate, ::Operation, system) = false
 """
     reindex(template, origins)
 
-The template for a refined or lifted graph whose nodes come from `origins`.
+The template for a lifted graph whose nodes come from `origins`.
 Throws if a node merges origins with different per-node data.
 """
 reindex(template::AbstractTemplate, ::AbstractVector) = template

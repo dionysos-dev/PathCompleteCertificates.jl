@@ -198,7 +198,7 @@ end
     @test all(m -> 1 in m, only(PCC.simulations(c)).second)
 
     @test_throws ArgumentError PCC.compare(G1, G2; templates = (QUADRATIC,))
-    words = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G1))
+    words = PCC.graph(PCC.lift(PCC.ProductLift(2), G1))
     @test_throws ArgumentError PCC.compare(words, G2)
 end
 

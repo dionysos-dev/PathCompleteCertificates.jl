@@ -1,4 +1,4 @@
-module TestRefinementSplit
+module TestLiftSplit
 
 using Test
 using HybridSystems
@@ -14,7 +14,7 @@ edgeset(g) = Set(
     node = 1
 
     out = PCC.outgoing_edges(graph, node)
-    lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, out)
+    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, out)
     g = PCC.graph(lifted)
 
     @test PCC.n_nodes(g) == PCC.n_nodes(graph) - 1 + length(out)
@@ -43,7 +43,7 @@ end
 
 @testset "a self-loop enters every copy and leaves the one that owns it" begin
     graph = PCC.de_bruijn(1, 2)
-    lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, PCC.outgoing_edges(graph, 1))
+    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
     g = PCC.graph(lifted)
 
     @test PCC.n_nodes(g) == 3
@@ -63,7 +63,7 @@ end
     add_transition!(graph, 3, 2, 2)
 
     edge = only(PCC.outgoing_edges(graph, 2, 1))     # (2, 3, 1)
-    lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, edge)
+    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, edge)
     g = PCC.graph(lifted)
 
     # Node 2 survives with its other edge; the copy, numbered last, owns this
@@ -81,7 +81,7 @@ end
     # surviving original included, so the degrees grow accordingly.
     loop = PCC.de_bruijn(1, 2)
     across = only(PCC.outgoing_edges(loop, 1, 2))   # (1, 2, 2)
-    split = PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), loop, across))
+    split = PCC.graph(PCC.lift(PCC.ForwardSplitLift(), loop, across))
     @test PCC.n_nodes(split) == 3
     @test PCC.outdegree(split, 3) == 1               # the copy owns (1, 2, 2)
     @test PCC.outdegree(split, 1) == 2               # the loop, to itself and to the copy
@@ -94,25 +94,25 @@ end
     # copy, and the node's other loop enters both.
     one = PCC.common_graph(2)
     loop = only(PCC.outgoing_edges(one, 1, 1))
-    g = PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), one, loop))
+    g = PCC.graph(PCC.lift(PCC.ForwardSplitLift(), one, loop))
 
     @test PCC.n_nodes(g) == 2
     @test edgeset(g) == Set([(2, 1, [1]), (1, 2, [1]), (1, 1, [2]), (1, 2, [2])])
     @test PCC.is_path_complete(g, 1:2)
 
     # The dual, at the same loop: destinations split, edges reversed.
-    d = PCC.graph(PCC.refine(PCC.BackwardEdgeSplit(), one, loop))
+    d = PCC.graph(PCC.lift(PCC.BackwardSplitLift(), one, loop))
     @test edgeset(d) == Set([(1, 2, [1]), (2, 1, [1]), (1, 1, [2]), (2, 1, [2])])
     @test PCC.is_path_complete(d, 1:2)
 end
 
 @testset "the backward split is the dual and splits destinations" begin
     graph = PCC.de_bruijn(1, 2)
-    lifted = PCC.refine(PCC.BackwardEdgeSplit(), graph, PCC.incoming_edges(graph, 1))
+    lifted = PCC.lift(PCC.BackwardSplitLift(), graph, PCC.incoming_edges(graph, 1))
     g = PCC.graph(lifted)
 
-    @test PCC.BackwardEdgeSplit() isa PCC.DualRefinement
-    @test PCC.dual(PCC.BackwardEdgeSplit()) == PCC.ForwardEdgeSplit()
+    @test PCC.BackwardSplitLift() isa PCC.DualLift
+    @test PCC.dual(PCC.BackwardSplitLift()) == PCC.ForwardSplitLift()
     @test PCC.n_nodes(g) == 3
     @test PCC.is_path_complete(g, 1:2)
     @test sort([PCC.indegree(g, n) for n in PCC.nodes(g)]) == [1, 2, 3]
@@ -121,8 +121,8 @@ end
     # Written out: the dual of the forward split on the dual graph.
     byhand = PCC.dual(
         PCC.graph(
-            PCC.refine(
-                PCC.ForwardEdgeSplit(),
+            PCC.lift(
+                PCC.ForwardSplitLift(),
                 PCC.dual(graph),
                 PCC.outgoing_edges(PCC.dual(graph), 1),
             ),
@@ -135,7 +135,7 @@ end
     one = PCC.common_graph(2)
 
     for k in 1:3
-        lifted = PCC.refine(PCC.PathDependentRefinement(k), one)
+        lifted = PCC.lift(PCC.PathDependentLift(k), one)
         g = PCC.graph(lifted)
         db = PCC.de_bruijn(k, 2)
 
@@ -147,14 +147,14 @@ end
         @test PCC.simulation(g, db) !== nothing && PCC.simulation(db, g) !== nothing
     end
 
-    @test_throws ArgumentError PCC.PathDependentRefinement(0)
+    @test_throws ArgumentError PCC.PathDependentLift(0)
 end
 
 @testset "the dual of the path-dependent lift is the dual De Bruijn hierarchy" begin
     one = PCC.common_graph(2)
 
     for k in 1:2
-        lifted = PCC.refine(PCC.dual(PCC.PathDependentRefinement(k)), one)
+        lifted = PCC.lift(PCC.dual(PCC.PathDependentLift(k)), one)
         g = PCC.graph(lifted)
         db = PCC.dual(PCC.de_bruijn(k, 2))
 
@@ -164,8 +164,7 @@ end
         @test PCC.simulation(g, db) !== nothing && PCC.simulation(db, g) !== nothing
     end
 
-    @test PCC.dual(PCC.dual(PCC.PathDependentRefinement(1))) ==
-          PCC.PathDependentRefinement(1)
+    @test PCC.dual(PCC.dual(PCC.PathDependentLift(1))) == PCC.PathDependentLift(1)
 end
 
 @testset "the path-dependent lift: its nodes are the edges" begin
@@ -174,7 +173,7 @@ end
     add_transition!(a, 1, 2, 2)
     add_transition!(a, 2, 1, 1)
 
-    lifted = PCC.refine(PCC.PathDependentRefinement(1), a)
+    lifted = PCC.lift(PCC.PathDependentLift(1), a)
     g = PCC.graph(lifted)
 
     # Nodes are the edges, edges the paths of length two.
@@ -196,17 +195,65 @@ end
     @test PCC.origins(lifted) == [PCC.dest(e) for e in PCC.edges(a)]
 end
 
+@testset "at a node, the forward lift of Ninite & Jungers: one copy per successor" begin
+    # Node 1 reads 1 and 2 into node 2 and 1 into itself, so it has two
+    # successors and three outgoing edges.
+    g = GraphAutomaton(2)
+    for (a, b, l) in ((1, 2, 1), (1, 2, 2), (1, 1, 1), (2, 1, 1), (2, 2, 2))
+        add_transition!(g, a, b, l)
+    end
+
+    lifted = PCC.lift(PCC.ForwardSplitLift(), g, 1)
+    h = PCC.graph(lifted)
+
+    # Node 2 survives as 1; node 1 is replaced by 1⁽¹⁾ = 2 and 1⁽²⁾ = 3.
+    @test PCC.origins(lifted) == [2, 1, 1]
+
+    # Def. 3: E₁ the edges away from node 1, E₂ the edges into it entering every
+    # copy, E₃ every edge to a successor leaving its copy, E₄ the self-loop
+    # leaving 1⁽¹⁾ for every copy.
+    E1 = [(1, 1, [2])]
+    E2 = [(1, 2, [1]), (1, 3, [1])]
+    E3 = [(3, 1, [1]), (3, 1, [2])]
+    E4 = [(2, 2, [1]), (2, 3, [1])]
+    @test edgeset(h) == Set([E1; E2; E3; E4])
+    @test PCC.is_path_complete(h, 1:2)
+
+    # The edge form makes one copy per edge instead, so it differs here.
+    @test PCC.n_nodes(
+        PCC.graph(PCC.lift(PCC.ForwardSplitLift(), g, PCC.outgoing_edges(g, 1))),
+    ) == 4
+
+    # Where no two outgoing edges share a destination, the two forms agree.
+    db = PCC.de_bruijn(2, 2)
+    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), db, 1))) == edgeset(
+        PCC.graph(PCC.lift(PCC.ForwardSplitLift(), db, PCC.outgoing_edges(db, 1))),
+    )
+
+    # On the one-node graph the only successor is the node itself: no change.
+    one = PCC.common_graph(2)
+    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), one, 1))) == edgeset(one)
+
+    # The backward lift is the dual: one copy per predecessor.
+    back = PCC.lift(PCC.BackwardSplitLift(), g, 1)
+    @test edgeset(PCC.graph(back)) ==
+          edgeset(PCC.dual(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), PCC.dual(g), 1))))
+
+    @test_throws ArgumentError PCC.lift(PCC.ForwardSplitLift(), g, 3)
+    @test_throws MethodError PCC.lift(PCC.MinLift(), g, 1)
+end
+
 @testset "lifts refuse edges outside the graph or none" begin
     graph = PCC.de_bruijn(1, 2)
     other = PCC.de_bruijn(2, 2)
 
-    @test_throws ArgumentError PCC.refine(
-        PCC.ForwardEdgeSplit(),
+    @test_throws ArgumentError PCC.lift(
+        PCC.ForwardSplitLift(),
         graph,
         HybridSystems.GraphTransition[],
     )
-    @test_throws ArgumentError PCC.refine(
-        PCC.ForwardEdgeSplit(),
+    @test_throws ArgumentError PCC.lift(
+        PCC.ForwardSplitLift(),
         graph,
         PCC.outgoing_edges(other, 3),
     )
@@ -214,12 +261,12 @@ end
     # Listing an edge twice would make two copies own it, one of them with no
     # outgoing edge.
     twice = PCC.outgoing_edges(graph, 1)[1:1]
-    @test_throws ArgumentError PCC.refine(PCC.ForwardEdgeSplit(), graph, [twice; twice])
+    @test_throws ArgumentError PCC.lift(PCC.ForwardSplitLift(), graph, [twice; twice])
 end
 
 @testset "origins is a homomorphism into the original: valid for every template" begin
-    # Debauche, Della Rossa & Jungers, Def. 6(c): a refinement is valid for
-    # every template when the original simulates the refined graph, and the
+    # Debauche, Della Rossa & Jungers, Def. 6(c): a lift is valid for
+    # every template when the original simulates the lifted graph, and the
     # origins are that map.
     loops = GraphAutomaton(3)
     for (a, b, l) in
@@ -227,35 +274,33 @@ end
         add_transition!(loops, a, b, l)
     end
 
-    preserved(refined, g) = all(
+    preserved(lifted, g) = all(
         e -> (
-            PCC.origins(refined)[PCC.source(e)],
-            PCC.origins(refined)[PCC.dest(e)],
-            collect(PCC.letters(PCC.label(PCC.graph(refined), e))),
+            PCC.origins(lifted)[PCC.source(e)],
+            PCC.origins(lifted)[PCC.dest(e)],
+            collect(PCC.letters(PCC.label(PCC.graph(lifted), e))),
         ) in edgeset(g),
-        PCC.edges(PCC.graph(refined)),
+        PCC.edges(PCC.graph(lifted)),
     )
 
     for g in (PCC.de_bruijn(2, 2), loops, PCC.common_graph(2))
         edge_lists = [[e] for e in PCC.edges(g)]
         push!(edge_lists, collect(PCC.edges(g)))
 
-        for refinement in (PCC.ForwardEdgeSplit(), PCC.BackwardEdgeSplit()),
-            edge_list in edge_lists
-
-            refined = PCC.refine(refinement, g, edge_list)
-            @test PCC.is_path_complete(PCC.graph(refined), 1:2)
-            @test preserved(refined, g)
+        for L in (PCC.ForwardSplitLift(), PCC.BackwardSplitLift()), edge_list in edge_lists
+            lifted = PCC.lift(L, g, edge_list)
+            @test PCC.is_path_complete(PCC.graph(lifted), 1:2)
+            @test preserved(lifted, g)
         end
 
-        @test preserved(PCC.refine(PCC.PathDependentRefinement(2), g), g)
+        @test preserved(PCC.lift(PCC.PathDependentLift(2), g), g)
     end
 end
 
 @testset "a template with per-node data follows the split" begin
     graph = PCC.de_bruijn(1, 2)
     template = PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
-    lifted = PCC.refine(PCC.ForwardEdgeSplit(), graph, PCC.outgoing_edges(graph, 1))
+    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))
     @test length(moved.G) == PCC.n_nodes(PCC.graph(lifted))

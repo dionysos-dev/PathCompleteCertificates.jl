@@ -56,8 +56,8 @@ call with `scale = γᵖ`. Optimal control is the one exception, convex only aft
 Each problem owns its certificate type; what it certifies is a typed field (`rate`, `margin`,
 `gains`), and the shared fields live once in `CertificateData`.
 
-**A new template, problem, lift or refinement is one file in the `catalogue/` of its directory,
-and touches nothing else.**
+**A new template, problem, lift or refinement algorithm is one file in the `catalogue/` of its
+directory, and touches nothing else.**
 
 ## 3. Repository map
 
@@ -73,8 +73,8 @@ src/
 │                        cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
 ├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
-├── lifts/               COMPARING graphs: abstract.jl, dual.jl, compare.jl + catalogue/
-├── refinements/         IMPROVING a graph: abstract.jl, dual.jl, strategies.jl, refine.jl + catalogue/
+├── lifts/               the lifts of a graph: abstract.jl, dual.jl, compare.jl + catalogue/
+├── refinements/         the algorithms that apply lifts: abstract.jl, refine.jl + catalogue/
 └── common.jl            `common`: reads graph, template and problem, so belongs to neither axis
 ```
 
@@ -94,16 +94,21 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
 
 ## 5. Gotchas
 
-- **A lift compares; a refinement improves.** Both preserve path-completeness. A lift is the
-  lift of an operation; its validity is read from the template's closures through `is_valid`,
-  written once, and `simulation(lift, G, H)` decides the order `G ≤_V H`. A refinement is valid
-  for every template by construction and has no `requirements`; do not add them.
+- **A lift is an operation on a graph; `refine` is an algorithm that applies lifts.** Every
+  lift preserves path-completeness; its validity is read from the template's closures through
+  `is_valid`, written once, and a lift that copies node functions or chains edges requires
+  nothing. What a lift supports is the methods it has (`lift` on the whole graph, at edges, at
+  a node), never a flag. `compare` keeps the lifts that require an operation; the splits add
+  nothing there, since `G` simulates its split through the origins.
+- **`TightNodeSplitting` is Ninite & Jungers' Algorithm 1 exactly.** Its lift is their Def. 3,
+  one copy per successor, so it starts from the dual De Bruijn graph of order 1, as their
+  experiments do: on the one-node graph the forward lift changes nothing.
 - **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
   the duals decides max, a linear program decides the sum lift over every size.
 - **One override of `is_valid`** exists, the min lift on the linear copositive template
   (Debauche, Thm. 7.43). Add another only with a theorem to cite.
 - **Duality is an involution on everything**: graphs, systems, templates, certificates, lifts,
-  refinements, operations. Every backward construction is `dual` of a forward one.
+  operations. Every backward lift is `dual` of a forward one.
 - **A word graph is sound for stability only.** Safety, optimal control and `common` throw on a
   `WordGraph` and name `expanded_form`.
 - **The adapter invariant.** Nothing outside `graphs/queries.jl` touches HybridSystems' graph

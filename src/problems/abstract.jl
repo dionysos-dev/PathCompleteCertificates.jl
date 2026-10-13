@@ -18,6 +18,9 @@ function add_edge_constraint! end
 # The system's modes, not the labels the graph happens to use.
 _n_modes(problem::AbstractProblem) = length(mode_matrices(problem.system))
 
+# Whether the problem accepts words on the edges; only stability does.
+_accepts_words(::AbstractProblem) = false
+
 """
     node_value(template, problem, V, x)
 
