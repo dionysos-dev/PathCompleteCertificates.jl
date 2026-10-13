@@ -18,11 +18,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
         has_input(system) &&
             throw(ArgumentError("SafetyProblem requires an input-free system"))
 
-        A = mode_matrices(system)
-
-        isempty(A) && throw(ArgumentError("at least one mode is required"))
-
-        n = size(first(A), 1)
+        n = _check_mode_matrices(mode_matrices(system))
         d = n + 1
 
         size(S0) == (d, d) ||

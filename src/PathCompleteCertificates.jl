@@ -37,6 +37,8 @@ include("systems/simulate.jl")
 
 include("templates/abstract.jl")
 include("problems/abstract.jl")
+include("problems/certificate.jl")
+include("problems/tight_edges.jl")
 
 include("templates/catalogue/linear_copositive.jl")
 include("templates/catalogue/dual_copositive.jl")

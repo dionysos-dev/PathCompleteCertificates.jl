@@ -80,8 +80,8 @@ function add_decrease!(
     return nothing
 end
 
-function check_dynamics(::DualCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
-    any(A_i -> any(<(0), A_i), A) && throw(
+function check_dynamics(::DualCopositiveTemplate, system)
+    is_positive(system) || throw(
         ArgumentError(
             "DualCopositiveTemplate requires entrywise nonnegative matrices: " *
             "max_i x_i / v_i certifies nothing about a system that leaves the " *

@@ -61,13 +61,13 @@ The node function `V` after `optimize!`, with values in place of variables.
 function solution_value end
 
 """
-    check_dynamics(template, A)
+    check_dynamics(template, system)
 
-Throw if `template` does not apply to the mode matrices `A`.
+Throw if `template` does not apply to the dynamics of `system`.
 """
 function check_dynamics end
 
-check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
+check_dynamics(::AbstractTemplate, system) = nothing
 
 """
     decrease_slack(template, V_src, V_dst, map; scale = 1)

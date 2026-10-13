@@ -28,7 +28,7 @@ function next_graph(
     words = _accepts_words(problem(certificate))
     candidates = Lifted[]
 
-    for edge in _tight_transitions(certificate; atol = atol), L in algorithm.lifts
+    for edge in tight_edges(certificate; atol = atol), L in algorithm.lifts
         _changes(L, graph_, edge) || continue
 
         candidate = lift(L, graph_, edge)

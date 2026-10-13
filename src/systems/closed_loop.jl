@@ -1,7 +1,7 @@
 # Apart from `simulate.jl` because it depends on the certificate types.
 
 """
-    simulate(certificate, x0, steps; rng = Random.default_rng(), node = nothing)
+    simulate(certificate, x0, horizon; rng = Random.default_rng(), node = nothing)
 
 Run the closed loop under the policy of `certificate` along modes drawn uniformly
 at random, and return a [`Trajectory`](@ref). The gain applied is that
@@ -11,11 +11,11 @@ default the node whose function is smallest at `x0`.
 function simulate(
     certificate::OptimalControlCertificate,
     x0::AbstractVector{<:Real},
-    steps::Integer;
+    horizon::Integer;
     rng::Random.AbstractRNG = Random.default_rng(),
     node::Union{Nothing, Integer} = nothing,
 )
-    steps >= 0 || throw(ArgumentError("steps must be nonnegative, got $steps"))
+    horizon >= 0 || throw(ArgumentError("horizon must be nonnegative, got $horizon"))
 
     is_feasible(certificate) || throw(
         ArgumentError(
@@ -38,15 +38,15 @@ function simulate(
     node = something(node, argmin([V(x0) for V in functions(certificate)]))
     _check_node(certificate_graph, node)
 
-    modes = rand(rng, 1:n_modes(system), steps)
+    modes = rand(rng, 1:n_modes(system), horizon)
 
     T = promote_type(eltype(x0), eltype(first(A)), eltype(first(B)), eltype(first(gains)))
 
-    xs = Vector{Vector{T}}(undef, steps + 1)
-    us = Vector{Vector{T}}(undef, steps)
+    xs = Vector{Vector{T}}(undef, horizon + 1)
+    us = Vector{Vector{T}}(undef, horizon)
     xs[1] = convert(Vector{T}, x0)
 
-    for k in 1:steps
+    for k in 1:horizon
         σ = modes[k]
         x = xs[k]
 

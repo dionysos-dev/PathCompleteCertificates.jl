@@ -31,7 +31,7 @@ add_nonnegativity!(model, template, V)
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
-check_dynamics(template, A)                                # is the template applicable at all?
+check_dynamics(template, system)                           # is the template applicable at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
 reindex(template, origins)                                 # per-node data follows a refined graph
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
@@ -43,7 +43,7 @@ certify(template, graph, problem; optimizer, ...)             # build, solve, ex
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
 # The common function: each node value from the problem (node_value), their combination
-# from the graph alone (graphs/observer.jl); the public method is in problems/abstract.jl.
+# from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.
 common(template, graph, problem, Vs, x)
 ```
 

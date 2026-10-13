@@ -182,6 +182,18 @@ end
     # rho(diag(0.5, 0.25)) = 0.5, and every template must agree on it.
     @test abs(result.rate - 0.5) <= 0.01
     @test PCC.is_feasible(result)
+
+    # Both copositive templates need a positive system, and say so up front.
+    rotation = PCC.StabilityProblem(PCC.switched_system([[0.0 -0.5; 0.5 0.0]]))
+    for template in (PCC.LinearCopositiveTemplate(), PCC.DualCopositiveTemplate())
+        @test_throws ArgumentError PCC.certify(
+            template,
+            GRAPH,
+            rotation;
+            optimizer = OPTIMIZER,
+            rate = 1.0,
+        )
+    end
 end
 
 @testset "every template agrees on the rate" begin

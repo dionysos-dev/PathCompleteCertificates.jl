@@ -53,10 +53,10 @@ end
     @test minimum(slacks) <= 1e-4
     @test !isempty(PCC.tight_edges(bound; atol = 1e-4))
 
-    for (src, dst, mode) in PCC.tight_edges(bound; atol = 1e-4)
-        @test src in PCC.nodes(GRAPH)
-        @test dst in PCC.nodes(GRAPH)
-        @test mode in eachindex(A)
+    # Edges of the certificate's graph, like every other edge query.
+    for edge in PCC.tight_edges(bound; atol = 1e-4)
+        @test PCC.has_edge(GRAPH, edge)
+        @test PCC.label(GRAPH, edge) in eachindex(A)
     end
 end
 
@@ -225,6 +225,31 @@ end
 
     @test PCC.is_jsr_exact(single; atol = 1e-4)
     @test isapprox(single.rate, 0.5; atol = 1e-3)
+end
+
+@testset "the optimality gap is zero when proved, the bracket otherwise" begin
+    # Theorem 4 holds on the one-mode system: the gap is exactly zero.
+    single = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+    @test PCC.is_jsr_exact(single; atol = 1e-4)
+    @test PCC.optimality_gap(single; atol = 1e-4) == 0
+
+    # On the rotations it does not, and the gap is the cycle bracket.
+    rotations = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        TWO_NODES,
+        ROTATION_PROBLEM;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+    gap = PCC.optimality_gap(rotations; atol = 1e-4)
+    @test gap == rotations.rate - PCC.jsr_lower_bound(rotations; atol = 1e-4)
+    @test 0 <= gap < 1e-4
 end
 
 end

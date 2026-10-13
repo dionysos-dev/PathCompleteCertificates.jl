@@ -239,7 +239,7 @@ function _check_stability_data(
     path_complete::Bool = true,
 )
     _check_modes(graph, problem.system; path_complete = path_complete)
-    check_dynamics(template, mode_matrices(problem.system))
+    check_dynamics(template, problem.system)
 
     return nothing
 end

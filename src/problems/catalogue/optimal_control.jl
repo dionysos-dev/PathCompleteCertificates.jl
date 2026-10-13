@@ -23,12 +23,8 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
-        A = mode_matrices(system)
-        B = input_matrices(system)
-        isempty(A) && throw(ArgumentError("at least one mode is required"))
-
-        n = size(first(A), 1)
-        m = size(first(B), 2)
+        n = _check_mode_matrices(mode_matrices(system))
+        m = size(first(input_matrices(system)), 2)
         size(Q) == (n, n) || throw(ArgumentError("Q must have size ($n, $n)"))
         size(R) == (m, m) || throw(ArgumentError("R must have size ($m, $m)"))
         isapprox(Q, transpose(Q)) || throw(ArgumentError("Q must be symmetric"))

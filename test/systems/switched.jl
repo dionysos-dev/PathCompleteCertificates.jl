@@ -91,6 +91,34 @@ end
     @test_throws ArgumentError PCC.switched_system([[1.0 2.0 3.0]], B[1:1])  # not square
     @test_throws ArgumentError PCC.switched_system(A, [reshape([1.0], 1, 1), B[2]])  # B rows
     @test_throws ArgumentError PCC.switched_system(A, [B[1], zeros(2, 2)])   # input dim
+
+    # The same checks without an input.
+    @test_throws ArgumentError PCC.switched_system(typeof(A)())
+    @test_throws ArgumentError PCC.switched_system([[1.0 2.0 3.0]])           # not square
+    @test_throws ArgumentError PCC.switched_system([A[1], ones(3, 3)])        # sizes differ
+end
+
+@testset "the product along a word, newest mode leftmost" begin
+    s = PCC.switched_system(A)
+    @test PCC.mode_matrix(s, 2) == A[2]
+    @test PCC.mode_matrix(s, [1, 2]) == A[2] * A[1]
+    @test PCC.mode_matrix(s, [2, 2, 1]) == A[1] * A[2] * A[2]
+    @test_throws ArgumentError PCC.mode_matrix(s, Int[])
+end
+
+@testset "positive and invertible systems" begin
+    @test PCC.is_positive(PCC.switched_system(A))
+    @test !PCC.is_positive(PCC.switched_system([A[1], [0.0 -1.0; 1.0 0.0]]))
+    @test PCC.is_invertible(PCC.switched_system(A))
+    @test !PCC.is_invertible(PCC.switched_system([A[1], [1.0 0.0; 0.0 0.0]]))
+end
+
+@testset "the dual system refuses constrained switching" begin
+    g = HS.GraphAutomaton(2)
+    HS.add_transition!(g, 1, 1, 1)
+    HS.add_transition!(g, 1, 2, 2)
+    HS.add_transition!(g, 2, 1, 1)
+    @test_throws ArgumentError PCC.dual(HS.discreteswitchedsystem(A, g))
 end
 
 end

@@ -64,8 +64,8 @@ function add_decrease!(
     return nothing
 end
 
-function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
-    any(A_i -> any(<(0), A_i), A) && throw(
+function check_dynamics(::LinearCopositiveTemplate, system)
+    is_positive(system) || throw(
         ArgumentError(
             "LinearCopositiveTemplate requires entrywise nonnegative matrices: " *
             "V(x) = c'x certifies nothing about a system that leaves the " *
