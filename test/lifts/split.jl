@@ -243,6 +243,34 @@ end
     @test_throws MethodError PCC.lift(PCC.MinLift(), g, 1)
 end
 
+@testset "a split keeps the nodes it does not touch, sinks and sources included" begin
+    # Node 3 has no outgoing edge and node 4 no incoming one.
+    g = PCC.empty_graph(4)
+    for (s, d, mode) in [
+        (1, 1, 1),
+        (1, 2, 2),
+        (2, 1, 1),
+        (2, 2, 2),
+        (1, 3, 1),
+        (2, 3, 2),
+        (4, 1, 1),
+        (4, 2, 2),
+    ]
+        PCC.add_edge!(g, s, d, mode)
+    end
+    loop = only(e for e in PCC.edges(g) if PCC.source(e) == PCC.dest(e) == 1)
+
+    # At an edge, one copy of node 1 is added and no node is lost.
+    for L in (PCC.ForwardSplitLift(), PCC.BackwardSplitLift())
+        lifted = PCC.lift(L, g, [loop])
+        @test PCC.n_nodes(PCC.graph(lifted)) == 5
+        @test sort(unique(PCC.origins(lifted))) == 1:4
+    end
+
+    # At a node, the forward lift of Ninite & Jungers keeps every other node.
+    @test sort(unique(PCC.origins(PCC.lift(PCC.ForwardSplitLift(), g, 1)))) == 1:4
+end
+
 @testset "lifts refuse edges outside the graph or none" begin
     graph = PCC.de_bruijn(1, 2)
     other = PCC.de_bruijn(2, 2)

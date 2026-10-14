@@ -44,9 +44,11 @@ _changes(::ForwardSplitLift, g::CertificateGraph, node::Integer) =
 function _split(g::CertificateGraph, groups::AbstractVector)
     chosen = Set(Iterators.flatten(groups))
 
-    keeps = falses(n_nodes(g))
-    for edge in edges(g)
-        edge in chosen || (keeps[source(edge)] = true)
+    # A node whose outgoing edges are all given is replaced by its copies; every
+    # other node stays, one without outgoing edges included.
+    keeps = map(nodes(g)) do node
+        out = outgoing_edges(g, node)
+        return isempty(out) || !all(in(chosen), out)
     end
 
     survivor = zeros(Int, n_nodes(g))
