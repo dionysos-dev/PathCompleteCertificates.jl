@@ -1,5 +1,6 @@
 module TestLiftIdentity
 
+import SetProg
 using Test
 import PathCompleteCertificates as PCC
 
@@ -19,9 +20,9 @@ import PathCompleteCertificates as PCC
 
     system = PCC.switched_system([[0.5 0.0; 0.0 0.5], [0.0 0.5; 0.5 0.0]])
     for template in (
-        PCC.QuadraticTemplate(),
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
-        PCC.LinearCopositiveTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
+        SetProg.Parallelotope(dimension = 2),
+        SetProg.PositiveSimplex(),
     )
         @test PCC.is_valid(PCC.IdentityLift(), template, system)
     end

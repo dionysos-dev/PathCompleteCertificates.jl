@@ -11,6 +11,7 @@ import JuMP
 import LinearAlgebra
 import MathematicalSystems
 import Random
+import SetProg
 
 const _HS = HybridSystems
 const _MS = MathematicalSystems
@@ -46,16 +47,11 @@ include("systems/simulate.jl")
 
 include("templates/abstract.jl")
 include("problems/abstract.jl")
+include("problems/sets.jl")
 include("problems/certificate.jl")
 include("problems/tight_edges.jl")
 
-include("templates/catalogue/linear_copositive.jl")
-include("templates/catalogue/dual_copositive.jl")
 include("templates/catalogue/quadratic.jl")
-include("templates/catalogue/parallel_faces_polyhedral.jl")
-include("templates/catalogue/conic_polyhedral.jl")
-include("templates/catalogue/sum_of_squares.jl")
-include("templates/catalogue/set_prog.jl")
 
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")

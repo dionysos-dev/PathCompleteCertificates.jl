@@ -12,7 +12,13 @@ abstract type AbstractCertificate end
 
 The fields shared by every certificate.
 """
-struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
+struct CertificateData{
+    P <: AbstractProblem,
+    T <: Union{AbstractTemplate, _SetFamily},
+    G,
+    F,
+    S,
+}
     problem::P
     template::T
     graph::G
@@ -22,7 +28,12 @@ struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
 end
 
 # The CertificateData of a failed solve.
-function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
+function _failed(
+    problem::AbstractProblem,
+    template::Union{AbstractTemplate, _SetFamily},
+    graph,
+    status,
+)
     return CertificateData(problem, template, graph, Any[], status, false)
 end
 
@@ -81,7 +92,7 @@ a common Lyapunov function, a common barrier function or a bound on the value
 function.
 """
 function common(
-    template::AbstractTemplate,
+    template::Union{AbstractTemplate, _SetFamily},
     graph::CertificateGraph,
     problem::AbstractProblem,
     Vs::AbstractVector,
@@ -150,6 +161,12 @@ function _edge_slacks(certificate::AbstractCertificate; rate::Real = 1)
 
     return map(edges(graph_)) do edge
         dynamics, scale = _edge_decrease(problem_, graph_, edge, A; rate, degree)
-        return decrease_slack(template_, V[source(edge)], V[dest(edge)], dynamics; scale)
+        return decrease_slack(
+            template_ isa AbstractVector ? template_[source(edge)] : template_,
+            V[source(edge)],
+            V[dest(edge)],
+            dynamics;
+            scale,
+        )
     end
 end

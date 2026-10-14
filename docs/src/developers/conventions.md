@@ -16,55 +16,31 @@ between problems:
 | Safety | ``B_d(A_i x) \le B_s(x)`` |
 | Optimal control | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` |
 
-Templates and problems are therefore two independent type hierarchies. The
-**template**, `src/templates/`, says what the node functions are, and the
-**problem**, `src/problems/`, says what the edge inequality is. A template
-supplies primitives, a problem composes them, and neither names the other.
+Stability set families live in SetProg. The problem builds SetProg variables,
+normalizes their gauges, and models each edge by set inclusion. The fitted
+node values are callable SetProg sets. Extend SetProg's homogeneous gauge
+primitives to add a stability family:
 
 ```julia
-# Template axis: one file per template, answering all of it.
-add_function_variables!(model, template, dim, node)        # the node function V_s, well defined
-add_decrease!(model, template, V_src, V_dst, map; scale = 1)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ 0
-decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
-add_normalization!(model, template, V)                     # excludes V ≡ 0
-homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
-solution_value(template, V)                                # variables -> a callable node function
-is_applicable(template, system)                            # default true; does the template apply at all?
-is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
-reindex(template, origins)                                 # per-node data follows a refined graph
-has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
-
-# Problem axis: one file per problem, composing the above.
-node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
-optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
-certify(template, graph, problem; optimizer, ...)             # build, solve, extract
-best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
-
-# The common function: each node value from the problem (node_value), their combination
-# from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.
-common(template, graph, problem, Vs, x)
+SetProg.add_function_variables!(model, family, dimension, node)
+SetProg.add_normalization!(model, family, variable)
+SetProg.add_decrease!(model, family, source, destination, A; scale)
+SetProg.solution_value(family, variable)
+SetProg.homogeneity_degree(family)
+SetProg.decrease_slack(family, source, destination, A; scale)
 ```
 
-Every primitive is public, since a user implements it. Problems express
-their edge inequality through `add_decrease!`: quantifying an inequality over
-every ``x`` needs a cone that depends only on the template, so stability's edge
-condition is one call with `scale = γᵖ`. Optimal control is the exception. Its
-inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,
-so it cannot be written against `V_src` and `V_dst`; it works on the quadratic
-template's variables directly, and a comment in the code says so. Each problem
-writes its edge condition once, in a private `_edge_decrease` that both builds
-the model and measures the slacks.
-
-A template is an **instance**, never a type: `ParallelFacesPolyhedralTemplate` carries a
-matrix per node, and `::Type{T}` has nowhere to put it. An `AbstractTemplate`
-is the family; the fitted node function is what `solution_value` returns.
+PCC owns the system and graph metadata in `src/problems/sets.jl`:
+`is_applicable`, `is_closed_under`, `reindex`, `has_dual`, and `dual`.
+Families are instances; a vector associates a family with each node.
+Safety and optimal control retain the legacy quadratic template and its
+primitives until their separate migration.
 
 Each problem has its own certificate type. The shared fields live once in
 `CertificateData`; what the problem certifies is a typed field of its own,
 `rate`, `margin` or `gains`.
 
-**A new template, problem, lift or refinement algorithm is one file in the
+**A new problem, lift or refinement algorithm is one file in the
 `catalogue/` of its directory, and touches nothing else.** Every directory with an
 interface has that shape: the interface at the top, one file per inhabitant
 under `catalogue/`, named after the type without the directory's suffix.

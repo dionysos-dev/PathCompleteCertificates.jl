@@ -4,6 +4,7 @@ module TestCertificate
 # accessed through methods and stored once in `CertificateData`; what a problem
 # certifies is a typed field on its own certificate type.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -21,7 +22,7 @@ const SYSTEM = PCC.switched_system([[0.5 0.0; 0.0 0.25]])
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 
 const STABILITY = PCC.jsr_bound(
-    PCC.QuadraticTemplate(),
+    SetProg.Ellipsoid(; symmetric = true),
     GRAPH,
     PROBLEM;
     optimizer = OPTIMIZER,
@@ -42,8 +43,13 @@ end
 @testset "a certificate is callable, and is the common function" begin
     x = [1.0, 2.0]
 
-    @test STABILITY(x) ≈
-          PCC.common(PCC.QuadraticTemplate(), GRAPH, PROBLEM, PCC.functions(STABILITY), x)
+    @test STABILITY(x) ≈ PCC.common(
+        SetProg.Ellipsoid(symmetric = true),
+        GRAPH,
+        PROBLEM,
+        PCC.functions(STABILITY),
+        x,
+    )
 
     # Positive away from the origin, zero at it -- it is a Lyapunov function.
     @test STABILITY(x) > 0
