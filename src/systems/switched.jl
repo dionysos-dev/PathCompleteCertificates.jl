@@ -8,79 +8,31 @@ with `A` and `B` indexed by mode, under arbitrary switching.
 function switched_system end
 
 function switched_system(A::AbstractVector{<:AbstractMatrix})
-    _check_mode_matrices(A)
+    _check_state_matrices(A)
     return _HS.discreteswitchedsystem(A)
 end
 
+# HybridSystems has no constructor for a controlled switched system, so this one
+# assembles the system that `discreteswitchedsystem` would.
 function switched_system(
     A::AbstractVector{<:AbstractMatrix},
     B::AbstractVector{<:AbstractMatrix},
 )
-    n = _check_dimensions(A, B)
+    n = _check_input_matrices(A, B)
     graph = _HS.OneStateAutomaton(length(A))
 
     # Modes carry no dynamics; the reset maps do, indexed by transition event.
     modes = [_MS.ContinuousIdentitySystem(n) for _ in _HS.states(graph)]
-    maps = [_MS.LinearControlMap(A[σ], B[σ]) for σ in eachindex(A)]
+    # One element type per mode, which `LinearControlMap` requires of `A` and `B`.
+    maps = [_MS.LinearControlMap(promote(A[σ], B[σ])...) for σ in eachindex(A)]
     switchings = fill(_HS.AutonomousSwitching(), _HS.nstates(graph))
 
     return _HS.HybridSystem(graph, modes, maps, switchings)
 end
 
-"""
-    mode_matrices(system)
-
-The state matrices `A`, indexed by mode.
-"""
-mode_matrices(system::_HS.HybridSystem) = [map.A for map in _maps_by_mode(system)]
-
-"""
-    input_matrices(system)
-
-The input matrices `B`, indexed by mode. Throws if the system has no input.
-"""
-function input_matrices(system::_HS.HybridSystem)
-    has_input(system) ||
-        throw(ArgumentError("the system has no input, so it has no B matrices"))
-
-    return [map.B for map in _maps_by_mode(system)]
-end
-
-"""
-    has_input(system) -> Bool
-
-Whether `system` has an input, `x⁺ = A_σ x + B_σ u`.
-"""
-has_input(system::_HS.HybridSystem) =
-    all(map -> hasfield(typeof(map), :B), _maps_by_mode(system))
-
-"""
-    n_modes(system)
-
-The number of modes of `system`. Throws on a system whose automaton restricts
-the switching: constrained switching is not supported.
-"""
-n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
-
-# The reset map of each mode, indexed by mode: the one place that reads the
-# system's automaton, so the one place that rejects constrained switching, which
-# a system built with HybridSystems directly may have.
-function _maps_by_mode(system::_HS.HybridSystem)
-    automaton = system.automaton
-    automaton isa _HS.OneStateAutomaton || throw(
-        ArgumentError(
-            "constrained switching is not supported: the system's automaton must " *
-            "be a `OneStateAutomaton`, which admits every switching sequence",
-        ),
-    )
-
-    transitions =
-        sort!(collect(_HS.transitions(automaton)); by = t -> _HS.event(automaton, t))
-    return [_HS.resetmap(system, t) for t in transitions]
-end
-
-# Validate the state matrices, square and of one positive size, and return it.
-function _check_mode_matrices(A::AbstractVector{<:AbstractMatrix})
+# Validate the state matrices, square and of one positive size, and return their
+# size.
+function _check_state_matrices(A::AbstractVector{<:AbstractMatrix})
     isempty(A) && throw(ArgumentError("at least one mode is required"))
 
     n = size(first(A), 1)
@@ -94,13 +46,15 @@ function _check_mode_matrices(A::AbstractVector{<:AbstractMatrix})
     return n
 end
 
-# Validate the mode and input matrices and return the state dimension.
-function _check_dimensions(A, B)
-    n = _check_mode_matrices(A)
+# Validate the state and input matrices, one input size for every mode, and
+# return the state dimension.
+function _check_input_matrices(A, B)
+    n = _check_state_matrices(A)
     length(A) == length(B) ||
         throw(ArgumentError("A has $(length(A)) modes but B has $(length(B))"))
 
     m = size(first(B), 2)
+    m > 0 || throw(ArgumentError("input matrices must have at least one column"))
 
     for (σ, Bσ) in enumerate(B)
         size(Bσ, 1) == n ||
@@ -113,16 +67,20 @@ function _check_dimensions(A, B)
 end
 
 """
-    mode_matrix(system, mode)
-    mode_matrix(system, word)
+    state_matrices(system)
 
-The state matrix of one mode, or the product ``A_{i_k} ⋯ A_{i_1}`` along a word
+The state matrices `A`, indexed by mode.
+"""
+state_matrices(system::_HS.HybridSystem) = _MS.state_matrix.(_maps_by_mode(system))
+
+"""
+    state_matrix(system, word)
+
+The product ``A_{i_k} ⋯ A_{i_1}`` of the state matrices along a word
 `(i_1, …, i_k)`.
 """
-mode_matrix(system::_HS.HybridSystem, mode::Integer) = mode_matrices(system)[mode]
-
-mode_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
-    _product(mode_matrices(system), word)
+state_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
+    _product(state_matrices(system), word)
 
 # Takes the extracted matrices so that per-edge callers do not rebuild them.
 function _product(A::AbstractVector{<:AbstractMatrix}, word)
@@ -138,19 +96,57 @@ function _product(A::AbstractVector{<:AbstractMatrix}, word)
 end
 
 """
-    is_invertible(system) -> Bool
+    input_matrices(system)
 
-Whether every mode matrix has full rank.
+The input matrices `B`, indexed by mode. Throws if the system has no input.
 """
-is_invertible(system::_HS.HybridSystem) =
-    all(A -> LinearAlgebra.rank(A) == size(A, 1), mode_matrices(system))
+function input_matrices(system::_HS.HybridSystem)
+    has_input(system) ||
+        throw(ArgumentError("the system has no input, so it has no B matrices"))
+
+    return _MS.input_matrix.(_maps_by_mode(system))
+end
 
 """
-    is_positive(system) -> Bool
+    has_input(system) -> Bool
 
-Whether every mode matrix is entrywise nonnegative.
+Whether `system` has an input, `x⁺ = A_σ x + B_σ u`.
 """
-is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), mode_matrices(system))
+has_input(system::_HS.HybridSystem) =
+    all(map -> map isa _MS.LinearControlMap, _maps_by_mode(system))
+
+"""
+    n_modes(system)
+
+The number of modes of `system`. Throws on a system whose automaton restricts
+the switching: constrained switching is not supported.
+"""
+n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
+
+# The reset map `x ↦ A_σ x (+ B_σ u)` of each mode σ, in mode order. Every
+# accessor goes through here, so this is where constrained switching, which
+# HybridSystems allows, is rejected. A `OneStateAutomaton` has one transition per
+# mode.
+function _maps_by_mode(system::_HS.HybridSystem)
+    automaton = system.automaton
+    automaton isa _HS.OneStateAutomaton || throw(
+        ArgumentError(
+            "constrained switching is not supported: the system's automaton must " *
+            "be a `OneStateAutomaton`, which admits every switching sequence",
+        ),
+    )
+
+    return [_HS.resetmap(system, t) for t in _HS.transitions(automaton)]
+end
+
+# Whether every mode matrix has full rank: what the composition lifts need of the
+# quadratic, sum-of-squares and linear copositive templates.
+_is_invertible(system::_HS.HybridSystem) =
+    all(A -> LinearAlgebra.rank(A) == size(A, 1), state_matrices(system))
+
+# Whether every mode matrix is entrywise nonnegative, a positive system: what
+# the copositive templates need to apply.
+_is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), state_matrices(system))
 
 """
     dual(system)
@@ -161,5 +157,5 @@ function dual(system::_HS.HybridSystem)
     has_input(system) &&
         throw(ArgumentError("the dual of a controlled system is not defined"))
 
-    return switched_system([collect(transpose(A_mode)) for A_mode in mode_matrices(system)])
+    return switched_system(permutedims.(state_matrices(system)))
 end

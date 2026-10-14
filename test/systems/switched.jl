@@ -15,7 +15,7 @@ const B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
     # a plain switched system keeps working.
     @test s isa HS.DiscreteSwitchedLinearSystem
     @test !PCC.has_input(s)
-    @test PCC.mode_matrices(s) == A
+    @test PCC.state_matrices(s) == A
 
     rm = PCC._maps_by_mode(s)
     @test length(rm) == 2
@@ -38,7 +38,7 @@ end
         @test rm[σ].B == B[σ]
     end
 
-    Amat = PCC.mode_matrices(s)
+    Amat = PCC.state_matrices(s)
     Bmat = PCC.input_matrices(s)
     @test Amat == A
     @test Bmat == B
@@ -52,7 +52,7 @@ end
 @testset "the matrices are on the transitions, not the modes" begin
     s = PCC.switched_system(A, B)
     # One discrete state, two self-loops labelled 1 and 2. The mode carries no
-    # dynamics at all, which is why mode_matrices has to exist.
+    # dynamics at all, which is why state_matrices has to exist.
     @test HS.nstates(s.automaton) == 1
     @test HS.ntransitions(s.automaton) == 2
     @test HS.mode(s, 1) isa MS.ContinuousIdentitySystem
@@ -75,8 +75,15 @@ end
     HS.add_transition!(g, 2, 1, 1)
     constrained = HS.discreteswitchedsystem(A, g)
     @test_throws ArgumentError PCC.n_modes(constrained)
-    @test_throws ArgumentError PCC.mode_matrices(constrained)
+    @test_throws ArgumentError PCC.state_matrices(constrained)
     @test_throws ArgumentError PCC.has_input(constrained)
+end
+
+@testset "A and B of different number types are promoted" begin
+    s = PCC.switched_system([[1 0; 0 1]], [reshape([0.5, 0.0], 2, 1)])
+
+    @test PCC.state_matrices(s) == [[1.0 0.0; 0.0 1.0]]
+    @test PCC.input_matrices(s) == [reshape([0.5, 0.0], 2, 1)]
 end
 
 @testset "dimension errors are caught at construction" begin
@@ -85,6 +92,7 @@ end
     @test_throws ArgumentError PCC.switched_system([[1.0 2.0 3.0]], B[1:1])  # not square
     @test_throws ArgumentError PCC.switched_system(A, [reshape([1.0], 1, 1), B[2]])  # B rows
     @test_throws ArgumentError PCC.switched_system(A, [B[1], zeros(2, 2)])   # input dim
+    @test_throws ArgumentError PCC.switched_system(A, [zeros(2, 0), zeros(2, 0)])  # no input
 
     # The same checks without an input.
     @test_throws ArgumentError PCC.switched_system(typeof(A)())
@@ -94,17 +102,16 @@ end
 
 @testset "the product along a word, newest mode leftmost" begin
     s = PCC.switched_system(A)
-    @test PCC.mode_matrix(s, 2) == A[2]
-    @test PCC.mode_matrix(s, [1, 2]) == A[2] * A[1]
-    @test PCC.mode_matrix(s, [2, 2, 1]) == A[1] * A[2] * A[2]
-    @test_throws ArgumentError PCC.mode_matrix(s, Int[])
+    @test PCC.state_matrix(s, [1, 2]) == A[2] * A[1]
+    @test PCC.state_matrix(s, [2, 2, 1]) == A[1] * A[2] * A[2]
+    @test_throws ArgumentError PCC.state_matrix(s, Int[])
 end
 
 @testset "positive and invertible systems" begin
-    @test PCC.is_positive(PCC.switched_system(A))
-    @test !PCC.is_positive(PCC.switched_system([A[1], [0.0 -1.0; 1.0 0.0]]))
-    @test PCC.is_invertible(PCC.switched_system(A))
-    @test !PCC.is_invertible(PCC.switched_system([A[1], [1.0 0.0; 0.0 0.0]]))
+    @test PCC._is_positive(PCC.switched_system(A))
+    @test !PCC._is_positive(PCC.switched_system([A[1], [0.0 -1.0; 1.0 0.0]]))
+    @test PCC._is_invertible(PCC.switched_system(A))
+    @test !PCC._is_invertible(PCC.switched_system([A[1], [1.0 0.0; 0.0 0.0]]))
 end
 
 @testset "the dual system refuses constrained switching" begin

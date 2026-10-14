@@ -28,17 +28,17 @@ systems =
     (name, s) in systems
 ]
 
-# The matrices are read back with [`mode_matrices`](@ref) and
-# [`input_matrices`](@ref); [`mode_matrix`](@ref) gives the product along a
+# The matrices are read back with [`state_matrices`](@ref) and
+# [`input_matrices`](@ref); [`state_matrix`](@ref) gives the product along a
 # sequence of modes.
 
 controlled = systems[2][2]
 
-PCC.mode_matrices(controlled) == A, PCC.input_matrices(controlled) == B
+PCC.state_matrices(controlled) == A, PCC.input_matrices(controlled) == B
 
 #-
 
-PCC.mode_matrix(controlled, [1, 2]) == A[2] * A[1]
+PCC.state_matrix(controlled, [1, 2]) == A[2] * A[1]
 
 # ## Running one
 #

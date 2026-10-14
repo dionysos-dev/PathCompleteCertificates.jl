@@ -15,7 +15,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
         has_input(system) &&
             throw(ArgumentError("SafetyProblem requires an input-free system"))
 
-        n = _check_mode_matrices(mode_matrices(system))
+        n = _check_state_matrices(state_matrices(system))
         d = n + 1
 
         size(S0) == (d, d) ||
@@ -75,7 +75,7 @@ function optimization_model(
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
     n = _check_safety_data(graph, problem; path_complete = path_complete)
-    A = mode_matrices(problem.system)
+    A = state_matrices(problem.system)
     d = n + 1
 
     model = JuMP.Model(optimizer)

@@ -51,7 +51,7 @@ function add_decrease!(
 end
 
 # On the orthant only: a positive system never leaves it.
-is_applicable(::LinearCopositiveTemplate, system) = is_positive(system)
+is_applicable(::LinearCopositiveTemplate, system) = _is_positive(system)
 
 function decrease_slack(
     ::LinearCopositiveTemplate,
@@ -68,12 +68,12 @@ end
 is_closed_under(::LinearCopositiveTemplate, ::Addition, system) = true
 
 function is_closed_under(::LinearCopositiveTemplate, ::Composition, system)
-    return all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
+    return all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), state_matrices(system))
 end
 
 function is_closed_under(::LinearCopositiveTemplate, ::InverseComposition, system)
-    is_invertible(system) || return false
-    return all(A -> all(>=(0), inv(A)), mode_matrices(system))
+    _is_invertible(system) || return false
+    return all(A -> all(>=(0), inv(A)), state_matrices(system))
 end
 
 has_dual(::LinearCopositiveTemplate) = true

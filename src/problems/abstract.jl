@@ -70,7 +70,7 @@ function _check_modes(
     system::_HS.HybridSystem;
     path_complete::Bool = true,
 )
-    A = mode_matrices(system)
+    A = state_matrices(system)
 
     for edge in edges(graph), mode in letters(label(graph, edge))
         1 <= mode <= length(A) ||

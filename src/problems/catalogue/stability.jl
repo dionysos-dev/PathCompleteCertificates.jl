@@ -10,7 +10,7 @@ struct StabilityProblem{S} <: AbstractProblem
     function StabilityProblem(system::S) where {S}
         has_input(system) &&
             throw(ArgumentError("StabilityProblem requires an input-free system"))
-        _check_mode_matrices(mode_matrices(system))
+        _check_state_matrices(state_matrices(system))
 
         return new{S}(system)
     end
@@ -61,7 +61,7 @@ function optimization_model(
 
     dimension =
         _check_stability_data(template, graph, problem; path_complete = path_complete)
-    A = mode_matrices(problem.system)
+    A = state_matrices(problem.system)
     degree = homogeneity_degree(template)
 
     model = JuMP.Model(optimizer)
@@ -312,7 +312,7 @@ function jsr_lower_bound(
     max_length::Union{Nothing, Integer} = nothing,
 )
     subgraph = tight_subgraph(certificate; atol = atol)
-    A = mode_matrices(problem(certificate).system)
+    A = state_matrices(problem(certificate).system)
 
     length_bound = something(max_length, n_nodes(subgraph))
     best = zero(float(eltype(first(A))))

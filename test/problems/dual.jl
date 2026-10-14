@@ -93,8 +93,8 @@ const BASE_RATES = Dict(
     @test PCC.status(dualised) == PCC.status(primal)
     @test PCC.template(dualised) == PCC.dual(template)
     @test edgeset(PCC.graph(dualised)) == edgeset(PCC.dual(g))
-    @test PCC.mode_matrices(PCC.problem(dualised).system) ==
-          [collect(transpose(A)) for A in PCC.mode_matrices(system)]
+    @test PCC.state_matrices(PCC.problem(dualised).system) ==
+          [collect(transpose(A)) for A in PCC.state_matrices(system)]
     @test length(PCC.functions(dualised)) == PCC.n_nodes(g)
 
     # Lemma 6.25: every reversed edge inequality holds for the dual norms,
@@ -116,7 +116,7 @@ const BASE_RATES = Dict(
 
     # The common function of the dual certificate is a function.
     if !PCC.has_words(g)
-        @test dualised(ones(size(first(PCC.mode_matrices(system)), 1))) > 0
+        @test dualised(ones(size(first(PCC.state_matrices(system)), 1))) > 0
     end
 
     # A valid lift is no worse than the graph it was applied to -- on the

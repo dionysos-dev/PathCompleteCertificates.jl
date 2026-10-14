@@ -41,7 +41,7 @@ _input_at(u::AbstractVector, k, x) = u[k]
 _input_at(u, k, x) = u(x)
 
 function _check_initial_state(system::_HS.HybridSystem, x0::AbstractVector)
-    n = size(first(mode_matrices(system)), 1)
+    n = size(first(state_matrices(system)), 1)
     length(x0) == n ||
         throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
     return nothing
@@ -57,7 +57,7 @@ end
 # its arithmetic gives, and the run is promoted once at the end, so an integer
 # system driven by a real input works and an exact run stays exact.
 function _run(system::_HS.HybridSystem, x0::AbstractVector, modes, input)
-    A = mode_matrices(system)
+    A = state_matrices(system)
     B = input === nothing ? nothing : input_matrices(system)
 
     xs = AbstractVector[x0]

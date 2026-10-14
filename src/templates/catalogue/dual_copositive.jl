@@ -68,7 +68,7 @@ function add_decrease!(
 end
 
 # On the orthant only: a positive system never leaves it.
-is_applicable(::DualCopositiveTemplate, system) = is_positive(system)
+is_applicable(::DualCopositiveTemplate, system) = _is_positive(system)
 
 function decrease_slack(
     ::DualCopositiveTemplate,

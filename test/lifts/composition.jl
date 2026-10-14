@@ -48,8 +48,8 @@ end
     invertible = PCC.switched_system([[0.5 0.0; 0.0 0.5], [0.0 0.5; 0.5 0.0]])
     singular = PCC.switched_system([[0.5 0.0; 0.0 0.0], [0.0 0.5; 0.5 0.0]])
 
-    @test PCC.is_invertible(invertible)
-    @test !PCC.is_invertible(singular)
+    @test PCC._is_invertible(invertible)
+    @test !PCC._is_invertible(singular)
     @test PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), invertible)
     @test !PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), singular)
     @test PCC.is_valid(PCC.BackwardCompositionLift(1), PCC.QuadraticTemplate(), invertible)
