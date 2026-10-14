@@ -23,7 +23,7 @@ rotation_problem = PCC.StabilityProblem(PCC.switched_system(ROTATION))
 
 templates = [
     ("quadratic", PCC.QuadraticTemplate()),
-    ("polyhedral, fixed facets", PCC.PolyhedralTemplate(1, 2)),
+    ("polyhedral, fixed facets", PCC.ParallelFacesPolyhedralTemplate(1, 2)),
     (
         "polyhedral, free facets",
         PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(3)]),

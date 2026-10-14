@@ -132,7 +132,7 @@ W = [
 scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
 
 slacks = [
-    PCC.domination_slack(
+    PCC.decrease_slack(
         QUADRATIC,
         W[PCC.source(e)],
         W[PCC.dest(e)],
