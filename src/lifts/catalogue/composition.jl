@@ -3,7 +3,8 @@
 
 The `T`-forward composition lift: a node `(s, j₁, …, j_T)` per node `s` and
 `T`-tuple of modes, and for each edge `(a, b, i)` an edge labelled `j_T` from
-`(a, j₁…j_T)` to `(b, i, j₁…j_{T−1})`. Requires [`Composition`](@ref).
+`(a, j₁…j_T)` to `(b, i, j₁…j_{T−1})`
+[debauche2024thesis; Def. 7.58](@cite). Requires [`Composition`](@ref).
 """
 struct CompositionLift <: AbstractLift
     length::Int

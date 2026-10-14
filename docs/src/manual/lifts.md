@@ -38,8 +38,8 @@ stands for in ``G``.
 | [`MinLift`](@ref) | min lift, [debauche2021comparison](@cite) | the whole graph | `min` | [`compare`](@ref) |
 | [`MaxLift`](@ref) | max lift, [debauche2021comparison](@cite) | the whole graph | `max` | [`compare`](@ref) |
 | [`SumLift`](@ref)`(T)` | ``T``-sum lift, [debauche2021comparison](@cite), Def. 8 | the whole graph | `+` | [`compare`](@ref) |
-| [`CompositionLift`](@ref)`(T)` | ``T``-composition lift, [debauche2021comparison](@cite), Def. 10 | the whole graph | composition with the dynamics | [`compare`](@ref), [`Hierarchy`](@ref) |
-| [`BackwardCompositionLift`](@ref)`(T)` | [debauche2024thesis](@cite), Def. 7.61 | the whole graph | composition with the inverse dynamics | [`compare`](@ref) |
+| [`CompositionLift`](@ref)`(T)` | ``T``-forward composition lift, [debauche2024thesis](@cite), Def. 7.58 | the whole graph | composition with the dynamics | [`compare`](@ref), [`Hierarchy`](@ref) |
+| [`BackwardCompositionLift`](@ref)`(T)` | ``T``-backward composition lift, [debauche2024thesis](@cite), Def. 7.61 | the whole graph | composition with the inverse dynamics | [`compare`](@ref) |
 
 The last column gives the defaults; any lift can be passed to
 [`Hierarchy`](@ref) or to the `lifts` of [`compare`](@ref) and

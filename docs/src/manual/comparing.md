@@ -57,7 +57,7 @@ finds the order. The products give graphs with words on their edges, which
 | [`MaxLift`](@ref)`()` | templates closed under `max` | the same on the dual graphs | a relation | yes | [debauche2022necessary](@cite), Thm. 4; [debauche2024thesis](@cite), Thm. 8.5 |
 | [`SumLift`](@ref)`()` | templates closed under `+` | a linear program over nonnegative matrices ``C`` with ``S_H C \ge K S_G`` and ``D_H C \le K D_G`` | an integer matrix | yes | [philippe2017path](@cite), Thm. IV.4; [debauche2023ordering](@cite), Thm. 2 |
 | [`SumLift`](@ref)`(T)` | templates closed under `+` | the ``T``-sum lift is built and the map searched | a map into multisets | some ``T`` works whenever the program is feasible | [debauche2021comparison](@cite), Def. 8; [debauche2023ordering](@cite), Lemma 3 |
-| [`CompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i``, on the system given | the lift is built, ``|S| M^T`` nodes, and the map searched | a map into `(node, word)` pairs | no ² | [debauche2021comparison](@cite), Def. 10; [debauche2024thesis](@cite), Thm. 7.65 |
+| [`CompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i``, on the system given | the lift is built, ``|S| M^T`` nodes, and the map searched | a map into `(node, word)` pairs | no ² | [debauche2024thesis](@cite), Def. 7.58, Thm. 7.65 |
 | [`BackwardCompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i^{-1}``, invertible system | the forward one on the dual graphs | a map | no | [debauche2024thesis](@cite), Def. 7.61, Thm. 7.66 |
 
 ¹ The linear copositive norms are not closed under `min`, yet the min lift is

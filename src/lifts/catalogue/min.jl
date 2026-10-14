@@ -8,8 +8,11 @@ _members(mask::Integer, n::Integer) =
 Nodes are the nonempty subsets, with an `i`-edge from `A` to `B` when every
 node of `A` has an `i`-edge into `B`. Requires [`Minimum`](@ref), except for
 linear copositive norms on positive systems
-[debauche2024thesis; Thm. 7.43](@cite); its simulation is the greatest
-simulation relation [debauche2024thesis; Thm. 8.1](@cite).
+[debauche2024thesis; Thm. 7.43](@cite). A map from the nodes of `H` into these
+subsets that keeps every edge is a simulation relation between `H` and `G`, so
+`simulation(MinLift(), G, H)` returns the greatest one without building the
+lift. Whether one exists decides the order for every template closed under
+minimum [debauche2024thesis; Thm. 8.1](@cite).
 """
 struct MinLift <: AbstractLift end
 

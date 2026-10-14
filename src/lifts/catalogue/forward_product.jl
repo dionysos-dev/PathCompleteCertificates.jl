@@ -23,8 +23,8 @@ function lift(::ForwardProductLift, g::CertificateGraph, edge_list::AbstractVect
             continuations = outgoing_edges(g, dest(edge))
             isempty(continuations) && throw(
                 ArgumentError(
-                    "node $(dest(edge)) has no outgoing edge; the edge into it " *
-                    "cannot be folded forward",
+                    "node $(dest(edge)) has no edge to chain with the given " *
+                    "edge, so it cannot be folded",
                 ),
             )
 
