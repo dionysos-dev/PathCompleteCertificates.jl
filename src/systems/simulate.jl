@@ -22,6 +22,7 @@ function simulate(
     )
 
     _check_initial_state(system, x0)
+    _check_inputs(u, modes)
     input = controlled ? (k, x) -> _input_at(u, k, x) : nothing
 
     return _run(system, x0, modes, input)
@@ -40,6 +41,15 @@ end
 _input_at(u::AbstractVector, k, x) = u[k]
 _input_at(u, k, x) = u(x)
 
+# A sequence of inputs gives one per step; a feedback law, or no input, is not checked.
+function _check_inputs(u::AbstractVector, modes)
+    length(u) == length(modes) ||
+        throw(ArgumentError("got $(length(u)) inputs for $(length(modes)) steps"))
+    return nothing
+end
+
+_check_inputs(u, modes) = nothing
+
 function _check_initial_state(system::_HS.HybridSystem, x0::AbstractVector)
     n = size(first(state_matrices(system)), 1)
     length(x0) == n ||
@@ -53,9 +63,7 @@ function _random_modes(rng::Random.AbstractRNG, system::_HS.HybridSystem, horizo
 end
 
 # The run from `x0` along `modes`: `x⁺ = A_σ x`, or `x⁺ = A_σ x + B_σ u` with
-# `u = input(k, x)` at step `k` when `input` is given. Each step keeps the type
-# its arithmetic gives, and the run is promoted once at the end, so an integer
-# system driven by a real input works and an exact run stays exact.
+# `u = input(k, x)` at step `k` when `input` is given.
 function _run(system::_HS.HybridSystem, x0::AbstractVector, modes, input)
     A = state_matrices(system)
     B = input === nothing ? nothing : input_matrices(system)
@@ -74,9 +82,5 @@ function _run(system::_HS.HybridSystem, x0::AbstractVector, modes, input)
         end
     end
 
-    T = mapreduce(eltype, promote_type, [xs; us]; init = eltype(first(A)))
-    states = Vector{T}[convert(Vector{T}, x) for x in xs]
-    inputs = input === nothing ? nothing : Vector{T}[convert(Vector{T}, u) for u in us]
-
-    return Trajectory(states, modes, inputs)
+    return Trajectory(xs, modes, input === nothing ? nothing : us)
 end

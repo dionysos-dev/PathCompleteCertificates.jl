@@ -34,12 +34,25 @@ end
 
     # One input per step, or none at all.
     @test_throws ArgumentError PCC.Trajectory(STATES, WORD, [[1.0]])
+
+    # Every state, and every input, has one dimension.
+    @test_throws ArgumentError PCC.Trajectory([[1.0, 2.0], [1.0]], [1], nothing)
+    @test_throws ArgumentError PCC.Trajectory(STATES, WORD, [[1.0], [1.0, 2.0]])
+
+    # Modes are numbered from 1.
+    @test_throws ArgumentError PCC.Trajectory(STATES, [1, 0], nothing)
 end
 
 @testset "the number type is carried, not forced" begin
     exact = PCC.Trajectory([[1 // 2], [1 // 4]], [1], nothing)
 
     @test eltype(first(PCC.states(exact))) == Rational{Int}
+
+    # States and inputs of different types are promoted to one.
+    mixed = PCC.Trajectory([[1.0], [2.0]], [1], [[1]])
+
+    @test PCC.inputs(mixed) == [[1.0]]
+    @test eltype(first(PCC.inputs(mixed))) == Float64
 end
 
 end
