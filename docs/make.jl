@@ -1,3 +1,4 @@
+import SetProg
 using PathCompleteCertificates
 using Documenter, Literate
 import DocumenterCitations

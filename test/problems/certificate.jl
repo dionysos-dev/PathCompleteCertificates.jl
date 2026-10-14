@@ -4,6 +4,7 @@ module TestCertificate
 # accessed through methods and stored once in `CertificateData`; what a problem
 # certifies is a typed field on its own certificate type.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -21,7 +22,7 @@ const SYSTEM = PCC.switched_system([[0.5 0.0; 0.0 0.25]])
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 
 const STABILITY = PCC.jsr_bound(
-    PCC.QuadraticTemplate(),
+    SetProg.Ellipsoid(; symmetric = true),
     GRAPH,
     PROBLEM;
     optimizer = OPTIMIZER,

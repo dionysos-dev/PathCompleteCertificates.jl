@@ -3,6 +3,7 @@ module TestCertify
 # The seam itself: one `certify` per problem, one `optimization_model` per
 # problem, and the failure path they share.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -18,7 +19,7 @@ const GRAPH = PCC.de_bruijn(1, 1)
 
 @testset "certify at a fixed rate" begin
     loose = PCC.certify(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -33,7 +34,7 @@ end
 
 @testset "an infeasible rate yields a certificate, not an error" begin
     tight = PCC.certify(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -50,17 +51,17 @@ end
 
 @testset "a failed solve names no function type" begin
     # `functions` is empty, so there is no fitted function to take a type from.
-    template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
+    template = SetProg.Parallelotope(dimension = 2)
     tight = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.01)
 
     @test !PCC.is_feasible(tight)
     @test isempty(PCC.functions(tight))
-    @test !any(f -> f isa PCC.QuadraticFunction, PCC.functions(tight))
+    @test !any(f -> f isa SetProg.Sets.Ellipsoid, PCC.functions(tight))
 end
 
 @testset "jsr_bound agrees with certify at the rate it returns" begin
     bound = PCC.jsr_bound(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -72,7 +73,7 @@ end
 
     # The bisection ends in exactly this solve.
     direct = PCC.certify(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -83,7 +84,7 @@ end
 
 @testset "optimization_model builds without solving" begin
     model = PCC.optimization_model(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         GRAPH,
         PROBLEM;
         rate = 0.9,
@@ -92,7 +93,8 @@ end
 
     @test model isa JuMP.Model
     @test JuMP.termination_status(model) == JuMP.MOI.OPTIMIZE_NOT_CALLED
-    @test JuMP.num_variables(model) > 0
+    @test length(model[:stability_V]) == PCC.n_nodes(GRAPH)
+    @test all(V -> V isa SetProg.SetVariableRef, model[:stability_V])
 end
 
 @testset "optimal control has a model of its own now" begin
@@ -119,7 +121,7 @@ end
 
     # The common graph is accepted ...
     model = PCC.optimization_model(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         PCC.common_graph(problem.system),
         problem;
         rate = 1.0,
@@ -133,7 +135,7 @@ end
         add_transition!(partial, 1, 1, mode)
     end
     @test_throws ArgumentError PCC.optimization_model(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(symmetric = true),
         partial,
         problem;
         rate = 1.0,

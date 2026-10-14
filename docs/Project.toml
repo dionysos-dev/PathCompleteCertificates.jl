@@ -1,7 +1,7 @@
 # The examples are executed as part of the docs build, so this environment needs
 # a solver, a plotting backend and the polynomial and set-programming stacks on
-# top of the documentation tooling. None of them is a dependency of the package,
-# nor of the environment CI instantiates for the tests.
+# top of the documentation tooling. SetProg is a direct package dependency;
+# SumOfSquares is optional, and solvers and plotting tools are for examples.
 [deps]
 Clarabel = "61c947e1-3e6d-4ee4-985a-eec8c727bd6e"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -21,7 +21,7 @@ SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 Documenter = "1"
 DocumenterCitations = "1"
 Literate = "2"
-SetProg = "0.4.4"
+SetProg = "0.4.5"
 SumOfSquares = "0.7, 0.8"
 
 [sources]

@@ -3,6 +3,7 @@ module TestOptimalControl
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
+struct UnsupportedTemplate <: PCC.AbstractTemplate end
 import Clarabel
 import JuMP
 import LinearAlgebra
@@ -99,7 +100,7 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q[1:1, 1:1], R)
 
     @test_throws ArgumentError PCC.certify(
-        PCC.LinearCopositiveTemplate(),
+        UnsupportedTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,

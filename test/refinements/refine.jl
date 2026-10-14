@@ -1,5 +1,6 @@
 module TestRefine
 
+import SetProg
 using Test
 using HybridSystems
 using Random
@@ -7,7 +8,7 @@ import PathCompleteCertificates as PCC
 import Clarabel
 
 const OPTIMIZER = Clarabel.Optimizer
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = SetProg.Ellipsoid(; symmetric = true)
 
 # A pure rotation scaled by 0.9: since rotations preserve the Euclidean norm
 # exactly, P = I is already the exact quadratic certificate, at exactly the
@@ -360,7 +361,7 @@ end
     # at every tight edge, each candidate solved, the best kept. The products
     # write words on the edges, so the graph gains edges rather than nodes.
     problem = SHEARED
-    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
+    template = SetProg.Parallelotope(dimension = 2)
 
     trace = PCC.refine(
         template,

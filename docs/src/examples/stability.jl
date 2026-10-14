@@ -4,6 +4,7 @@
 # joint spectral radius, with the node functions that prove it.
 
 import PathCompleteCertificates as PCC
+import SetProg
 import Clarabel
 
 const OPTIMIZER = Clarabel.Optimizer
@@ -26,10 +27,20 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 # [`is_feasible`](@ref) says whether the problem was feasible: here at `0.6`
 # and not at `0.4`, which is below the spectral radius.
 
-at_six_tenths =
-    PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER, rate = 0.6)
-at_four_tenths =
-    PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER, rate = 0.4)
+at_six_tenths = PCC.certify(
+    SetProg.Ellipsoid(; symmetric = true),
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    rate = 0.6,
+)
+at_four_tenths = PCC.certify(
+    SetProg.Ellipsoid(; symmetric = true),
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    rate = 0.4,
+)
 
 PCC.is_feasible(at_six_tenths), PCC.is_feasible(at_four_tenths)
 
@@ -40,7 +51,7 @@ PCC.is_feasible(at_six_tenths), PCC.is_feasible(at_four_tenths)
 # on this graph.
 
 result = PCC.jsr_bound(
-    PCC.QuadraticTemplate(),
+    SetProg.Ellipsoid(; symmetric = true),
     graph,
     problem;
     optimizer = OPTIMIZER,

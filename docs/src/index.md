@@ -65,14 +65,14 @@ In reading order:
 
 Safety and optimal control have one example each,
 [Safety: a barrier certificate](@ref) and
-[Optimal control: a feedback per node](@ref), and so does the SetProg
-template, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
+[Optimal control: a feedback per node](@ref), and so do SetProg
+piecewise families, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
 
 ## Scope
 
-Stability is implemented for every template, safety and optimal control for
-the quadratic one. [`compare`](@ref) is stated for stability, as in the
-literature, and so is [`refine`](@ref);
+Stability uses SetProg families directly. Safety and optimal control retain
+the legacy quadratic template until their migration. [`compare`](@ref) is stated for stability, as in the
+literature, and [`refine`](@ref) runs on stability;
 [What works with what](@ref) gives the full table. A bound is always an upper
 bound, and a negative answer means that no certificate was found in this
 template on this graph, not that the property fails.

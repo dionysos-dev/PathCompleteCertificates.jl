@@ -44,19 +44,21 @@ function _edge_decrease(
 end
 
 """
-    optimization_model(template, graph, problem; optimizer, rate = 1,
-                       check_path_complete = true)
+    optimization_model(family, graph, problem; optimizer, rate = 1,
+                       conditioning_bound = Inf)
 
-The feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
+A SetProg model, whose set variables are expanded when optimized, for
+the feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
 `(a, b, w)`, with `p` the template's degree and `|w|` the length of the word.
 """
 function optimization_model(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
     rate::Real = 1,
     check_path_complete::Bool = true,
+    conditioning_bound::Real = Inf,
 )
     rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
@@ -73,15 +75,26 @@ function optimization_model(
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    Vs = [add_function_variables!(model, template, dimension, a) for a in nodes(graph)]
+    families = _prepared_families(template, dimension, n_nodes(graph))
+    Vs = [
+        SetProg.add_function_variables!(model, families[a], dimension, a) for
+        a in nodes(graph)
+    ]
 
     for V in Vs
-        add_normalization!(model, template, V)
+        SetProg.add_normalization!(model, V.set, V; conditioning_bound)
     end
 
     for edge in edges(graph)
         dynamics, scale = _edge_decrease(problem, graph, edge, A; rate, degree)
-        add_decrease!(model, template, Vs[source(edge)], Vs[dest(edge)], dynamics; scale)
+        SetProg.add_decrease!(
+            model,
+            Vs[source(edge)].set,
+            Vs[source(edge)],
+            Vs[dest(edge)],
+            dynamics;
+            scale,
+        )
     end
 
     model[:stability_V] = Vs
@@ -97,7 +110,7 @@ The [`StabilityCertificate`](@ref) of the smallest feasible rate, to relative
 tolerance `rtol`. `initial_upper` is a first guess of a feasible rate.
 """
 function jsr_bound(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
@@ -105,6 +118,7 @@ function jsr_bound(
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
     check_path_complete::Bool = true,
+    conditioning_bound::Real = Inf,
 )
     rtol > 0 || throw(ArgumentError("rtol must be positive"))
 
@@ -128,6 +142,7 @@ function jsr_bound(
             optimizer,
             rate,
             check_path_complete = false,
+            conditioning_bound = conditioning_bound,
         )
         JuMP.optimize!(model)
         return JuMP.is_solved_and_feasible(model; allow_almost = true)
@@ -159,9 +174,10 @@ function jsr_bound(
         template,
         graph,
         problem;
-        optimizer = optimizer,
+        optimizer,
         rate = upper,
         check_path_complete = false,
+        conditioning_bound,
     )
 
     is_feasible(certificate) ||
@@ -174,18 +190,28 @@ end
     certify(template, graph, problem::StabilityProblem; optimizer, rate = 1,
             check_path_complete = true)
 
-Solve the stability problem at the fixed `rate`.
+Solve the stability problem at the fixed `rate`, using a SetProg family or
+a vector of families, one per node. A finite `conditioning_bound` bounds
+ellipsoid gauge matrices between `I` and `conditioning_bound * I`.
 """
 function certify(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
     rate::Real = 1,
     check_path_complete::Bool = true,
+    conditioning_bound::Real = Inf,
 )
-    model =
-        optimization_model(template, graph, problem; optimizer, rate, check_path_complete)
+    model = optimization_model(
+        template,
+        graph,
+        problem;
+        optimizer,
+        rate,
+        check_path_complete,
+        conditioning_bound,
+    )
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
@@ -193,7 +219,7 @@ function certify(
     JuMP.is_solved_and_feasible(model; allow_almost = true) ||
         return StabilityCertificate(_failed(problem, template, graph, termination), rate)
 
-    V = [solution_value(template, v) for v in model[:stability_V]]
+    V = [SetProg.solution_value(v.set, v) for v in model[:stability_V]]
 
     return StabilityCertificate(
         CertificateData(problem, template, graph, V, termination, true),
@@ -234,7 +260,7 @@ function dual(certificate::StabilityCertificate)
 end
 
 function _check_stability_data(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     check_path_complete::Bool = true,
@@ -262,7 +288,7 @@ The certificate of smallest rate on `graph`, by [`jsr_bound`](@ref) to
 relative tolerance `rtol`, where [`certify`](@ref) checks one given rate.
 """
 function best_certificate(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,

@@ -8,6 +8,7 @@
 # function ``V``, evaluated by calling the certificate on ``x``.
 
 import PathCompleteCertificates as PCC
+import SetProg
 import Clarabel
 using HybridSystems
 using SumOfSquares, DynamicPolynomials
@@ -48,11 +49,11 @@ rotation_graph = PCC.de_bruijn(1, 1)
 rotation_problem = PCC.StabilityProblem(PCC.switched_system(ROTATION))
 
 templates = [
-    ("quadratic", PCC.QuadraticTemplate()),
-    ("polyhedral, fixed facets", PCC.ParallelFacesPolyhedralTemplate(1, 2)),
+    ("quadratic", SetProg.Ellipsoid(; symmetric = true)),
+    ("polyhedral, fixed facets", SetProg.Parallelotope(; dimension = 2)),
     (
         "polyhedral, free facets",
-        PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(3)]),
+        SetProg.ConicPolytope.([SetProg.planar_conic_partition(3)]),
     ),
 ]
 
@@ -109,7 +110,7 @@ right = plot(;
 
 for (name, graph) in graphs
     certificate = PCC.jsr_bound(
-        PCC.QuadraticTemplate(),
+        SetProg.Ellipsoid(; symmetric = true),
         graph,
         mixed_problem;
         optimizer = OPTIMIZER,
@@ -134,7 +135,7 @@ plot(left, right; layout = (1, 2), size = (1100, 620))
 
 # ## Sums of squares
 #
-# [`SumOfSquaresTemplate`](@ref) takes polynomial node functions of higher
+# `SetProg.PolySet` takes polynomial node functions of higher
 # degree ([parrilo2008approximation](@cite)). It is defined in a package
 # extension loaded with SumOfSquares, and the polynomial variables are created
 # once and shared by every node. Degree 2 is the quadratic template. The table
@@ -149,8 +150,17 @@ one_node = PCC.common_graph(mixed_problem.system)
 two_nodes = PCC.de_bruijn(1, 2)
 
 [
-    ("quadratic, 1 node", bound(PCC.QuadraticTemplate(), one_node)),
-    ("degree 4, 1 node", bound(PCC.SumOfSquaresTemplate(2, x), one_node)),
-    ("quadratic, 2 nodes", bound(PCC.QuadraticTemplate(), two_nodes)),
-    ("degree 4, 2 nodes", bound(PCC.SumOfSquaresTemplate(2, x), two_nodes)),
+    ("quadratic, 1 node", bound(SetProg.Ellipsoid(; symmetric = true), one_node)),
+    (
+        "degree 4, 1 node",
+        bound(SetProg.PolySet(; symmetric = true, degree = 2 * 2, variables = x), one_node),
+    ),
+    ("quadratic, 2 nodes", bound(SetProg.Ellipsoid(; symmetric = true), two_nodes)),
+    (
+        "degree 4, 2 nodes",
+        bound(
+            SetProg.PolySet(; symmetric = true, degree = 2 * 2, variables = x),
+            two_nodes,
+        ),
+    ),
 ]

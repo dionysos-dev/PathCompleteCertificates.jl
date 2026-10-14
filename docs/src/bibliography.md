@@ -23,8 +23,8 @@ number quoted in the manual was read in the paper it is attributed to.
 | [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2024thesis](@cite) | [`DualCopositiveTemplate`](@ref), Def. 2.30 |
 
-[`QuadraticTemplate`](@ref) and [`LinearCopositiveTemplate`](@ref) are
-standard. [`ConicPolyhedralTemplate`](@ref) is under submission and has no
+`SetProg.Ellipsoid` and `SetProg.PositiveSimplex` are
+standard. `SetProg.ConicPolytope` is under submission and has no
 entry yet.
 
 ## Safety and optimal control

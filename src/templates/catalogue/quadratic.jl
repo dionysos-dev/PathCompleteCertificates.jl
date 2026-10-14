@@ -1,11 +1,13 @@
 """
     QuadraticTemplate(; conditioning_bound = Inf)
 
-The template ``V(x) = x^\\top P x``, with ``P`` positive definite.
+Legacy quadratic node functions for safety and optimal control. Stability
+uses `SetProg.Ellipsoid(symmetric = true)` directly instead.
+Safety evaluates the quadratic in homogeneous coordinates and permits an
+indefinite coefficient matrix; optimal control uses positive quadratic forms.
+The `conditioning_bound` parameter is retained for the legacy normalization
+primitive.
 
-A finite `conditioning_bound` also imposes
-``P_s \\preceq \\text{conditioning\\_bound} \\cdot I``, which can exclude every
-certificate of a stable system.
 """
 struct QuadraticTemplate{T <: Real} <: AbstractTemplate
     conditioning_bound::T
