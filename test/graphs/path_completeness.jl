@@ -46,8 +46,33 @@ end
     @test PCC.is_path_complete(de_bruijn, 1:2)
     @test !PCC.is_path_complete(de_bruijn, 1:3)
 
-    # A graph with no node reads no word at all.
+    # A graph with no node reads no word at all, not even over no mode.
     @test !PCC.is_path_complete(PCC.empty_graph(0), 1:2)
+    @test !PCC.is_path_complete(PCC.empty_graph(0))
+end
+
+@testset "the subset construction reaches the empty set when a word is unreadable" begin
+    # Example 3.2 of Abate, Debauche, Giacobbe & Roy (HSCC 2026): two 2s in a
+    # row cannot be read, and the subset construction runs {1, 2} -> {1} -> ∅.
+    graph = GraphAutomaton(2)
+    add_transition!(graph, 1, 1, 1)
+    add_transition!(graph, 1, 2, 1)
+    add_transition!(graph, 2, 1, 2)
+
+    states, _, reads_every_word =
+        PCC._subset_construction(graph, 1:2, PCC._successors(graph); stop_at_empty = false)
+    @test states == [Set([1, 2]), Set([1])]
+    @test !reads_every_word
+    @test !PCC.is_path_complete(graph, 1:2)
+
+    # With the loop (2, 2, 2), {1, 2} is the only subset reached.
+    add_transition!(graph, 2, 2, 2)
+
+    states, _, reads_every_word =
+        PCC._subset_construction(graph, 1:2, PCC._successors(graph); stop_at_empty = false)
+    @test states == [Set([1, 2])]
+    @test reads_every_word
+    @test PCC.is_path_complete(graph, 1:2)
 end
 
 @testset "path-completeness is strictly weaker than completeness" begin

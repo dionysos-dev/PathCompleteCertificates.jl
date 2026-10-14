@@ -61,7 +61,8 @@ The lifts themselves come from [athanasopoulos2019polyhedral](@cite) and
 algebra of each operation. [anand2025completeness](@cite) orders barrier
 certificates, and [wintenberg2026complete](@cite) gives a complete ordering
 for composition-closed templates, where the composition lift is sufficient
-only; neither is implemented here.
+only. [abate2026succinct](@cite) designs the graph and its certificate
+together with an SMT solver. None of these is implemented here.
 
 ## All references
 
