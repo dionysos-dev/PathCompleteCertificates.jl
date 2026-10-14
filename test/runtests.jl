@@ -26,6 +26,7 @@ const TEST_FILES = [
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
+    ("./templates/dual_copositive.jl",),
     ("./templates/parallel_faces_polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),

@@ -1,5 +1,5 @@
 """
-    ConicPolyhedralTemplate(cones; min_scale = 1e-3)
+    ConicPolyhedralTemplate(cones; min_scale = 1)
 
 The general polyhedral template: at node ``s``,
 
@@ -11,6 +11,8 @@ with the rows of ``P_s`` as variables. `cones[s]` partitions the state space
 into cones, one per row of ``P_s``, each a matrix whose columns are its extreme
 rays; row ``i`` is constrained to attain the maximum on cone ``i``. `min_scale`
 is the lower bound on ``c_s`` in ``V_s(x) \\ge c_s \\|x\\|_\\infty``.
+The program is homogeneous, so `min_scale` only fixes its scale; a much
+smaller one lets the solver's absolute tolerance show in the rate.
 """
 struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
     cones::Vector{Vector{Matrix{T}}}
@@ -18,7 +20,7 @@ struct ConicPolyhedralTemplate{T <: Real} <: AbstractTemplate
 
     function ConicPolyhedralTemplate(
         cones::AbstractVector{<:AbstractVector{<:AbstractMatrix{T}}};
-        min_scale::Real = 1e-3,
+        min_scale::Real = 1,
     ) where {T <: Real}
         isempty(cones) && throw(ArgumentError("at least one node partition is required"))
         min_scale > 0 || throw(ArgumentError("min_scale must be positive"))

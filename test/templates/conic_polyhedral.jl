@@ -54,7 +54,7 @@ end
 
     # One facet row per cone, and the bound `c` that keeps V away from zero.
     @test size(PCC.functions(result)[1].P) == (length(cones), 2)
-    @test PCC.functions(result)[1].c >= 1e-3 - 1e-9
+    @test PCC.functions(result)[1].c >= 1 - 1e-9
 
     # The edge condition is imposed only on the cones' extreme rays; check it
     # actually holds everywhere, which is the point of the dominance

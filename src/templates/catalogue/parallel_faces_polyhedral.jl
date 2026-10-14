@@ -1,6 +1,6 @@
 """
-    ParallelFacesPolyhedralTemplate(G; min_weight = 1e-3)
-    ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1e-3)
+    ParallelFacesPolyhedralTemplate(G; min_weight = 1)
+    ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1)
 
 The polytopes with pairs of parallel faces of
 [athanasopoulos2019polyhedral](@citet), eq. (10): at node ``s``,
@@ -10,7 +10,9 @@ V_s(x) = \\max_k \\frac{|(G_s x)_k|}{w_{s,k}},
 ```
 
 where `G` holds one fixed invertible matrix per node (the identity by default)
-and the weights ``w_{s,k}``, at least `min_weight`, are the variables.
+and the weights ``w_{s,k}``, at least `min_weight`, are the variables. The
+program is homogeneous, so `min_weight` only fixes its scale; a much smaller
+one lets the solver's absolute tolerance show in the rate.
 """
 struct ParallelFacesPolyhedralTemplate{T <: Real} <: AbstractTemplate
     G::Vector{Matrix{T}}
@@ -18,7 +20,7 @@ struct ParallelFacesPolyhedralTemplate{T <: Real} <: AbstractTemplate
 
     function ParallelFacesPolyhedralTemplate(
         G::AbstractVector{<:AbstractMatrix{T}};
-        min_weight::Real = 1e-3,
+        min_weight::Real = 1,
     ) where {T <: Real}
         isempty(G) && throw(ArgumentError("at least one node matrix is required"))
         min_weight > 0 || throw(ArgumentError("min_weight must be positive"))
@@ -48,7 +50,7 @@ end
 function ParallelFacesPolyhedralTemplate(
     n_nodes::Integer,
     dimension::Integer;
-    min_weight::Real = 1e-3,
+    min_weight::Real = 1,
 )
     n_nodes > 0 || throw(ArgumentError("n_nodes must be positive"))
     dimension > 0 || throw(ArgumentError("dimension must be positive"))

@@ -1,10 +1,12 @@
 """
-    SumOfSquaresTemplate(degree, variables; min_scale = 1e-3)
+    SumOfSquaresTemplate(degree, variables; min_scale = 1)
 
 The template of polynomials ``V(x) = z(x)^\\top Q z(x)`` with ``Q \\succeq 0``,
 where ``z`` runs over the monomials of degree `degree` in the polynomial
 `variables`, shared by every node. `min_scale` is the lower bound on ``c`` in
 ``V(x) \\ge c \\|x\\|^{2\\,\\text{degree}}``. Requires `using SumOfSquares`.
+The program is homogeneous, so `min_scale` only fixes its scale; a much
+smaller one lets the solver's absolute tolerance show in the rate.
 [`decrease_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented, so
 [`refine`](@ref) does not run on it.
 """
@@ -16,7 +18,7 @@ struct SumOfSquaresTemplate{V <: AbstractVector, T <: Real} <: AbstractTemplate
     function SumOfSquaresTemplate(
         degree::Integer,
         variables::V;
-        min_scale::Real = 1e-3,
+        min_scale::Real = 1,
     ) where {V <: AbstractVector}
         degree >= 1 || throw(ArgumentError("degree must be at least 1, got $degree"))
         isempty(variables) && throw(ArgumentError("at least one variable is required"))

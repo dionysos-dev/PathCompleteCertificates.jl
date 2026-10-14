@@ -1,14 +1,16 @@
 """
-    DualCopositiveTemplate(; min_weight = 1e-3)
+    DualCopositiveTemplate(; min_weight = 1)
 
 The template ``V(x) = \\max_i x_i / v_i`` on the nonnegative orthant, with
 every ``v_i`` at least `min_weight`: the dual of
-[`LinearCopositiveTemplate`](@ref). For positive systems only.
+[`LinearCopositiveTemplate`](@ref). For positive systems only. The program is
+homogeneous, so `min_weight` only fixes its scale; a much smaller one lets the
+solver's absolute tolerance show in the rate.
 """
 struct DualCopositiveTemplate{T <: Real} <: AbstractTemplate
     min_weight::T
 
-    function DualCopositiveTemplate(; min_weight::Real = 1e-3)
+    function DualCopositiveTemplate(; min_weight::Real = 1)
         min_weight > 0 || throw(ArgumentError("min_weight must be positive"))
         return new{typeof(min_weight)}(min_weight)
     end
