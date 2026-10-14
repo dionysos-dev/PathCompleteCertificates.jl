@@ -39,7 +39,7 @@ Pages   = ["templates/catalogue/dual_copositive.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/polyhedral.jl"]
+Pages   = ["templates/catalogue/parallel_faces_polyhedral.jl"]
 ```
 
 ## Polyhedral, free facets

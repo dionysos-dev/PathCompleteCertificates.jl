@@ -1,10 +1,3 @@
-import HybridSystems
-import LinearAlgebra
-import MathematicalSystems
-
-const _HS = HybridSystems
-const _MS = MathematicalSystems
-
 """
     switched_system(A)
     switched_system(A, B)
@@ -14,7 +7,10 @@ with `A` and `B` indexed by mode, under arbitrary switching.
 """
 function switched_system end
 
-switched_system(A::AbstractVector{<:AbstractMatrix}) = _HS.discreteswitchedsystem(A)
+function switched_system(A::AbstractVector{<:AbstractMatrix})
+    _check_mode_matrices(A)
+    return _HS.discreteswitchedsystem(A)
+end
 
 function switched_system(
     A::AbstractVector{<:AbstractMatrix},
@@ -36,11 +32,7 @@ end
 
 The state matrices `A`, indexed by mode.
 """
-function mode_matrices(system::_HS.HybridSystem)
-    maps = _maps_by_mode(system)
-
-    return [maps[σ].A for σ in 1:length(maps)]
-end
+mode_matrices(system::_HS.HybridSystem) = [map.A for map in _maps_by_mode(system)]
 
 """
     input_matrices(system)
@@ -51,9 +43,7 @@ function input_matrices(system::_HS.HybridSystem)
     has_input(system) ||
         throw(ArgumentError("the system has no input, so it has no B matrices"))
 
-    maps = _maps_by_mode(system)
-
-    return [maps[σ].B for σ in 1:length(maps)]
+    return [map.B for map in _maps_by_mode(system)]
 end
 
 """
@@ -61,12 +51,8 @@ end
 
 Whether `system` has an input, `x⁺ = A_σ x + B_σ u`.
 """
-function has_input(system::_HS.HybridSystem)
-    return all(
-        hasfield(typeof(_HS.resetmap(system, t)), :B) for
-        t in _HS.transitions(system.automaton)
-    )
-end
+has_input(system::_HS.HybridSystem) =
+    all(map -> hasfield(typeof(map), :B), _maps_by_mode(system))
 
 """
     n_modes(system)
@@ -74,40 +60,48 @@ end
 The number of modes of `system`. Throws on a system whose automaton restricts
 the switching: constrained switching is not supported.
 """
-function n_modes(system::_HS.HybridSystem)
-    system.automaton isa _HS.OneStateAutomaton || throw(
+n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
+
+# The reset map of each mode, indexed by mode: the one place that reads the
+# system's automaton, so the one place that rejects constrained switching, which
+# a system built with HybridSystems directly may have.
+function _maps_by_mode(system::_HS.HybridSystem)
+    automaton = system.automaton
+    automaton isa _HS.OneStateAutomaton || throw(
         ArgumentError(
             "constrained switching is not supported: the system's automaton must " *
             "be a `OneStateAutomaton`, which admits every switching sequence",
         ),
     )
 
-    return _HS.ntransitions(system.automaton)
+    transitions =
+        sort!(collect(_HS.transitions(automaton)); by = t -> _HS.event(automaton, t))
+    return [_HS.resetmap(system, t) for t in transitions]
 end
 
-function _maps_by_mode(system::_HS.HybridSystem)
-    maps = Dict{Int, Any}()
-    for t in _HS.transitions(system.automaton)
-        maps[_HS.event(system.automaton, t)] = _HS.resetmap(system, t)
-    end
-    return maps
-end
-
-# Validate the mode data and return the shared state dimension.
-function _check_dimensions(A, B)
+# Validate the state matrices, square and of one positive size, and return it.
+function _check_mode_matrices(A::AbstractVector{<:AbstractMatrix})
     isempty(A) && throw(ArgumentError("at least one mode is required"))
+
+    n = size(first(A), 1)
+    n > 0 || throw(ArgumentError("mode matrices must have positive dimension"))
+
+    for (σ, Aσ) in enumerate(A)
+        size(Aσ) == (n, n) ||
+            throw(ArgumentError("A[$σ] has size $(size(Aσ)); expected ($n, $n)"))
+    end
+
+    return n
+end
+
+# Validate the mode and input matrices and return the state dimension.
+function _check_dimensions(A, B)
+    n = _check_mode_matrices(A)
     length(A) == length(B) ||
         throw(ArgumentError("A has $(length(A)) modes but B has $(length(B))"))
 
-    n = size(first(A), 1)
     m = size(first(B), 2)
 
-    for (σ, Aσ) in enumerate(A)
-        size(Aσ, 1) == size(Aσ, 2) ||
-            throw(ArgumentError("A[$σ] is $(size(Aσ)) and must be square"))
-        size(Aσ, 1) == n ||
-            throw(ArgumentError("A[$σ] has state dimension $(size(Aσ, 1)), expected $n"))
-    end
     for (σ, Bσ) in enumerate(B)
         size(Bσ, 1) == n ||
             throw(ArgumentError("B[$σ] has $(size(Bσ, 1)) rows, expected $n to match A"))
@@ -166,7 +160,6 @@ The system with every mode matrix transposed. Throws on a system with input.
 function dual(system::_HS.HybridSystem)
     has_input(system) &&
         throw(ArgumentError("the dual of a controlled system is not defined"))
-    n_modes(system)
 
     return switched_system([collect(transpose(A_mode)) for A_mode in mode_matrices(system)])
 end

@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     LinearCopositiveTemplate()
 
@@ -30,15 +27,6 @@ function add_function_variables!(
     return JuMP.@variable(model, [1:dimension], base_name = "c_$(node)")
 end
 
-function add_nonnegativity!(
-    model::JuMP.Model,
-    ::LinearCopositiveTemplate,
-    c::AbstractVector,
-)
-    JuMP.@constraint(model, c .>= 0)
-    return nothing
-end
-
 solution_value(::LinearCopositiveTemplate, c) = LinearCopositiveFunction(JuMP.value.(c))
 
 homogeneity_degree(::LinearCopositiveTemplate) = 1
@@ -49,34 +37,23 @@ function add_normalization!(model::JuMP.Model, ::LinearCopositiveTemplate, c)
     return nothing
 end
 
-function add_domination!(
+function add_decrease!(
     model::JuMP.Model,
     ::LinearCopositiveTemplate,
     c_src,
     c_dst,
     map::AbstractMatrix;
     scale = 1,
-    margin = 0,
 )
-    # On the orthant, margin * ||x||_1 = margin * sum(x) is linear.
-    JuMP.@constraint(model, transpose(map) * c_dst .<= scale * c_src .- margin)
+    JuMP.@constraint(model, transpose(map) * c_dst .<= scale * c_src)
 
     return nothing
 end
 
-function check_dynamics(::LinearCopositiveTemplate, A::AbstractVector{<:AbstractMatrix})
-    any(A_i -> any(<(0), A_i), A) && throw(
-        ArgumentError(
-            "LinearCopositiveTemplate requires entrywise nonnegative matrices: " *
-            "V(x) = c'x certifies nothing about a system that leaves the " *
-            "nonnegative orthant",
-        ),
-    )
+# On the orthant only: a positive system never leaves it.
+is_applicable(::LinearCopositiveTemplate, system) = is_positive(system)
 
-    return nothing
-end
-
-function domination_slack(
+function decrease_slack(
     ::LinearCopositiveTemplate,
     V_src::LinearCopositiveFunction,
     V_dst::LinearCopositiveFunction,
@@ -102,7 +79,3 @@ end
 has_dual(::LinearCopositiveTemplate) = true
 dual(::LinearCopositiveTemplate) = DualCopositiveTemplate()
 dual(::LinearCopositiveTemplate, V::LinearCopositiveFunction) = DualCopositiveFunction(V.c)
-
-# Not closed under minimum, yet G ≤ G_min holds on positive systems
-# [debauche2024thesis, Thm. 7.43], which `check_dynamics` already enforces.
-is_valid(::MinLift, ::LinearCopositiveTemplate, system) = true

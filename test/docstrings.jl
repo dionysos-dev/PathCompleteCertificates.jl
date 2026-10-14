@@ -1,13 +1,9 @@
 module TestDocstrings
 
-# The package exports nothing deliberately, so `checkdocs = :all` has no symbol
-# list to work from and checks nothing. That is how eight `raw"""` docstrings --
-# which never attach, being non-standard string literals -- and nine graph
-# queries went undocumented without the build noticing.
-#
-# This is the replacement: every name a user can reach as `PCC.name` carries a
-# docstring. Underscore-prefixed names are internal by the convention in
-# CLAUDE.md §4 and are exempt.
+# Every name a user can reach as `PCC.name` carries a docstring. The docs
+# build's `checkdocs = :all` is the complement: it checks that every docstring
+# lands in the manual, not that every name has one. Underscore-prefixed names
+# are internal by the convention in CLAUDE.md §4 and are exempt.
 
 using Test
 import PathCompleteCertificates as PCC

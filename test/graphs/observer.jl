@@ -1,3 +1,5 @@
+module TestGraphObserver
+
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -20,4 +22,6 @@ import PathCompleteCertificates as PCC
 
     # The missing label-2 transition from node 2 produces no empty observer state.
     @test all(!isempty(state) for state in states)
+end
+
 end

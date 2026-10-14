@@ -25,39 +25,40 @@ type, because some carry per-node data. Every primitive is public, since a user 
 
 ```julia
 # Template axis: one file per template, answering all of it.
-add_function_variables!(model, template, dim, node)        # the node function V_s
-add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
-domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
-add_nonnegativity!(model, template, V)
+add_function_variables!(model, template, dim, node)        # the node function V_s, well defined
+add_decrease!(model, template, V_src, V_dst, map; scale = 1)
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ 0
+decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
-check_dynamics(template, A)                                # is the template applicable at all?
+is_applicable(template, system)                            # default true; does the template apply at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
 reindex(template, origins)                                 # per-node data follows a refined graph
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
+# The common function: each node value from the problem (node_value), their combination
+# from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.
 common(template, graph, problem, Vs, x)
 ```
 
-`add_domination!` is the load-bearing primitive: the cone that quantifies an inequality over
+`add_decrease!` is the load-bearing primitive: the cone that quantifies an inequality over
 all `x` depends on the template and on nothing else, so stability's whole edge condition is one
 call with `scale = γᵖ`. Optimal control is the one exception, convex only after `S = P⁻¹`,
-`Y = KS`, and says so in place.
+`Y = KS`, and says so in place. Each problem writes its edge condition once, in a private
+`_edge_decrease`, which both builds the model and measures the slacks.
 
 Each problem owns its certificate type; what it certifies is a typed field (`rate`, `margin`,
 `gains`), and the shared fields live once in `CertificateData`.
 
-**A new template, problem, lift or refinement is one file in the `catalogue/` of its directory,
-and touches nothing else.**
+**A new template, problem, lift or refinement algorithm is one file in the `catalogue/` of its
+directory, and touches nothing else.**
 
 ## 3. Repository map
 
@@ -66,17 +67,21 @@ per inhabitant under `catalogue/`, named after the type without the directory's 
 
 ```
 src/
-├── operations.jl        Addition, Maximum, Minimum, Composition, InverseComposition; `dual`
 ├── systems/             switched systems, runs, the dual system
 ├── graphs/              queries.jl is THE ADAPTER over HybridSystems; words,
-│                        path_completeness, dual, de_bruijn, common_graph, observer,
-│                        cycles, simulation
+│                        path_completeness, dual (also declares `dual` for everything),
+│                        de_bruijn (common_graph is order 0), observer (and the combination
+│                        rule of `common`), cycles, simulation
 ├── templates/           abstract.jl + catalogue/ (seven templates; sum_of_squares and set_prog in ext/)
-├── problems/            abstract.jl + catalogue/ (stability, safety, optimal_control)
-├── lifts/               COMPARING graphs: abstract.jl, dual.jl, compare.jl + catalogue/
-├── refinements/         IMPROVING a graph: abstract.jl, dual.jl, strategies.jl, refine.jl + catalogue/
-└── common.jl            `common`: reads graph, template and problem, so belongs to neither axis
+├── problems/            abstract.jl (the interface), certificate.jl (accessors, `common`),
+│                        tight_edges.jl + catalogue/ (stability, safety, optimal_control)
+├── lifts/               the lifts of a graph: operations.jl (Addition, Maximum, Minimum,
+│                        Composition, InverseComposition: what a lift requires of a template),
+│                        abstract.jl, dual.jl, compare.jl + catalogue/
+└── refinements/         the algorithms that apply lifts: abstract.jl, refine.jl + catalogue/
 ```
+
+Only the module file sits at the top of `src/`; every other file belongs to a directory.
 
 `ext/` holds one extension per weak dependency. `test/` mirrors `src/` directory for directory,
 every file standalone-runnable and listed in `TEST_FILES`. `docs/src/examples/` are executed by
@@ -94,16 +99,23 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
 
 ## 5. Gotchas
 
-- **A lift compares; a refinement improves.** Both preserve path-completeness. A lift is the
-  lift of an operation; its validity is read from the template's closures through `is_valid`,
-  written once, and `simulation(lift, G, H)` decides the order `G ≤_V H`. A refinement is valid
-  for every template by construction and has no `requirements`; do not add them.
+- **A lift is an operation on a graph; `refine` is an algorithm that applies lifts.** Every
+  lift preserves path-completeness; its validity is read from the template's closures through
+  `is_valid`, written once, and a lift that copies node functions or chains edges requires
+  nothing. What a lift supports is the methods it has (`lift` on the whole graph, at edges, at
+  a node), never a flag. `compare` keeps the lifts that require an operation; the splits add
+  nothing there, since `G` simulates its split through the origins.
+- **`TightNodeSplitting` is Ninite & Jungers' Algorithm 1 exactly.** Its lift is their Def. 3,
+  one copy per successor, so it starts from the dual De Bruijn graph of order 1, as their
+  experiments do: on the one-node graph the forward lift changes nothing.
 - **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
   the duals decides max, a linear program decides the sum lift over every size.
-- **One override of `is_valid`** exists, the min lift on the linear copositive template
-  (Debauche, Thm. 7.43). Add another only with a theorem to cite.
+- **No override of `is_valid`.** A lift valid on a template that is not closed under its
+  requirements is read through the dual: the min lift is valid on the linear copositive template
+  (Debauche, Thm. 7.43) because the dual copositive template is closed under max. Declare a
+  closure, never an override.
 - **Duality is an involution on everything**: graphs, systems, templates, certificates, lifts,
-  refinements, operations. Every backward construction is `dual` of a forward one.
+  operations. Every backward lift is `dual` of a forward one.
 - **A word graph is sound for stability only.** Safety, optimal control and `common` throw on a
   `WordGraph` and name `expanded_form`.
 - **The adapter invariant.** Nothing outside `graphs/queries.jl` touches HybridSystems' graph
@@ -143,5 +155,5 @@ Never commit to `master`; branch per change; format before committing; the user 
 Commit message: `ACTION module: description`, lowercase, no trailing period, ≤ 60 chars, with
 `ACTION` one of `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV` and the module the touched
 subsystem (`graphs`, `templates`, `problems`, `systems`, `lifts`, `refinements`, `common`,
-`test`, `docs`, `examples`, `meta`). Do **not** add a `Co-Authored-By` line. `plan*.md`, the
-`lifts/` folder and reviewers' documents stay untracked.
+`test`, `docs`, `examples`, `meta`). Do **not** add a `Co-Authored-By` line. `plan.md` and
+the `sources/` folder, the papers and reviewers' documents, stay untracked.

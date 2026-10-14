@@ -4,12 +4,16 @@
 A map `R` from the nodes of `H` to those of `G` such that `(R(a), R(b), i)` is
 an edge of `G` for every edge `(a, b, i)` of `H`, or `nothing` if none exists.
 """
-function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
-    relation = _simulation_relation(G, H)
+simulation(G::CertificateGraph, H::CertificateGraph) =
+    simulation(_letter_graph(G, "simulation"), _letter_graph(H, "simulation"))
+
+function simulation(G::_LetterGraph, H::_LetterGraph)
+    index = _successors(G)
+    edges_H = _labelled_edges(H)
+
+    relation = _simulation_relation(G, H, index, edges_H)
     relation === nothing && return nothing
 
-    edges_H = [(source(e), dest(e), label(H, e)) for e in edges(H)]
-    index = _successors(G)
     assignment = zeros(Int, n_nodes(H))
 
     adjacent(a, b, letter) = b in get(index, (a, letter), Int[])
@@ -35,12 +39,16 @@ function simulation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
     return extend(1) ? assignment : nothing
 end
 
+# The edges of `graph` as (source, destination, mode) triples.
+_labelled_edges(graph::_LetterGraph) =
+    [(source(e), dest(e), label(graph, e)) for e in edges(graph)]
+
 # The greatest simulation relation: relation[h] lists the nodes of G that can
 # match h, or nothing when some h has none.
-function _simulation_relation(G::_HS.GraphAutomaton, H::_HS.GraphAutomaton)
-    index = _successors(G)
-    edges_H = [(source(e), dest(e), label(H, e)) for e in edges(H)]
+_simulation_relation(G::_LetterGraph, H::_LetterGraph) =
+    _simulation_relation(G, H, _successors(G), _labelled_edges(H))
 
+function _simulation_relation(G::_LetterGraph, H::_LetterGraph, index, edges_H)
     relation = [Set(nodes(G)) for _ in nodes(H)]
     changed = true
 

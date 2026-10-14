@@ -8,6 +8,7 @@ using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
+import JuMP
 
 const OPTIMIZER = Clarabel.Optimizer
 
@@ -144,12 +145,30 @@ end
     @test size(C30) == (1, 5)
     @test all(>=(1), C30)
 
+    # Each solution set is a single ray, so these are the capsule's matrices.
+    @test C12 == [1 0 1 0 0; 1 1 0 0 0; 1 0 0 0 1; 1 0 0 1 0]
+    @test C30 == [2 1 1 2 2]
+
     # Complete: no solution between G_4 and G_0, as the capsule finds, and any
     # graph dominates itself through the identity.
     @test PCC.simulation(PCC.SumLift(), G4, G0; optimizer = OPTIMIZER) === nothing
     @test PCC.simulation(PCC.SumLift(), G2, G2; optimizer = OPTIMIZER) !== nothing
 
     @test_throws ArgumentError PCC.simulation(PCC.SumLift(), G1, G2)
+end
+
+@testset "an interior-point solver still yields an integer matrix" begin
+    # From G_3 the solution sets are not rays: a feasibility program ends inside
+    # them, at entries no small denominator reads, and the rounding failed.
+    for H in (G0, G1, G2, G3, G4)
+        C = PCC.simulation(PCC.SumLift(), G3, H; optimizer = OPTIMIZER)
+        @test C isa Matrix{Int}
+        @test all(>=(1), sum(C; dims = 2))
+    end
+
+    # A solve that proves nothing is an error, not the absence of a simulation.
+    stopped = JuMP.optimizer_with_attributes(Clarabel.Optimizer, "max_iter" => 0)
+    @test_throws ErrorException PCC.simulation(PCC.SumLift(), G1, G2; optimizer = stopped)
 end
 
 end # module

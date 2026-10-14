@@ -41,28 +41,23 @@ const CASES = [
 const ONE = PCC.common_graph(2)
 const TWO = PCC.de_bruijn(1, 2)
 
-# Every refinement and every lift, applied where it is defined: the four atoms
-# at some of the edges of the two-node graph, the rest on one of the two seeds.
+# Every lift, applied where it is defined: the four applied at edges at some of
+# the edges of the two-node graph, the rest on one of the two seeds.
 const STEPS = [
-    ("forward split", PCC.ForwardEdgeSplit(), TWO, PCC.outgoing_edges(TWO, 1)),
-    ("backward split", PCC.BackwardEdgeSplit(), TWO, PCC.incoming_edges(TWO, 1)),
-    ("forward product", PCC.ForwardEdgeProduct(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
-    ("backward product", PCC.BackwardEdgeProduct(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
-    ("memory", PCC.PathDependentRefinement(1), ONE, nothing),
-    ("product", PCC.ProductRefinement(2), ONE, nothing),
+    ("forward split", PCC.ForwardSplitLift(), TWO, PCC.outgoing_edges(TWO, 1)),
+    ("backward split", PCC.BackwardSplitLift(), TWO, PCC.incoming_edges(TWO, 1)),
+    ("forward product", PCC.ForwardProductLift(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
+    ("backward product", PCC.BackwardProductLift(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
+    ("memory", PCC.PathDependentLift(1), ONE, nothing),
+    ("product", PCC.ProductLift(2), ONE, nothing),
     ("composition", PCC.CompositionLift(1), ONE, nothing),
     ("backward composition", PCC.BackwardCompositionLift(1), ONE, nothing),
     ("min", PCC.MinLift(), TWO, nothing),
     ("max", PCC.MaxLift(), TWO, nothing),
     ("sum", PCC.SumLift(2), TWO, nothing),
 ]
-const LIFTS = [step for step in STEPS if step[2] isa PCC.AbstractLift]
-
-apply(refinement::PCC.AbstractRefinement, base, ::Nothing) =
-    PCC.graph(PCC.refine(refinement, base))
-apply(refinement::PCC.AbstractRefinement, base, edge_list) =
-    PCC.graph(PCC.refine(refinement, base, edge_list))
-apply(lift::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(lift, base))
+apply(L::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(L, base))
+apply(L::PCC.AbstractLift, base, edge_list) = PCC.graph(PCC.lift(L, base, edge_list))
 
 bound(template, g, problem) = PCC.jsr_bound(
     template,
@@ -124,18 +119,17 @@ const BASE_RATES = Dict(
         @test dualised(ones(size(first(PCC.mode_matrices(system)), 1))) > 0
     end
 
-    # A refinement, or a valid lift, is no worse than the graph it was applied
-    # to -- on the backward ones, the guarantee that rests on the dual
-    # construction.
-    if step isa PCC.AbstractRefinement || PCC.is_valid(step, template, system)
+    # A valid lift is no worse than the graph it was applied to -- on the
+    # backward ones, the guarantee that rests on the dual construction.
+    if PCC.is_valid(step, template, system)
         @test primal.rate <= BASE_RATES[(template, base)] * (1 + 1e-3)
     end
 end
 
 @testset "validity is the same question on the dual side (Debauche, Prop. 7.5)" begin
-    for (_, lift, _, _) in LIFTS, (template, _) in CASES, system in (POSITIVE, GENERAL)
-        @test PCC.is_valid(lift, template, system) ==
-              PCC.is_valid(PCC.dual(lift), PCC.dual(template), PCC.dual(system))
+    for (_, L, _, _) in STEPS, (template, _) in CASES, system in (POSITIVE, GENERAL)
+        @test PCC.is_valid(L, template, system) ==
+              PCC.is_valid(PCC.dual(L), PCC.dual(template), PCC.dual(system))
     end
 
     # What crossing over adds: the sum lift is valid for the dual copositive
@@ -150,8 +144,15 @@ end
     @test !PCC.is_valid(PCC.MinLift(), PCC.DualCopositiveTemplate(), POSITIVE)
 
     # A template without a dual is decided by its own closures only.
-    @test PCC.is_valid(PCC.SumLift(2), PCC.PolyhedralTemplate(1, 2), GENERAL) ==
-          PCC.is_closed_under(PCC.PolyhedralTemplate(1, 2), PCC.Addition(), GENERAL)
+    @test PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        GENERAL,
+    ) == PCC.is_closed_under(
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        PCC.Addition(),
+        GENERAL,
+    )
 end
 
 @testset "an infeasible certificate dualises to an infeasible one" begin
@@ -177,11 +178,12 @@ end
     @test PCC.has_dual(PCC.QuadraticTemplate())
     @test PCC.has_dual(PCC.LinearCopositiveTemplate())
     @test PCC.has_dual(PCC.DualCopositiveTemplate())
-    @test !PCC.has_dual(PCC.PolyhedralTemplate(1, 2))
+    @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
 
-    @test_throws ArgumentError PCC.dual(PCC.PolyhedralTemplate(1, 2))
+    @test_throws ArgumentError PCC.dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
 
-    polyhedral = bound(PCC.PolyhedralTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
+    polyhedral =
+        bound(PCC.ParallelFacesPolyhedralTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
     @test PCC.is_feasible(polyhedral)
     @test_throws ArgumentError PCC.dual(polyhedral)
 end

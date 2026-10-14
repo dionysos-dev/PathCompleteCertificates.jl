@@ -47,5 +47,5 @@ Pages   = ["graphs/simulation.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["graphs/de_bruijn.jl", "graphs/common_graph.jl", "graphs/observer.jl", "graphs/cycles.jl"]
+Pages   = ["graphs/de_bruijn.jl", "graphs/observer.jl", "graphs/cycles.jl"]
 ```

@@ -53,10 +53,10 @@ end
     @test minimum(slacks) <= 1e-4
     @test !isempty(PCC.tight_edges(bound; atol = 1e-4))
 
-    for (src, dst, mode) in PCC.tight_edges(bound; atol = 1e-4)
-        @test src in PCC.nodes(GRAPH)
-        @test dst in PCC.nodes(GRAPH)
-        @test mode in eachindex(A)
+    # Edges of the certificate's graph, like every other edge query.
+    for edge in PCC.tight_edges(bound; atol = 1e-4)
+        @test PCC.has_edge(GRAPH, edge)
+        @test PCC.label(GRAPH, edge) in eachindex(A)
     end
 end
 
@@ -87,7 +87,7 @@ end
     end
 end
 
-@testset "every template answers domination_slack" begin
+@testset "every template answers decrease_slack" begin
     quadratic = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
@@ -98,7 +98,7 @@ end
     @test PCC.edge_slacks(quadratic) isa Vector
 
     polyhedral = PCC.certify(
-        PCC.PolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+        PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -225,6 +225,60 @@ end
 
     @test PCC.is_jsr_exact(single; atol = 1e-4)
     @test isapprox(single.rate, 0.5; atol = 1e-3)
+end
+
+@testset "the optimality gap is zero when proved, the bracket otherwise" begin
+    # Theorem 4 holds on the one-mode system: the gap is exactly zero.
+    single = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+    @test PCC.is_jsr_exact(single; atol = 1e-4)
+    @test PCC.optimality_gap(single; atol = 1e-4) == 0
+
+    # On the rotations it does not, and the gap is the cycle bracket.
+    rotations = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        TWO_NODES,
+        ROTATION_PROBLEM;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+    gap = PCC.optimality_gap(rotations; atol = 1e-4)
+    @test gap == rotations.rate - PCC.jsr_lower_bound(rotations; atol = 1e-4)
+    @test 0 <= gap < 1e-4
+end
+
+@testset "a loose bound is never certified exact, whatever the tolerances" begin
+    # A rotation and a shear: the one-node bound is loose. At the default
+    # bisection tolerance its active edges keep slacks above the default `atol`,
+    # so nothing looks tight; Theorem 4 must then say "unknown", not "exact".
+    sheared = PCC.StabilityProblem(
+        PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
+    )
+    loose = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        PCC.common_graph(2),
+        sheared;
+        optimizer = OPTIMIZER,
+    )
+
+    @test isempty(PCC.tight_edges(loose))
+    @test !PCC.is_jsr_exact(loose)
+    @test PCC.optimality_gap(loose) > 0.05
+
+    # An exact certificate read with too small a tolerance: no tight cycle, so no claim.
+    single = PCC.jsr_bound(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM;
+        optimizer = OPTIMIZER,
+        rtol = 1e-8,
+    )
+    @test !PCC.is_jsr_exact(single; atol = -1.0)
 end
 
 end

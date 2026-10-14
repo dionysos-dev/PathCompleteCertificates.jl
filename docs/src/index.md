@@ -7,8 +7,8 @@ CurrentModule = PathCompleteCertificates
 Certificates of stability, safety and optimal control for switched systems in
 the path-complete framework. A certificate consists of a **graph** and a
 **template**, both chosen by the user. The package solves for a certificate on
-a given graph and template, compares two graphs, and refines a graph using its
-certificate.
+a given graph and template, refines a graph using its certificate, and compares
+two graphs.
 
 ## Path-complete certificates
 
@@ -40,28 +40,28 @@ the conditions on the node functions:
 | :-- | :-- | :-- |
 | **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`), and the common function, evaluated by calling the certificate `c` as `c(x)` |
 | **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, graphs with words on their edges |
+| **Refine** | a template, a graph and a problem | a sequence of graphs, each lifted where its certificate is tight, until the bound is proved exact or a budget is reached |
 | **Compare** | two graphs, and optionally templates and a system | whether the second graph is no worse than the first, for which templates, and the simulation that proves it |
-| **Refine** | a template, a graph and a problem | a sequence of graphs, each refined where its certificate is tight, until the bound is proved exact or a budget is reached |
 
 The manual follows the same order: [Switched systems](@ref),
 [Path-complete graphs](@ref), [Templates](@ref) and [Problems](@ref) for
-certifying, then [Graph comparison via lifts](@ref) and
-[Graph improvement via refinements](@ref).
+certifying, then [Lifts](@ref), [Graph refinement](@ref) and
+[Graph comparison via lifts](@ref).
 
 ## Where to start
 
 In reading order:
 
-1. [Switched systems: building and running one](@ref), the four kinds of
+1. [Switched systems: building and running one](@ref), the two kinds of
    system and a run of one.
 2. [Stability: a first certificate](@ref), one system, one graph, one bound.
 3. [Templates and graphs: the two axes](@ref), three templates on one graph,
    one template on four graphs, and a sum-of-squares template.
-4. [Comparing graphs: five graphs, three templates](@ref), the five graphs of
+4. [Refinement: splitting nodes at tight edges](@ref), [`refine`](@ref)
+   compared with a De Bruijn graph of the same size.
+5. [Comparing graphs: five graphs, three templates](@ref), the five graphs of
    [debauche2023ordering](@cite) compared for three templates, with the
    simulation behind each result.
-5. [Refinement: splitting nodes at tight edges](@ref), [`refine`](@ref) from
-   the one-node graph, compared with a De Bruijn graph of the same size.
 
 Safety and optimal control have one example each,
 [Safety: a barrier certificate](@ref) and

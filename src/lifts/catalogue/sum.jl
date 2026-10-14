@@ -1,5 +1,3 @@
-import JuMP
-
 """
     SumLift(T)
     SumLift()
@@ -37,13 +35,13 @@ lift(::SumLift{Nothing}, ::CertificateGraph) = throw(
 function lift(L::SumLift{Int}, g::CertificateGraph)
     _check_lift_size(g, "sum lift", binomial(big(n_nodes(g) + L.terms - 1), L.terms))
 
-    letters = sort(alphabet(g))
+    modes = alphabet(g)
     index = _successors(_letter_graph(g, "the sum lift"))
     multisets = _multisets(n_nodes(g), L.terms)
 
     lifted = empty_graph(length(multisets))
 
-    for (p, P) in enumerate(multisets), (q, Q) in enumerate(multisets), letter in letters
+    for (p, P) in enumerate(multisets), (q, Q) in enumerate(multisets), letter in modes
         _has_perfect_matching(P, Q, letter, index) && add_edge!(lifted, p, q, letter)
     end
 
@@ -105,18 +103,40 @@ function simulation(
 
     model, C = program
     JuMP.optimize!(model)
-    JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES || return nothing
+    _proves_infeasible(model) && return nothing
+    JuMP.is_solved_and_feasible(model; allow_almost = true) || error(
+        "the linear program deciding the sum lift ended with status " *
+        "$(JuMP.termination_status(model)), so the order is unknown",
+    )
 
-    # The rounded matrix is what is returned, so it is what is checked.
-    integers = _integerise(JuMP.value.(C))
-    check, _ = _sum_program(G, H, optimizer, integers)
-    JuMP.optimize!(check)
-    JuMP.termination_status(check) in _FEASIBLE_TERMINATION_STATUSES || error(
+    # The rounded matrix is what is returned, so it is what is checked. The
+    # simplest rounding that passes is kept.
+    solution = JuMP.value.(C)
+    for tol in (1e-4, 1e-6, 1e-8)
+        integers = _integerise(solution; tol)
+        integers !== nothing && _satisfies(G, H, optimizer, integers) && return integers
+    end
+
+    return error(
         "the linear program is feasible, but its solution did not round to an " *
         "integer matrix that still satisfies it",
     )
+end
 
-    return integers
+# Only a proof of infeasibility means there is no simulation. The objective is
+# bounded below, so infeasible-or-unbounded is infeasible.
+const _INFEASIBLE =
+    (JuMP.MOI.INFEASIBLE, JuMP.MOI.ALMOST_INFEASIBLE, JuMP.MOI.INFEASIBLE_OR_UNBOUNDED)
+
+_proves_infeasible(model::JuMP.Model) = JuMP.termination_status(model) in _INFEASIBLE
+
+# Whether the integer matrix `C`, row sums included, satisfies the program.
+function _satisfies(G, H, optimizer, C::AbstractMatrix{<:Integer})
+    all(>(0), sum(C; dims = 2)) || return false
+
+    check, _ = _sum_program(G, H, optimizer, C)
+    JuMP.optimize!(check)
+    return JuMP.is_solved_and_feasible(check; allow_almost = true)
 end
 
 # The program of [philippe2017path, Def. IV.2], over the multipliers alone when `C`
@@ -128,9 +148,14 @@ function _sum_program(G, H, optimizer, C)
     if C === nothing
         C = JuMP.@variable(model, [1:n_nodes(H), 1:n_nodes(G)], lower_bound = 0)
         JuMP.@constraint(model, [h in 1:n_nodes(H)], sum(C[h, :]) >= 1)
+
+        # Generic positive costs, so that the solution is one vertex, rational
+        # with small denominators, and not the inner point of the solution set
+        # that an interior-point solver returns for a feasibility problem.
+        JuMP.@objective(model, Min, sum(_generic_weights(size(C)...) .* C))
     end
 
-    for letter in union(alphabet(G), alphabet(H))
+    for letter in alphabet(H)
         edges_G = [e for e in edges(G) if label(G, e) == letter]
         edges_H = [e for e in edges(H) if label(H, e) == letter]
 
@@ -160,13 +185,20 @@ function _incidences(g, edge_list)
     return S, D
 end
 
-function _integerise(C::AbstractMatrix{<:Real}; tol = 1e-8)
-    clipped = map(c -> c < tol ? zero(c) : c, C)
-    scaled = clipped ./ maximum(clipped)
-    rationals = rationalize.(Int, scaled; tol = tol)
-    denominators = lcm(denominator.(rationals)...)
-    integers = Int.(rationals .* denominators)
-    common = gcd(integers...)
+# Distinct weights in [1, 2), deterministic and with no simple relation between
+# them, so that ties between vertices are unlikely.
+_generic_weights(m::Integer, n::Integer) =
+    [1 + mod(h * MathConstants.golden + g * sqrt(2), 1) for h in 1:m, g in 1:n]
 
-    return common == 0 ? integers : integers .÷ common
+# The smallest integer matrix proportional to `C`, each entry read as the
+# simplest fraction within `tol` of its ratio to the largest; `nothing` when it
+# does not fit in `Int`.
+function _integerise(C::AbstractMatrix{<:Real}; tol::Real)
+    scaled = C ./ maximum(C)
+    rationals = [x < tol ? big(0) // 1 : rationalize(BigInt, x; tol = tol) for x in scaled]
+    integers = numerator.(rationals .* lcm(denominator.(rationals)...))
+
+    # The largest entry scales to 1, so the gcd is positive.
+    integers = integers .÷ gcd(integers...)
+    return all(<=(typemax(Int)), integers) ? Int.(integers) : nothing
 end

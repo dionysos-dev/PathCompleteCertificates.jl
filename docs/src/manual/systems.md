@@ -39,17 +39,17 @@ A certificate graph must read every sequence of modes. Every problem tests
 
 [`common_graph`](@ref)`(system)` is the smallest graph that does: the common
 Lyapunov function graph ``G_0``, one node with a loop per mode. Every
-path-complete graph gives a bound at least as good, and [`refine`](@ref)
-starts from it.
+path-complete graph gives a bound at least as good, and most refinement
+algorithms start from it; see [Graph refinement](@ref).
 
 ## Runs
 
 [`simulate`](@ref)`(system, x0, modes; u)` runs a switching sequence from a
 state and returns a [`Trajectory`](@ref): [`states`](@ref),
 [`switching`](@ref) and, when there is an input, [`inputs`](@ref).
-`simulate(certificate, x0, steps)` closes the loop with the feedback of an
-optimal-control certificate under a random switching sequence. Random
-sequences draw each mode uniformly. A trajectory
+`simulate(certificate, x0, modes)` closes the loop with the feedback of an
+optimal-control certificate. Given a horizon instead of modes, either draws
+each mode uniformly at random. A trajectory
 has a plot recipe, available once Plots is loaded;
 [Switched systems: building and running one](@ref) draws one.
 

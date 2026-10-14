@@ -2,12 +2,10 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Systems and the common function
+# System reference
 
-A switched system is the input to every problem. The common function,
-[`common`](@ref), combines the node functions of a certificate into a single
-function. A certificate `c` is callable: `c(x)` evaluates its common function
-at `x`.
+A switched system is the input to every problem. See
+[Switched systems](@ref) for the concepts.
 
 ## Systems
 
@@ -20,12 +18,5 @@ Pages   = ["systems/switched.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["systems/trajectory.jl", "systems/simulate.jl", "systems/closed_loop.jl"]
-```
-
-## The common function
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["common.jl"]
+Pages   = ["systems/trajectory.jl", "systems/simulate.jl"]
 ```

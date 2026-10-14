@@ -9,17 +9,16 @@ const FAST_TESTS = "--fast" in ARGS
 # (path, tags...). Tag a suite `:slow` to exclude it from `--fast`.
 const TEST_FILES = [
     ("./aqua.jl", :slow),  # quality gate: piracy, ambiguities, stale deps
-    ("./docstrings.jl",),  # the no-export replacement for checkdocs
+    ("./docstrings.jl",),  # every reachable name has a docstring
     ("./graphs/queries.jl",),
     ("./graphs/path_completeness.jl",),
     ("./graphs/de_bruijn.jl",),
     ("./graphs/observer.jl",),
     ("./graphs/cycles.jl",),
     ("./graphs/words.jl",),
-    ("./graphs/common_graph.jl",),
-    ("./refinements/split.jl",),
-    ("./refinements/reference.jl",),
-    ("./refinements/product.jl", :slow),
+    ("./lifts/split.jl",),
+    ("./lifts/reference.jl",),
+    ("./lifts/product.jl", :slow),
     ("./lifts/identity.jl",),
     ("./lifts/min.jl",),
     ("./lifts/sum.jl", :slow),
@@ -27,8 +26,8 @@ const TEST_FILES = [
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
-    ("./systems/closed_loop.jl", :slow),
-    ("./templates/polyhedral.jl", :slow),
+    ("./templates/dual_copositive.jl",),
+    ("./templates/parallel_faces_polyhedral.jl", :slow),
     ("./templates/conic_polyhedral.jl", :slow),
     ("./templates/sum_of_squares.jl", :slow),
     ("./templates/set_prog.jl", :slow),
@@ -39,7 +38,7 @@ const TEST_FILES = [
     ("./problems/optimal_control.jl", :slow),
     ("./problems/certificate.jl", :slow),
     ("./problems/dual.jl", :slow),
-    ("./common.jl",),
+    ("./problems/common.jl",),
     ("./lifts/compare.jl", :slow),
     ("./refinements/refine.jl", :slow),
 ]

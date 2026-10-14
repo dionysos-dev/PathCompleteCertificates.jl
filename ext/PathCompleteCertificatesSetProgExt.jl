@@ -11,18 +11,9 @@ import PathCompleteCertificates as PCC
 const Sets = SetProg.Sets
 const MP = SetProg.MP
 
-function _variable(template::PCC.SetProgTemplate, node::Integer)
-    template.shared && return only(template.variables)
-
-    node <= length(template.variables) || throw(
-        ArgumentError(
-            "the template carries $(length(template.variables)) set variables " *
-            "but the graph has at least $node nodes",
-        ),
-    )
-
-    return template.variables[node]
-end
+_variable(template::PCC.SetProgTemplate, node::Integer) =
+    template.shared ? only(template.variables) :
+    PCC._node_datum(template.variables, node, "set variables")
 
 _degree(::SetProg.Ellipsoid) = 2
 _degree(variable::SetProg.PolySet) = variable.degree
@@ -173,21 +164,15 @@ function PCC.add_normalization!(
     return nothing
 end
 
-function PCC.add_domination!(
+function PCC.add_decrease!(
     model::JuMP.Model,
     template::PCC.SetProgTemplate,
     S_src::SetProg.SetVariableRef,
     S_dst::SetProg.SetVariableRef,
     map::AbstractMatrix;
-    scale = 1,
-    margin = 0,
+    scale::Real = 1,
 )
-    margin == 0 ||
-        throw(ArgumentError("SetProgTemplate does not support a positive margin"))
-
-    # `V_dst(A x) ≤ γᵖ V_src(x)` is `(A / γ) S_src ⊆ S_dst`, so γ must be a number.
-    scale isa Real ||
-        throw(ArgumentError("SetProgTemplate needs a constant scale, got $scale"))
+    # `V_dst(A x) ≤ γᵖ V_src(x)` is `(A / γ) S_src ⊆ S_dst`.
     scale > 0 || throw(ArgumentError("the scale must be positive, got $scale"))
 
     gamma = scale^(1 / PCC.homogeneity_degree(template))

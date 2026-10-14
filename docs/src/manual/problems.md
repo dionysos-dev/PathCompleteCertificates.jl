@@ -100,5 +100,5 @@ stability certificates only:
 | [`dual`](@ref)`(c)` | the same certificate on the dual graph, for the transposed system, in the dual template ([debauche2024thesis](@cite), Lemma 6.25) |
 
 Tightness is read against a tolerance, since a bisected solution never reaches
-an exact zero; [Graph improvement via refinements](@ref) explains how to set
+an exact zero; [Graph refinement](@ref) explains how to set
 it, and how [`refine`](@ref) uses these functions.

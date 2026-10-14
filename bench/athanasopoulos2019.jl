@@ -21,14 +21,13 @@ const A2 = [0.4753 0.0 0.0; 0.0 0.0 0.4753; 0.0 -1.9012 0.0]
 depth_max = isempty(ARGS) ? 15 : parse(Int, ARGS[1])
 
 problem = PCC.StabilityProblem(PCC.switched_system([A1, A2]))
-template = PCC.PolyhedralTemplate(1, 3)
+template = PCC.ParallelFacesPolyhedralTemplate(1, 3)
 
 elapsed = @elapsed trace = PCC.refine(
     template,
     problem;
     optimizer = Clarabel.Optimizer,
-    strategy = PCC.RefineTightEdges(),
-    select = :best,
+    algorithm = PCC.BestTightEdgeLifting(),
     stop = c -> c.rate < 1,
     depth_max = depth_max,
     atol = 1e-4,

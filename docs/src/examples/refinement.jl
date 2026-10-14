@@ -1,10 +1,10 @@
 # # Refinement: splitting nodes at tight edges
 #
-# [`refine`](@ref) starts from the one-node graph of a common Lyapunov
-# function and enlarges it: after each solve it reads which edge inequalities
-# are tight and splits a node with at least two tight outgoing edges
-# ([ninite2026lifting](@cite)). On the system below, at four nodes, it
-# certifies a lower rate than the De Bruijn graph of the same size.
+# [`refine`](@ref) starts from a small graph and enlarges it: after each solve
+# it reads which edge inequalities are tight and splits the node with the most
+# tight outgoing edges, one copy per successor ([ninite2026lifting](@cite)).
+# On the system below, at four nodes, it certifies a lower rate than the De
+# Bruijn graph of the same size.
 
 import PathCompleteCertificates as PCC
 import Clarabel
@@ -23,9 +23,12 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 # ## Running the loop
 #
 # Each step solves [`jsr_bound`](@ref), reads the tight edges, and applies a
-# refinement; the default strategy splits the node with the most tight
-# outgoing edges, and among those the one with the fewest outgoing edges, so
-# the run is deterministic.
+# lift. The default algorithm, [`TightNodeSplitting`](@ref), splits the node
+# with the most tight outgoing edges, and among those the one with the fewest
+# outgoing edges, so the run is deterministic. It starts, as in
+# [ninite2026lifting](@cite), from the dual De Bruijn graph of order 1: the
+# one-node graph has a single successor, itself, so splitting it changes
+# nothing.
 
 trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 4)
 
@@ -99,8 +102,8 @@ plot!(
     label = "de_bruijn",
 )
 
-# At two nodes the bounds coincide: the split of the one-node graph is the
-# dual of `de_bruijn(1, 2)`, and on this system the two certify the same rate.
+# At two nodes the bounds coincide: the run starts from the dual of
+# `de_bruijn(1, 2)`, and on this system the two certify the same rate.
 # At four nodes the refined graph certifies a lower rate. The nodes of
 # `de_bruijn(2, 2)` are the pairs of last modes, independently of which edges
 # were tight; refinement adds a node only by splitting one with tight outgoing
@@ -108,7 +111,7 @@ plot!(
 
 # ## Soundness
 #
-# A refinement maps path-complete graphs to path-complete graphs, so every
+# A lift maps path-complete graphs to path-complete graphs, so every
 # certificate in the trace is sound; the line below checks every graph. The
 # bound never increases, for any template, since each copy of a split node can
 # take the function of the node it replaces.

@@ -1,8 +1,7 @@
 module TestConicPolyhedral
 
-# The general polyhedral template of Dionysos `compute_polyhedral_pieces_pclf`:
-# the facets are decision variables, and each node carries a conic partition of
-# the state space so that the max can be linearised.
+# The conic polyhedral template: the facets are variables, and each node
+# carries a conic partition on which the max is linear.
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -53,9 +52,9 @@ end
     @test PCC.is_feasible(result)
     @test abs(result.rate - 0.5) <= 0.01
 
-    # One facet row per cone, and the scale that keeps V away from zero.
+    # One facet row per cone, and the bound `c` that keeps V away from zero.
     @test size(PCC.functions(result)[1].P) == (length(cones), 2)
-    @test PCC.functions(result)[1].scale >= 1e-3 - 1e-9
+    @test PCC.functions(result)[1].c >= 1 - 1e-9
 
     # The edge condition is imposed only on the cones' extreme rays; check it
     # actually holds everywhere, which is the point of the dominance
@@ -86,7 +85,7 @@ end
     problem = PCC.StabilityProblem(PCC.switched_system([rotated]))
 
     fixed = PCC.jsr_bound(
-        PCC.PolyhedralTemplate(1, 2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
         graph,
         problem;
         optimizer = OPTIMIZER,
@@ -119,6 +118,11 @@ end
     # A partition for fewer nodes than the graph has.
     single = PCC.ConicPolyhedralTemplate([cones])
     @test_throws ArgumentError PCC.jsr_bound(single, GRAPH, PROBLEM; optimizer = OPTIMIZER)
+
+    # Integer rays take the default bound in floating point.
+    integer = PCC.ConicPolyhedralTemplate([[[1 0; 0 1]]])
+    @test integer.min_scale > 0
+    @test only(only(integer.cones)) == [1 0; 0 1]
 end
 
 end

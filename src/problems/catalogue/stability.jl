@@ -10,6 +10,7 @@ struct StabilityProblem{S} <: AbstractProblem
     function StabilityProblem(system::S) where {S}
         has_input(system) &&
             throw(ArgumentError("StabilityProblem requires an input-free system"))
+        _check_mode_matrices(mode_matrices(system))
 
         return new{S}(system)
     end
@@ -28,18 +29,18 @@ struct StabilityCertificate{D <: CertificateData, T <: Real} <: AbstractCertific
     rate::T
 end
 
-function add_edge_constraint!(
-    model::JuMP.Model,
+# The decrease condition of `edge`: the product of the matrices it reads, and the
+# scale of its source side. Written once, for the model and for the slacks.
+function _edge_decrease(
     ::StabilityProblem,
-    template::AbstractTemplate,
-    V_src,
-    V_dst,
-    A::AbstractMatrix;
-    scale::Real = 1,
+    graph::CertificateGraph,
+    edge,
+    A;
+    rate::Real,
+    degree::Integer,
 )
-    add_domination!(model, template, V_src, V_dst, A; scale)
-
-    return nothing
+    word = letters(label(graph, edge))
+    return _product(A, word), rate^(degree * length(word))
 end
 
 """
@@ -58,36 +59,23 @@ function optimization_model(
 )
     rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
+    dimension =
+        _check_stability_data(template, graph, problem; path_complete = path_complete)
     A = mode_matrices(problem.system)
-
-    _check_stability_data(template, graph, problem; path_complete = path_complete)
+    degree = homogeneity_degree(template)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    dimension = size(first(A), 1)
-
     Vs = [add_function_variables!(model, template, dimension, a) for a in nodes(graph)]
 
     for V in Vs
-        add_nonnegativity!(model, template, V)
         add_normalization!(model, template, V)
     end
 
-    degree = homogeneity_degree(template)
-
     for edge in edges(graph)
-        word = letters(label(graph, edge))
-
-        add_edge_constraint!(
-            model,
-            problem,
-            template,
-            Vs[source(edge)],
-            Vs[dest(edge)],
-            _product(A, word);
-            scale = rate^(degree * length(word)),
-        )
+        dynamics, scale = _edge_decrease(problem, graph, edge, A; rate, degree)
+        add_decrease!(model, template, Vs[source(edge)], Vs[dest(edge)], dynamics; scale)
     end
 
     model[:stability_V] = Vs
@@ -131,7 +119,7 @@ function jsr_bound(
             path_complete = false,
         )
         JuMP.optimize!(model)
-        return JuMP.termination_status(model) in _FEASIBLE_TERMINATION_STATUSES
+        return JuMP.is_solved_and_feasible(model; allow_almost = true)
     end
 
     lower = zero(initial_upper)
@@ -187,15 +175,15 @@ function certify(
     model = optimization_model(template, graph, problem; optimizer, rate, path_complete)
 
     JuMP.optimize!(model)
-    status = JuMP.termination_status(model)
+    termination = JuMP.termination_status(model)
 
-    status in _FEASIBLE_TERMINATION_STATUSES ||
-        return StabilityCertificate(_failed(problem, template, graph, status), rate)
+    JuMP.is_solved_and_feasible(model; allow_almost = true) ||
+        return StabilityCertificate(_failed(problem, template, graph, termination), rate)
 
     V = [solution_value(template, v) for v in model[:stability_V]]
 
     return StabilityCertificate(
-        CertificateData(problem, template, graph, V, status, true),
+        CertificateData(problem, template, graph, V, termination, true),
         rate,
     )
 end
@@ -238,13 +226,17 @@ function _check_stability_data(
     problem::StabilityProblem;
     path_complete::Bool = true,
 )
-    _check_modes(graph, problem.system; path_complete = path_complete)
-    check_dynamics(template, mode_matrices(problem.system))
+    dimension = _check_modes(graph, problem.system; path_complete = path_complete)
 
-    return nothing
+    is_applicable(template, problem.system) || throw(
+        ArgumentError(
+            "$(nameof(typeof(template))) does not apply to this system's dynamics; " *
+            "see its docstring",
+        ),
+    )
+
+    return dimension
 end
-
-# --- What refine reads: the driver, the objective and the optimality gap ------
 
 function best_certificate(
     template::AbstractTemplate,
@@ -259,6 +251,10 @@ end
 
 objective(certificate::StabilityCertificate) = certificate.rate
 
+_accepts_words(::StabilityProblem) = true
+
+_refinable(::StabilityProblem) = true
+
 """
     optimality_gap(certificate::StabilityCertificate; atol = 1e-4, max_length = nothing)
 
@@ -267,7 +263,7 @@ How far the rate is known to be from the joint spectral radius: `0` when
 """
 function optimality_gap(
     certificate::StabilityCertificate;
-    atol::Real = 1e-4,
+    atol::Real = _TIGHT_ATOL,
     max_length::Union{Nothing, Integer} = nothing,
 )
     !has_words(graph(certificate)) &&
@@ -280,47 +276,31 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-function edge_slacks(certificate::StabilityCertificate)
-    is_feasible(certificate) ||
-        throw(ArgumentError("an infeasible certificate has no functions to measure"))
-
-    graph_ = graph(certificate)
-    template_ = template(certificate)
-    V = functions(certificate)
-    A = mode_matrices(problem(certificate).system)
-    degree = homogeneity_degree(template_)
-
-    return map(edges(graph_)) do edge
-        word = letters(label(graph_, edge))
-
-        return domination_slack(
-            template_,
-            V[source(edge)],
-            V[dest(edge)],
-            _product(A, word);
-            scale = certificate.rate^(degree * length(word)),
-        )
-    end
-end
+edge_slacks(certificate::StabilityCertificate) =
+    _edge_slacks(certificate; rate = certificate.rate)
 
 """
-    is_jsr_exact(certificate; atol = 1e-6) -> Bool
+    is_jsr_exact(certificate; atol = 1e-4) -> Bool
 
 Whether every node has at most one outgoing edge in the
 [`tight_subgraph`](@ref), which proves the rate is the joint spectral radius
-[ninite2026lifting; Thm. 4](@cite). `false` means unknown; too small an `atol`
-can give a wrong `true`. Throws on a graph with words; use `expanded_form`.
+[ninite2026lifting; Thm. 4](@cite). `false` means unknown. At the optimal rate
+the tight subgraph keeps the rate [ninite2026lifting; Prop. 1](@cite), so it
+contains a cycle; without one, `atol` was too small to see the active edges and
+the answer is `false`. Throws on a graph with words; use `expanded_form`.
 """
-function is_jsr_exact(certificate::StabilityCertificate; atol::Real = 1e-6)
+function is_jsr_exact(certificate::StabilityCertificate; atol::Real = _TIGHT_ATOL)
     _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
 
     subgraph = tight_subgraph(certificate; atol = atol)
 
-    return all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph))
+    all(node -> outdegree(subgraph, node) <= 1, nodes(subgraph)) || return false
+
+    return !isempty(simple_cycles(subgraph))
 end
 
 """
-    jsr_lower_bound(certificate; atol = 1e-6, max_length = nothing)
+    jsr_lower_bound(certificate; atol = 1e-4, max_length = nothing)
 
 A lower bound on the joint spectral radius, valid for any `atol`: the largest
 `ρ(A_w)^{1/|w|}` over the words `w` read along the simple cycles of at most
@@ -328,7 +308,7 @@ A lower bound on the joint spectral radius, valid for any `atol`: the largest
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;
-    atol::Real = 1e-6,
+    atol::Real = _TIGHT_ATOL,
     max_length::Union{Nothing, Integer} = nothing,
 )
     subgraph = tight_subgraph(certificate; atol = atol)
@@ -338,18 +318,10 @@ function jsr_lower_bound(
     best = zero(float(eltype(first(A))))
 
     for cycle in simple_cycles(subgraph; max_length = length_bound)
-        # The first mode read acts first, so later modes multiply on the left.
-        product = LinearAlgebra.I
-        steps = 0
-
-        for edge in cycle
-            word = letters(label(subgraph, edge))
-            product = _product(A, word) * product
-            steps += length(word)
-        end
-
-        radius = maximum(abs, LinearAlgebra.eigvals(Matrix(product)))
-        best = max(best, radius^(1 / steps))
+        # The word read around the cycle, the first mode first.
+        word = [mode for edge in cycle for mode in letters(label(subgraph, edge))]
+        radius = maximum(abs, LinearAlgebra.eigvals(Matrix(_product(A, word))))
+        best = max(best, radius^(1 / length(word)))
     end
 
     return best

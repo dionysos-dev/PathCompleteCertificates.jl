@@ -1,12 +1,16 @@
 module TestLiftReference
 
 # The four partial lifts of Athanasopoulos & Jungers (CDC 2019, Defs. 4-7),
-# ported line for line from the reference implementation in Diptarko Roy's
-# repository, Python on edge lists, and compared with ours at every edge of
-# five graphs. Agreement is exact wherever the paper defines the lift. What the
-# paper leaves open is pinned here as well: a node left without edges, which
-# its degree assumptions exclude, is deleted; and several given edges are
-# the lift applied edge by edge, with the self-loop last.
+# ported line for line from Virginie Debauche's reference implementation,
+# Python on edge lists, and compared with ours at every edge of five graphs.
+# Agreement is exact wherever the paper defines the lift. The reference numbers
+# a new node past the largest node with an outgoing edge, so the fixtures have
+# no node without one. What the paper leaves open is pinned here as well: a
+# node its degree assumptions would leave without edges is deleted, and several
+# given edges are the lift applied edge by edge, with the self-loop last. At a
+# self-loop outside those assumptions the reference unrolls the loop into a
+# two-cycle and ours returns the same graph up to numbering; both are lifts, and
+# that case is not compared.
 
 using Test
 using HybridSystems
@@ -66,10 +70,10 @@ const REFERENCE = Dict(
 )
 
 const OURS = Dict(
-    "T" => PCC.ForwardEdgeProduct(),
-    "T*" => PCC.BackwardEdgeProduct(),
-    "P" => PCC.BackwardEdgeSplit(),
-    "P*" => PCC.ForwardEdgeSplit(),
+    "T" => PCC.ForwardProductLift(),
+    "T*" => PCC.BackwardProductLift(),
+    "P" => PCC.BackwardSplitLift(),
+    "P*" => PCC.ForwardSplitLift(),
 )
 
 const KINDS = ["T", "T*", "P", "P*"]
@@ -87,7 +91,7 @@ triple(g, e) = (PCC.source(e), collect(Int, PCC.letters(PCC.label(g, e))), PCC.d
 
 reference(kind, g, e) = Set(REFERENCE[kind](nfa(g), triple(g, e)...))
 
-ours(kind, g, e) = edgeset(PCC.graph(PCC.refine(OURS[kind], g, [e])))
+ours(kind, g, e) = edgeset(PCC.graph(PCC.lift(OURS[kind], g, [e])))
 
 # The paper assumes a second outgoing edge at the source of a P*-lifted edge
 # and a second incoming one at the destination of a P-lifted edge.
@@ -154,7 +158,7 @@ const G4 = graph(
 const LOOPS =
     graph([(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (2, 3, 1), (3, 1, 2), (3, 3, 2)], 3)
 const ONE = PCC.common_graph(2)
-const WORDS = PCC.graph(PCC.refine(PCC.ProductRefinement(2), G2))
+const WORDS = PCC.graph(PCC.lift(PCC.ProductLift(2), G2))
 
 const GRAPHS = [("G1", G1), ("G2", G2), ("G4", G4), ("loops", LOOPS), ("one", ONE)]
 
@@ -224,7 +228,7 @@ end
     @test PCC.source(loop) == PCC.dest(loop) == 2
 
     loop_last = [across, loop]
-    @test edgeset(PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), LOOPS, loop_last))) ==
+    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), LOOPS, loop_last))) ==
           sequential("P*", LOOPS, loop_last)
 
     # The reference is order dependent at a loop: the other order differs.
@@ -235,7 +239,7 @@ end
     out = PCC.outgoing_edges(G4, 1)
     @test length(out) == 3
     for order in (out[1:2], reverse(out[1:2]))
-        @test edgeset(PCC.graph(PCC.refine(PCC.ForwardEdgeSplit(), G4, order))) ==
+        @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), G4, order))) ==
               sequential("P*", G4, order)
     end
 end

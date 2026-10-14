@@ -37,14 +37,18 @@ map, or `nothing`.
 When no map exists, the graphs may still be ordered for a particular template;
 the lifts below decide this.
 
-## Lifts
+## The lifts that decide the order
 
-A lift replaces the nodes of ``G`` by combinations of them under one operation,
-and the lifted graph encodes the inequalities those combinations inherit
-([debauche2021comparison](@cite), Defs. 5 to 9). When the lifted ``G``
-simulates ``H``, ``G \le_{\mathcal V} H`` for every template closed under the
-operation; for the min, max and sum lifts the converse holds as well.
-`simulation(lift, G, H)` decides it, by the method in the third column.
+A [lift](@ref "Lifts") that combines node functions under an operation encodes
+the inequalities those combinations inherit ([debauche2021comparison](@cite),
+Defs. 5 to 9). When the lifted ``G`` simulates ``H``,
+``G \le_{\mathcal V} H`` for every template closed under the operation; for the
+min, max and sum lifts the converse holds as well. `simulation(lift, G, H)`
+decides it, by the method in the third column. The splits add nothing here:
+their [`origins`](@ref) are a simulation of the lifted graph by ``G``, so
+whenever the lifted graph simulates ``H``, ``G`` does too and the identity lift
+finds the order. The products give graphs with words on their edges, which
+[`compare`](@ref) does not read.
 
 | Lift | Decides ``G \le_{\mathcal V} H`` for | How | Simulation | Complete | Source |
 | :-- | :-- | :-- | :-- | :-- | :-- |
@@ -53,18 +57,18 @@ operation; for the min, max and sum lifts the converse holds as well.
 | [`MaxLift`](@ref)`()` | templates closed under `max` | the same on the dual graphs | a relation | yes | [debauche2022necessary](@cite), Thm. 4; [debauche2024thesis](@cite), Thm. 8.5 |
 | [`SumLift`](@ref)`()` | templates closed under `+` | a linear program over nonnegative matrices ``C`` with ``S_H C \ge K S_G`` and ``D_H C \le K D_G`` | an integer matrix | yes | [philippe2017path](@cite), Thm. IV.4; [debauche2023ordering](@cite), Thm. 2 |
 | [`SumLift`](@ref)`(T)` | templates closed under `+` | the ``T``-sum lift is built and the map searched | a map into multisets | some ``T`` works whenever the program is feasible | [debauche2021comparison](@cite), Def. 8; [debauche2023ordering](@cite), Lemma 3 |
-| [`CompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i``, on the system given | the lift is built, ``|S| M^T`` nodes, and the map searched | a map into `(node, word)` pairs | no ² | [debauche2021comparison](@cite), Def. 10; [debauche2024thesis](@cite), Thm. 7.65 |
+| [`CompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i``, on the system given | the lift is built, ``|S| M^T`` nodes, and the map searched | a map into `(node, word)` pairs | no ² | [debauche2024thesis](@cite), Def. 7.58, Thm. 7.65 |
 | [`BackwardCompositionLift`](@ref)`(T)` | templates closed under ``\circ A_i^{-1}``, invertible system | the forward one on the dual graphs | a map | no | [debauche2024thesis](@cite), Def. 7.61, Thm. 7.66 |
 
 ¹ The linear copositive norms are not closed under `min`, yet the min lift is
-valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43),
-the one override of [`is_valid`](@ref).
+valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43):
+[`is_valid`](@ref) reads it through their dual, [`DualCopositiveTemplate`](@ref),
+closed under `max`.
 
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
 graphs ordered for every composition-closed template that no composition lift
-simulates. The composition lift is also the one lift that can strictly improve
-a graph (their Ex. IV.4), and [`Hierarchy`](@ref) accepts it as a step of
-[`refine`](@ref).
+simulates. The composition lift can also strictly improve a graph (their
+Ex. IV.4), and [`Hierarchy`](@ref) applies it as a step of [`refine`](@ref).
 
 [`is_valid`](@ref) decides whether a lift is valid for a template from the
 closures returned by [`is_closed_under`](@ref), tabulated on the

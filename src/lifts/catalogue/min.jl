@@ -8,8 +8,11 @@ _members(mask::Integer, n::Integer) =
 Nodes are the nonempty subsets, with an `i`-edge from `A` to `B` when every
 node of `A` has an `i`-edge into `B`. Requires [`Minimum`](@ref), except for
 linear copositive norms on positive systems
-[debauche2024thesis; Thm. 7.43](@cite); its simulation is the greatest
-simulation relation [debauche2024thesis; Thm. 8.1](@cite).
+[debauche2024thesis; Thm. 7.43](@cite). A map from the nodes of `H` into these
+subsets that keeps every edge is a simulation relation between `H` and `G`, so
+`simulation(MinLift(), G, H)` returns the greatest one without building the
+lift. Whether one exists decides the order for every template closed under
+minimum [debauche2024thesis; Thm. 8.1](@cite).
 """
 struct MinLift <: AbstractLift end
 
@@ -19,7 +22,7 @@ function lift(::MinLift, g::CertificateGraph)
     _check_lift_size(g, "min lift", big(2)^n_nodes(g) - 1)
 
     n = n_nodes(g)
-    letters = sort(alphabet(g))
+    modes = alphabet(g)
     index = _successors(_letter_graph(g, "the min lift"))
     masks = collect(_masks(n))
 
@@ -30,7 +33,7 @@ function lift(::MinLift, g::CertificateGraph)
 
     lifted = empty_graph(length(masks))
 
-    for (a, A) in enumerate(masks), letter in letters
+    for (a, A) in enumerate(masks), letter in modes
         members = _members(A, n)
         all(node -> haskey(reach, (node, letter)), members) || continue
 
@@ -44,4 +47,4 @@ function lift(::MinLift, g::CertificateGraph)
 end
 
 simulation(::MinLift, G::CertificateGraph, H::CertificateGraph; optimizer = nothing) =
-    _simulation_relation(G, H)
+    _simulation_relation(_letter_graph(G, "the min lift"), _letter_graph(H, "the min lift"))

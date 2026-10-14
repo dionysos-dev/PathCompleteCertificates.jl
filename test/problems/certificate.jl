@@ -1,13 +1,8 @@
 module TestCertificate
 
-# One certificate type per problem, sharing an interface. Before this, each
-# problem returned a differently shaped named tuple -- the same concept named
-# `V` in one and `P` in the others, `status` present in two of three, and a
-# `feasible` field that stability set unconditionally to true.
-#
-# The shared part is accessed through methods and stored once in
-# `CertificateData`; what a problem actually certifies is a typed field on its
-# own certificate type, declared beside the problem it belongs to.
+# One certificate type per problem, sharing an interface: the shared part is
+# accessed through methods and stored once in `CertificateData`; what a problem
+# certifies is a typed field on its own certificate type.
 
 using Test
 using HybridSystems

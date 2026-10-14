@@ -18,7 +18,7 @@ the origin in its interior. A vector gives one variable per node.
 
 Requires `using SetProg`. Round the facet normals of `P`, since rounding errors
 can make an almost optimal solution violate the edge inequalities.
-[`domination_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented.
+[`decrease_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented.
 """
 struct SetProgTemplate{V <: AbstractVector} <: AbstractTemplate
     variables::V
@@ -41,9 +41,6 @@ end
 reindex(template::SetProgTemplate, origins::AbstractVector) =
     template.shared ? template :
     SetProgTemplate(_reindexed_data(template.variables, origins, "set variables"))
-
-# The sets are built in their cone (PSD matrices, SOS polynomials).
-add_nonnegativity!(::JuMP.Model, ::SetProgTemplate, _) = nothing
 
 # Closed under addition when all nodes share one family and one partition.
 is_closed_under(template::SetProgTemplate, ::Addition, system) =

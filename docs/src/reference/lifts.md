@@ -4,12 +4,10 @@ CurrentModule = PathCompleteCertificates
 
 # Lift reference
 
-A **lift** maps a path-complete graph to a path-complete graph whose nodes
-stand for combinations of the original nodes ([debauche2021comparison](@cite),
-Defs. 5 and 7). Lifts are used to compare graphs. When the lifted `G` simulates
-`H`, `H` is no worse than `G` for every template closed under the operation of
-the lift. [`compare`](@ref) tries every lift on a pair of graphs; see
-[Graph comparison via lifts](@ref).
+A **lift** is an operation on a path-complete graph whose result is no worse
+for every template closed under the operations it requires. [`refine`](@ref)
+applies lifts, and [`compare`](@ref) uses them to order two graphs; see
+[Lifts](@ref).
 
 ## The interface
 
@@ -22,7 +20,7 @@ Pages   = ["lifts/abstract.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["operations.jl"]
+Pages   = ["lifts/operations.jl"]
 ```
 
 ## The dual of a lift
@@ -38,6 +36,12 @@ Pages   = ["lifts/dual.jl"]
 Modules = [PathCompleteCertificates]
 Pages   = [
     "lifts/catalogue/identity.jl",
+    "lifts/catalogue/forward_split.jl",
+    "lifts/catalogue/backward_split.jl",
+    "lifts/catalogue/forward_product.jl",
+    "lifts/catalogue/backward_product.jl",
+    "lifts/catalogue/path_dependent.jl",
+    "lifts/catalogue/product.jl",
     "lifts/catalogue/min.jl",
     "lifts/catalogue/max.jl",
     "lifts/catalogue/sum.jl",

@@ -1,6 +1,3 @@
-import JuMP
-import LinearAlgebra
-
 """
     AbstractTemplate
 
@@ -19,38 +16,27 @@ function homogeneity_degree end
 """
     add_function_variables!(model, template, dimension, node)
 
-Add the variables of the node function at `node` and return the function.
+Add the variables of the node function at `node`, with the constraints that
+make it a member of the template, and return the function.
 """
 function add_function_variables! end
 
 """
-    add_nonnegativity!(model, template, V)
-
-Constrain `V` to be nonnegative.
-"""
-function add_nonnegativity! end
-
-"""
     add_normalization!(model, template, V)
 
-Constrain `V` to exclude the trivial function `V ≡ 0`.
+Constrain `V` to be positive away from the origin, at a fixed scale, which
+excludes the trivial function `V ≡ 0`.
 """
 function add_normalization! end
 
 """
-    add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
+    add_decrease!(model, template, V_src, V_dst, map; scale = 1)
 
-Constrain, for every ``x``,
-
-```math
-\\text{scale} \\cdot V_{src}(x) - V_{dst}(\\text{map} \\cdot x)
-    - \\text{margin}\\,\\|x\\|^p \\ge 0,
-```
-
-where ``p`` is [`homogeneity_degree`](@ref). A template that cannot express
-`margin` throws unless `margin = 0`.
+The decrease condition of an edge: `V_dst` after `map` is at most `scale`
+times `V_src`. Constrain, for every ``x``,
+``\\text{scale} \\cdot V_{src}(x) \\ge V_{dst}(\\text{map} \\cdot x)``.
 """
-function add_domination! end
+function add_decrease! end
 
 """
     solution_value(template, V)
@@ -60,22 +46,34 @@ The node function `V` after `optimize!`, with values in place of variables.
 function solution_value end
 
 """
-    check_dynamics(template, A)
+    is_applicable(template, system) -> Bool
 
-Throw if `template` does not apply to the mode matrices `A`.
+Whether `template` applies to the dynamics of `system`; `true` by default. A
+problem refuses a template that does not, and no lift is valid for it.
 """
-function check_dynamics end
+is_applicable(::AbstractTemplate, system) = true
 
-check_dynamics(::AbstractTemplate, ::AbstractVector{<:AbstractMatrix}) = nothing
+# The node datum of `data` at `node`, or an error naming `what` when the
+# template carries fewer than the graph has nodes.
+function _node_datum(data::AbstractVector, node::Integer, what::AbstractString)
+    node <= length(data) || throw(
+        ArgumentError(
+            "the template carries $(length(data)) $what but the graph has at least " *
+            "$node nodes",
+        ),
+    )
+    return data[node]
+end
 
 """
-    domination_slack(template, V_src, V_dst, map; scale = 1)
+    decrease_slack(template, V_src, V_dst, map; scale = 1)
 
-The slack of `scale · V_src(x) ≥ V_dst(map · x)` for fitted node functions:
-nonnegative when it holds, zero exactly when it is tight. It is in the units of
-the fitted functions, so compare slacks within one certificate only.
+The slack of the decrease condition `scale · V_src(x) ≥ V_dst(map · x)` for
+fitted node functions: nonnegative when it holds, zero exactly when it is
+tight. It is in the units of the fitted functions, so compare slacks within
+one certificate only.
 """
-function domination_slack end
+function decrease_slack end
 
 """
     is_closed_under(template, operation, system) -> Bool
@@ -89,7 +87,7 @@ is_closed_under(::AbstractTemplate, ::Operation, system) = false
 """
     reindex(template, origins)
 
-The template for a refined or lifted graph whose nodes come from `origins`.
+The template for a lifted graph whose nodes come from `origins`.
 Throws if a node merges origins with different per-node data.
 """
 reindex(template::AbstractTemplate, ::AbstractVector) = template

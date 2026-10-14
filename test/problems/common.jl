@@ -52,9 +52,6 @@ end
 end
 
 @testset "the common function is generic in the template" begin
-    # It used to be quadratic-only. Once `node_value` moved onto the template
-    # axis, every template that defines it combines -- nothing in `common`
-    # mentions a template by name.
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
@@ -62,12 +59,23 @@ end
           minimum(V(X) for V in linear)
 
     weights = [
-        PCC.PolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), [1.0, 1.0]),
-        PCC.PolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), [4.0, 4.0]),
+        PCC.ParallelFacesPolyhedralFunction(
+            Matrix{Float64}(LinearAlgebra.I, 2, 2),
+            [1.0, 1.0],
+        ),
+        PCC.ParallelFacesPolyhedralFunction(
+            Matrix{Float64}(LinearAlgebra.I, 2, 2),
+            [4.0, 4.0],
+        ),
     ]
 
-    @test PCC.common(PCC.PolyhedralTemplate(2, 2), graph, PROBLEM, weights, X) ≈
-          minimum(V(X) for V in weights)
+    @test PCC.common(
+        PCC.ParallelFacesPolyhedralTemplate(2, 2),
+        graph,
+        PROBLEM,
+        weights,
+        X,
+    ) ≈ minimum(V(X) for V in weights)
 end
 
 end

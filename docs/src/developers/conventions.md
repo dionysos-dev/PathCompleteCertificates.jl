@@ -23,38 +23,40 @@ supplies primitives, a problem composes them, and neither names the other.
 
 ```julia
 # Template axis: one file per template, answering all of it.
-add_function_variables!(model, template, dim, node)        # the node function V_s
-add_domination!(model, template, V_src, V_dst, map; scale = 1, margin = 0)
-                                                           # scale·V_src(x) − V_dst(map·x) ≥ margin‖x‖ᵖ
-domination_slack(template, V_src, V_dst, map; scale = 1)   # the same, read off a solution; 0 when tight
-add_nonnegativity!(model, template, V)
+add_function_variables!(model, template, dim, node)        # the node function V_s, well defined
+add_decrease!(model, template, V_src, V_dst, map; scale = 1)
+                                                           # scale·V_src(x) − V_dst(map·x) ≥ 0
+decrease_slack(template, V_src, V_dst, map; scale = 1)     # the same, read off a solution; 0 when tight
 add_normalization!(model, template, V)                     # excludes V ≡ 0
 homogeneity_degree(template)                               # p: V(cx) = cᵖ V(x)
 solution_value(template, V)                                # variables -> a callable node function
-check_dynamics(template, A)                                # is the template applicable at all?
+is_applicable(template, system)                            # default true; does the template apply at all?
 is_closed_under(template, ::Operation, system)             # default false; which lifts are valid
 reindex(template, origins)                                 # per-node data follows a refined graph
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-add_edge_constraint!(model, problem, template, V_src, V_dst, dynamics; scale = 1)
+node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
-# The common function, src/common.jl: dispatches on the graph, so neither axis owns it.
+# The common function: each node value from the problem (node_value), their combination
+# from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.
 common(template, graph, problem, Vs, x)
 ```
 
 Every primitive is public, since a user implements it. Problems express
-their edge inequality through `add_domination!`: quantifying an inequality over
+their edge inequality through `add_decrease!`: quantifying an inequality over
 every ``x`` needs a cone that depends only on the template, so stability's edge
 condition is one call with `scale = γᵖ`. Optimal control is the exception. Its
 inequality is convex only after the substitution ``S = P^{-1}``, ``Y = KS``,
 so it cannot be written against `V_src` and `V_dst`; it works on the quadratic
-template's variables directly, and a comment in the code says so.
+template's variables directly, and a comment in the code says so. Each problem
+writes its edge condition once, in a private `_edge_decrease` that both builds
+the model and measures the slacks.
 
-A template is an **instance**, never a type: `PolyhedralTemplate` carries a
+A template is an **instance**, never a type: `ParallelFacesPolyhedralTemplate` carries a
 matrix per node, and `::Type{T}` has nowhere to put it. An `AbstractTemplate`
 is the family; the fitted node function is what `solution_value` returns.
 
@@ -62,44 +64,48 @@ Each problem has its own certificate type. The shared fields live once in
 `CertificateData`; what the problem certifies is a typed field of its own,
 `rate`, `margin` or `gains`.
 
-**A new template, problem, lift or refinement is one file in the `catalogue/`
-of its directory, and touches nothing else.** Every directory with an
+**A new template, problem, lift or refinement algorithm is one file in the
+`catalogue/` of its directory, and touches nothing else.** Every directory with an
 interface has that shape: the interface at the top, one file per inhabitant
 under `catalogue/`, named after the type without the directory's suffix.
 
-## Lifts and refinements
+## Lifts and refinement algorithms
 
-Both map a path-complete graph to a path-complete graph. A **lift** compares
-graphs: it is the lift of an operation, and
-when the lifted ``G`` simulates ``H`` then ``G \le_V H`` for every template
-closed under that operation. A **refinement** improves a graph, and by
-construction gives a certificate no worse than before, for every template.
+**A lift is an operation on a graph; `refine` is an algorithm that applies
+lifts.** A lift maps a path-complete graph to a path-complete graph no worse
+for every template closed under its `requirements`. The same lift can be a step
+of a refinement algorithm and a test of `compare`, where a simulation of ``H``
+by the lifted ``G`` proves ``G \le_V H``.
 
 ```julia
-# src/operations.jl: what a template is closed under and a lift requires.
+# src/lifts/operations.jl: what a template is closed under and a lift requires.
 Addition(), Maximum(), Minimum(), Composition(), InverseComposition()
 
-# A lift, src/lifts/catalogue/: two methods to write.
+# A lift, src/lifts/catalogue/: the forms its definition gives it.
 lift(L, graph)                               # a Lifted: the graph and what each node stands for
-requirements(L)                              # the operations it needs; () for the identity lift
+lift(L, graph, edges)                        # at each edge, for the splits and products
+lift(L, graph, node)                         # at a node, for the splits
+requirements(L)                              # the operations it needs; () by default
 simulation(L, G, H; optimizer)               # inherited; overridden where the theory decides cheaper
 is_valid(L, template, system)                # written once against the two
-dual(L)                                      # a DualLift, deciding on the dual graphs
-compare(G, H; templates, system, optimizer)  # the entry point
+dual(L)                                      # a DualLift, applied on the dual graph
+compare(G, H; templates, system, optimizer)  # the entry point of comparison
 
-# A refinement, src/refinements/catalogue/: one method to write.
-refine(R, graph, edges)                      # a Refined: the graph and the origin of every node
-dual(R)                                      # a DualRefinement
-refine(template, graph, problem; strategy)   # the entry point: the loop
+# A refinement algorithm, src/refinements/catalogue/: one method to write.
+next_graph(algorithm, certificate; atol, solve) # the next Lifted graph, or nothing
+initial_graph(algorithm, system)             # where it starts; common_graph by default
+refine(template, graph, problem; algorithm)  # the entry point: the loop
 ```
 
-Validity is read from the closures a template declares, never by dispatching
-on its concrete type, which would need a method per pair. The one override,
-the min lift on the linear copositive template, has a theorem behind it; add
-another only with one to cite. A refinement has no `requirements` and no
-`is_valid`. The min, max and sum lifts are never built to decide an order: a
-relation decides the first two and a linear program the third. A strategy for
-the loop is any callable `(certificate; atol) -> Vector{Refined}`.
+What a lift supports is the methods it has, never a flag. Validity is read
+from the closures a template declares, never by dispatching on its concrete
+type, which would need a method per pair. A lift valid on a template that is
+not closed under its requirements is read through the dual template: the min
+lift is valid on the linear copositive template because its dual is closed
+under `max`. The min, max and sum lifts are never built to decide an order: a
+relation decides the first two and a linear program the third. An algorithm
+chooses its candidates and how to select among them; the loop owns solving,
+the stopping rules and the trace.
 
 ## The graph layer
 

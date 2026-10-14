@@ -143,4 +143,14 @@ end
     @test PCC.dual(PCC.Addition()) == PCC.Addition()
 end
 
+@testset "the min lift is valid on the linear copositive template for positive systems only" begin
+    template = PCC.LinearCopositiveTemplate()
+    positive = PCC.switched_system([[0.5 0.25; 0.0 0.5]])
+    signed = PCC.switched_system([[0.5 -0.25; 0.0 0.5]])
+
+    # Read through the dual template, closed under max.
+    @test PCC.is_valid(PCC.MinLift(), template, positive)
+    @test !PCC.is_valid(PCC.MinLift(), template, signed)
+end
+
 end # module

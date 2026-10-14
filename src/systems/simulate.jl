@@ -1,5 +1,3 @@
-import Random
-
 """
     simulate(system, x0, modes; u = nothing)
     simulate(system, x0, horizon::Integer; u = nothing, rng = Random.default_rng())
@@ -23,33 +21,10 @@ function simulate(
         ),
     )
 
-    A = mode_matrices(system)
-    B = controlled ? input_matrices(system) : nothing
+    _check_initial_state(system, x0)
+    input = controlled ? (k, x) -> _input_at(u, k, x) : nothing
 
-    n = size(first(A), 1)
-    length(x0) == n ||
-        throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
-
-    # Promoted so that an integer `x0` under real dynamics does not throw.
-    T = promote_type(eltype(x0), eltype(first(A)), controlled ? eltype(first(B)) : Bool)
-
-    xs = Vector{Vector{T}}(undef, length(modes) + 1)
-    xs[1] = convert(Vector{T}, x0)
-    us = controlled ? Vector{Vector{T}}(undef, length(modes)) : nothing
-
-    for k in eachindex(modes)
-        σ = modes[k]
-        x = xs[k]
-
-        if controlled
-            us[k] = convert(Vector{T}, _input_at(u, k, x))
-            xs[k + 1] = A[σ] * x + B[σ] * us[k]
-        else
-            xs[k + 1] = A[σ] * x
-        end
-    end
-
-    return Trajectory(xs, modes, us)
+    return _run(system, x0, modes, input)
 end
 
 function simulate(
@@ -59,11 +34,49 @@ function simulate(
     u = nothing,
     rng::Random.AbstractRNG = Random.default_rng(),
 )
-    horizon >= 0 || throw(ArgumentError("horizon must be nonnegative, got $horizon"))
-    modes = rand(rng, 1:n_modes(system), horizon)
-
-    return simulate(system, x0, modes; u = u)
+    return simulate(system, x0, _random_modes(rng, system, horizon); u = u)
 end
 
 _input_at(u::AbstractVector, k, x) = u[k]
 _input_at(u, k, x) = u(x)
+
+function _check_initial_state(system::_HS.HybridSystem, x0::AbstractVector)
+    n = size(first(mode_matrices(system)), 1)
+    length(x0) == n ||
+        throw(ArgumentError("x0 has length $(length(x0)), expected $n to match the system"))
+    return nothing
+end
+
+function _random_modes(rng::Random.AbstractRNG, system::_HS.HybridSystem, horizon::Integer)
+    horizon >= 0 || throw(ArgumentError("horizon must be nonnegative, got $horizon"))
+    return rand(rng, 1:n_modes(system), horizon)
+end
+
+# The run from `x0` along `modes`: `x⁺ = A_σ x`, or `x⁺ = A_σ x + B_σ u` with
+# `u = input(k, x)` at step `k` when `input` is given. Each step keeps the type
+# its arithmetic gives, and the run is promoted once at the end, so an integer
+# system driven by a real input works and an exact run stays exact.
+function _run(system::_HS.HybridSystem, x0::AbstractVector, modes, input)
+    A = mode_matrices(system)
+    B = input === nothing ? nothing : input_matrices(system)
+
+    xs = AbstractVector[x0]
+    us = AbstractVector[]
+
+    for (k, σ) in enumerate(modes)
+        x = xs[k]
+
+        if input === nothing
+            push!(xs, A[σ] * x)
+        else
+            push!(us, input(k, x))
+            push!(xs, A[σ] * x + B[σ] * us[k])
+        end
+    end
+
+    T = mapreduce(eltype, promote_type, [xs; us]; init = eltype(first(A)))
+    states = Vector{T}[convert(Vector{T}, x) for x in xs]
+    inputs = input === nothing ? nothing : Vector{T}[convert(Vector{T}, u) for u in us]
+
+    return Trajectory(states, modes, inputs)
+end

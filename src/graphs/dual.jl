@@ -1,4 +1,12 @@
 """
+    dual(x)
+
+The dual of a graph, lift, operation, template, system, problem or certificate;
+`dual(template, V)` is the dual of one node function.
+"""
+function dual end
+
+"""
     dual(graph)
 
 The dual graph: every edge `s → d` reversed into `d → s`, every word reversed.
@@ -10,7 +18,7 @@ dual(graph::CertificateGraph) = first(_dual_with_images(graph))
 # became.
 function _dual_with_images(graph::CertificateGraph)
     dualised = _empty_like(graph, n_nodes(graph))
-    image = Dict{_HS.GraphTransition, _HS.GraphTransition}()
+    image = Dict{_Edge, _Edge}()
 
     for edge in edges(graph)
         image[edge] =
