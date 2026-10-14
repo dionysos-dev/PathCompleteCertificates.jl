@@ -14,8 +14,9 @@ is_path_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_path_complete(expanded_form(graph), alphabet)
 
 function is_path_complete(graph::_LetterGraph, alphabet::AbstractVector)
-    # A graph with no node reads no word.
-    n_nodes(graph) == 0 && return isempty(alphabet)
+    # A path visits at least one node, so a graph with none reads no word, not
+    # even the empty one.
+    n_nodes(graph) == 0 && return false
 
     successors = _successors(graph)
     _covers_every_letter(graph, alphabet, successors) && return true
