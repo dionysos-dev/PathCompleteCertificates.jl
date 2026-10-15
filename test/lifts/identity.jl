@@ -21,8 +21,8 @@ import PathCompleteCertificates as PCC
     system = PCC.switched_system([[0.5 0.0; 0.0 0.5], [0.0 0.5; 0.5 0.0]])
     for template in (
         SetProg.Ellipsoid(symmetric = true),
-        SetProg.Parallelotope(dimension = 2),
-        SetProg.PositiveSimplex(),
+        PCC.Parallelotope(dimension = 2),
+        PCC.PositiveSimplex(),
     )
         @test PCC.is_valid(PCC.IdentityLift(), template, system)
     end

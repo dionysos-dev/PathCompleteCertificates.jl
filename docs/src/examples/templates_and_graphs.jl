@@ -50,11 +50,8 @@ rotation_problem = PCC.StabilityProblem(PCC.switched_system(ROTATION))
 
 templates = [
     ("quadratic", SetProg.Ellipsoid(; symmetric = true)),
-    ("polyhedral, fixed facets", SetProg.Parallelotope(; dimension = 2)),
-    (
-        "polyhedral, free facets",
-        SetProg.ConicPolytope.([SetProg.planar_conic_partition(3)]),
-    ),
+    ("polyhedral, fixed facets", PCC.Parallelotope(; dimension = 2)),
+    ("polyhedral, free facets", PCC.ConicPolytope.([PCC.planar_conic_partition(3)])),
 ]
 
 left = plot(;

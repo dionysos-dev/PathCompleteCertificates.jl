@@ -87,8 +87,8 @@ const SYSTEM = PCC.switched_system(A_STAR)
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 
 const QUADRATIC = SetProg.Ellipsoid(; symmetric = true)
-const COPOSITIVE = SetProg.PositiveSimplex()
-const DUAL_COPOSITIVE = SetProg.PositiveBox()
+const COPOSITIVE = PCC.PositiveSimplex()
+const DUAL_COPOSITIVE = PCC.PositiveBox()
 const TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
 
 found(comparison) = Dict(PCC.simulations(comparison))

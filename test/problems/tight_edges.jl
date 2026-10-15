@@ -99,7 +99,7 @@ end
     @test PCC.edge_slacks(quadratic) isa Vector
 
     polyhedral = PCC.certify(
-        SetProg.Parallelotope(dimension = 2),
+        PCC.Parallelotope(dimension = 2),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -108,7 +108,7 @@ end
     @test all(>=(-1e-7), PCC.edge_slacks(polyhedral))
 
     conic = PCC.certify(
-        SetProg.ConicPolytope.([SetProg.planar_conic_partition(2)]),
+        PCC.ConicPolytope.([PCC.planar_conic_partition(2)]),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -118,7 +118,7 @@ end
 
     nonneg = PCC.StabilityProblem(PCC.switched_system([[0.4 0.1; 0.2 0.3]]))
     copositive = PCC.certify(
-        SetProg.PositiveSimplex(),
+        PCC.PositiveSimplex(),
         PCC.de_bruijn(1, 1),
         nonneg;
         optimizer = OPTIMIZER,

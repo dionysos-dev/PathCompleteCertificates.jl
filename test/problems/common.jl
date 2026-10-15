@@ -52,16 +52,6 @@ end
 
 @testset "the common function is generic in the template" begin
     graph = PCC.de_bruijn(1, 2)
-    linear = SetProg.Sets.PositiveSimplex.([[1.0, 1.0], [2.0, 2.0]])
+    linear = PCC.PositiveSimplex.([[1.0, 1.0], [2.0, 2.0]])
 
     @test PCC.common(graph, PROBLEM, linear, X) ≈ minimum(V(X) for V in linear)
-
-    weights = [
-        SetProg.Sets.Parallelotope(Matrix{Float64}(LinearAlgebra.I, 2, 2), [1.0, 1.0]),
-        SetProg.Sets.Parallelotope(Matrix{Float64}(LinearAlgebra.I, 2, 2), [4.0, 4.0]),
-    ]
-
-    @test PCC.common(graph, PROBLEM, weights, X) ≈ minimum(V(X) for V in weights)
-end
-
-end

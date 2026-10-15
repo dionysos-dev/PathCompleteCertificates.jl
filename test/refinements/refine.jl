@@ -361,7 +361,7 @@ end
     # at every tight edge, each candidate solved, the best kept. The products
     # write words on the edges, so the graph gains edges rather than nodes.
     problem = SHEARED
-    template = SetProg.Parallelotope(dimension = 2)
+    template = PCC.Parallelotope(dimension = 2)
 
     trace = PCC.refine(
         template,

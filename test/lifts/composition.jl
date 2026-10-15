@@ -68,7 +68,7 @@ end
     )
     @test !PCC.is_valid(
         PCC.CompositionLift(1),
-        SetProg.Parallelotope(dimension = 2),
+        PCC.Parallelotope(dimension = 2),
         invertible,
     )
 end
