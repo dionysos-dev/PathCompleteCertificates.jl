@@ -25,16 +25,17 @@ is_closed_under(::SetProg.PolySet, ::Composition, system) = is_invertible(system
 is_closed_under(f::SetProg.Ellipsoid, ::InverseComposition, system) =
     f.piecewise === nothing && is_invertible(system)
 is_closed_under(::SetProg.PolySet, ::InverseComposition, system) = is_invertible(system)
-is_closed_under(f::SetProg.Polytope, ::Addition, system) = !f.polar
-is_closed_under(f::SetProg.Polytope, ::Maximum, system) = f.polar && f.piecewise isa Symbol
+is_closed_under(f::SetProg.Polytope, ::Addition, system) =
+    f.piecewise isa SetProg.Polyhedra.Rep || !f.polar
+is_closed_under(f::SetProg.Polytope, ::Maximum, system) = f.piecewise isa Symbol && f.polar
 function is_closed_under(f::SetProg.Polytope, ::Composition, system)
-    return !f.polar &&
-           f.piecewise === :orthant &&
+    return f.piecewise === :orthant &&
+           !f.polar &&
            all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
 end
 function is_closed_under(f::SetProg.Polytope, ::InverseComposition, system)
-    return !f.polar &&
-           f.piecewise === :orthant &&
+    return f.piecewise === :orthant &&
+           !f.polar &&
            is_invertible(system) &&
            all(A -> all(>=(0), inv(A)), mode_matrices(system))
 end
@@ -44,7 +45,7 @@ function is_closed_under(
     system,
 )
     if operation isa Maximum &&
-       all(f -> f isa SetProg.Polytope && f.polar && f.piecewise === :orthants, families)
+       all(f -> f isa SetProg.Polytope && f.piecewise === :orthants && f.polar, families)
         return allequal(getproperty.(families, :transform))
     end
     return allequal(families) && is_closed_under(first(families), operation, system)

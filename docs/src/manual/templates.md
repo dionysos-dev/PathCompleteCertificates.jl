@@ -23,7 +23,6 @@ certificate = PCC.jsr_bound(family, graph, problem; optimizer)
 | `Polytope(piecewise = :orthant)` | `c'x` on the nonnegative orthant | 1 | linear |
 | `Polytope(piecewise = :orthant, polar = true)` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
 | `Polytope(piecewise = :orthants, transform = G', polar = true)` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
-| `Polytope(symmetric = true, piecewise = cones)` | `maximum(abs.(P*x))` | 1 | linear |
 | `PolySet(symmetric = true, degree = 2d)` | sum-of-squares polynomial | 2d | semidefinite |
 | `Ellipsoid(symmetric = true, piecewise = partition)` | quadratic on each partition cone | 2 | semidefinite |
 | `Polytope(symmetric = true, piecewise = partition)` | linear on each partition cone | 1 | linear |
@@ -36,16 +35,20 @@ SetProg is a direct dependency of PCC; its polynomial dependencies are optional.
 The four polyhedral families use the same piecewise-linear representation.
 The `:orthant` partition has one linear piece, restricted to the nonnegative
 orthant; `:orthants` is a weighted absolute-value sum. Taking the polar gives
-a box or parallelotope. Explicit cone matrices prescribe the linear pieces'
-regions and solve for their coefficients. `polar` specifies the family;
+a box or parallelotope. Partition polytopes describe the linear pieces' regions
+through the cones over their facets, allowing SetProg to use facet adjacency.
+`polar` specifies the family;
 SetProg chooses its modeling space from the constraints.
 
 The existing `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
 `ParallelFacesPolyhedralTemplate`, and `ConicPolyhedralTemplate` constructors
 also remain available. Positive-orthant families require nonnegative dynamics.
-`PCC.planar_conic_partition(order)` supplies a planar conic partition.
-Coefficient floors are configurable through `min_scale` on `Polytope`, or
-through the compatibility constructors' original keyword arguments.
+`PCC.planar_conic_partition(order; library)` supplies a partition polytope.
+Pass one polytope per node to `ConicPolyhedralTemplate`; separate cone matrices
+are no longer accepted. Its `min_scale` keyword scales the partition gauge
+used for normalization.
+The other polyhedral compatibility constructors retain their coefficient-floor
+keyword arguments.
 
 The degree `p`, returned by [`homogeneity_degree`](@ref), satisfies
 `V(c*x) = c^p * V(x)`. Stability uses `rate^p` in each edge inequality,
