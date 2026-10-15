@@ -40,9 +40,7 @@ a box or parallelotope. Explicit cone matrices prescribe the linear pieces'
 regions and solve for their coefficients. `polar` specifies the family;
 SetProg chooses its modeling space from the constraints.
 
-PCC retains `PositiveSimplex`, `PositiveBox`, `Parallelotope`, and
-`ConicPolytope` as compatibility constructors returning these configurations.
-The original `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
+The existing `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
 `ParallelFacesPolyhedralTemplate`, and `ConicPolyhedralTemplate` constructors
 also remain available. Positive-orthant families require nonnegative dynamics.
 `PCC.planar_conic_partition(order)` supplies a planar conic partition.
@@ -82,7 +80,7 @@ have no fitted dual implementation here. See [Duality](@ref).
 A single family is shared by all nodes. A vector supplies one family per node:
 
 ```julia
-families = [PCC.Parallelotope(G1), PCC.Parallelotope(G2)]
+families = PCC.ParallelFacesPolyhedralTemplate([G1, G2])
 certificate = PCC.jsr_bound(families, graph, problem; optimizer)
 ```
 

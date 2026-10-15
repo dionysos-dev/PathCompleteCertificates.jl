@@ -18,16 +18,16 @@ between problems:
 
 Stability set families live in SetProg. The problem builds SetProg variables,
 normalizes their gauges, and models each edge by set inclusion. The fitted
-node values are callable SetProg sets. Extend SetProg's homogeneous gauge
-primitives to add a stability family:
+node values are callable SetProg sets. PCC implements the certificate
+primitives using SetProg's JuMP syntax:
 
 ```julia
-SetProg.add_function_variables!(model, family, dimension, node)
-SetProg.add_normalization!(model, family, variable)
-SetProg.add_decrease!(model, family, source, destination, A; scale)
-SetProg.solution_value(family, variable)
-SetProg.homogeneity_degree(family)
-SetProg.decrease_slack(family, source, destination, A; scale)
+add_function_variables!(model, family, dimension, node)
+add_normalization!(model, family, variable)
+add_decrease!(model, family, source, destination, A; scale)
+solution_value(family, variable)
+homogeneity_degree(family)
+decrease_slack(family, source, destination, A; scale)
 ```
 
 PCC owns the system and graph metadata in `src/problems/sets.jl`:

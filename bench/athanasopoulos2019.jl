@@ -13,7 +13,6 @@
 # step count is not a defect; the rate falling below one is the claim.
 
 import PathCompleteCertificates as PCC
-import SetProg
 import Clarabel
 
 const A1 = [0.095 -0.2375 0.2375; -1.9 0.0 0.0; 0.0 0.0 0.475]
@@ -22,7 +21,7 @@ const A2 = [0.4753 0.0 0.0; 0.0 0.0 0.4753; 0.0 -1.9012 0.0]
 depth_max = isempty(ARGS) ? 15 : parse(Int, ARGS[1])
 
 problem = PCC.StabilityProblem(PCC.switched_system([A1, A2]))
-template = PCC.Parallelotope(; dimension = 3)
+template = PCC.ParallelFacesPolyhedralTemplate(1, 3)
 
 elapsed = @elapsed trace = PCC.refine(
     template,

@@ -11,14 +11,14 @@ parameters and [What works with what](@ref) for support by problem.
 
 ```@autodocs
 Modules = [SetProg]
-Pages = ["variables.jl", "gauges.jl"]
+Pages = ["variables.jl"]
 ```
 
 ## Graph operations on families
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages = ["problems/sets.jl", "templates/abstract.jl"]
+Pages = ["problems/sets.jl", "problems/gauges.jl", "templates/abstract.jl"]
 ```
 
 ## Legacy quadratic template for safety and optimal control

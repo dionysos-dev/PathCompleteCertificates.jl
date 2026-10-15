@@ -68,7 +68,7 @@ end
     )
     @test !PCC.is_valid(
         PCC.CompositionLift(1),
-        PCC.Parallelotope(dimension = 2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
         invertible,
     )
 end

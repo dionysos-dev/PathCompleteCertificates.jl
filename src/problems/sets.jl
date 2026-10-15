@@ -65,11 +65,11 @@ reindex(families::AbstractVector{<:SetProg.AbstractVariable}, origins::AbstractV
 
 Whether a SetProg gauge family has an implemented dual.
 """
-has_dual(family::SetProg.AbstractVariable) = SetProg.supports_dual(family)
+has_dual(family::SetProg.AbstractVariable) = _supports_dual(family)
 has_dual(families::AbstractVector{<:SetProg.AbstractVariable}) = all(has_dual, families)
 
 dual(family::SetProg.AbstractVariable) =
-    has_dual(family) ? SetProg.dual_family(family) :
+    has_dual(family) ? _dual_family(family) :
     throw(ArgumentError("no dual gauge family is implemented for $(typeof(family))"))
 dual(families::AbstractVector{<:SetProg.AbstractVariable}) = dual.(families)
 
@@ -79,9 +79,9 @@ dual(families::AbstractVector{<:SetProg.AbstractVariable}) = dual.(families)
 The fitted dual homogeneous gauge as a SetProg set.
 """
 dual(family::SetProg.AbstractVariable, set) =
-    has_dual(family) ? SetProg.dual_value(set) :
+    has_dual(family) ? _dual_value(set) :
     throw(ArgumentError("no dual gauge is implemented for $(typeof(family))"))
-dual(families::AbstractVector{<:SetProg.AbstractVariable}, set) = SetProg.dual_value(set)
+dual(families::AbstractVector{<:SetProg.AbstractVariable}, set) = _dual_value(set)
 
 function _prepared_families(family::_SetFamily, dimension, count)
     families = family isa AbstractVector ? family : fill(family, count)
@@ -94,33 +94,7 @@ function _prepared_families(family::_SetFamily, dimension, count)
         all(==(x), explicit) ||
             throw(ArgumentError("polynomial sets must share their variables"))
     end
-    return [SetProg.with_dimension(f, dimension; variables = x) for f in families]
-end
-
-function homogeneity_degree(family::_SetFamily)
-    return SetProg.homogeneity_degree(family)
-end
-function add_function_variables!(model, family::SetProg.AbstractVariable, dimension, node)
-    return SetProg.add_function_variables!(model, family, dimension, node)
-end
-function add_normalization!(model, family::SetProg.AbstractVariable, V; kwargs...)
-    return SetProg.add_normalization!(model, family, V; kwargs...)
-end
-function add_decrease!(
-    model,
-    family::SetProg.AbstractVariable,
-    source,
-    destination,
-    A;
-    kwargs...,
-)
-    return SetProg.add_decrease!(model, family, source, destination, A; kwargs...)
-end
-function solution_value(family::SetProg.AbstractVariable, V)
-    return SetProg.solution_value(family, V)
-end
-function decrease_slack(family::SetProg.AbstractVariable, source, destination, A; kwargs...)
-    return SetProg.decrease_slack(family, source, destination, A; kwargs...)
+    return [_with_dimension(f, dimension; variables = x) for f in families]
 end
 
 node_value(::_SetFamily, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)

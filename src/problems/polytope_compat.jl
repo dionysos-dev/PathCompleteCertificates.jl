@@ -1,51 +1,69 @@
 """
-    PositiveSimplex(; dimension = nothing, min_scale = 1)
+    LinearCopositiveTemplate()
 
-Compatibility constructor for a linear gauge on the nonnegative orthant.
+Linear gauges on the nonnegative orthant, represented by a SetProg polytope.
 """
-PositiveSimplex(; dimension = nothing, min_scale = 1) =
-    SetProg.Polytope(; piecewise = :orthant, dimension = dimension, min_scale = min_scale)
+LinearCopositiveTemplate() = SetProg.Polytope(; piecewise = :orthant, min_scale = 1)
 
 """
-    PositiveBox(; dimension = nothing, min_weight = 1)
+    DualCopositiveTemplate(; min_weight = 1)
 
-Compatibility constructor for the blocking polar of a positive simplex.
+Blocking polars of linear copositive gauges, represented by a SetProg polytope.
 """
-PositiveBox(; dimension = nothing, min_weight = 1) = SetProg.Polytope(;
-    piecewise = :orthant,
-    dimension = dimension,
-    polar = true,
-    min_scale = min_weight,
+DualCopositiveTemplate(; min_weight = 1) =
+    SetProg.Polytope(; piecewise = :orthant, polar = true, min_scale = min_weight)
+
+"""
+    ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1)
+    ParallelFacesPolyhedralTemplate(matrices; min_weight = 1)
+
+One SetProg polytope per node, with prescribed pairs of parallel faces.
+"""
+function ParallelFacesPolyhedralTemplate(
+    n_nodes::Integer,
+    dimension::Integer;
+    min_weight = 1,
 )
-
-"""
-    Parallelotope(G; min_weight = 1)
-    Parallelotope(; dimension = nothing, min_weight = 1)
-
-Compatibility constructor for the polar of a weighted absolute-value sum.
-"""
-Parallelotope(G::AbstractMatrix; min_weight = 1) = SetProg.Polytope(;
-    symmetric = true,
-    piecewise = :orthants,
-    transform = Matrix(G'),
-    polar = true,
-    min_scale = min_weight,
+    n_nodes > 0 || throw(ArgumentError("at least one node is required"))
+    family = SetProg.Polytope(;
+        symmetric = true,
+        piecewise = :orthants,
+        dimension = dimension,
+        polar = true,
+        min_scale = min_weight,
+    )
+    return fill(family, n_nodes)
+end
+function ParallelFacesPolyhedralTemplate(
+    matrices::AbstractVector{<:AbstractMatrix};
+    min_weight = 1,
 )
-Parallelotope(; dimension = nothing, min_weight = 1) = SetProg.Polytope(;
-    symmetric = true,
-    piecewise = :orthants,
-    dimension = dimension,
-    polar = true,
-    min_scale = min_weight,
-)
+    isempty(matrices) && throw(ArgumentError("at least one matrix is required"))
+    n = size(first(matrices), 1)
+    all(G -> size(G) == (n, n), matrices) || throw(DimensionMismatch())
+    return [
+        SetProg.Polytope(;
+            symmetric = true,
+            piecewise = :orthants,
+            transform = Matrix(G'),
+            polar = true,
+            min_scale = min_weight,
+        ) for G in matrices
+    ]
+end
 
 """
-    ConicPolytope(cones; min_scale = 1)
+    ConicPolyhedralTemplate(node_cones; min_scale = 1)
 
-Compatibility constructor for a symmetric polytope with prescribed cones.
+One SetProg polytope per node, with linear pieces on the prescribed cones.
 """
-ConicPolytope(cones::AbstractVector{<:AbstractMatrix}; min_scale = 1) =
-    SetProg.Polytope(; symmetric = true, piecewise = cones, min_scale = min_scale)
+function ConicPolyhedralTemplate(node_cones; min_scale = 1)
+    isempty(node_cones) && throw(ArgumentError("at least one node is required"))
+    return [
+        SetProg.Polytope(; symmetric = true, piecewise = cones, min_scale = min_scale) for
+        cones in node_cones
+    ]
+end
 
 """
     planar_conic_partition(order)
@@ -67,7 +85,12 @@ function planar_conic_partition(order::Integer)
     return cones
 end
 
-function PositiveSimplex(c::AbstractVector)
+"""
+    LinearCopositiveFunction(c)
+
+A fitted linear copositive function represented by a SetProg set.
+"""
+function LinearCopositiveFunction(c::AbstractVector)
     cone = Matrix{Float64}(LinearAlgebra.I, length(c), length(c))
     return SetProg.Sets.Intersection(
         SetProg.Sets.Piecewise([collect(c)], [cone]),
@@ -80,8 +103,18 @@ function PositiveSimplex(c::AbstractVector)
         ),
     )
 end
-PositiveBox(v::AbstractVector) = SetProg.dual_value(PositiveSimplex(v))
-function Parallelotope(G::AbstractMatrix, w::AbstractVector)
+"""
+    DualCopositiveFunction(v)
+
+A fitted dual copositive function represented by a SetProg set.
+"""
+DualCopositiveFunction(v::AbstractVector) = _dual_value(LinearCopositiveFunction(v))
+"""
+    ParallelFacesPolyhedralFunction(G, w)
+
+A fitted parallel-faces polyhedral function represented by a SetProg set.
+"""
+function ParallelFacesPolyhedralFunction(G::AbstractMatrix, w::AbstractVector)
     n = LinearAlgebra.checksquare(G)
     signs = vec([Float64[s...] for s in Iterators.product(ntuple(_ -> (-1, 1), n)...)])
     return SetProg.polar(
@@ -91,47 +124,3 @@ function Parallelotope(G::AbstractMatrix, w::AbstractVector)
         ),
     )
 end
-
-"""
-    LinearCopositiveTemplate()
-
-Backward-compatible constructor for `Polytope(piecewise = :orthant)`.
-"""
-LinearCopositiveTemplate() = PositiveSimplex()
-
-"""
-    DualCopositiveTemplate(; min_weight = 1)
-
-Backward-compatible constructor for a positive box polytope configuration.
-"""
-DualCopositiveTemplate(; min_weight = 1) = PositiveBox(; min_weight)
-
-"""
-    ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1)
-    ParallelFacesPolyhedralTemplate(matrices; min_weight = 1)
-
-Backward-compatible constructor for native polytopes, one per graph node.
-"""
-function ParallelFacesPolyhedralTemplate(
-    n_nodes::Integer,
-    dimension::Integer;
-    min_weight = 1,
-)
-    n_nodes > 0 || throw(ArgumentError("at least one node is required"))
-    return fill(Parallelotope(; dimension, min_weight), n_nodes)
-end
-function ParallelFacesPolyhedralTemplate(
-    matrices::AbstractVector{<:AbstractMatrix};
-    min_weight = 1,
-)
-    isempty(matrices) && throw(ArgumentError("at least one matrix is required"))
-    return [Parallelotope(G; min_weight) for G in matrices]
-end
-
-"""
-    ConicPolyhedralTemplate(node_cones; min_scale = 1)
-
-Backward-compatible constructor for one native conic polytope per graph node.
-"""
-ConicPolyhedralTemplate(node_cones; min_scale = 1) =
-    [ConicPolytope(cones; min_scale) for cones in node_cones]

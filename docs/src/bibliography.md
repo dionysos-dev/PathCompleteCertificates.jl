@@ -19,12 +19,12 @@ number quoted in the manual was read in the paper it is attributed to.
 
 | | |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@cite) | `PCC.Parallelotope`, fixed facets and solved-for weights, and the four partial lifts that are [`ForwardSplitLift`](@ref), [`BackwardSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | `ParallelFacesPolyhedralTemplate`, fixed facets and solved-for weights, and the four partial lifts that are [`ForwardSplitLift`](@ref), [`BackwardSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
 | [parrilo2008approximation](@cite) | `SetProg.PolySet` |
-| [debauche2024thesis](@cite) | `PCC.PositiveBox`, Def. 2.30 |
+| [debauche2024thesis](@cite) | `DualCopositiveTemplate`, Def. 2.30 |
 
-`SetProg.Ellipsoid` and `PCC.PositiveSimplex` are
-standard. `PCC.ConicPolytope` is under submission and has no
+`SetProg.Ellipsoid` and `LinearCopositiveTemplate` are
+standard. `ConicPolyhedralTemplate` is under submission and has no
 entry yet.
 
 ## Safety and optimal control

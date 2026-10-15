@@ -118,7 +118,7 @@ end
 end
 
 @testset "a piecewise polytope reproduces the conic polyhedral template" begin
-    conic = rate(PCC.ConicPolytope.([PCC.planar_conic_partition(1)]))
+    conic = rate(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)]))
     template = Polytope(symmetric = true, piecewise = OCTAGON)
     polytope = rate(template)
 
@@ -245,15 +245,17 @@ end
     system = PCC.switched_system([[0.5 0.0; 0.0 0.25], [0.25 0.0; 0.0 0.5]])
     problem = PCC.StabilityProblem(system)
     graph = PCC.de_bruijn(1, 2)
-    families =
-        [PCC.Parallelotope([1.0 0.0; 0.0 1.0]), PCC.Parallelotope([2.0 0.0; 0.0 1.0])]
+    families = PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 1.0]])
     certificate =
         PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
     @test PCC.is_feasible(certificate)
     @test all(>=(-1e-6), PCC.edge_slacks(certificate))
     @test !PCC.is_closed_under(families, PCC.Maximum(), system)
     @test PCC.is_closed_under([families[1], families[1]], PCC.Maximum(), system)
-    boxes = [PCC.PositiveBox(min_weight = 2), PCC.PositiveBox(min_weight = 3)]
+    boxes = [
+        PCC.DualCopositiveTemplate(min_weight = 2),
+        PCC.DualCopositiveTemplate(min_weight = 3),
+    ]
     certificate =
         PCC.certify(boxes, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
     @test PCC.has_dual(boxes)
@@ -273,7 +275,7 @@ end
 end
 
 @testset "the native gauge primitives also work directly" begin
-    family = PCC.PositiveBox(min_weight = 2)
+    family = PCC.DualCopositiveTemplate(min_weight = 2)
     model = JuMP.Model(HiGHS.Optimizer)
     JuMP.set_silent(model)
     S = PCC.add_function_variables!(model, family, 2, 1)
@@ -285,25 +287,28 @@ end
     @test fitted([2.0, 0.0]) <= 1 + 1e-6
     @test fitted(A * [2.0, 1.0]) <= 0.6 * fitted([2.0, 1.0]) + 1e-6
     system = PCC.switched_system([A])
-    @test PCC.is_closed_under(PCC.PositiveSimplex(), PCC.Composition(), system)
-    @test PCC.is_closed_under(PCC.PositiveSimplex(), PCC.InverseComposition(), system)
+    @test PCC.is_closed_under(PCC.LinearCopositiveTemplate(), PCC.Composition(), system)
+    @test PCC.is_closed_under(
+        PCC.LinearCopositiveTemplate(),
+        PCC.InverseComposition(),
+        system,
+    )
 end
 
 @testset "compatibility constructors return native families" begin
-    @test PCC.PositiveBox() isa SetProg.Polytope
-    @test PCC.PositiveSimplex() isa SetProg.Polytope
-    @test PCC.Parallelotope() isa SetProg.Polytope
-    @test PCC.ConicPolytope(PCC.planar_conic_partition(1)) isa SetProg.Polytope
-    @test PCC.LinearCopositiveTemplate() == PCC.PositiveSimplex()
-    @test PCC.DualCopositiveTemplate() == PCC.PositiveBox()
+    @test PCC.DualCopositiveTemplate() isa SetProg.Polytope
+    @test PCC.LinearCopositiveTemplate() isa SetProg.Polytope
+    @test only(PCC.ParallelFacesPolyhedralTemplate(1, 2)) isa SetProg.Polytope
+    @test only(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])) isa
+          SetProg.Polytope
     @test length(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 2
     @test length(PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0]])) == 1
     @test length(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])) == 1
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(0, 2)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(Matrix{Float64}[])
     @test_throws ArgumentError PCC.planar_conic_partition(0)
-    @test PCC.PositiveBox([2.0, 3.0])([1.0, 1.0]) ≈ 0.5
-    @test PCC.PositiveSimplex([2.0, 3.0])([1.0, 1.0]) ≈ 5
+    @test PCC.DualCopositiveFunction([2.0, 3.0])([1.0, 1.0]) ≈ 0.5
+    @test PCC.LinearCopositiveFunction([2.0, 3.0])([1.0, 1.0]) ≈ 5
 end
 
 end

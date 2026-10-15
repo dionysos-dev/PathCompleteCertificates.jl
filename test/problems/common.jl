@@ -54,18 +54,23 @@ end
 
 @testset "the common function is generic in the template" begin
     graph = PCC.de_bruijn(1, 2)
-    linear = PCC.PositiveSimplex.([[1.0, 1.0], [2.0, 2.0]])
+    linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(PCC.PositiveSimplex(), graph, PROBLEM, linear, X) ≈
+    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, linear, X) ≈
           minimum(V(X) for V in linear)
 
     weights = [
-        PCC.Parallelotope(Matrix{Float64}(LinearAlgebra.I, 2, 2), w) for
-        w in ([1.0, 1.0], [4.0, 4.0])
+        PCC.ParallelFacesPolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), w)
+        for w in ([1.0, 1.0], [4.0, 4.0])
     ]
 
-    @test PCC.common(PCC.Parallelotope(dimension = 2), graph, PROBLEM, weights, X) ≈
-          minimum(V(X) for V in weights)
+    @test PCC.common(
+        PCC.ParallelFacesPolyhedralTemplate(2, 2),
+        graph,
+        PROBLEM,
+        weights,
+        X,
+    ) ≈ minimum(V(X) for V in weights)
 end
 
 end
