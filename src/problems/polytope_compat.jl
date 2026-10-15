@@ -53,36 +53,51 @@ function ParallelFacesPolyhedralTemplate(
 end
 
 """
-    ConicPolyhedralTemplate(node_cones; min_scale = 1)
+    ConicPolyhedralTemplate(node_partitions; min_scale = 1)
 
-One SetProg polytope per node, with linear pieces on the prescribed cones.
+One SetProg polytope per node. Each partition polytope describes the cones over
+its facets and must contain the origin in its interior. `min_scale` scales the
+partition's gauge used for normalization.
 """
-function ConicPolyhedralTemplate(node_cones; min_scale = 1)
-    isempty(node_cones) && throw(ArgumentError("at least one node is required"))
+function ConicPolyhedralTemplate(node_partitions; min_scale = 1)
+    isempty(node_partitions) && throw(ArgumentError("at least one node is required"))
+    isfinite(min_scale) && min_scale > 0 ||
+        throw(ArgumentError("min_scale must be finite and positive"))
+    all(p -> p isa SetProg.Polyhedra.Polyhedron, node_partitions) ||
+        throw(ArgumentError("supply partition polytopes instead of separate cones"))
     return [
-        SetProg.Polytope(; symmetric = true, piecewise = cones, min_scale = min_scale) for
-        cones in node_cones
+        SetProg.Polytope(;
+            symmetric = true,
+            piecewise = min_scale == 1 ? partition :
+                        SetProg.polyhedron(
+                inv(min_scale) * SetProg.vrep(partition),
+                SetProg.Polyhedra.library(partition),
+            ),
+        ) for partition in node_partitions
     ]
 end
 
 """
-    planar_conic_partition(order)
+    planar_conic_partition(order; library = nothing)
 
-Compatibility helper: subdivide the upper half-plane into partition cones.
+Return a centrally symmetric partition polytope with `8 * 2^(order - 1)` facets.
+The cones over its facets have the same boundary rays as the planar conic
+partition. `library` can supply a Polyhedra library with an LP solver.
 """
-function planar_conic_partition(order::Integer)
+function planar_conic_partition(order::Integer; library = nothing)
     order >= 1 || throw(ArgumentError("the order must be positive"))
-    rays = ([1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [-1.0, 1.0], [-1.0, 0.0])
-    cones = [hcat(rays[i], rays[i + 1]) for i in 1:4]
+    rays = [[1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [-1.0, 1.0], [-1.0, 0.0]]
     for _ in 2:order
-        cones = [
-            C for cone in cones for C in (
-                hcat(cone[:, 1], sum(cone; dims = 2)),
-                hcat(sum(cone; dims = 2), cone[:, 2]),
-            )
-        ]
+        rays = vcat(
+            [r for i in 1:(length(rays) - 1) for r in (rays[i], rays[i] + rays[i + 1])],
+            [last(rays)],
+        )
     end
-    return cones
+    # Put every ray on a strictly convex curve so each becomes a vertex.
+    vertices = [r / LinearAlgebra.norm(r) for r in rays[1:(end - 1)]]
+    vertices = vcat(vertices, [-v for v in vertices])
+    rep = SetProg.vrep(vertices)
+    return library === nothing ? SetProg.polyhedron(rep) : SetProg.polyhedron(rep, library)
 end
 
 """
