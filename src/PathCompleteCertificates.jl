@@ -47,6 +47,7 @@ include("systems/simulate.jl")
 
 include("templates/abstract.jl")
 include("problems/abstract.jl")
+include("problems/gauges.jl")
 include("problems/sets.jl")
 include("problems/polytope_compat.jl")
 include("problems/certificate.jl")

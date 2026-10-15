@@ -123,8 +123,8 @@ system = PCC.switched_system(A)
 problem = PCC.StabilityProblem(system)
 
 QUADRATIC = SetProg.Ellipsoid(; symmetric = true)
-COPOSITIVE = PCC.PositiveSimplex()
-DUAL_COPOSITIVE = PCC.PositiveBox()
+COPOSITIVE = PCC.LinearCopositiveTemplate()
+DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
 TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
 
 c12 = PCC.compare(G1, G2; templates = TEMPLATES, system, optimizer = OPTIMIZER)

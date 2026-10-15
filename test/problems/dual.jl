@@ -36,8 +36,8 @@ const GENERAL = PCC.switched_system([[0.8 0.3; -0.2 0.5], [0.4 -0.6; 0.5 0.3]])
 
 const CASES = [
     (SetProg.Ellipsoid(; symmetric = true), GENERAL),
-    (PCC.PositiveSimplex(), POSITIVE),
-    (PCC.PositiveBox(), POSITIVE),
+    (PCC.LinearCopositiveTemplate(), POSITIVE),
+    (PCC.DualCopositiveTemplate(), POSITIVE),
 ]
 
 const ONE = PCC.common_graph(2)
@@ -136,24 +136,36 @@ end
 
     # What crossing over adds: the sum lift is valid for the dual copositive
     # norms because their primal is closed under addition, which they are not.
-    @test !PCC.is_closed_under(PCC.PositiveBox(), PCC.Addition(), POSITIVE)
-    @test PCC.is_valid(PCC.SumLift(2), PCC.PositiveBox(), POSITIVE)
+    @test !PCC.is_closed_under(PCC.DualCopositiveTemplate(), PCC.Addition(), POSITIVE)
+    @test PCC.is_valid(PCC.SumLift(2), PCC.DualCopositiveTemplate(), POSITIVE)
 
     # And Thm. 7.43, stated on the primal, is read on the dual through closure.
-    @test PCC.is_valid(PCC.MinLift(), PCC.PositiveSimplex(), POSITIVE)
-    @test PCC.is_valid(PCC.MaxLift(), PCC.PositiveBox(), POSITIVE)
-    @test !PCC.is_valid(PCC.MaxLift(), PCC.PositiveSimplex(), POSITIVE)
-    @test !PCC.is_valid(PCC.MinLift(), PCC.PositiveBox(), POSITIVE)
+    @test PCC.is_valid(PCC.MinLift(), PCC.LinearCopositiveTemplate(), POSITIVE)
+    @test PCC.is_valid(PCC.MaxLift(), PCC.DualCopositiveTemplate(), POSITIVE)
+    @test !PCC.is_valid(PCC.MaxLift(), PCC.LinearCopositiveTemplate(), POSITIVE)
+    @test !PCC.is_valid(PCC.MinLift(), PCC.DualCopositiveTemplate(), POSITIVE)
 
     # A template without a dual is decided by its own closures only.
-    @test PCC.is_valid(PCC.SumLift(2), PCC.Parallelotope(dimension = 2), GENERAL) ==
-          PCC.is_closed_under(PCC.Parallelotope(dimension = 2), PCC.Addition(), GENERAL)
+    @test PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        GENERAL,
+    ) == PCC.is_closed_under(
+        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        PCC.Addition(),
+        GENERAL,
+    )
 end
 
 @testset "an infeasible certificate dualises to an infeasible one" begin
     problem = PCC.StabilityProblem(POSITIVE)
-    none =
-        PCC.certify(PCC.PositiveSimplex(), ONE, problem; optimizer = OPTIMIZER, rate = 0.01)
+    none = PCC.certify(
+        PCC.LinearCopositiveTemplate(),
+        ONE,
+        problem;
+        optimizer = OPTIMIZER,
+        rate = 0.01,
+    )
     @test !PCC.is_feasible(none)
 
     dualised = PCC.dual(none)
@@ -161,18 +173,19 @@ end
     @test PCC.status(dualised) == PCC.status(none)
     @test isempty(PCC.functions(dualised))
     @test dualised.rate == none.rate
-    @test PCC.template(dualised) == PCC.PositiveBox()
+    @test PCC.template(dualised) == PCC.DualCopositiveTemplate()
 end
 
 @testset "a template without a dual says so" begin
     @test PCC.has_dual(SetProg.Ellipsoid(symmetric = true))
-    @test PCC.has_dual(PCC.PositiveSimplex())
-    @test PCC.has_dual(PCC.PositiveBox())
-    @test !PCC.has_dual(PCC.Parallelotope(dimension = 2))
+    @test PCC.has_dual(PCC.LinearCopositiveTemplate())
+    @test PCC.has_dual(PCC.DualCopositiveTemplate())
+    @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
 
-    @test_throws ArgumentError PCC.dual(PCC.Parallelotope(dimension = 2))
+    @test_throws ArgumentError PCC.dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
 
-    polyhedral = bound(PCC.Parallelotope(dimension = 2), ONE, PCC.StabilityProblem(GENERAL))
+    polyhedral =
+        bound(PCC.ParallelFacesPolyhedralTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
     @test PCC.is_feasible(polyhedral)
     @test_throws ArgumentError PCC.dual(polyhedral)
 end

@@ -76,18 +76,15 @@ function optimization_model(
     JuMP.set_silent(model)
 
     families = _prepared_families(template, dimension, n_nodes(graph))
-    Vs = [
-        SetProg.add_function_variables!(model, families[a], dimension, a) for
-        a in nodes(graph)
-    ]
+    Vs = [add_function_variables!(model, families[a], dimension, a) for a in nodes(graph)]
 
     for V in Vs
-        SetProg.add_normalization!(model, V.set, V; conditioning_bound)
+        add_normalization!(model, V.set, V; conditioning_bound)
     end
 
     for edge in edges(graph)
         dynamics, scale = _edge_decrease(problem, graph, edge, A; rate, degree)
-        SetProg.add_decrease!(
+        add_decrease!(
             model,
             Vs[source(edge)].set,
             Vs[source(edge)],
@@ -219,7 +216,7 @@ function certify(
     JuMP.is_solved_and_feasible(model; allow_almost = true) ||
         return StabilityCertificate(_failed(problem, template, graph, termination), rate)
 
-    V = [SetProg.solution_value(v.set, v) for v in model[:stability_V]]
+    V = [solution_value(v.set, v) for v in model[:stability_V]]
 
     return StabilityCertificate(
         CertificateData(problem, template, graph, V, termination, true),

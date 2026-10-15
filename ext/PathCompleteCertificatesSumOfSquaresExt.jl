@@ -1,0 +1,17 @@
+module PathCompleteCertificatesSumOfSquaresExt
+
+import PathCompleteCertificates as PCC
+import SetProg
+import SumOfSquares
+import LinearAlgebra
+
+function PCC._unit_set(family::SetProg.PolySet)
+    d = div(family.degree, 2)
+    monos = SumOfSquares.MP.monomials(family.variables, d)
+    coefficients =
+        [factorial(d) / prod(factorial, SumOfSquares.MP.exponents(mono)) for mono in monos]
+    gram = SumOfSquares.GramMatrix(Matrix(LinearAlgebra.Diagonal(coefficients)), monos)
+    return SetProg.Sets.PolySet(family.degree, gram)
+end
+
+end
