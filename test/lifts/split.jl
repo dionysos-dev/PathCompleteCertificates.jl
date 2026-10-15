@@ -328,12 +328,13 @@ end
 
 @testset "a template with per-node data follows the split" begin
     graph = PCC.de_bruijn(1, 2)
-    template = SetProg.Parallelotope.([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
+    template = PCC.Parallelotope.([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
     lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))
     @test length(moved) == PCC.n_nodes(PCC.graph(lifted))
-    @test getproperty.(moved, :G) == [template[o].G for o in PCC.origins(lifted)]
+    @test getproperty.(moved, :transform) ==
+          [template[o].transform for o in PCC.origins(lifted)]
 
     # A data-free template is its own reindexing.
     @test PCC.reindex(SetProg.Ellipsoid(symmetric = true), PCC.origins(lifted)) ==

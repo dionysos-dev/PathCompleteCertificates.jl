@@ -8,8 +8,7 @@ Whether the SetProg family applies to the system. Orthant gauges require
 nonnegative dynamics.
 """
 is_applicable(::SetProg.AbstractVariable, system) = true
-is_applicable(::Union{SetProg.PositiveSimplex, SetProg.PositiveBox}, system) =
-    is_positive(system)
+is_applicable(f::SetProg.Polytope, system) = f.piecewise !== :orthant || is_positive(system)
 is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
     all(f -> is_applicable(f, system), families)
 
@@ -19,33 +18,34 @@ is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
 Whether a SetProg gauge family admits the operation required by a graph lift.
 """
 is_closed_under(::SetProg.AbstractVariable, ::Operation, system) = false
-is_closed_under(
-    ::Union{SetProg.Ellipsoid, SetProg.PolySet, SetProg.PositiveSimplex},
-    ::Addition,
-    system,
-) = true
+is_closed_under(::Union{SetProg.Ellipsoid, SetProg.PolySet}, ::Addition, system) = true
 is_closed_under(f::SetProg.Ellipsoid, ::Composition, system) =
     f.piecewise === nothing && is_invertible(system)
 is_closed_under(::SetProg.PolySet, ::Composition, system) = is_invertible(system)
 is_closed_under(f::SetProg.Ellipsoid, ::InverseComposition, system) =
     f.piecewise === nothing && is_invertible(system)
 is_closed_under(::SetProg.PolySet, ::InverseComposition, system) = is_invertible(system)
-is_closed_under(::SetProg.Polytope, ::Addition, system) = true
-is_closed_under(::Union{SetProg.PositiveBox, SetProg.Parallelotope}, ::Maximum, system) =
-    true
-function is_closed_under(::SetProg.PositiveSimplex, ::Composition, system)
-    return all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
+is_closed_under(f::SetProg.Polytope, ::Addition, system) = !f.polar
+is_closed_under(f::SetProg.Polytope, ::Maximum, system) = f.polar && f.piecewise isa Symbol
+function is_closed_under(f::SetProg.Polytope, ::Composition, system)
+    return !f.polar &&
+           f.piecewise === :orthant &&
+           all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
 end
-function is_closed_under(::SetProg.PositiveSimplex, ::InverseComposition, system)
-    return is_invertible(system) && all(A -> all(>=(0), inv(A)), mode_matrices(system))
+function is_closed_under(f::SetProg.Polytope, ::InverseComposition, system)
+    return !f.polar &&
+           f.piecewise === :orthant &&
+           is_invertible(system) &&
+           all(A -> all(>=(0), inv(A)), mode_matrices(system))
 end
 function is_closed_under(
     families::AbstractVector{<:SetProg.AbstractVariable},
     operation::Operation,
     system,
 )
-    if operation isa Maximum && all(f -> f isa SetProg.Parallelotope, families)
-        return allequal(getproperty.(families, :G))
+    if operation isa Maximum &&
+       all(f -> f isa SetProg.Polytope && f.polar && f.piecewise === :orthants, families)
+        return allequal(getproperty.(families, :transform))
     end
     return allequal(families) && is_closed_under(first(families), operation, system)
 end

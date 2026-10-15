@@ -153,7 +153,7 @@ end
 
     @test PCC.is_feasible(
         PCC.certify(
-            SetProg.PositiveSimplex(),
+            PCC.PositiveSimplex(),
             GRAPH,
             PROBLEM;
             optimizer = OPTIMIZER,
@@ -163,7 +163,7 @@ end
 
     @test !PCC.is_feasible(
         PCC.certify(
-            SetProg.PositiveSimplex(),
+            PCC.PositiveSimplex(),
             GRAPH,
             PROBLEM;
             optimizer = OPTIMIZER,
@@ -172,7 +172,7 @@ end
     )
 
     result = PCC.jsr_bound(
-        SetProg.PositiveSimplex(),
+        PCC.PositiveSimplex(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -185,7 +185,7 @@ end
 
     # Both copositive templates need a positive system, and say so up front.
     rotation = PCC.StabilityProblem(PCC.switched_system([[0.0 -0.5; 0.5 0.0]]))
-    for template in (SetProg.PositiveSimplex(), SetProg.PositiveBox())
+    for template in (PCC.PositiveSimplex(), PCC.PositiveBox())
         @test_throws ArgumentError PCC.certify(
             template,
             GRAPH,
@@ -200,13 +200,13 @@ end
     # The point of `homogeneity_degree`: the same system and graph, three templates
     # of two different degrees, one answer.
     @test PCC.homogeneity_degree(SetProg.Ellipsoid(symmetric = true)) == 2
-    @test PCC.homogeneity_degree(SetProg.PositiveSimplex()) == 1
-    @test PCC.homogeneity_degree(SetProg.Parallelotope(dimension = 2)) == 1
+    @test PCC.homogeneity_degree(PCC.PositiveSimplex()) == 1
+    @test PCC.homogeneity_degree(PCC.Parallelotope(dimension = 2)) == 1
 
     bounds = map((
         SetProg.Ellipsoid(symmetric = true),
-        SetProg.PositiveSimplex(),
-        SetProg.Parallelotope(dimension = 2),
+        PCC.PositiveSimplex(),
+        PCC.Parallelotope(dimension = 2),
     )) do template
         PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
     end

@@ -11,7 +11,7 @@ parameters and [What works with what](@ref) for support by problem.
 
 ```@autodocs
 Modules = [SetProg]
-Pages = ["gauges.jl"]
+Pages = ["variables.jl", "gauges.jl"]
 ```
 
 ## Graph operations on families
@@ -26,4 +26,14 @@ Pages = ["problems/sets.jl", "templates/abstract.jl"]
 ```@autodocs
 Modules = [PathCompleteCertificates]
 Pages = ["templates/catalogue/quadratic.jl"]
+```
+
+## Compatibility constructors
+
+The former polyhedral templates are constructors returning native SetProg
+families. Their names remain in PCC; there are no separate SetProg template types.
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages = ["problems/polytope_compat.jl"]
 ```

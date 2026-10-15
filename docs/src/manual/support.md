@@ -13,10 +13,11 @@ Stability accepts SetProg families directly. Safety and optimal control retain
 | positive simplex or box | ✓ on positive systems | ✓ |
 | parallelotope or conic polytope | ✓ | ✓ |
 | polynomial set | ✓ with `using SumOfSquares` | |
-| piecewise ellipsoid or polytope | ✓ | |
+| piecewise ellipsoid | ✓ | |
+| piecewise polytope | ✓ | ✓ |
 
-Refinement requires [`decrease_slack`](@ref). Fitted polynomial and general
-piecewise slacks need a separate optimization and are not implemented.
+Refinement requires [`decrease_slack`](@ref). Fitted polynomial and piecewise-quadratic
+slacks need a separate optimization and are not implemented.
 See [Templates](@ref) for closures governing [`compare`](@ref).
 
 Stability accepts [`WordGraph`](@ref). Safety and optimal control require one

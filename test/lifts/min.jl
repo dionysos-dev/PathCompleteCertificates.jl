@@ -145,7 +145,7 @@ end
 end
 
 @testset "the min lift is valid on the linear copositive template for positive systems only" begin
-    template = SetProg.PositiveSimplex()
+    template = PCC.PositiveSimplex()
     positive = PCC.switched_system([[0.5 0.25; 0.0 0.5]])
     signed = PCC.switched_system([[0.5 -0.25; 0.0 0.5]])
 

@@ -20,10 +20,10 @@ certificate = PCC.jsr_bound(family, graph, problem; optimizer)
 | SetProg family | Node function | Degree | Program |
 | :-- | :-- | :-: | :-- |
 | `Ellipsoid(symmetric = true)` | `x'Qx` | 2 | semidefinite |
-| `PositiveSimplex()` | `c'x` on the nonnegative orthant | 1 | linear |
-| `PositiveBox()` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
-| `Parallelotope(G)` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
-| `ConicPolytope(cones)` | `maximum(abs.(P*x))` | 1 | linear |
+| `Polytope(piecewise = :orthant)` | `c'x` on the nonnegative orthant | 1 | linear |
+| `Polytope(piecewise = :orthant, polar = true)` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
+| `Polytope(piecewise = :orthants, transform = G', polar = true)` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
+| `Polytope(symmetric = true, piecewise = cones)` | `maximum(abs.(P*x))` | 1 | linear |
 | `PolySet(symmetric = true, degree = 2d)` | sum-of-squares polynomial | 2d | semidefinite |
 | `Ellipsoid(symmetric = true, piecewise = partition)` | quadratic on each partition cone | 2 | semidefinite |
 | `Polytope(symmetric = true, piecewise = partition)` | linear on each partition cone | 1 | linear |
@@ -33,13 +33,21 @@ an error explaining the missing extension. Polynomial variables may be
 supplied with `variables = x`, or inferred in a shared coordinate system.
 SetProg is a direct dependency of PCC; its polynomial dependencies are optional.
 
-`Parallelotope()` uses the identity for `G`, with dimension inferred from the
-system. `ConicPolytope` fixes the rays of a conic partition and solves for its
-facet normals. `SetProg.planar_conic_partition(order)` supplies a symmetric
-planar partition (the returned cones cover the upper half-plane).
-`PositiveSimplex` and `PositiveBox` require nonnegative mode matrices.
-Their positive coefficient floors, and those of the polyhedral families,
-are configurable with `min_scale` or `min_weight`.
+The four polyhedral families use the same piecewise-linear representation.
+The `:orthant` partition has one linear piece, restricted to the nonnegative
+orthant; `:orthants` is a weighted absolute-value sum. Taking the polar gives
+a box or parallelotope. Explicit cone matrices prescribe the linear pieces'
+regions and solve for their coefficients. `polar` specifies the family;
+SetProg chooses its modeling space from the constraints.
+
+PCC retains `PositiveSimplex`, `PositiveBox`, `Parallelotope`, and
+`ConicPolytope` as compatibility constructors returning these configurations.
+The original `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
+`ParallelFacesPolyhedralTemplate`, and `ConicPolyhedralTemplate` constructors
+also remain available. Positive-orthant families require nonnegative dynamics.
+`PCC.planar_conic_partition(order)` supplies a planar conic partition.
+Coefficient floors are configurable through `min_scale` on `Polytope`, or
+through the compatibility constructors' original keyword arguments.
 
 The degree `p`, returned by [`homogeneity_degree`](@ref), satisfies
 `V(c*x) = c^p * V(x)`. Stability uses `rate^p` in each edge inequality,
@@ -74,7 +82,7 @@ have no fitted dual implementation here. See [Duality](@ref).
 A single family is shared by all nodes. A vector supplies one family per node:
 
 ```julia
-families = [Parallelotope(G1), Parallelotope(G2)]
+families = [PCC.Parallelotope(G1), PCC.Parallelotope(G2)]
 certificate = PCC.jsr_bound(families, graph, problem; optimizer)
 ```
 
