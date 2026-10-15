@@ -62,7 +62,7 @@ finds the order. The products give graphs with words on their edges, which
 
 ¹ The linear copositive norms are not closed under `min`, yet the min lift is
 valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43):
-[`is_valid`](@ref) reads it through their dual, [`DualCopositiveTemplate`](@ref),
+[`is_valid`](@ref) reads it through their dual, `DualCopositiveTemplate`,
 closed under `max`.
 
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
@@ -78,7 +78,7 @@ both ([Duality](@ref)).
 ## `compare`
 
 ```julia
-c = compare(G, H; templates = (QuadraticTemplate(),), system, optimizer)
+c = compare(G, H; templates = (SetProg.Ellipsoid(symmetric = true),), system, optimizer)
 lifts(c)        # the lifts tried, in order
 simulations(c)  # lift => simulation, for each lift whose lifted G simulates H
 templates(c)    # the templates given for which H is proved no worse than G

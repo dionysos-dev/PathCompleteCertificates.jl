@@ -7,6 +7,7 @@ module TestDual
 # for a template exactly when its dual is valid for the dual template -- and,
 # wherever a lift is valid, that the rate it certifies is no worse.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -20,9 +21,10 @@ edgeset(g) = Set(
 )
 
 # The numbers a fitted node function is made of, whatever the template.
-coefficients(V::PCC.QuadraticFunction) = Matrix(V)
-coefficients(V::PCC.DualCopositiveFunction) = V.v
-coefficients(V::PCC.LinearCopositiveFunction) = V.c
+coefficients(V::SetProg.Sets.Ellipsoid) = Matrix(V)
+coefficients(V::SetProg.Sets.Intersection) = coefficients(V.set)
+coefficients(V::SetProg.Sets.Polar) = coefficients(SetProg.polar(V))
+coefficients(V::SetProg.Sets.Piecewise) = reduce(vcat, [s.a for s in V.sets])
 
 # A positive system for the copositive pair, a general one for the quadratic
 # template; both invertible, so the composition lifts are valid somewhere.
@@ -33,7 +35,7 @@ const POSITIVE = PCC.switched_system([
 const GENERAL = PCC.switched_system([[0.8 0.3; -0.2 0.5], [0.4 -0.6; 0.5 0.3]])
 
 const CASES = [
-    (PCC.QuadraticTemplate(), GENERAL),
+    (SetProg.Ellipsoid(; symmetric = true), GENERAL),
     (PCC.LinearCopositiveTemplate(), POSITIVE),
     (PCC.DualCopositiveTemplate(), POSITIVE),
 ]
@@ -175,7 +177,7 @@ end
 end
 
 @testset "a template without a dual says so" begin
-    @test PCC.has_dual(PCC.QuadraticTemplate())
+    @test PCC.has_dual(SetProg.Ellipsoid(symmetric = true))
     @test PCC.has_dual(PCC.LinearCopositiveTemplate())
     @test PCC.has_dual(PCC.DualCopositiveTemplate())
     @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))

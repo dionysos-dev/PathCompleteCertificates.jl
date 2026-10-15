@@ -1,5 +1,6 @@
 module TestLiftSplit
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -331,12 +332,13 @@ end
     lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))
-    @test length(moved.G) == PCC.n_nodes(PCC.graph(lifted))
-    @test moved.G == [template.G[o] for o in PCC.origins(lifted)]
+    @test length(moved) == PCC.n_nodes(PCC.graph(lifted))
+    @test getproperty.(moved, :transform) ==
+          [template[o].transform for o in PCC.origins(lifted)]
 
     # A data-free template is its own reindexing.
-    @test PCC.reindex(PCC.QuadraticTemplate(), PCC.origins(lifted)) ==
-          PCC.QuadraticTemplate()
+    @test PCC.reindex(SetProg.Ellipsoid(symmetric = true), PCC.origins(lifted)) ==
+          SetProg.Ellipsoid(symmetric = true)
 end
 
 end # module

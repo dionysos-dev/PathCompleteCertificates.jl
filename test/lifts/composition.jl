@@ -1,5 +1,6 @@
 module TestLiftComposition
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -50,9 +51,21 @@ end
 
     @test PCC.is_invertible(invertible)
     @test !PCC.is_invertible(singular)
-    @test PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), invertible)
-    @test !PCC.is_valid(PCC.CompositionLift(1), PCC.QuadraticTemplate(), singular)
-    @test PCC.is_valid(PCC.BackwardCompositionLift(1), PCC.QuadraticTemplate(), invertible)
+    @test PCC.is_valid(
+        PCC.CompositionLift(1),
+        SetProg.Ellipsoid(symmetric = true),
+        invertible,
+    )
+    @test !PCC.is_valid(
+        PCC.CompositionLift(1),
+        SetProg.Ellipsoid(symmetric = true),
+        singular,
+    )
+    @test PCC.is_valid(
+        PCC.BackwardCompositionLift(1),
+        SetProg.Ellipsoid(symmetric = true),
+        invertible,
+    )
     @test !PCC.is_valid(
         PCC.CompositionLift(1),
         PCC.ParallelFacesPolyhedralTemplate(1, 2),

@@ -4,67 +4,36 @@ CurrentModule = PathCompleteCertificates
 
 # Template reference
 
-A template is the family the node functions are drawn from. See
-[Templates](@ref) for the concepts, and [What works with what](@ref) for which problems accept each one.
+Stability takes SetProg families directly. See [Templates](@ref) for their
+parameters and [What works with what](@ref) for support by problem.
 
-## The interface
+## SetProg families
 
 ```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["templates/abstract.jl"]
+Modules = [SetProg]
+Pages = ["variables.jl"]
 ```
 
-## Quadratic
+## Graph operations on families
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/quadratic.jl"]
+Pages = ["problems/sets.jl", "problems/gauges.jl", "templates/abstract.jl"]
 ```
 
-## Linear copositive
+## Legacy quadratic template for safety and optimal control
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/linear_copositive.jl"]
+Pages = ["templates/catalogue/quadratic.jl"]
 ```
 
-## Dual copositive
+## Compatibility constructors
+
+The former polyhedral templates are constructors returning native SetProg
+families. Their names remain in PCC; there are no separate SetProg template types.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/dual_copositive.jl"]
-```
-
-## Polyhedral, fixed facets
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/parallel_faces_polyhedral.jl"]
-```
-
-## Polyhedral, free facets
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/conic_polyhedral.jl"]
-```
-
-## Sum of squares
-
-The primitives are defined in a package extension, so `using SumOfSquares` is
-required before this template can be solved with.
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/sum_of_squares.jl"]
-```
-
-## SetProg sets
-
-The primitives are defined in a package extension, so `using SetProg` is
-required before this template can be solved with.
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages   = ["templates/catalogue/set_prog.jl"]
+Pages = ["problems/polytope_compat.jl"]
 ```

@@ -1,5 +1,6 @@
 module TestCommon
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -9,8 +10,8 @@ const A = [[0.5 0.0; 0.0 0.25], [0.25 0.0; 0.0 0.5]]
 const PROBLEM = PCC.StabilityProblem(PCC.switched_system(A))
 const X = [1.0, 2.0]
 
-const P1 = PCC.QuadraticFunction(LinearAlgebra.Symmetric([1.0 0.0; 0.0 1.0]))
-const P2 = PCC.QuadraticFunction(LinearAlgebra.Symmetric([3.0 0.0; 0.0 3.0]))
+const P1 = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric([1.0 0.0; 0.0 1.0]))
+const P2 = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric([3.0 0.0; 0.0 3.0]))
 const VS = [P1, P2]
 
 value(V) = V(X)
@@ -19,7 +20,7 @@ value(V) = V(X)
     graph = PCC.de_bruijn(1, 2)
     @test PCC.is_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈
+    @test PCC.common(SetProg.Ellipsoid(symmetric = true), graph, PROBLEM, VS, X) ≈
           minimum(value(P) for P in VS)
 end
 
@@ -27,7 +28,7 @@ end
     graph = PCC.dual(PCC.de_bruijn(1, 2))
     @test PCC.is_co_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈
+    @test PCC.common(SetProg.Ellipsoid(symmetric = true), graph, PROBLEM, VS, X) ≈
           maximum(value(P) for P in VS)
 end
 
@@ -48,7 +49,7 @@ end
 
     expected = minimum(maximum(value(VS[node]) for node in state) for state in states)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈ expected
+    @test PCC.common(SetProg.Ellipsoid(symmetric = true), graph, PROBLEM, VS, X) ≈ expected
 end
 
 @testset "the common function is generic in the template" begin
@@ -59,14 +60,8 @@ end
           minimum(V(X) for V in linear)
 
     weights = [
-        PCC.ParallelFacesPolyhedralFunction(
-            Matrix{Float64}(LinearAlgebra.I, 2, 2),
-            [1.0, 1.0],
-        ),
-        PCC.ParallelFacesPolyhedralFunction(
-            Matrix{Float64}(LinearAlgebra.I, 2, 2),
-            [4.0, 4.0],
-        ),
+        PCC.ParallelFacesPolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), w)
+        for w in ([1.0, 1.0], [4.0, 4.0])
     ]
 
     @test PCC.common(

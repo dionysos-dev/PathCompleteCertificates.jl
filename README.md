@@ -78,12 +78,12 @@ Contributions are welcome. Please open an
 [issue](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues) to report a bug or
 discuss a feature, and see the Developer Docs for the setup, conventions and Git workflow.
 
-One thing to read before writing code: the package is organised along **two independent axes**,
-*template* (what the node functions are) and *problem* (what the edge inequality says), with the
-graph cutting across both. A new template, problem, lift or refinement algorithm is one file in the
-`catalogue/` of its directory under `src/`. The
-[conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
-page explains why, and what goes wrong when the structure is ignored.
+Stability certificates use [SetProg](https://github.com/blegat/SetProg.jl)
+set families directly. SetProg owns their variables, inclusions and fitted gauges;
+this package owns the systems, graphs, lifts and refinement algorithms.
+Safety and optimal control retain their quadratic templates until their migration.
+See the [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
+for extending the package.
 
 ## References
 

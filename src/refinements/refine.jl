@@ -113,7 +113,7 @@ gives the next graph, a lift of the current one.
 Other keywords go to [`best_certificate`](@ref).
 """
 function refine(
-    template::AbstractTemplate,
+    template::Union{AbstractTemplate, _SetFamily},
     problem::AbstractProblem;
     optimizer,
     algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
@@ -124,7 +124,7 @@ function refine(
 end
 
 function refine(
-    template::AbstractTemplate,
+    template::Union{AbstractTemplate, _SetFamily},
     start::CertificateGraph,
     problem::AbstractProblem;
     optimizer,
