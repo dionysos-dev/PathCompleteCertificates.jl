@@ -44,8 +44,8 @@ const TWO = PCC.de_bruijn(1, 2)
 # Every lift, applied where it is defined: the four applied at edges at some of
 # the edges of the two-node graph, the rest on one of the two seeds.
 const STEPS = [
-    ("forward split", PCC.ForwardSplitLift(), TWO, PCC.outgoing_edges(TWO, 1)),
-    ("backward split", PCC.BackwardSplitLift(), TWO, PCC.incoming_edges(TWO, 1)),
+    ("out-splitting", PCC.OutSplitLift(), TWO, PCC.outgoing_edges(TWO, 1)),
+    ("in-splitting", PCC.InSplitLift(), TWO, PCC.incoming_edges(TWO, 1)),
     ("forward product", PCC.ForwardProductLift(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
     ("backward product", PCC.BackwardProductLift(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
     ("memory", PCC.PathDependentLift(1), ONE, nothing),

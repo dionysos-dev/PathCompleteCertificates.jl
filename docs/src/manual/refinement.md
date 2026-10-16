@@ -37,19 +37,17 @@ adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
 
 | Algorithm | At each step | Starts from | Source |
 | :-- | :-- | :-- | :-- |
-| [`TightNodeSplitting`](@ref), the default | the forward lift of the node with the most tight outgoing edges, at least two | the dual of `de_bruijn(1, M)` | [ninite2026lifting](@cite), Algorithm 1 |
-| [`BestTightEdgeLifting`](@ref) | the four splits and products at every tight edge, each solved, the lowest objective kept | the one-node graph | [athanasopoulos2019polyhedral](@cite), Example 2 |
+| [`TightestNodeSplitting`](@ref), the default | the out-splitting of the node with the most tight outgoing edges, at least two | the one-node graph | [ninite2026lifting](@cite), Algorithm 1 |
+| [`BestOfTightEdgeLifts`](@ref) | the four splits and products at every tight edge, each solved, the lowest objective kept | the one-node graph | [athanasopoulos2019polyhedral](@cite), Example 2 |
 | [`Hierarchy`](@ref)`(lift)` | `lift` applied to the whole graph | the one-node graph | [philippe2016stability](@cite); [jongeneel2025ordering](@cite), §IV-A |
 
-**[`TightNodeSplitting`](@ref)** follows Algorithm 1 of [ninite2026lifting](@cite).
-Its step is the forward lift at a node, one copy per successor, so a node
-whose only successor is itself cannot be split: on the one-node graph the
-lift changes nothing. The algorithm passes such nodes over and starts, as the
-paper's experiments do, from the dual De Bruijn graph of order 1. Ties go to
-the node with the fewest outgoing edges, then the lowest index, so a run is
-deterministic; `rng` breaks them at random instead.
+**[`TightestNodeSplitting`](@ref)** follows Algorithm 1 of [ninite2026lifting](@cite).
+Its step is the out-splitting of a node, one copy per outgoing edge; from the
+one-node graph the first step gives the dual De Bruijn graph of order 1. Ties
+go to the node with the fewest outgoing edges, then the lowest index, so a run
+is deterministic; `rng` breaks them at random instead.
 
-**[`BestTightEdgeLifting`](@ref)** follows Example 2 of
+**[`BestOfTightEdgeLifts`](@ref)** follows Example 2 of
 [athanasopoulos2019polyhedral](@cite): every candidate is solved, one solve each
 at every step, and the best is kept. The products write words on the edges,
 which only stability accepts, so they are left out on other problems.

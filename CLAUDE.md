@@ -105,9 +105,9 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   nothing. What a lift supports is the methods it has (`lift` on the whole graph, at edges, at
   a node), never a flag. `compare` keeps the lifts that require an operation; the splits add
   nothing there, since `G` simulates its split through the origins.
-- **`TightNodeSplitting` is Ninite & Jungers' Algorithm 1 exactly.** Its lift is their Def. 3,
-  one copy per successor, so it starts from the dual De Bruijn graph of order 1, as their
-  experiments do: on the one-node graph the forward lift changes nothing.
+- **`TightestNodeSplitting` is Ninite & Jungers' Algorithm 1 exactly.** Its lift is their Def. 3,
+  the out-splitting, one copy per outgoing edge; from `common_graph` its first step is the dual
+  De Bruijn graph of order 1.
 - **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
   the duals decides max, a linear program decides the sum lift over every size.
 - **No override of `is_valid`.** A lift valid on a template that is not closed under its

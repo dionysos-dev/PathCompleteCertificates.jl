@@ -28,7 +28,7 @@ give the same bound ([ahmadi2014joint](@cite), Thm. 5.1).
 
 ## Consequences
 
-- **Backward lifts.** [`BackwardSplitLift`](@ref),
+- **Backward lifts.** [`InSplitLift`](@ref),
   [`BackwardProductLift`](@ref), [`MaxLift`](@ref) and
   [`BackwardCompositionLift`](@ref) are `dual` of their forward counterparts,
   and [`SumLift`](@ref) and [`ProductLift`](@ref) are their own duals.

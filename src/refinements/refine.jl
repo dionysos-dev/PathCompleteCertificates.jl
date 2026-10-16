@@ -93,7 +93,7 @@ status(trace::RefinementTrace) = trace.status
 
 """
     refine(template, problem; optimizer, kwargs...)
-    refine(template, graph, problem; optimizer, algorithm = TightNodeSplitting(),
+    refine(template, graph, problem; optimizer, algorithm = TightestNodeSplitting(),
            stop = Returns(false), depth_max = 5, stall_max = 1, atol = 1e-4,
            gap_tol = 1e-6, rtol = 1e-6, path_complete = true, kwargs...)
 
@@ -116,7 +116,7 @@ function refine(
     template::AbstractTemplate,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
+    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
     kwargs...,
 )
     start = initial_graph(algorithm, problem.system)
@@ -128,7 +128,7 @@ function refine(
     start::CertificateGraph,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
+    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
     stop = Returns(false),
     depth_max::Integer = 5,
     stall_max::Integer = 1,

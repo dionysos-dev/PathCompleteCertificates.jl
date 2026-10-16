@@ -72,8 +72,8 @@ const REFERENCE = Dict(
 const OURS = Dict(
     "T" => PCC.ForwardProductLift(),
     "T*" => PCC.BackwardProductLift(),
-    "P" => PCC.BackwardSplitLift(),
-    "P*" => PCC.ForwardSplitLift(),
+    "P" => PCC.InSplitLift(),
+    "P*" => PCC.OutSplitLift(),
 )
 
 const KINDS = ["T", "T*", "P", "P*"]
@@ -228,7 +228,7 @@ end
     @test PCC.source(loop) == PCC.dest(loop) == 2
 
     loop_last = [across, loop]
-    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), LOOPS, loop_last))) ==
+    @test edgeset(PCC.graph(PCC.lift(PCC.OutSplitLift(), LOOPS, loop_last))) ==
           sequential("P*", LOOPS, loop_last)
 
     # The reference is order dependent at a loop: the other order differs.
@@ -239,7 +239,7 @@ end
     out = PCC.outgoing_edges(G4, 1)
     @test length(out) == 3
     for order in (out[1:2], reverse(out[1:2]))
-        @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), G4, order))) ==
+        @test edgeset(PCC.graph(PCC.lift(PCC.OutSplitLift(), G4, order))) ==
               sequential("P*", G4, order)
     end
 end

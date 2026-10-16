@@ -1,5 +1,5 @@
 """
-    BestTightEdgeLifting(lifts = (ForwardSplitLift(), BackwardSplitLift(),
+    BestOfTightEdgeLifts(lifts = (OutSplitLift(), InSplitLift(),
                                   ForwardProductLift(), BackwardProductLift()))
 
 The procedure of [athanasopoulos2019polyhedral; Ex. 2](@cite): every lift of
@@ -7,19 +7,19 @@ The procedure of [athanasopoulos2019polyhedral; Ex. 2](@cite): every lift of
 and the one with the lowest [`objective`](@ref) kept. Candidates with words on
 their edges are left out when the problem accepts only one mode per edge.
 """
-struct BestTightEdgeLifting{L <: Tuple} <: AbstractRefinementAlgorithm
+struct BestOfTightEdgeLifts{L <: Tuple} <: AbstractRefinementAlgorithm
     lifts::L
 end
 
-BestTightEdgeLifting() = BestTightEdgeLifting((
-    ForwardSplitLift(),
-    BackwardSplitLift(),
+BestOfTightEdgeLifts() = BestOfTightEdgeLifts((
+    OutSplitLift(),
+    InSplitLift(),
     ForwardProductLift(),
     BackwardProductLift(),
 ))
 
 function next_graph(
-    algorithm::BestTightEdgeLifting,
+    algorithm::BestOfTightEdgeLifts,
     certificate::AbstractCertificate;
     atol::Real,
     solve,

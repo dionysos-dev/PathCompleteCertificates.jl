@@ -36,8 +36,8 @@ Pages   = ["lifts/dual.jl"]
 Modules = [PathCompleteCertificates]
 Pages   = [
     "lifts/catalogue/identity.jl",
-    "lifts/catalogue/forward_split.jl",
-    "lifts/catalogue/backward_split.jl",
+    "lifts/catalogue/out_split.jl",
+    "lifts/catalogue/in_split.jl",
     "lifts/catalogue/forward_product.jl",
     "lifts/catalogue/backward_product.jl",
     "lifts/catalogue/path_dependent.jl",
