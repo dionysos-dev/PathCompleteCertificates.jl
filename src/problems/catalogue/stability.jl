@@ -262,8 +262,6 @@ end
 
 objective(certificate::StabilityCertificate) = certificate.rate
 
-_accepts_words(::StabilityProblem) = true
-
 _refinable(::StabilityProblem) = true
 
 """

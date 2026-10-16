@@ -64,7 +64,6 @@ include("problems/catalogue/optimal_control.jl")
 include("refinements/abstract.jl")
 include("refinements/catalogue/tightest_node_splitting.jl")
 include("refinements/catalogue/best_of_tight_edge_lifts.jl")
-include("refinements/catalogue/hierarchy.jl")
 include("refinements/refine.jl")
 include("lifts/compare.jl")
 

@@ -33,17 +33,16 @@ stands for in ``G``.
 | [`InSplitLift`](@ref) | in-splitting at a node, [ninite2026lifting](@cite); partial P-lift at an edge, [athanasopoulos2019polyhedral](@cite), Def. 6 | a node, edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
 | [`ForwardProductLift`](@ref) | partial T-lift, [athanasopoulos2019polyhedral](@cite), Def. 4 | edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
 | [`BackwardProductLift`](@ref) | partial T\*-lift, [athanasopoulos2019polyhedral](@cite), Def. 5 | edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
-| [`PathDependentLift`](@ref)`(M)` | ``M``-path-dependent lifting, [philippe2016stability](@cite), Def. 3 | the whole graph | nothing | [`Hierarchy`](@ref) |
-| [`ProductLift`](@ref)`(T)` | ``T``-product lift, [philippe2016stability](@cite), Def. 2 | the whole graph | nothing | [`Hierarchy`](@ref) |
+| [`PathDependentLift`](@ref)`(M)` | ``M``-path-dependent lifting, [philippe2016stability](@cite), Def. 3 | the whole graph | nothing | |
+| [`ProductLift`](@ref)`(T)` | ``T``-product lift, [philippe2016stability](@cite), Def. 2 | the whole graph | nothing | |
 | [`MinLift`](@ref) | min lift, [debauche2021comparison](@cite) | the whole graph | `min` | [`compare`](@ref) |
 | [`MaxLift`](@ref) | max lift, [debauche2021comparison](@cite) | the whole graph | `max` | [`compare`](@ref) |
 | [`SumLift`](@ref)`(T)` | ``T``-sum lift, [debauche2021comparison](@cite), Def. 8 | the whole graph | `+` | [`compare`](@ref) |
-| [`CompositionLift`](@ref)`(T)` | ``T``-forward composition lift, [debauche2024thesis](@cite), Def. 7.58 | the whole graph | composition with the dynamics | [`compare`](@ref), [`Hierarchy`](@ref) |
+| [`CompositionLift`](@ref)`(T)` | ``T``-forward composition lift, [debauche2024thesis](@cite), Def. 7.58 | the whole graph | composition with the dynamics | [`compare`](@ref) |
 | [`BackwardCompositionLift`](@ref)`(T)` | ``T``-backward composition lift, [debauche2024thesis](@cite), Def. 7.61 | the whole graph | composition with the inverse dynamics | [`compare`](@ref) |
 
 The last column gives the defaults; any lift can be passed to
-[`Hierarchy`](@ref) or to the `lifts` of [`compare`](@ref) and
-[`BestOfTightEdgeLifts`](@ref).
+the `lifts` of [`compare`](@ref) and [`BestOfTightEdgeLifts`](@ref).
 
 ## Validity
 

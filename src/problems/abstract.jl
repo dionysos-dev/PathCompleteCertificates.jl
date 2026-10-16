@@ -5,9 +5,6 @@ A property to certify, defined by the inequality imposed along each edge.
 """
 abstract type AbstractProblem end
 
-# Whether the problem accepts words on the edges; only stability does.
-_accepts_words(::AbstractProblem) = false
-
 # Whether `refine` runs on the problem: its certificate has an `objective` and
 # `edge_slacks`.
 _refinable(::AbstractProblem) = false

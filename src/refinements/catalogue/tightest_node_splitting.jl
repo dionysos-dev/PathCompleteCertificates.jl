@@ -6,6 +6,12 @@ Algorithm 1 of [ninite2026lifting](@cite): the out-splitting,
 edges, among those with at least two. When no node
 has two tight outgoing edges, there is no next graph.
 
+Several nodes can hold as many tight edges. Among them the one with the fewest
+outgoing edges is split, since its lift adds the fewest nodes; a tie that
+remains goes to the lowest index, so a run is deterministic but depends on how
+the nodes are numbered. With `rng`, for example `rng = MersenneTwister(1)`,
+that last tie is drawn at random instead.
+
 From [`common_graph`](@ref), the first step gives the dual of
 [`de_bruijn`](@ref)`(1, n_modes)`.
 """
