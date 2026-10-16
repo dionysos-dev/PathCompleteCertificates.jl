@@ -93,9 +93,9 @@ status(trace::RefinementTrace) = trace.status
 
 """
     refine(template, problem; optimizer, kwargs...)
-    refine(template, graph, problem; optimizer, algorithm = TightNodeSplitting(),
+    refine(template, graph, problem; optimizer, algorithm = TightestNodeSplitting(),
            stop = Returns(false), depth_max = 5, stall_max = 1, atol = 1e-4,
-           gap_tol = 1e-6, rtol = 1e-6, path_complete = true, kwargs...)
+           gap_tol = 1e-6, rtol = 1e-6, check_path_complete = true, kwargs...)
 
 Refine `graph`, by default [`initial_graph`](@ref)`(algorithm, system)`, until
 the [`optimality_gap`](@ref) of its certificate closes; returns a
@@ -105,9 +105,9 @@ gives the next graph, a lift of the current one.
 - The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
   `stall_max` steps in a row fail to improve the objective by `rtol`,
   `depth_max` graphs are visited, or no candidate is left.
-- `rtol` is the solve tolerance and `atol` decides tightness, with
-  `atol ≥ 10 rtol`.
-- `path_complete = false` skips the path-completeness check of the starting
+- `rtol` is the bisection tolerance on the rate, `atol` the tightness
+  threshold on the slacks, with `atol ≥ 10 rtol`.
+- `check_path_complete = false` skips the path-completeness check of the starting
   graph.
 
 Other keywords go to [`best_certificate`](@ref).
@@ -116,7 +116,7 @@ function refine(
     template::AbstractTemplate,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
+    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
     kwargs...,
 )
     start = initial_graph(algorithm, problem.system)
@@ -128,14 +128,14 @@ function refine(
     start::CertificateGraph,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightNodeSplitting(),
+    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
     stop = Returns(false),
     depth_max::Integer = 5,
     stall_max::Integer = 1,
     atol::Real = _TIGHT_ATOL,
     gap_tol::Real = 1e-6,
     rtol::Real = 1e-6,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
     kwargs...,
 )
     _refinable(problem) || throw(
@@ -162,7 +162,7 @@ function refine(
         problem;
         optimizer,
         rtol = rtol,
-        path_complete = path_complete && first_step,
+        check_path_complete = check_path_complete && first_step,
         kwargs...,
     )
 

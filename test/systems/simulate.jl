@@ -41,6 +41,10 @@ end
     @test xs[1] == x0
     @test xs[2] == A[1] * x0 + B[1] * u[1]
     @test xs[3] == A[2] * xs[2] + B[2] * u[2]
+
+    # One input per step: neither missing nor left over.
+    @test_throws ArgumentError PCC.simulate(s, x0, modes; u = u[1:1])
+    @test_throws ArgumentError PCC.simulate(s, x0, modes; u = [u; [[0.0]]])
 end
 
 @testset "controlled, a feedback law" begin

@@ -44,8 +44,8 @@ const TWO = PCC.de_bruijn(1, 2)
 # Every lift, applied where it is defined: the four applied at edges at some of
 # the edges of the two-node graph, the rest on one of the two seeds.
 const STEPS = [
-    ("forward split", PCC.ForwardSplitLift(), TWO, PCC.outgoing_edges(TWO, 1)),
-    ("backward split", PCC.BackwardSplitLift(), TWO, PCC.incoming_edges(TWO, 1)),
+    ("out-splitting", PCC.OutSplitLift(), TWO, PCC.outgoing_edges(TWO, 1)),
+    ("in-splitting", PCC.InSplitLift(), TWO, PCC.incoming_edges(TWO, 1)),
     ("forward product", PCC.ForwardProductLift(), TWO, PCC.outgoing_edges(TWO, 1)[1:1]),
     ("backward product", PCC.BackwardProductLift(), TWO, PCC.incoming_edges(TWO, 2)[1:1]),
     ("memory", PCC.PathDependentLift(1), ONE, nothing),
@@ -93,8 +93,8 @@ const BASE_RATES = Dict(
     @test PCC.status(dualised) == PCC.status(primal)
     @test PCC.template(dualised) == PCC.dual(template)
     @test edgeset(PCC.graph(dualised)) == edgeset(PCC.dual(g))
-    @test PCC.mode_matrices(PCC.problem(dualised).system) ==
-          [collect(transpose(A)) for A in PCC.mode_matrices(system)]
+    @test PCC.state_matrices(PCC.problem(dualised).system) ==
+          [collect(transpose(A)) for A in PCC.state_matrices(system)]
     @test length(PCC.functions(dualised)) == PCC.n_nodes(g)
 
     # Lemma 6.25: every reversed edge inequality holds for the dual norms,
@@ -116,7 +116,7 @@ const BASE_RATES = Dict(
 
     # The common function of the dual certificate is a function.
     if !PCC.has_words(g)
-        @test dualised(ones(size(first(PCC.mode_matrices(system)), 1))) > 0
+        @test dualised(ones(size(first(PCC.state_matrices(system)), 1))) > 0
     end
 
     # A valid lift is no worse than the graph it was applied to -- on the

@@ -130,7 +130,7 @@ construction; `is_complete` and `is_co_complete` are sufficient only, and
 decide the form of the common function. Always ask with the system's
 modes, `1:n_modes(system)`: `is_path_complete(graph)` alone asks about the
 modes the graph happens to use. Path-completeness is PSPACE-complete, so it is checked once
-per solve, and `path_complete = false` waives it; never make that the default.
+per solve, and `check_path_complete = false` waives it; never make that the default.
 Index adjacency with `_successors` and `_predecessors` rather than calling the
 star queries in a loop.
 

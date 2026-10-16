@@ -15,7 +15,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
         has_input(system) &&
             throw(ArgumentError("SafetyProblem requires an input-free system"))
 
-        n = _check_mode_matrices(mode_matrices(system))
+        n = _check_state_matrices(state_matrices(system))
         d = n + 1
 
         size(S0) == (d, d) ||
@@ -69,13 +69,13 @@ function optimization_model(
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
-    n = _check_safety_data(graph, problem; path_complete = path_complete)
-    A = mode_matrices(problem.system)
+    n = _check_safety_data(graph, problem; check_path_complete = check_path_complete)
+    A = state_matrices(problem.system)
     d = n + 1
 
     model = JuMP.Model(optimizer)
@@ -139,14 +139,14 @@ function certify(
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     model = optimization_model(
         template,
         graph,
         problem;
         optimizer = optimizer,
-        path_complete = path_complete,
+        check_path_complete = check_path_complete,
     )
 
     JuMP.optimize!(model)
@@ -210,20 +210,15 @@ end
 function _check_safety_data(
     graph::CertificateGraph,
     problem::SafetyProblem;
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     _require_one_mode_per_edge(graph, "SafetyProblem")
-    return _check_modes(graph, problem.system; path_complete = path_complete)
+    return _check_modes(graph, problem.system; check_path_complete = check_path_complete)
 end
 
 # A barrier lives in homogeneous coordinates.
 node_value(::AbstractTemplate, ::SafetyProblem, V, x::AbstractVector{<:Real}) =
     V([x; one(eltype(x))])
 
-# --- What refine reads: smaller is better, and where the barrier is held -----
-
-objective(certificate::SafetyCertificate) = -certificate.margin
-
-_refinable(::SafetyProblem) = true
-
+# Where the barrier is held; `refine` does not run on safety.
 edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)

@@ -9,10 +9,9 @@ a certificate, reads where it is tight, applies a lift there, and solves
 again. A lift never makes the certificate worse, so the bound can only improve.
 [Refinement: splitting nodes at tight edges](@ref) runs it.
 
-Refinement is a stability tool: each algorithm below comes from a paper on
-the joint spectral radius, the bound is an upper bound on it, and it can be
-proved exact. It also runs on safety, where the margin never decreases but no
-run is ever certified optimal; see [Other problems](@ref).
+Refinement is a stability tool, and runs on stability only: each algorithm
+below comes from a paper on the joint spectral radius, the bound is an upper
+bound on it, and it can be proved exact.
 
 ## The loop
 
@@ -38,30 +37,20 @@ adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
 
 | Algorithm | At each step | Starts from | Source |
 | :-- | :-- | :-- | :-- |
-| [`TightNodeSplitting`](@ref), the default | the forward lift of the node with the most tight outgoing edges, at least two | the dual of `de_bruijn(1, M)` | [ninite2026lifting](@cite), Algorithm 1 |
-| [`BestTightEdgeLifting`](@ref) | the four splits and products at every tight edge, each solved, the lowest objective kept | the one-node graph | [athanasopoulos2019polyhedral](@cite), Example 2 |
-| [`Hierarchy`](@ref)`(lift)` | `lift` applied to the whole graph | the one-node graph | [philippe2016stability](@cite); [jongeneel2025ordering](@cite), §IV-A |
+| [`TightestNodeSplitting`](@ref), the default | the out-splitting of the node with the most tight outgoing edges, at least two | the one-node graph | [ninite2026lifting](@cite), Algorithm 1 |
+| [`BestOfTightEdgeLifts`](@ref) | the four splits and products at every tight edge, each solved, the lowest rate kept | the one-node graph | [athanasopoulos2019polyhedral](@cite), Example 2 |
 
-**[`TightNodeSplitting`](@ref)** follows Algorithm 1 of [ninite2026lifting](@cite).
-Its step is the forward lift at a node, one copy per successor, so a node
-whose only successor is itself cannot be split: on the one-node graph the
-lift changes nothing. The algorithm passes such nodes over and starts, as the
-paper's experiments do, from the dual De Bruijn graph of order 1. Ties go to
-the node with the fewest outgoing edges, then the lowest index, so a run is
-deterministic; `rng` breaks them at random instead.
+**[`TightestNodeSplitting`](@ref)** follows Algorithm 1 of [ninite2026lifting](@cite).
+Its step is the out-splitting of a node, one copy per outgoing edge; from the
+one-node graph the first step gives the dual De Bruijn graph of order 1. Ties
+go to the node with the fewest outgoing edges, then the lowest index, so a run
+is deterministic; `rng` breaks them at random instead.
 
-**[`BestTightEdgeLifting`](@ref)** follows Example 2 of
-[athanasopoulos2019polyhedral](@cite): every candidate is solved, one solve each
-at every step, and the best is kept. The products write words on the edges,
-which only stability accepts, so they are left out on other problems.
-
-**[`Hierarchy`](@ref)** lifts the whole graph at every step.
-`Hierarchy(PathDependentLift(1))` from the one-node graph goes up the De Bruijn
-hierarchy one order per step, so the [`de_bruijn`](@ref) graphs are a special
-case of the loop. `Hierarchy(CompositionLift(1))` applies the composition lift,
-which can strictly improve a graph for templates closed under composition
-([jongeneel2025ordering](@cite), Ex. IV.4); it throws where the lift is not
-valid.
+**[`BestOfTightEdgeLifts`](@ref)** follows Example 2 of
+[athanasopoulos2019polyhedral](@cite): its partial P\*-, P-, T- and T\*-lifts
+at every tight edge, one edge at a time, each candidate solved and the lowest
+rate kept, so a step costs one solve per candidate. The products write words on
+the edges, so the graph gains edges rather than nodes.
 
 A new algorithm is a subtype of [`AbstractRefinementAlgorithm`](@ref) that
 implements [`next_graph`](@ref), and [`initial_graph`](@ref) when it starts
@@ -135,13 +124,10 @@ least ten times the `rtol` it was computed to.
 
 ## Other problems
 
-[`refine`](@ref) runs on every problem that implements
-[`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref); stability and safety do. On safety each node of a
-lifted graph can keep the barrier of the node it came from, so the margin,
-read as `c.margin` on each certificate of the trace, never decreases. Safety
-has no lower bound, so its runs end on a stall, the depth budget or an
-exhausted algorithm, never on [`OPTIMAL`](@ref).
+[`refine`](@ref) reads [`best_certificate`](@ref), [`objective`](@ref),
+[`edge_slacks`](@ref) and [`optimality_gap`](@ref) of a certificate; only
+stability defines them all, and the literature refines graphs for stability
+only. On any other problem [`refine`](@ref) throws.
 [What works with what](@ref) says which templates the loop runs on.
 
 ```@docs; canonical=false

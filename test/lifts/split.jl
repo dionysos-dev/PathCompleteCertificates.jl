@@ -14,7 +14,7 @@ edgeset(g) = Set(
     node = 1
 
     out = PCC.outgoing_edges(graph, node)
-    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, out)
+    lifted = PCC.lift(PCC.OutSplitLift(), graph, out)
     g = PCC.graph(lifted)
 
     @test PCC.n_nodes(g) == PCC.n_nodes(graph) - 1 + length(out)
@@ -43,7 +43,7 @@ end
 
 @testset "a self-loop enters every copy and leaves the one that owns it" begin
     graph = PCC.de_bruijn(1, 2)
-    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
+    lifted = PCC.lift(PCC.OutSplitLift(), graph, PCC.outgoing_edges(graph, 1))
     g = PCC.graph(lifted)
 
     @test PCC.n_nodes(g) == 3
@@ -63,7 +63,7 @@ end
     add_transition!(graph, 3, 2, 2)
 
     edge = only(PCC.outgoing_edges(graph, 2, 1))     # (2, 3, 1)
-    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, edge)
+    lifted = PCC.lift(PCC.OutSplitLift(), graph, edge)
     g = PCC.graph(lifted)
 
     # Node 2 survives with its other edge; the copy, numbered last, owns this
@@ -81,7 +81,7 @@ end
     # surviving original included, so the degrees grow accordingly.
     loop = PCC.de_bruijn(1, 2)
     across = only(PCC.outgoing_edges(loop, 1, 2))   # (1, 2, 2)
-    split = PCC.graph(PCC.lift(PCC.ForwardSplitLift(), loop, across))
+    split = PCC.graph(PCC.lift(PCC.OutSplitLift(), loop, across))
     @test PCC.n_nodes(split) == 3
     @test PCC.outdegree(split, 3) == 1               # the copy owns (1, 2, 2)
     @test PCC.outdegree(split, 1) == 2               # the loop, to itself and to the copy
@@ -94,35 +94,35 @@ end
     # copy, and the node's other loop enters both.
     one = PCC.common_graph(2)
     loop = only(PCC.outgoing_edges(one, 1, 1))
-    g = PCC.graph(PCC.lift(PCC.ForwardSplitLift(), one, loop))
+    g = PCC.graph(PCC.lift(PCC.OutSplitLift(), one, loop))
 
     @test PCC.n_nodes(g) == 2
     @test edgeset(g) == Set([(2, 1, [1]), (1, 2, [1]), (1, 1, [2]), (1, 2, [2])])
     @test PCC.is_path_complete(g, 1:2)
 
     # The dual, at the same loop: destinations split, edges reversed.
-    d = PCC.graph(PCC.lift(PCC.BackwardSplitLift(), one, loop))
+    d = PCC.graph(PCC.lift(PCC.InSplitLift(), one, loop))
     @test edgeset(d) == Set([(1, 2, [1]), (2, 1, [1]), (1, 1, [2]), (2, 1, [2])])
     @test PCC.is_path_complete(d, 1:2)
 end
 
-@testset "the backward split is the dual and splits destinations" begin
+@testset "the in-splitting is the dual and splits destinations" begin
     graph = PCC.de_bruijn(1, 2)
-    lifted = PCC.lift(PCC.BackwardSplitLift(), graph, PCC.incoming_edges(graph, 1))
+    lifted = PCC.lift(PCC.InSplitLift(), graph, PCC.incoming_edges(graph, 1))
     g = PCC.graph(lifted)
 
-    @test PCC.BackwardSplitLift() isa PCC.DualLift
-    @test PCC.dual(PCC.BackwardSplitLift()) == PCC.ForwardSplitLift()
+    @test PCC.InSplitLift() isa PCC.DualLift
+    @test PCC.dual(PCC.InSplitLift()) == PCC.OutSplitLift()
     @test PCC.n_nodes(g) == 3
     @test PCC.is_path_complete(g, 1:2)
     @test sort([PCC.indegree(g, n) for n in PCC.nodes(g)]) == [1, 2, 3]
     @test all(n -> PCC.outdegree(g, n) == 2, PCC.nodes(g))
 
-    # Written out: the dual of the forward split on the dual graph.
+    # Written out: the dual of the out-splitting on the dual graph.
     byhand = PCC.dual(
         PCC.graph(
             PCC.lift(
-                PCC.ForwardSplitLift(),
+                PCC.OutSplitLift(),
                 PCC.dual(graph),
                 PCC.outgoing_edges(PCC.dual(graph), 1),
             ),
@@ -195,51 +195,43 @@ end
     @test PCC.origins(lifted) == [PCC.dest(e) for e in PCC.edges(a)]
 end
 
-@testset "at a node, the forward lift of Ninite & Jungers: one copy per successor" begin
-    # Node 1 reads 1 and 2 into node 2 and 1 into itself, so it has two
-    # successors and three outgoing edges.
+@testset "at a node, the out-splitting of Ninite & Jungers: one copy per outgoing edge" begin
+    # Node 1 reads 1 and 2 into node 2 and 1 into itself: three outgoing edges,
+    # two of them to the same successor.
     g = GraphAutomaton(2)
     for (a, b, l) in ((1, 2, 1), (1, 2, 2), (1, 1, 1), (2, 1, 1), (2, 2, 2))
         add_transition!(g, a, b, l)
     end
 
-    lifted = PCC.lift(PCC.ForwardSplitLift(), g, 1)
+    lifted = PCC.lift(PCC.OutSplitLift(), g, 1)
     h = PCC.graph(lifted)
 
-    # Node 2 survives as 1; node 1 is replaced by 1⁽¹⁾ = 2 and 1⁽²⁾ = 3.
-    @test PCC.origins(lifted) == [2, 1, 1]
-
-    # Def. 3: E₁ the edges away from node 1, E₂ the edges into it entering every
-    # copy, E₃ every edge to a successor leaving its copy, E₄ the self-loop
-    # leaving 1⁽¹⁾ for every copy.
-    E1 = [(1, 1, [2])]
-    E2 = [(1, 2, [1]), (1, 3, [1])]
-    E3 = [(3, 1, [1]), (3, 1, [2])]
-    E4 = [(2, 2, [1]), (2, 3, [1])]
-    @test edgeset(h) == Set([E1; E2; E3; E4])
+    # Node 2 survives as 1; node 1 is replaced by its three copies.
+    @test PCC.origins(lifted) == [2, 1, 1, 1]
     @test PCC.is_path_complete(h, 1:2)
 
-    # The edge form makes one copy per edge instead, so it differs here.
-    @test PCC.n_nodes(
-        PCC.graph(PCC.lift(PCC.ForwardSplitLift(), g, PCC.outgoing_edges(g, 1))),
-    ) == 4
+    # The lift at a node is the lift at all its outgoing edges.
+    @test edgeset(h) ==
+          edgeset(PCC.graph(PCC.lift(PCC.OutSplitLift(), g, PCC.outgoing_edges(g, 1))))
 
-    # Where no two outgoing edges share a destination, the two forms agree.
-    db = PCC.de_bruijn(2, 2)
-    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), db, 1))) == edgeset(
-        PCC.graph(PCC.lift(PCC.ForwardSplitLift(), db, PCC.outgoing_edges(db, 1))),
-    )
-
-    # On the one-node graph the only successor is the node itself: no change.
+    # On the one-node graph, one copy per loop: the dual De Bruijn graph, each
+    # copy leaving by its own mode for every copy.
     one = PCC.common_graph(2)
-    @test edgeset(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), one, 1))) == edgeset(one)
+    split = PCC.graph(PCC.lift(PCC.OutSplitLift(), one, 1))
+    @test PCC.n_nodes(split) == 2
+    @test PCC.n_edges(split) == 4
+    for node in PCC.nodes(split)
+        out = PCC.outgoing_edges(split, node)
+        @test length(unique(PCC.label(split, e) for e in out)) == 1
+        @test sort(PCC.dest.(out)) == [1, 2]
+    end
 
-    # The backward lift is the dual: one copy per predecessor.
-    back = PCC.lift(PCC.BackwardSplitLift(), g, 1)
+    # The in-splitting is the dual: one copy per incoming edge.
+    back = PCC.lift(PCC.InSplitLift(), g, 1)
     @test edgeset(PCC.graph(back)) ==
-          edgeset(PCC.dual(PCC.graph(PCC.lift(PCC.ForwardSplitLift(), PCC.dual(g), 1))))
+          edgeset(PCC.dual(PCC.graph(PCC.lift(PCC.OutSplitLift(), PCC.dual(g), 1))))
 
-    @test_throws ArgumentError PCC.lift(PCC.ForwardSplitLift(), g, 3)
+    @test_throws ArgumentError PCC.lift(PCC.OutSplitLift(), g, 3)
     @test_throws MethodError PCC.lift(PCC.MinLift(), g, 1)
 end
 
@@ -261,14 +253,14 @@ end
     loop = only(e for e in PCC.edges(g) if PCC.source(e) == PCC.dest(e) == 1)
 
     # At an edge, one copy of node 1 is added and no node is lost.
-    for L in (PCC.ForwardSplitLift(), PCC.BackwardSplitLift())
+    for L in (PCC.OutSplitLift(), PCC.InSplitLift())
         lifted = PCC.lift(L, g, [loop])
         @test PCC.n_nodes(PCC.graph(lifted)) == 5
         @test sort(unique(PCC.origins(lifted))) == 1:4
     end
 
-    # At a node, the forward lift of Ninite & Jungers keeps every other node.
-    @test sort(unique(PCC.origins(PCC.lift(PCC.ForwardSplitLift(), g, 1)))) == 1:4
+    # At a node, the out-splitting of Ninite & Jungers keeps every other node.
+    @test sort(unique(PCC.origins(PCC.lift(PCC.OutSplitLift(), g, 1)))) == 1:4
 end
 
 @testset "lifts refuse edges outside the graph or none" begin
@@ -276,12 +268,12 @@ end
     other = PCC.de_bruijn(2, 2)
 
     @test_throws ArgumentError PCC.lift(
-        PCC.ForwardSplitLift(),
+        PCC.OutSplitLift(),
         graph,
         HybridSystems.GraphTransition[],
     )
     @test_throws ArgumentError PCC.lift(
-        PCC.ForwardSplitLift(),
+        PCC.OutSplitLift(),
         graph,
         PCC.outgoing_edges(other, 3),
     )
@@ -289,7 +281,7 @@ end
     # Listing an edge twice would make two copies own it, one of them with no
     # outgoing edge.
     twice = PCC.outgoing_edges(graph, 1)[1:1]
-    @test_throws ArgumentError PCC.lift(PCC.ForwardSplitLift(), graph, [twice; twice])
+    @test_throws ArgumentError PCC.lift(PCC.OutSplitLift(), graph, [twice; twice])
 end
 
 @testset "origins is a homomorphism into the original: valid for every template" begin
@@ -315,7 +307,7 @@ end
         edge_lists = [[e] for e in PCC.edges(g)]
         push!(edge_lists, collect(PCC.edges(g)))
 
-        for L in (PCC.ForwardSplitLift(), PCC.BackwardSplitLift()), edge_list in edge_lists
+        for L in (PCC.OutSplitLift(), PCC.InSplitLift()), edge_list in edge_lists
             lifted = PCC.lift(L, g, edge_list)
             @test PCC.is_path_complete(PCC.graph(lifted), 1:2)
             @test preserved(lifted, g)
@@ -328,7 +320,7 @@ end
 @testset "a template with per-node data follows the split" begin
     graph = PCC.de_bruijn(1, 2)
     template = PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0], [1.0 1.0; 0.0 1.0]])
-    lifted = PCC.lift(PCC.ForwardSplitLift(), graph, PCC.outgoing_edges(graph, 1))
+    lifted = PCC.lift(PCC.OutSplitLift(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))
     @test length(moved.G) == PCC.n_nodes(PCC.graph(lifted))

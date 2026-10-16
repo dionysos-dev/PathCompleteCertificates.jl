@@ -95,7 +95,7 @@ end
     )
 
     # A system with no input is not an optimal-control problem. Without the
-    # guard, `A, B = mode_matrices(system)` splits the two mode matrices into
+    # guard, `A, B = state_matrices(system)` splits the two mode matrices into
     # A and B and reports a nonsense state dimension.
     @test_throws ArgumentError PCC.OptimalControlProblem(PCC.switched_system(A), Q, R)
 

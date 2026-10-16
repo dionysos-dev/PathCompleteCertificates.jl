@@ -19,9 +19,8 @@ Pages   = ["refinements/abstract.jl"]
 ```@autodocs
 Modules = [PathCompleteCertificates]
 Pages   = [
-    "refinements/catalogue/tight_node_splitting.jl",
-    "refinements/catalogue/best_tight_edge_lifting.jl",
-    "refinements/catalogue/hierarchy.jl",
+    "refinements/catalogue/tightest_node_splitting.jl",
+    "refinements/catalogue/best_of_tight_edge_lifts.jl",
 ]
 ```
 

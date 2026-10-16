@@ -17,20 +17,19 @@ kinds.
 [`switched_system`](@ref)`(A)` takes the mode matrices `A[1], …, A[M]`, and
 `switched_system(A, B)` the input matrices as well. The result is a
 `HybridSystem` of HybridSystems.jl, read back with [`n_modes`](@ref),
-[`mode_matrices`](@ref), [`input_matrices`](@ref) and [`has_input`](@ref);
-[`mode_matrix`](@ref)`(system, word)` is the product of the matrices along a
+[`state_matrices`](@ref), [`input_matrices`](@ref) and [`has_input`](@ref);
+[`state_matrix`](@ref)`(system, word)` is the product of the matrices along a
 sequence of modes.
 
 ```@docs; canonical=false
 switched_system
 ```
 
-[`is_invertible`](@ref) tests whether every mode matrix is invertible, which
-the composition lifts require for the quadratic and sum-of-squares templates:
-composition with a singular matrix does not keep a quadratic form positive
-definite.
-[`is_positive`](@ref) tests whether every mode matrix is entrywise nonnegative,
-which the copositive templates require.
+The composition lifts require every mode matrix to be invertible for the
+quadratic and sum-of-squares templates: composition with a singular matrix does
+not keep a quadratic form positive definite.
+The copositive templates require every mode matrix to be entrywise
+nonnegative, a positive system.
 
 ## The graph to start from
 

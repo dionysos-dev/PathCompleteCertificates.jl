@@ -114,8 +114,7 @@ dual(certificate::AbstractCertificate) =
 """
     objective(certificate) -> Real
 
-The value [`refine`](@ref) minimises: the rate for stability, minus the margin
-for safety.
+The value [`refine`](@ref) minimises: the rate, for stability.
 """
 function objective end
 
@@ -145,7 +144,7 @@ function _edge_slacks(certificate::AbstractCertificate; rate::Real = 1)
     graph_ = graph(certificate)
     template_ = template(certificate)
     V = functions(certificate)
-    A = mode_matrices(problem_.system)
+    A = state_matrices(problem_.system)
     degree = homogeneity_degree(template_)
 
     return map(edges(graph_)) do edge

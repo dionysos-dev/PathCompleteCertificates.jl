@@ -96,8 +96,8 @@ end
 
 # AᵀPA is positive definite only when A is invertible.
 is_closed_under(::QuadraticTemplate, ::Addition, system) = true
-is_closed_under(::QuadraticTemplate, ::Composition, system) = is_invertible(system)
-is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = is_invertible(system)
+is_closed_under(::QuadraticTemplate, ::Composition, system) = _is_invertible(system)
+is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = _is_invertible(system)
 
 # The dual norm of xᵀPx is xᵀP⁻¹x, and the conditioning box is self-dual.
 has_dual(::QuadraticTemplate) = true

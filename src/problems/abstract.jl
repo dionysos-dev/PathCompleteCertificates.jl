@@ -5,9 +5,6 @@ A property to certify, defined by the inequality imposed along each edge.
 """
 abstract type AbstractProblem end
 
-# Whether the problem accepts words on the edges; only stability does.
-_accepts_words(::AbstractProblem) = false
-
 # Whether `refine` runs on the problem: its certificate has an `objective` and
 # `edge_slacks`.
 _refinable(::AbstractProblem) = false
@@ -64,20 +61,20 @@ dual(problem::AbstractProblem) =
 
 # Validate the modes against the graph and return the state dimension; the
 # matrices themselves were checked when the problem was built.
-# `path_complete = false` skips the path-completeness test, which is expensive.
+# `check_path_complete = false` skips the path-completeness test, which is expensive.
 function _check_modes(
     graph::CertificateGraph,
     system::_HS.HybridSystem;
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
-    A = mode_matrices(system)
+    A = state_matrices(system)
 
     for edge in edges(graph), mode in letters(label(graph, edge))
         1 <= mode <= length(A) ||
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    if path_complete && !is_path_complete(graph, 1:length(A))
+    if check_path_complete && !is_path_complete(graph, 1:length(A))
         throw(
             ArgumentError(
                 "the graph is not path-complete for the system's modes, " *

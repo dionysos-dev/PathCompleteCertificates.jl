@@ -30,7 +30,7 @@ a **complete** graph, not merely a path-complete one. Stability accepts a
 
 [`compare`](@ref) is stated for stability, as in the literature; which of its
 results hold for a template depends on the template's closure properties.
-[`refine`](@ref) runs on stability and safety, for every template that
+[`refine`](@ref) runs on stability only, as in the literature, for every template that
 implements [`decrease_slack`](@ref), from which the edge slacks are computed:
 
 | | [`refine`](@ref) | lifts valid for [`compare`](@ref) |

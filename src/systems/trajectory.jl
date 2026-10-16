@@ -12,25 +12,31 @@ struct Trajectory{T <: Real, U <: Union{Nothing, Vector{Vector{T}}}}
 
     # Inner, so that no default constructor bypasses the shape checks.
     function Trajectory(
-        states::AbstractVector{<:AbstractVector{T}},
+        states::AbstractVector{<:AbstractVector},
         switching::AbstractVector{<:Integer},
-        inputs::Union{Nothing, AbstractVector{<:AbstractVector{T}}},
-    ) where {T <: Real}
+        inputs::Union{Nothing, AbstractVector{<:AbstractVector}},
+    )
         length(states) == length(switching) + 1 || throw(
             ArgumentError(
                 "a trajectory needs one more state than steps: got " *
                 "$(length(states)) states for $(length(switching)) steps",
             ),
         )
+        _check_same_length(states, "state")
+        all(>=(1), switching) ||
+            throw(ArgumentError("modes are numbered from 1, got $switching"))
 
-        inputs === nothing ||
-            length(inputs) == length(switching) ||
-            throw(
+        if inputs !== nothing
+            length(inputs) == length(switching) || throw(
                 ArgumentError(
                     "got $(length(inputs)) inputs for $(length(switching)) steps",
                 ),
             )
+            _check_same_length(inputs, "input")
+        end
 
+        # One element type for everything, wide enough for all
+        T = mapreduce(eltype, promote_type, inputs === nothing ? states : [states; inputs])
         visited = Vector{T}[convert(Vector{T}, x) for x in states]
         applied =
             inputs === nothing ? nothing : Vector{T}[convert(Vector{T}, u) for u in inputs]
@@ -69,3 +75,11 @@ Whether the run applied an input.
 has_input(trajectory::Trajectory) = trajectory.inputs !== nothing
 
 Base.length(trajectory::Trajectory) = length(trajectory.switching)
+
+function _check_same_length(vectors, what::AbstractString)
+    isempty(vectors) && return nothing
+    n = length(first(vectors))
+    all(v -> length(v) == n, vectors) ||
+        throw(ArgumentError("every $what must have length $n, got $(length.(vectors))"))
+    return nothing
+end

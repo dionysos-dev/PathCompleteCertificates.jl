@@ -19,7 +19,7 @@ number quoted in the manual was read in the paper it is attributed to.
 
 | | |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`ForwardSplitLift`](@ref), [`BackwardSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`OutSplitLift`](@ref), [`InSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
 | [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2024thesis](@cite) | [`DualCopositiveTemplate`](@ref), Def. 2.30 |
 
@@ -49,8 +49,8 @@ entry yet.
 
 | | |
 | :-- | :-- |
-| [ninite2026lifting](@cite) | [`TightNodeSplitting`](@ref), the default algorithm of [`refine`](@ref); the forward lift at a node, [`ForwardSplitLift`](@ref); the tight subgraph, [`tight_subgraph`](@ref), and the optimality certificate [`is_jsr_exact`](@ref) |
-| [athanasopoulos2019polyhedral](@cite) | [`BestTightEdgeLifting`](@ref), the procedure of its Example 2 |
+| [ninite2026lifting](@cite) | [`TightestNodeSplitting`](@ref), the default algorithm of [`refine`](@ref); the forward lift at a node, [`OutSplitLift`](@ref); the tight subgraph, [`tight_subgraph`](@ref), and the optimality certificate [`is_jsr_exact`](@ref) |
+| [athanasopoulos2019polyhedral](@cite) | [`BestOfTightEdgeLifts`](@ref), the procedure of its Example 2 |
 
 The lifts themselves come from [athanasopoulos2019polyhedral](@cite) and
 [philippe2016stability](@cite), listed above.

@@ -45,6 +45,6 @@ end
 homogeneity_degree(template::SumOfSquaresTemplate) = 2 * template.degree
 
 is_closed_under(::SumOfSquaresTemplate, ::Addition, system) = true
-is_closed_under(::SumOfSquaresTemplate, ::Composition, system) = is_invertible(system)
+is_closed_under(::SumOfSquaresTemplate, ::Composition, system) = _is_invertible(system)
 is_closed_under(::SumOfSquaresTemplate, ::InverseComposition, system) =
-    is_invertible(system)
+    _is_invertible(system)

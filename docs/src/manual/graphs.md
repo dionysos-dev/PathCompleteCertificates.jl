@@ -26,7 +26,7 @@ is_path_complete
 
 The test uses the subset construction of automata theory, exponential in the
 number of nodes in the worst case, and runs once per solve.
-`path_complete = false` on an entry point skips it, for a graph whose
+`check_path_complete = false` on an entry point skips it, for a graph whose
 construction guarantees the property, such as a refinement of a path-complete
 graph. If the graph is in fact not path-complete, the result is not a
 certificate and no error is raised.
@@ -67,7 +67,7 @@ modes, the last `k` modes read, and from every node an edge per mode to the
 node that remembers it; `Mᵏ` nodes, and complete. Its [`dual`](@ref) is the
 dual De Bruijn graph, co-complete. The two hierarchies are the classical
 path-complete graphs ([ahmadi2014joint](@cite)); going one order up is the
-backward split at every edge, so the certified bound never gets worse
+in-splitting at every edge, so the certified bound never gets worse
 ([philippe2016stability](@cite)), with `M` times as many nodes.
 
 [`common_graph`](@ref)`(system)` is order zero, `de_bruijn(0, M)`: the common

@@ -2,7 +2,7 @@
 #
 # [`refine`](@ref) starts from a small graph and enlarges it: after each solve
 # it reads which edge inequalities are tight and splits the node with the most
-# tight outgoing edges, one copy per successor ([ninite2026lifting](@cite)).
+# tight outgoing edges, one copy per outgoing edge ([ninite2026lifting](@cite)).
 # On the system below, at four nodes, it certifies a lower rate than the De
 # Bruijn graph of the same size.
 
@@ -23,14 +23,13 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 # ## Running the loop
 #
 # Each step solves [`jsr_bound`](@ref), reads the tight edges, and applies a
-# lift. The default algorithm, [`TightNodeSplitting`](@ref), splits the node
+# lift. The default algorithm, [`TightestNodeSplitting`](@ref), splits the node
 # with the most tight outgoing edges, and among those the one with the fewest
-# outgoing edges, so the run is deterministic. It starts, as in
-# [ninite2026lifting](@cite), from the dual De Bruijn graph of order 1: the
-# one-node graph has a single successor, itself, so splitting it changes
-# nothing.
+# outgoing edges, so the run is deterministic. It starts from the one-node
+# graph, whose first split, one copy per outgoing edge, is the dual De Bruijn
+# graph of order 1 ([ninite2026lifting](@cite)).
 
-trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 4)
+trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 5)
 
 sizes = PCC.n_nodes.(PCC.graphs(trace))
 bounds = PCC.rates(trace)
@@ -102,7 +101,7 @@ plot!(
     label = "de_bruijn",
 )
 
-# At two nodes the bounds coincide: the run starts from the dual of
+# At two nodes the bounds coincide: the run's first step is the dual of
 # `de_bruijn(1, 2)`, and on this system the two certify the same rate.
 # At four nodes the refined graph certifies a lower rate. The nodes of
 # `de_bruijn(2, 2)` are the pairs of last modes, independently of which edges

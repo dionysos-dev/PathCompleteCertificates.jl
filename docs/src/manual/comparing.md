@@ -68,7 +68,7 @@ closed under `max`.
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two
 graphs ordered for every composition-closed template that no composition lift
 simulates. The composition lift can also strictly improve a graph (their
-Ex. IV.4), and [`Hierarchy`](@ref) applies it as a step of [`refine`](@ref).
+Ex. IV.4).
 
 [`is_valid`](@ref) decides whether a lift is valid for a template from the
 closures returned by [`is_closed_under`](@ref), tabulated on the

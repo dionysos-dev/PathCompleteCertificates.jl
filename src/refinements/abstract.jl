@@ -1,20 +1,19 @@
 """
     AbstractRefinementAlgorithm
 
-How [`refine`](@ref) chooses the next graph: [`next_graph`](@ref) reads a
-certificate and returns a lifted graph, and [`initial_graph`](@ref) says where
-a run starts.
+The supertype of the algorithms [`refine`](@ref) can run. A new algorithm
+subtypes it and implements [`next_graph`](@ref).
 """
 abstract type AbstractRefinementAlgorithm end
 
 """
-    next_graph(algorithm, certificate; atol, solve) -> Union{Nothing, Tuple{Lifted, Any}}
+    next_graph(algorithm, certificate; atol, solve)
 
-The graph [`refine`](@ref) moves to after `certificate`, as a
-[`Lifted`](@ref), with its certificate when `algorithm` solved it to choose and
-`nothing` otherwise; or `nothing` alone when the algorithm has no next graph.
-The loop takes what it returns. `atol` decides which edges are tight, and
-`solve(lifted)` returns the certificate on a candidate.
+The next graph after `certificate`, as `(lifted, next)`, or `nothing` if there
+is none. `next` is the certificate on `lifted` if the algorithm already solved
+it, `nothing` otherwise.
+
+Edges with slack at most `atol` are tight; `solve(lifted)` solves a candidate.
 """
 function next_graph end
 
