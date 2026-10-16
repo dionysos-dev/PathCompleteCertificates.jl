@@ -14,7 +14,7 @@ const P1 = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric([1.0 0.0; 0.0 1.0]))
 const P2 = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric([3.0 0.0; 0.0 3.0]))
 const VS = [P1, P2]
 
-value(V) = V(X)
+value(V) = PCC.node_value(SetProg.Ellipsoid(; symmetric = true), PROBLEM, V, X)
 
 @testset "a complete graph combines with a minimum" begin
     graph = PCC.de_bruijn(1, 2)
@@ -56,8 +56,9 @@ end
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, linear, X) ≈
-          minimum(V(X) for V in linear)
+    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, linear, X) ≈ minimum(
+        PCC.node_value(PCC.LinearCopositiveTemplate(), PROBLEM, V, X) for V in linear
+    )
 
     weights = [
         PCC.ParallelFacesPolyhedralFunction(Matrix{Float64}(LinearAlgebra.I, 2, 2), w)
@@ -70,7 +71,10 @@ end
         PROBLEM,
         weights,
         X,
-    ) ≈ minimum(V(X) for V in weights)
+    ) ≈ minimum(
+        PCC.node_value(PCC.ParallelFacesPolyhedralTemplate(1, 2), PROBLEM, V, X) for
+        V in weights
+    )
 end
 
 end
