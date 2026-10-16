@@ -220,10 +220,5 @@ end
 node_value(::AbstractTemplate, ::SafetyProblem, V, x::AbstractVector{<:Real}) =
     V([x; one(eltype(x))])
 
-# --- What refine reads: smaller is better, and where the barrier is held -----
-
-objective(certificate::SafetyCertificate) = -certificate.margin
-
-_refinable(::SafetyProblem) = true
-
+# Where the barrier is held; `refine` does not run on safety.
 edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)

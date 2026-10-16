@@ -114,8 +114,7 @@ dual(certificate::AbstractCertificate) =
 """
     objective(certificate) -> Real
 
-The value [`refine`](@ref) minimises: the rate for stability, minus the margin
-for safety.
+The value [`refine`](@ref) minimises: the rate, for stability.
 """
 function objective end
 

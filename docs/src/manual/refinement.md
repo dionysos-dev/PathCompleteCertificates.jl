@@ -9,10 +9,9 @@ a certificate, reads where it is tight, applies a lift there, and solves
 again. A lift never makes the certificate worse, so the bound can only improve.
 [Refinement: splitting nodes at tight edges](@ref) runs it.
 
-Refinement is a stability tool: each algorithm below comes from a paper on
-the joint spectral radius, the bound is an upper bound on it, and it can be
-proved exact. It also runs on safety, where the margin never decreases but no
-run is ever certified optimal; see [Other problems](@ref).
+Refinement is a stability tool, and runs on stability only: each algorithm
+below comes from a paper on the joint spectral radius, the bound is an upper
+bound on it, and it can be proved exact.
 
 ## The loop
 
@@ -135,13 +134,10 @@ least ten times the `rtol` it was computed to.
 
 ## Other problems
 
-[`refine`](@ref) runs on every problem that implements
-[`best_certificate`](@ref), [`objective`](@ref), [`edge_slacks`](@ref) and
-[`optimality_gap`](@ref); stability and safety do. On safety each node of a
-lifted graph can keep the barrier of the node it came from, so the margin,
-read as `c.margin` on each certificate of the trace, never decreases. Safety
-has no lower bound, so its runs end on a stall, the depth budget or an
-exhausted algorithm, never on [`OPTIMAL`](@ref).
+[`refine`](@ref) reads [`best_certificate`](@ref), [`objective`](@ref),
+[`edge_slacks`](@ref) and [`optimality_gap`](@ref) of a certificate; only
+stability defines them all, and the literature refines graphs for stability
+only. On any other problem [`refine`](@ref) throws.
 [What works with what](@ref) says which templates the loop runs on.
 
 ```@docs; canonical=false

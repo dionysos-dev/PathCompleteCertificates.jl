@@ -72,7 +72,7 @@ template, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
 
 Stability is implemented for every template, safety and optimal control for
 the quadratic one. [`compare`](@ref) is stated for stability, as in the
-literature, and [`refine`](@ref) runs on stability and safety;
+literature, and so is [`refine`](@ref);
 [What works with what](@ref) gives the full table. A bound is always an upper
 bound, and a negative answer means that no certificate was found in this
 template on this graph, not that the property fails.

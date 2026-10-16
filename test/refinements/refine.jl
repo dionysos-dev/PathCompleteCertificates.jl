@@ -392,27 +392,17 @@ end
     @test PCC.is_path_complete(PCC.graph(final), 1:2)
 end
 
-@testset "the loop runs on a safety problem and the margin never falls" begin
+@testset "the loop refuses a safety problem" begin
     S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
     Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
     modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
     safety = PCC.SafetyProblem(PCC.switched_system(modes), S0, Su)
 
-    trace = PCC.refine(
+    @test_throws ArgumentError PCC.refine(
         TEMPLATE,
         PCC.de_bruijn(1, 2),
         safety;
         optimizer = OPTIMIZER,
-        depth_max = 3,
-    )
-
-    margins = [certificate.margin for certificate in PCC.certificates(trace)]
-    @test PCC.objective.(PCC.certificates(trace)) == -margins
-    @test all(>=(-1e-6), diff(margins))
-    @test PCC.status(trace) in (PCC.STALLED, PCC.DEPTH_REACHED, PCC.EXHAUSTED)
-    @test all(
-        c -> length(PCC.edge_slacks(c)) == PCC.n_edges(PCC.graph(c)),
-        PCC.certificates(trace),
     )
 end
 
