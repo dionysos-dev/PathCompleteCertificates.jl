@@ -8,7 +8,7 @@ const TEMPLATE = PCC.QuadraticTemplate()
 A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 
-trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 4)
+trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 5)
 
 sizes = PCC.n_nodes.(PCC.graphs(trace))
 bounds = PCC.rates(trace)

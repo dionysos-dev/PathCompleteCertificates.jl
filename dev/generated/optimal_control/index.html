@@ -20,32 +20,32 @@ problem = PCC.OptimalControlProblem(system, Q, R)</code></pre><pre class="docume
 certificate = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER)
 
 PCC.is_feasible(certificate)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>One gain per node, each mapping a state to an input.</p><pre><code class="language-julia hljs">certificate.gains</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Matrix{Float64}}:
- [0.06467502960829215 -0.09218858686235366]
- [-0.07336926854530149 -0.08724572004650204]</code></pre><p>The bound is a function of the state. A certificate is callable: <code>certificate(x)</code> evaluates the bound at <code>x</code>.</p><pre><code class="language-julia hljs">x = [1.0, 1.0]
-certificate(x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">20.435549367881038</code></pre><h2 id="The-policy,-run"><a class="docs-heading-anchor" href="#The-policy,-run">The policy, run</a><a id="The-policy,-run-1"></a><a class="docs-heading-anchor-permalink" href="#The-policy,-run" title="Permalink"></a></h2><p><code>simulate</code> closes the loop: at each step it draws an admissible mode, applies the gain of the node the certificate graph is currently in, and advances that node along the mode observed. The current node is part of the state of the controller.</p><pre><code class="language-julia hljs">run = PCC.simulate(certificate, [3.0, -2.0], 25; rng = MersenneTwister(1))
+ [0.06467488835574522 -0.09218859427608246]
+ [-0.07336949323632791 -0.08724570283799467]</code></pre><p>The bound is a function of the state. A certificate is callable: <code>certificate(x)</code> evaluates the bound at <code>x</code>.</p><pre><code class="language-julia hljs">x = [1.0, 1.0]
+certificate(x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">20.435546525988855</code></pre><h2 id="The-policy,-run"><a class="docs-heading-anchor" href="#The-policy,-run">The policy, run</a><a id="The-policy,-run-1"></a><a class="docs-heading-anchor-permalink" href="#The-policy,-run" title="Permalink"></a></h2><p><code>simulate</code> closes the loop: at each step it draws an admissible mode, applies the gain of the node the certificate graph is currently in, and advances that node along the mode observed. The current node is part of the state of the controller.</p><pre><code class="language-julia hljs">run = PCC.simulate(certificate, [3.0, -2.0], 25; rng = MersenneTwister(1))
 
 visited = PCC.states(run)
 values = [certificate(state) for state in visited]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">26-element Vector{Float64}:
- 144.12201690714554
-  38.75706754148975
-  34.873147422288085
-  31.481088765692057
-  28.411420694490793
-  25.82427340651222
-  23.247584957253796
-  20.986396255821788
-  18.940091625296514
-  17.21596896850467
+ 144.12202408878474
+  38.75706877675271
+  34.87314701512297
+  31.481088310199805
+  28.411420239158154
+  25.824272757804778
+  23.24758433614702
+  20.986395625256776
+  18.940091022181257
+  17.215968204349792
    ⋮
-   7.769162796348267
-   7.011288162438689
-   6.368736879256745
-   5.776388165331051
-   0.018018081779999324
-   0.01189281055113837
-   0.010743916522843353
-   0.009698234849043716
-   0.0087529310275932</code></pre><p>The bound is a minimum of quadratics, homogeneous of degree 2, so its level sets are scalings of one curve.</p><pre><code class="language-julia hljs">angles = range(0, 2pi; length = 721)
+   7.769162589824017
+   7.011287962698834
+   6.368736613616803
+   5.776387912687918
+   0.018018205634822274
+   0.0118928850380876
+   0.01074398393371542
+   0.00969829562861976
+   0.008752985871135053</code></pre><p>The bound is a minimum of quadratics, homogeneous of degree 2, so its level sets are scalings of one curve.</p><pre><code class="language-julia hljs">angles = range(0, 2pi; length = 721)
 unit = [certificate([cos(a), sin(a)])^(-1 / 2) for a in angles]
 
 level_set(value) =
@@ -89,4 +89,4 @@ descent = plot(
     title = &quot;bound along the run&quot;,
 )
 
-plot(plane, descent; layout = (1, 2), size = (900, 460))</code></pre><img src="aaf6cc4d.svg" alt="Example block output"/><p>The dashed curve is the level set of the bound through the initial state, and the run stays inside it. The right panel shows that the bound decreases at every step, by at least the stage cost, as the edge inequality requires. The edge inequality holds for every admissible switching sequence, so this is true of every run.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../safety/">« Safety: a barrier certificate</a><a class="docs-footer-nextpage" href="../refinement/">Refinement: splitting nodes at tight edges »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Wednesday 14 October 2026 07:49">Wednesday 14 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot(plane, descent; layout = (1, 2), size = (900, 460))</code></pre><img src="99e96232.svg" alt="Example block output"/><p>The dashed curve is the level set of the bound through the initial state, and the run stays inside it. The right panel shows that the bound decreases at every step, by at least the stage cost, as the edge inequality requires. The edge inequality holds for every admissible switching sequence, so this is true of every run.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../safety/">« Safety: a barrier certificate</a><a class="docs-footer-nextpage" href="../refinement/">Refinement: splitting nodes at tight edges »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Friday 16 October 2026 11:17">Friday 16 October 2026</span>. Using Julia version 1.13.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
