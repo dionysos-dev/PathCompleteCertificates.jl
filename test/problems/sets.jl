@@ -74,7 +74,9 @@ function test_edges(certificate, template, graph)
         point = [cos(θ), sin(θ)]
         src = V[PCC.source(edge)]
         dst = V[PCC.dest(edge)]
-        @test scale * src(point) - dst(A[PCC.label(graph, edge)] * point) >= -1e-5
+        @test scale * PCC.node_value(PROBLEM, src, point) -
+              PCC.node_value(PROBLEM, dst, A[PCC.label(graph, edge)] * point) >=
+              -1e-5
     end
 end
 
@@ -102,8 +104,10 @@ const ELLIPSOID = rate(Ellipsoid(; symmetric = true))
     V = only(PCC.functions(ELLIPSOID))
     @test V isa SetProg.Sets.Ellipsoid
     # V(cx) = c² V(x), and the normalization `V ≥ ‖x‖²`
-    @test V([2.0, 3.0]) ≈ 4 * V([1.0, 1.5]) rtol = 1e-6
-    @test V([1.0, 1.0]) >= 2 - 1e-6
+    @test PCC.node_value(PROBLEM, V, [2.0, 3.0]) ≈
+          4 * PCC.node_value(PROBLEM, V, [1.0, 1.5]) rtol =
+        1e-6
+    @test PCC.node_value(PROBLEM, V, [1.0, 1.0]) >= 2 - 1e-6
     test_edges(ELLIPSOID, Ellipsoid(symmetric = true), MEMORYLESS)
 end
 
@@ -223,7 +227,8 @@ end
     family = PolySet(symmetric = true, degree = 4)
     certificate = PCC.certify(family, graph, diagonal; optimizer = OPTIMIZER, rate = 0.6)
     @test PCC.is_feasible(certificate)
-    @test only(PCC.functions(certificate))([1.0, 1.0]) >= 4 - 1e-5
+    @test PCC.node_value(diagonal, only(PCC.functions(certificate)), [1.0, 1.0]) >=
+          4 - 1e-5
     @polyvar y[1:2]
     different = [PolySet(symmetric = true, degree = 4, variables = z) for z in (x, y)]
     @test_throws ArgumentError PCC.optimization_model(
@@ -284,8 +289,9 @@ end
     PCC.add_decrease!(model, family, S, S, A; scale = 0.6)
     JuMP.optimize!(model)
     fitted = PCC.solution_value(family, S)
-    @test fitted([2.0, 0.0]) <= 1 + 1e-6
-    @test fitted(A * [2.0, 1.0]) <= 0.6 * fitted([2.0, 1.0]) + 1e-6
+    @test PCC.node_value(PROBLEM, fitted, [2.0, 0.0]) <= 1 + 1e-6
+    @test PCC.node_value(PROBLEM, fitted, A * [2.0, 1.0]) <=
+          0.6 * PCC.node_value(PROBLEM, fitted, [2.0, 1.0]) + 1e-6
     system = PCC.switched_system([A])
     @test PCC.is_closed_under(PCC.LinearCopositiveTemplate(), PCC.Composition(), system)
     @test PCC.is_closed_under(
@@ -295,10 +301,10 @@ end
     )
 end
 
-@testset "compatibility constructors return native families" begin
-    @test PCC.DualCopositiveTemplate() isa SetProg.Polytope
-    @test PCC.LinearCopositiveTemplate() isa SetProg.Polytope
-    @test only(PCC.ParallelFacesPolyhedralTemplate(1, 2)) isa SetProg.Polytope
+@testset "compatibility constructors use native families" begin
+    @test PCC.DualCopositiveTemplate().set isa SetProg.Domain
+    @test PCC.LinearCopositiveTemplate() isa SetProg.Domain
+    @test only(PCC.ParallelFacesPolyhedralTemplate(1, 2)).set isa SetProg.Polytope
     @test only(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])) isa
           SetProg.Polytope
     @test length(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 2
@@ -307,8 +313,14 @@ end
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(0, 2)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(Matrix{Float64}[])
     @test_throws ArgumentError PCC.planar_conic_partition(0)
-    @test PCC.DualCopositiveFunction([2.0, 3.0])([1.0, 1.0]) ≈ 0.5
-    @test PCC.LinearCopositiveFunction([2.0, 3.0])([1.0, 1.0]) ≈ 5
+    @test PCC.node_value(PROBLEM,
+        PCC.DualCopositiveFunction([2.0, 3.0]),
+        [1.0, 1.0],
+    ) ≈ 0.5
+    @test PCC.node_value(PROBLEM,
+        PCC.LinearCopositiveFunction([2.0, 3.0]),
+        [1.0, 1.0],
+    ) ≈ 5
 end
 
 end

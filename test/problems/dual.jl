@@ -21,7 +21,8 @@ edgeset(g) = Set(
 )
 
 # The numbers a fitted node function is made of, whatever the template.
-coefficients(V::SetProg.Sets.Ellipsoid) = Matrix(V)
+coefficients(V::SetProg.Sets.Ellipsoid) = V.Q
+coefficients(V::SetProg.Sets.PolarPoint) = V.a
 coefficients(V::SetProg.Sets.Intersection) = coefficients(V.set)
 coefficients(V::SetProg.Sets.Polar) = coefficients(SetProg.polar(V))
 coefficients(V::SetProg.Sets.Piecewise) = reduce(vcat, [s.a for s in V.sets])

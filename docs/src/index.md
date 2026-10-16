@@ -71,8 +71,8 @@ piecewise families, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
 ## Scope
 
 Stability uses SetProg families directly. Safety and optimal control retain
-the legacy quadratic template until their migration. [`compare`](@ref) is stated for stability, as in the
-literature, and [`refine`](@ref) runs on stability;
+the legacy quadratic template until their migration. [`compare`](@ref) is stated
+for stability, as in the literature, and [`refine`](@ref) runs on stability;
 [What works with what](@ref) gives the full table. A bound is always an upper
 bound, and a negative answer means that no certificate was found in this
 template on this graph, not that the property fails.

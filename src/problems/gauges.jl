@@ -1,0 +1,410 @@
+const _LinearPolytope = SetProg.Sets.Piecewise{<:Any, <:SetProg.Sets.PolarPoint}
+const _LinearCopositiveSet = SetProg.Sets.Intersection{<:Any, <:SetProg.Sets.PolarPoint}
+
+_is_linear_copositive(::SetProg.AbstractVariable) = false
+_is_linear_copositive(f::SetProg.Domain{<:SetProg.Polytope}) =
+    f.set.piecewise === nothing &&
+    (f.domain === SetProg.MOI.Nonnegatives || f.domain isa SetProg.MOI.Nonnegatives)
+
+# PCC normalization policy; construction is delegated to the native family.
+struct _NormalizedFamily{S <: SetProg.AbstractVariable, R} <: SetProg.AbstractVariable
+    set::S
+    reference::R
+    contains_reference::Bool
+    symmetric::Bool
+    dimension::Union{Int, Nothing}
+end
+_NormalizedFamily(set, reference; contains_reference = true, symmetric = false) =
+    _NormalizedFamily(set, reference, contains_reference, symmetric, set.dimension)
+Base.:(==)(a::_NormalizedFamily, b::_NormalizedFamily) =
+    a.set == b.set &&
+    a.reference == b.reference &&
+    a.contains_reference == b.contains_reference &&
+    a.symmetric == b.symmetric
+Base.hash(f::_NormalizedFamily, h::UInt) =
+    hash((f.set, f.reference, f.contains_reference, f.symmetric), h)
+SetProg.Sets.space_variables(f::_NormalizedFamily) = SetProg.Sets.space_variables(f.set)
+SetProg.variable_polyvars(
+    f::_NormalizedFamily,
+    spaces::SetProg.Spaces,
+    index::SetProg.SpaceIndex,
+) = SetProg.variable_polyvars(f.set, spaces, index)
+function SetProg.variable_set(
+    model::JuMP.AbstractModel,
+    f::_NormalizedFamily,
+    space::SetProg.Space,
+    n,
+    x,
+)
+    return SetProg.variable_set(model, f.set, space, n, x)
+end
+
+_is_parallelotope(f) = f isa _NormalizedFamily && f.symmetric && f.set isa SetProg.Polytope
+
+"""
+    homogeneity_degree(family)
+
+The degree of the homogeneous gauge used to represent a set family.
+"""
+homogeneity_degree(::Union{SetProg.Ellipsoid, SetProg.Sets.Ellipsoid}) = 2
+homogeneity_degree(f::_NormalizedFamily) = homogeneity_degree(f.set)
+homogeneity_degree(
+    ::Union{
+        SetProg.Polytope,
+        SetProg.Sets.PolarPoint,
+        SetProg.Sets.Piecewise{<:Any, <:SetProg.Sets.PolarPoint},
+    },
+) = 1
+homogeneity_degree(
+    family::Union{SetProg.PolySet, SetProg.Sets.PolySet, SetProg.Sets.ConvexPolySet},
+) = family.degree
+homogeneity_degree(
+    set::Union{SetProg.Domain, SetProg.Sets.Polar, SetProg.Sets.Intersection},
+) = homogeneity_degree(set.set)
+function homogeneity_degree(families::AbstractVector{<:SetProg.AbstractVariable})
+    isempty(families) && throw(ArgumentError("at least one set family is required"))
+    degrees = unique(homogeneity_degree.(families))
+    length(degrees) == 1 ||
+        throw(ArgumentError("every node must have the same gauge degree"))
+    return only(degrees)
+end
+
+"""
+    _with_dimension(family, dimension; variables = nothing)
+
+Fill the dimension of a homogeneous gauge family, validating explicit data.
+`variables` supplies a shared polynomial coordinate system when needed.
+"""
+function _with_dimension(family::SetProg.AbstractVariable, n::Integer; variables = nothing)
+    n > 0 || throw(ArgumentError("the dimension must be positive"))
+    family.dimension === nothing || family.dimension == n || throw(DimensionMismatch())
+    return _with_dimension(family, Int(n), variables)
+end
+function _with_dimension(family::SetProg.Ellipsoid, n, vars)
+    family.symmetric || throw(ArgumentError("a homogeneous ellipsoid must be symmetric"))
+    family.point === nothing && family.superset === nothing ||
+        throw(ArgumentError("point and superset are not supported for homogeneous gauges"))
+    return SetProg.Ellipsoid(;
+        symmetric = true,
+        dimension = n,
+        piecewise = family.piecewise,
+    )
+end
+function _with_dimension(family::SetProg.Domain, n, vars)
+    set = if _is_linear_copositive(family)
+        SetProg.Polytope(; symmetric = family.set.symmetric, dimension = n)
+    else
+        _with_dimension(family.set, n, vars)
+    end
+    return SetProg.Domain(set, family.domain)
+end
+function _with_dimension(family::SetProg.Polytope, n, vars)
+    family.piecewise !== nothing ||
+        throw(ArgumentError("a polytope gauge requires a partition"))
+    return SetProg.Polytope(;
+        symmetric = family.symmetric,
+        dimension = n,
+        piecewise = family.piecewise,
+    )
+end
+function _with_dimension(family::_NormalizedFamily, n, vars)
+    return _NormalizedFamily(
+        _with_dimension(family.set, n, vars),
+        family.reference;
+        contains_reference = family.contains_reference,
+        symmetric = family.symmetric,
+    )
+end
+function _with_dimension(family::SetProg.PolySet, n, vars)
+    family.symmetric ||
+        throw(ArgumentError("a homogeneous polynomial set must be symmetric"))
+    family.point === nothing && family.superset === nothing ||
+        throw(ArgumentError("point and superset are not supported for homogeneous gauges"))
+    x =
+        family.variables === nothing ? (vars === nothing ? SetProg.new_polyvars(n) : vars) :
+        family.variables
+    length(x) == n || throw(DimensionMismatch())
+    return SetProg.PolySet(;
+        symmetric = true,
+        degree = family.degree,
+        dimension = n,
+        convex = family.convex,
+        variables = x,
+        basis = family.basis,
+    )
+end
+"""
+    _unit_set(family)
+
+The unit gauge used to normalize a set variable in a homogeneous certificate.
+"""
+function _unit_set(f::SetProg.Ellipsoid)
+    ball = SetProg.Sets.Ellipsoid(
+        LinearAlgebra.Symmetric(Matrix{Float64}(LinearAlgebra.I, f.dimension, f.dimension)),
+    )
+    f.piecewise === nothing && return ball
+    return SetProg.Sets.Piecewise(
+        [ball for _ in SetProg.halfspaces(f.piecewise)],
+        f.piecewise,
+    )
+end
+_unit_set(f::SetProg.Domain{<:SetProg.Polytope}) =
+    LinearCopositiveFunction(ones(f.dimension))
+function _unit_set(f::SetProg.Polytope)
+    return SetProg.Sets.Piecewise(
+        [SetProg.Sets.PolarPoint(h.a / h.β) for h in SetProg.halfspaces(f.piecewise)],
+        f.piecewise,
+    )
+end
+
+function _unit_set(f::_NormalizedFamily)
+    if f.reference isa Real
+        unit = LinearCopositiveFunction(fill(f.reference, f.dimension))
+        return f.contains_reference ? SetProg.polar(unit) : unit
+    end
+    return f.reference
+end
+
+"""
+    add_function_variables!(model, family, dimension, node)
+
+Create a homogeneous set variable, named for `node`, for a certificate model.
+"""
+function add_function_variables!(
+    model::JuMP.Model,
+    family::SetProg.AbstractVariable,
+    n::Integer,
+    node::Integer,
+)
+    variable = _with_dimension(family, n)
+    return JuMP.@variable(model, variable_type = variable, base_name = "S_$node")
+end
+
+"""
+    add_normalization!(model, family, S; conditioning_bound = Inf)
+
+Exclude the zero gauge by inclusion with a fixed reference set. The inclusion
+direction and representation let SetProg select the modeling space.
+A finite ellipsoid conditioning bound also requires
+`Q ≤ conditioning_bound * LinearAlgebra.I`.
+"""
+function add_normalization!(
+    model::JuMP.Model,
+    family::SetProg.AbstractVariable,
+    S::SetProg.SetVariableRef;
+    conditioning_bound::Real = Inf,
+)
+    conditioning_bound >= 1 || throw(ArgumentError("conditioning_bound must be at least 1"))
+    unit = _unit_set(S.set)
+    if family isa _NormalizedFamily && family.contains_reference
+        JuMP.@constraint(model, unit ⊆ S)
+    else
+        JuMP.@constraint(model, S ⊆ unit)
+    end
+    if family isa _NormalizedFamily && family.symmetric
+        n = family.dimension
+        JuMP.@constraint(model, (-Matrix{Float64}(LinearAlgebra.I, n, n)) * S ⊆ S)
+    end
+    if isfinite(conditioning_bound)
+        S.set isa SetProg.Ellipsoid && S.set.piecewise === nothing ||
+            throw(ArgumentError("conditioning bounds require an ellipsoid"))
+        bound = SetProg.Sets.Ellipsoid(
+            LinearAlgebra.Symmetric(
+                conditioning_bound *
+                Matrix{Float64}(LinearAlgebra.I, S.set.dimension, S.set.dimension),
+            ),
+        )
+        JuMP.@constraint(model, bound ⊆ S)
+    end
+    return nothing
+end
+
+"""
+    add_decrease!(model, family, source, destination, A; scale = 1)
+
+Require `V_destination(A * x) ≤ scale * V_source(x)`, using set inclusion.
+"""
+function add_decrease!(
+    model::JuMP.Model,
+    family::SetProg.AbstractVariable,
+    source::SetProg.SetVariableRef,
+    destination::SetProg.SetVariableRef,
+    A::AbstractMatrix;
+    scale::Real = 1,
+)
+    scale >= 0 || throw(ArgumentError("the scale must be nonnegative"))
+    if iszero(scale)
+        iszero(A) || JuMP.@constraint(model, zero(JuMP.AffExpr) >= 1)
+        return nothing
+    end
+    γ = scale^(1 / homogeneity_degree(family))
+    JuMP.@constraint(model, (A / γ) * source ⊆ destination)
+    return nothing
+end
+
+"""
+    solution_value(family, variable)
+
+The fitted set with solver values substituted for its variables.
+"""
+solution_value(::SetProg.AbstractVariable, variable::SetProg.SetVariableRef) =
+    JuMP.value(variable)
+
+"""
+    decrease_slack(family, source, destination, A; scale = 1)
+
+Measure the fitted gauge's decrease condition. A nonnegative slack certifies
+that the modeled edge inequality holds. Polynomial and piecewise-quadratic
+slacks require a separate optimization and are not implemented.
+"""
+function decrease_slack(
+    ::SetProg.Ellipsoid,
+    source::SetProg.Sets.Ellipsoid,
+    destination::SetProg.Sets.Ellipsoid,
+    A;
+    scale = 1,
+)
+    return minimum(
+        LinearAlgebra.eigvals(
+            LinearAlgebra.Symmetric(Matrix(scale * source.Q - A' * destination.Q * A)),
+        ),
+    )
+end
+function decrease_slack(family::SetProg.AbstractVariable, source, destination, A; scale = 1)
+    return throw(ArgumentError("decrease slacks are not implemented for $(typeof(family))"))
+end
+
+"""
+    _supports_dual(family)
+
+Whether the fitted homogeneous gauge has an implemented dual gauge family.
+"""
+_supports_dual(::SetProg.AbstractVariable) = false
+_supports_dual(f::SetProg.Ellipsoid) = f.symmetric && f.piecewise === nothing
+_supports_dual(f::SetProg.Domain) = _is_linear_copositive(f)
+_supports_dual(f::_NormalizedFamily) = _supports_dual(f.set)
+
+"""
+    _dual_family(family)
+
+The family of dual homogeneous gauges. On the positive orthant this uses
+blocking duality between positive simplices and boxes.
+"""
+_dual_family(f::SetProg.Ellipsoid) =
+    _supports_dual(f) ? f :
+    throw(ArgumentError("piecewise ellipsoid duals are not implemented"))
+_dual_family(f::SetProg.Domain) = _NormalizedFamily(f, 1)
+function _dual_family(f::_NormalizedFamily)
+    if f.contains_reference && f.reference == 1
+        return f.set
+    end
+    return _NormalizedFamily(
+        f.set,
+        f.reference;
+        contains_reference = !f.contains_reference,
+        symmetric = f.symmetric,
+    )
+end
+
+"""
+    _dual_value(set)
+
+The fitted dual gauge, represented as a set in the primal space.
+"""
+_dual_value(set::SetProg.Sets.Ellipsoid) =
+    SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(inv(set.Q)))
+
+_dual_value(
+    set::Union{
+        _LinearCopositiveSet,
+        SetProg.Sets.PolarOf{<:_LinearCopositiveSet},
+        _LinearPolytope,
+        SetProg.Sets.PolarOf{<:_LinearPolytope},
+    },
+) = SetProg.Polyhedra.polar(set)
+
+# A convex piecewise-linear gauge is the maximum of its linear pieces.
+_polytope_value(set::_LinearPolytope, x) =
+    maximum(piece -> LinearAlgebra.dot(piece.a, x), set.sets)
+
+_gauge(V::_LinearPolytope, x) = _polytope_value(V, x)
+
+function _polytope_slack(source::_LinearPolytope, destination::_LinearPolytope, A, scale)
+    return minimum(
+        scale * LinearAlgebra.dot(s.a, SetProg.Polyhedra.coord(r)) -
+        _polytope_value(destination, A * SetProg.Polyhedra.coord(r)) for
+        (s, cone) in zip(source.sets, source.pieces) for r in SetProg.rays(cone)
+    )
+end
+function decrease_slack(
+    ::SetProg.Polytope,
+    source::_LinearPolytope,
+    destination::_LinearPolytope,
+    A;
+    scale = 1,
+)
+    return _polytope_slack(source, destination, A, scale)
+end
+function decrease_slack(
+    ::SetProg.Polytope,
+    source::SetProg.Sets.PolarOf{<:_LinearPolytope},
+    destination::SetProg.Sets.PolarOf{<:_LinearPolytope},
+    A;
+    scale = 1,
+)
+    return _polytope_slack(
+        SetProg.Polyhedra.polar(destination),
+        SetProg.Polyhedra.polar(source),
+        A',
+        scale,
+    )
+end
+function decrease_slack(
+    ::SetProg.Domain{<:SetProg.Polytope},
+    source::_LinearCopositiveSet,
+    destination::_LinearCopositiveSet,
+    A;
+    scale = 1,
+)
+    # A negative matrix entry sends an orthant direction outside the domain.
+    all(>=(0), A) || return -Inf
+    return minimum(scale * source.set.a - A' * destination.set.a)
+end
+
+function decrease_slack(f::_NormalizedFamily, source, destination, A; scale = 1)
+    return decrease_slack(f.set, source, destination, A; scale)
+end
+function decrease_slack(
+    ::SetProg.Domain{<:SetProg.Polytope},
+    source::SetProg.Sets.PolarOf{<:_LinearCopositiveSet},
+    destination::SetProg.Sets.PolarOf{<:_LinearCopositiveSet},
+    A;
+    scale = 1,
+)
+    all(>=(0), A) || return -Inf
+    return minimum(
+        scale * SetProg.polar(destination).set.a - A * SetProg.polar(source).set.a,
+    )
+end
+
+_gauge(V::SetProg.Sets.Ellipsoid, x) = LinearAlgebra.dot(x, V.Q * x)
+_gauge(V::SetProg.Sets.PolarPoint, x) = LinearAlgebra.dot(V.a, x)
+function _gauge(V::SetProg.Sets.Intersection, x)
+    return x in V.domain ? _gauge(V.set, x) : Inf
+end
+function _gauge(V::SetProg.Sets.Piecewise, x)
+    i = findfirst(cone -> x in cone, V.pieces)
+    return _gauge(V.sets[i], x)
+end
+function _gauge(V::SetProg.Sets.PolarOf{<:_LinearCopositiveSet}, x)
+    inner = SetProg.polar(V)
+    return x in inner.domain ? maximum(x ./ inner.set.a) : Inf
+end
+function _gauge(V::SetProg.Sets.PolarOf{<:_LinearPolytope}, x)
+    inner = SetProg.polar(V)
+    return maximum(
+        LinearAlgebra.dot(x, SetProg.Polyhedra.coord(r)) /
+        LinearAlgebra.dot(s.a, SetProg.Polyhedra.coord(r)) for
+        (s, cone) in zip(inner.sets, inner.pieces) for r in SetProg.rays(cone)
+    )
+end

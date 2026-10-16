@@ -325,8 +325,7 @@ end
 
     moved = PCC.reindex(template, PCC.origins(lifted))
     @test length(moved) == PCC.n_nodes(PCC.graph(lifted))
-    @test getproperty.(moved, :transform) ==
-          [template[o].transform for o in PCC.origins(lifted)]
+    @test moved == [template[o] for o in PCC.origins(lifted)]
 
     # A data-free template is its own reindexing.
     @test PCC.reindex(SetProg.Ellipsoid(symmetric = true), PCC.origins(lifted)) ==

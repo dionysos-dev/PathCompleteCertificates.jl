@@ -6,8 +6,9 @@ CurrentModule = PathCompleteCertificates
 
 For stability, a template is a SetProg set family. Pass it directly to
 [`certify`](@ref), [`jsr_bound`](@ref), [`compare`](@ref), or [`refine`](@ref).
-[`functions`](@ref) returns fitted SetProg sets, each callable as `V(x)`.
-The homogeneous sublevel function is the node's Lyapunov function.
+[`functions`](@ref) returns fitted SetProg sets. Evaluate a node with
+`node_value(problem, V, x)`, or the common Lyapunov function with
+`certificate(x)`.
 
 ```julia
 using SetProg
@@ -20,9 +21,9 @@ certificate = PCC.jsr_bound(family, graph, problem; optimizer)
 | SetProg family | Node function | Degree | Program |
 | :-- | :-- | :-: | :-- |
 | `Ellipsoid(symmetric = true)` | `x'Qx` | 2 | semidefinite |
-| `Polytope(piecewise = :orthant)` | `c'x` on the nonnegative orthant | 1 | linear |
-| `Polytope(piecewise = :orthant, polar = true)` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
-| `Polytope(piecewise = :orthants, transform = G', polar = true)` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
+| `Domain(Polytope(symmetric = true), MOI.Nonnegatives)` | `c'x` on the nonnegative orthant | 1 | linear |
+| `DualCopositiveTemplate()` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
+| `ParallelFacesPolyhedralTemplate([G])` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
 | `PolySet(symmetric = true, degree = 2d)` | sum-of-squares polynomial | 2d | semidefinite |
 | `Ellipsoid(symmetric = true, piecewise = partition)` | quadratic on each partition cone | 2 | semidefinite |
 | `Polytope(symmetric = true, piecewise = partition)` | linear on each partition cone | 1 | linear |
@@ -32,13 +33,13 @@ an error explaining the missing extension. Polynomial variables may be
 supplied with `variables = x`, or inferred in a shared coordinate system.
 SetProg is a direct dependency of PCC; its polynomial dependencies are optional.
 
-The four polyhedral families use the same piecewise-linear representation.
-The `:orthant` partition has one linear piece, restricted to the nonnegative
-orthant; `:orthants` is a weighted absolute-value sum. Taking the polar gives
-a box or parallelotope. Partition polytopes describe the linear pieces' regions
-through the cones over their facets, allowing SetProg to use facet adjacency.
-`polar` specifies the family;
-SetProg chooses its modeling space from the constraints.
+`Domain(Polytope(symmetric = true), MOI.Nonnegatives)` has one linear piece
+restricted to the nonnegative orthant, with its dimension inferred from the
+model. PCC normalizes its coefficients to be at least one using a fixed
+unit-simplex inclusion. Partition polytopes describe the linear pieces'
+regions through the cones over their facets, retaining facet adjacency.
+A cross-polytope supplies the orthant partition for parallel-face families.
+SetProg chooses the modeling space from the normalization constraints.
 
 The existing `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
 `ParallelFacesPolyhedralTemplate`, and `ConicPolyhedralTemplate` constructors
@@ -49,6 +50,14 @@ are no longer accepted. Its `min_scale` keyword scales the partition gauge
 used for normalization.
 The other polyhedral compatibility constructors retain their coefficient-floor
 keyword arguments.
+
+`DualCopositiveTemplate` and `ParallelFacesPolyhedralTemplate` retain their
+compatibility constructors. A PCC normalization adapter stores the native
+SetProg family and a fixed reference set. Requiring that reference to lie in
+the variable selects dual modeling through SetProg's inclusion rules;
+`min_weight` remains a lower bound on the box widths. Parallel-face families
+also impose central symmetry using `-S ⊆ S`. No variable polarity option is
+used, and normalization and gauge evaluation stay in PCC.
 
 The degree `p`, returned by [`homogeneity_degree`](@ref), satisfies
 `V(c*x) = c^p * V(x)`. Stability uses `rate^p` in each edge inequality,

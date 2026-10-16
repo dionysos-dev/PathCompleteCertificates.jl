@@ -8,7 +8,8 @@ Whether the SetProg family applies to the system. Orthant gauges require
 nonnegative dynamics.
 """
 is_applicable(::SetProg.AbstractVariable, system) = true
-is_applicable(f::SetProg.Polytope, system) = f.piecewise !== :orthant || is_positive(system)
+is_applicable(f::SetProg.Domain, system) = !_is_linear_copositive(f) || _is_positive(system)
+is_applicable(f::_NormalizedFamily, system) = is_applicable(f.set, system)
 is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
     all(f -> is_applicable(f, system), families)
 
@@ -20,33 +21,37 @@ Whether a SetProg gauge family admits the operation required by a graph lift.
 is_closed_under(::SetProg.AbstractVariable, ::Operation, system) = false
 is_closed_under(::Union{SetProg.Ellipsoid, SetProg.PolySet}, ::Addition, system) = true
 is_closed_under(f::SetProg.Ellipsoid, ::Composition, system) =
-    f.piecewise === nothing && is_invertible(system)
-is_closed_under(::SetProg.PolySet, ::Composition, system) = is_invertible(system)
+    f.piecewise === nothing && _is_invertible(system)
+is_closed_under(::SetProg.PolySet, ::Composition, system) = _is_invertible(system)
 is_closed_under(f::SetProg.Ellipsoid, ::InverseComposition, system) =
-    f.piecewise === nothing && is_invertible(system)
-is_closed_under(::SetProg.PolySet, ::InverseComposition, system) = is_invertible(system)
-is_closed_under(f::SetProg.Polytope, ::Addition, system) =
-    f.piecewise isa SetProg.Polyhedra.Rep || !f.polar
-is_closed_under(f::SetProg.Polytope, ::Maximum, system) = f.piecewise isa Symbol && f.polar
-function is_closed_under(f::SetProg.Polytope, ::Composition, system)
-    return f.piecewise === :orthant &&
-           !f.polar &&
-           all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), mode_matrices(system))
-end
-function is_closed_under(f::SetProg.Polytope, ::InverseComposition, system)
-    return f.piecewise === :orthant &&
-           !f.polar &&
-           is_invertible(system) &&
-           all(A -> all(>=(0), inv(A)), mode_matrices(system))
-end
+    f.piecewise === nothing && _is_invertible(system)
+is_closed_under(::SetProg.PolySet, ::InverseComposition, system) = _is_invertible(system)
+is_closed_under(::SetProg.Polytope, ::Addition, system) = true
+is_closed_under(f::_NormalizedFamily, ::Addition, system) =
+    !f.contains_reference && is_closed_under(f.set, Addition(), system)
+is_closed_under(f::_NormalizedFamily, ::Maximum, system) = f.contains_reference
+is_closed_under(f::_NormalizedFamily, ::Composition, system) =
+    !f.contains_reference && is_closed_under(f.set, Composition(), system)
+is_closed_under(f::_NormalizedFamily, ::InverseComposition, system) =
+    !f.contains_reference && is_closed_under(f.set, InverseComposition(), system)
+is_closed_under(f::SetProg.Domain, ::Addition, system) = _is_linear_copositive(f)
+is_closed_under(f::SetProg.Domain, ::Composition, system) =
+    _is_linear_copositive(f) &&
+    all(A -> all(>=(0), A) && all(>(0), sum(A; dims = 1)), state_matrices(system))
+is_closed_under(f::SetProg.Domain, ::InverseComposition, system) =
+    _is_linear_copositive(f) &&
+    _is_invertible(system) &&
+    all(A -> all(>=(0), inv(A)), state_matrices(system))
 function is_closed_under(
     families::AbstractVector{<:SetProg.AbstractVariable},
     operation::Operation,
     system,
 )
-    if operation isa Maximum &&
-       all(f -> f isa SetProg.Polytope && f.piecewise === :orthants && f.polar, families)
-        return allequal(getproperty.(families, :transform))
+    if operation isa Maximum && all(_is_parallelotope, families)
+        return allequal([
+            Set(Tuple(SetProg.Polyhedra.coord(p)) for p in SetProg.points(f.set.piecewise))
+            for f in families
+        ])
     end
     return allequal(families) && is_closed_under(first(families), operation, system)
 end
@@ -98,4 +103,3 @@ function _prepared_families(family::_SetFamily, dimension, count)
     return [_with_dimension(f, dimension; variables = x) for f in families]
 end
 
-node_value(::_SetFamily, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)

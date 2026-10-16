@@ -18,6 +18,9 @@ end
 
 dual(problem::StabilityProblem) = StabilityProblem(dual(problem.system))
 
+node_value(::StabilityProblem, V::SetProg.Sets.AbstractSet, x::AbstractVector{<:Real}) =
+    _gauge(V, x)
+
 """
     StabilityCertificate
 

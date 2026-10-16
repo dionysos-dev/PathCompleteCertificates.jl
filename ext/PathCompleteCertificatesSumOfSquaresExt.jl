@@ -14,4 +14,9 @@ function PCC._unit_set(family::SetProg.PolySet)
     return SetProg.Sets.PolySet(family.degree, gram)
 end
 
+function PCC._gauge(V::Union{SetProg.Sets.PolySet, SetProg.Sets.ConvexPolySet}, x)
+    p = SumOfSquares.MP.polynomial(V.p)
+    return p(SumOfSquares.MP.variables(p) => x)
+end
+
 end
