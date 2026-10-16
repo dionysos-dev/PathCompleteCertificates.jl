@@ -101,13 +101,17 @@ function optimization_model(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    n = _check_optimal_control_data(graph, problem; path_complete = path_complete)
+    n = _check_optimal_control_data(
+        graph,
+        problem;
+        check_path_complete = check_path_complete,
+    )
     A = state_matrices(problem.system)
     B = input_matrices(problem.system)
     m = size(first(B), 2)
@@ -165,7 +169,7 @@ function certify(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     model = optimization_model(
         template,
@@ -173,7 +177,7 @@ function certify(
         problem;
         optimizer = optimizer,
         psd_margin = psd_margin,
-        path_complete = path_complete,
+        check_path_complete = check_path_complete,
     )
 
     JuMP.optimize!(model)
@@ -199,9 +203,9 @@ function certify(
 end
 
 # Validate the data and return the state dimension.
-function _check_optimal_control_data(graph, problem; path_complete::Bool = true)
+function _check_optimal_control_data(graph, problem; check_path_complete::Bool = true)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
-    n = _check_modes(graph, problem.system; path_complete = path_complete)
+    n = _check_modes(graph, problem.system; check_path_complete = check_path_complete)
 
     # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
     modes = n_modes(problem.system)

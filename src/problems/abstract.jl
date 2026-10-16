@@ -64,11 +64,11 @@ dual(problem::AbstractProblem) =
 
 # Validate the modes against the graph and return the state dimension; the
 # matrices themselves were checked when the problem was built.
-# `path_complete = false` skips the path-completeness test, which is expensive.
+# `check_path_complete = false` skips the path-completeness test, which is expensive.
 function _check_modes(
     graph::CertificateGraph,
     system::_HS.HybridSystem;
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     A = state_matrices(system)
 
@@ -77,7 +77,7 @@ function _check_modes(
             throw(ArgumentError("edge label $mode does not index a mode in A"))
     end
 
-    if path_complete && !is_path_complete(graph, 1:length(A))
+    if check_path_complete && !is_path_complete(graph, 1:length(A))
         throw(
             ArgumentError(
                 "the graph is not path-complete for the system's modes, " *

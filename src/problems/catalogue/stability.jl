@@ -55,12 +55,16 @@ function optimization_model(
     problem::StabilityProblem;
     optimizer,
     rate::Real = 1,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
-    dimension =
-        _check_stability_data(template, graph, problem; path_complete = path_complete)
+    dimension = _check_stability_data(
+        template,
+        graph,
+        problem;
+        check_path_complete = check_path_complete,
+    )
     A = state_matrices(problem.system)
     degree = homogeneity_degree(template)
 
@@ -98,7 +102,7 @@ function jsr_bound(
     rtol::Real = 1e-3,
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     rtol > 0 || throw(ArgumentError("rtol must be positive"))
 
@@ -107,7 +111,12 @@ function jsr_bound(
     initial_upper > 0 || throw(ArgumentError("initial_upper must be positive"))
 
     # Check path-completeness once; the models built below skip it.
-    _check_stability_data(template, graph, problem; path_complete = path_complete)
+    _check_stability_data(
+        template,
+        graph,
+        problem;
+        check_path_complete = check_path_complete,
+    )
 
     function feasible(rate)
         model = optimization_model(
@@ -116,7 +125,7 @@ function jsr_bound(
             problem;
             optimizer,
             rate,
-            path_complete = false,
+            check_path_complete = false,
         )
         JuMP.optimize!(model)
         return JuMP.is_solved_and_feasible(model; allow_almost = true)
@@ -150,7 +159,7 @@ function jsr_bound(
         problem;
         optimizer = optimizer,
         rate = upper,
-        path_complete = false,
+        check_path_complete = false,
     )
 
     is_feasible(certificate) ||
@@ -170,9 +179,10 @@ function certify(
     problem::StabilityProblem;
     optimizer,
     rate::Real = 1,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
-    model = optimization_model(template, graph, problem; optimizer, rate, path_complete)
+    model =
+        optimization_model(template, graph, problem; optimizer, rate, check_path_complete)
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
@@ -224,9 +234,10 @@ function _check_stability_data(
     template::AbstractTemplate,
     graph::CertificateGraph,
     problem::StabilityProblem;
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
-    dimension = _check_modes(graph, problem.system; path_complete = path_complete)
+    dimension =
+        _check_modes(graph, problem.system; check_path_complete = check_path_complete)
 
     is_applicable(template, problem.system) || throw(
         ArgumentError(

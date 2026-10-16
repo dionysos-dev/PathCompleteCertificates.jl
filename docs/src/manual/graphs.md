@@ -26,7 +26,7 @@ is_path_complete
 
 The test uses the subset construction of automata theory, exponential in the
 number of nodes in the worst case, and runs once per solve.
-`path_complete = false` on an entry point skips it, for a graph whose
+`check_path_complete = false` on an entry point skips it, for a graph whose
 construction guarantees the property, such as a refinement of a path-complete
 graph. If the graph is in fact not path-complete, the result is not a
 certificate and no error is raised.

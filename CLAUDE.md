@@ -129,7 +129,7 @@ access. Never hard-code `Float64` in a signature. No `Base.show`.
   `n_modes` refuses a system whose automaton is not a `OneStateAutomaton`.
 - **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
   the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
-  solve; `path_complete = false` waives it and must never become the default.
+  solve; `check_path_complete = false` waives it and must never become the default.
 - **Verify every citation in the PDF before writing it.** No theorem number without reading it.
 
 ## 6. Commands

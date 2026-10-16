@@ -48,7 +48,7 @@ end
 @testset "the path-completeness check can be waived, and then it is an assertion" begin
     # Deciding path-completeness is PSPACE-complete, so a caller with a large
     # graph, or one whose construction already guarantees the property, needs a
-    # way out. `path_complete = false` is that way out -- and it asserts rather
+    # way out. `check_path_complete = false` is that way out -- and it asserts rather
     # than checks, so the same graph that is rejected by default is accepted.
     two_modes = PCC.switched_system([[0.9 0.0; 0.0 0.9], [0.5 0.0; 0.0 0.5]])
     problem = PCC.StabilityProblem(two_modes)
@@ -77,7 +77,7 @@ end
             problem;
             optimizer = OPTIMIZER,
             rate = 0.95,
-            path_complete = false,
+            check_path_complete = false,
         ),
     )
 end

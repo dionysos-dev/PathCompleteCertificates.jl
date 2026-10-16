@@ -69,12 +69,12 @@ function optimization_model(
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
-    n = _check_safety_data(graph, problem; path_complete = path_complete)
+    n = _check_safety_data(graph, problem; check_path_complete = check_path_complete)
     A = state_matrices(problem.system)
     d = n + 1
 
@@ -139,14 +139,14 @@ function certify(
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     model = optimization_model(
         template,
         graph,
         problem;
         optimizer = optimizer,
-        path_complete = path_complete,
+        check_path_complete = check_path_complete,
     )
 
     JuMP.optimize!(model)
@@ -210,10 +210,10 @@ end
 function _check_safety_data(
     graph::CertificateGraph,
     problem::SafetyProblem;
-    path_complete::Bool = true,
+    check_path_complete::Bool = true,
 )
     _require_one_mode_per_edge(graph, "SafetyProblem")
-    return _check_modes(graph, problem.system; path_complete = path_complete)
+    return _check_modes(graph, problem.system; check_path_complete = check_path_complete)
 end
 
 # A barrier lives in homogeneous coordinates.

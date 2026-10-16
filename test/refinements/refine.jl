@@ -301,15 +301,15 @@ end
     @test PCC.origins(only(PCC.steps(first_step))) == [1, 1]
 end
 
-@testset "path_complete decides the starting graph, and the refinements are trusted after it" begin
+@testset "check_path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings =
         (optimizer = OPTIMIZER, depth_max = 3, algorithm = PCC.TightestNodeSplitting())
     start = PCC.dual(PCC.de_bruijn(1, 2))
 
     # Waiving the check cannot change the answer on a graph that has the
     # property -- it only skips deciding it.
-    checked = PCC.refine(TEMPLATE, start, SHEARED; settings..., path_complete = true)
-    waived = PCC.refine(TEMPLATE, start, SHEARED; settings..., path_complete = false)
+    checked = PCC.refine(TEMPLATE, start, SHEARED; settings..., check_path_complete = true)
+    waived = PCC.refine(TEMPLATE, start, SHEARED; settings..., check_path_complete = false)
 
     @test PCC.rates(checked) == PCC.rates(waived)
     @test PCC.n_nodes.(PCC.graphs(checked)) == PCC.n_nodes.(PCC.graphs(waived))
