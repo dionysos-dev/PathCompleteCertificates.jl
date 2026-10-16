@@ -29,3 +29,6 @@ SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 [extensions]
 PathCompleteCertificatesSumOfSquaresExt = "SumOfSquares"
 PathCompleteCertificatesRecipesBaseExt = "RecipesBase"
+
+[sources]
+SetProg = {url = "https://github.com/blegat/SetProg.jl", rev = "main"}
