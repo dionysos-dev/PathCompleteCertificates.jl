@@ -10,6 +10,8 @@ import PathCompleteCertificates as PCC
 import Clarabel
 import LinearAlgebra
 
+# Keep bisection above the solver tolerance when testing tightness at 1e-4.
+const BISECTION_RTOL = 1e-6
 const OPTIMIZER = Clarabel.Optimizer
 
 # rho(A) = 0.5 exactly, and the quadratic template attains it, so the single
@@ -62,16 +64,11 @@ end
 end
 
 @testset "slack agrees with the inequality it measures" begin
-    certificate = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rate = 0.8,
-    )
+    template = SetProg.Ellipsoid(symmetric = true)
+    certificate = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.8)
 
     V = PCC.functions(certificate)
-    scale = 0.8^PCC.homogeneity_degree(SetProg.Ellipsoid(symmetric = true))
+    scale = 0.8^PCC.homogeneity_degree(template)
 
     for (edge, slack) in zip(PCC.edges(GRAPH), PCC.edge_slacks(certificate))
         src = V[PCC.source(edge)]
@@ -83,7 +80,8 @@ end
 
         # Slack ≥ 0 is exactly the edge inequality holding, sampled.
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, -2.0])
-            @test scale * src(x) - dst(map * x) >= -1e-7
+            @test scale * PCC.node_value(template, PROBLEM, src, x) -
+                  PCC.node_value(template, PROBLEM, dst, map * x) >= -1e-7
         end
     end
 end
@@ -161,7 +159,7 @@ const TWO_NODES = PCC.de_bruijn(1, 2)
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
 
     subgraph = PCC.tight_subgraph(certificate; atol = 1e-4)
@@ -182,7 +180,7 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
 
     # Both modes are rotations of norm 0.9, so every cycle gives exactly 0.9 and
@@ -206,7 +204,7 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
 
     # Every edge is tight, so every node has two tight outgoing edges and the
@@ -221,7 +219,7 @@ end
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
 
     @test PCC.is_jsr_exact(single; atol = 1e-4)
@@ -235,7 +233,7 @@ end
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
     @test PCC.is_jsr_exact(single; atol = 1e-4)
     @test PCC.optimality_gap(single; atol = 1e-4) == 0
@@ -246,7 +244,7 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
     gap = PCC.optimality_gap(rotations; atol = 1e-4)
     @test gap == rotations.rate - PCC.jsr_lower_bound(rotations; atol = 1e-4)
@@ -277,7 +275,7 @@ end
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = 1e-8,
+        rtol = BISECTION_RTOL,
     )
     @test !PCC.is_jsr_exact(single; atol = -1.0)
 end
