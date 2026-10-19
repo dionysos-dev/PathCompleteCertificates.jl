@@ -35,6 +35,14 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
+      # Julia 1.10 does not read Project.toml's source overrides.
+      - name: Install SetProg source on Julia 1.10
+        if: matrix.version == '1.10'
+        shell: julia --project=. {0}
+        run: |
+          using Pkg, TOML
+          source = TOML.parsefile("Project.toml")["sources"]["SetProg"]
+          Pkg.add(PackageSpec(; name = "SetProg", url = source["url"], rev = source["rev"]))
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
