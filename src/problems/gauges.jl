@@ -165,6 +165,30 @@ function _unit_set(f::_NormalizedFamily)
     return f.reference
 end
 
+# Use SetProg's PSD/SOS remainder to enforce normalization at construction.
+_with_superset(::SetProg.AbstractVariable, unit) = nothing
+function _with_superset(f::SetProg.Ellipsoid, unit)
+    # A bound on a cone need not hold globally for its quadratic piece.
+    (f.piecewise !== nothing || f.superset !== nothing) && return nothing
+    return SetProg.Ellipsoid(;
+        symmetric = f.symmetric,
+        dimension = f.dimension,
+        superset = unit,
+    )
+end
+function _with_superset(f::SetProg.PolySet, unit)
+    # SetProg does not support a superset for convex polynomial families.
+    (f.convex || f.superset !== nothing) && return nothing
+    return SetProg.PolySet(;
+        symmetric = f.symmetric,
+        degree = f.degree,
+        dimension = f.dimension,
+        variables = f.variables,
+        basis = f.basis,
+        superset = unit,
+    )
+end
+
 """
     add_function_variables!(model, family, dimension, node)
 
@@ -183,8 +207,9 @@ end
 """
     add_normalization!(model, family, S; conditioning_bound = Inf)
 
-Exclude the zero gauge by inclusion with a fixed reference set. The inclusion
-direction and representation let SetProg select the modeling space.
+Exclude the zero gauge with a fixed reference set. Ellipsoid and polynomial
+families use SetProg's `superset` construction when supported; other families
+use an inclusion constraint.
 A finite ellipsoid conditioning bound also requires
 `Q ≤ conditioning_bound * LinearAlgebra.I`.
 """
@@ -196,7 +221,10 @@ function add_normalization!(
 )
     conditioning_bound >= 1 || throw(ArgumentError("conditioning_bound must be at least 1"))
     unit = _unit_set(S.set)
-    if family isa _NormalizedFamily && family.contains_reference
+    normalized = _with_superset(S.set, unit)
+    if normalized !== nothing
+        S.set = normalized
+    elseif family isa _NormalizedFamily && family.contains_reference
         JuMP.@constraint(model, unit ⊆ S)
     else
         JuMP.@constraint(model, S ⊆ unit)

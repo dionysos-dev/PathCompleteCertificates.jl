@@ -59,6 +59,42 @@ import Clarabel, HiGHS
     end
 end
 
+@testset "Normalization uses a native PSD or SOS remainder" begin
+    @polyvar x[1:2]
+    for (family, dimension) in (
+        (Ellipsoid(symmetric = true), 3),
+        (PolySet(symmetric = true, degree = 4, variables = x), 2),
+    )
+        model = Model(optimizer_with_attributes(Clarabel.Optimizer, MOI.Silent() => true))
+        S = PCC.add_function_variables!(model, family, dimension, 1)
+        original = S.set
+        PCC.add_normalization!(model, original, S)
+        @test S.set.superset !== nothing
+        @test original.superset === nothing
+        @test isempty(SetProg.data(model).constraints)
+        optimize!(model)
+        @test termination_status(model) in (MOI.OPTIMAL, MOI.ALMOST_OPTIMAL)
+        # Only the remainder is constrained; there is no second PSD/SOS cone.
+        @test num_constraints(model; count_variable_in_set_constraints = true) == 1
+        point = ones(dimension)
+        @test PCC._gauge(value(S), point) >=
+              PCC._gauge(PCC._unit_set(original), point) - 1e-6
+    end
+    # Keep normalization over each cone for piecewise ellipsoids; convex
+    # polynomial families do not support the superset construction.
+    partition = PCC.planar_conic_partition(1)
+    for family in (
+        Ellipsoid(symmetric = true, piecewise = partition),
+        PolySet(symmetric = true, degree = 4, convex = true, variables = x),
+    )
+        model = Model()
+        S = PCC.add_function_variables!(model, family, 2, 1)
+        PCC.add_normalization!(model, S.set, S)
+        @test S.set.superset === nothing
+        @test length(SetProg.data(model).constraints) == 1
+    end
+end
+
 @testset "Gauge data and duality" begin
     @test_throws ArgumentError PCC.DualCopositiveTemplate(min_weight = 0)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])
