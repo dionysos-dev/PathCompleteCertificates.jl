@@ -3,7 +3,6 @@ module TestTightEdges
 # Slack is the quantity a refinement step reads: zero means the edge holds the
 # bound up, and a node with two tight outgoing edges is the one to split.
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -22,7 +21,7 @@ const GRAPH = PCC.de_bruijn(1, 1)
 
 @testset "slack is nonnegative where the certificate holds" begin
     loose = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -41,7 +40,7 @@ end
 
 @testset "the bound is attained exactly where an edge goes tight" begin
     bound = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -64,31 +63,35 @@ end
 end
 
 @testset "slack agrees with the inequality it measures" begin
-    template = SetProg.Ellipsoid(symmetric = true)
-    certificate = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.8)
+    certificate = PCC.certify(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM;
+        optimizer = OPTIMIZER,
+        rate = 0.8,
+    )
 
     V = PCC.functions(certificate)
-    scale = 0.8^PCC.homogeneity_degree(template)
+    scale = 0.8^PCC.homogeneity_degree(PCC.QuadraticTemplate())
 
     for (edge, slack) in zip(PCC.edges(GRAPH), PCC.edge_slacks(certificate))
         src = V[PCC.source(edge)]
         dst = V[PCC.dest(edge)]
         map = A[PCC.label(GRAPH, edge)]
 
-        residual = scale * src.Q - transpose(map) * dst.Q * map
+        residual = scale * src.P - transpose(map) * dst.P * map
         @test slack ≈ minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
 
         # Slack ≥ 0 is exactly the edge inequality holding, sampled.
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, -2.0])
-            @test scale * PCC.node_value(template, PROBLEM, src, x) -
-                  PCC.node_value(template, PROBLEM, dst, map * x) >= -1e-7
+            @test scale * src(x) - dst(map * x) >= -1e-7
         end
     end
 end
 
 @testset "every template answers decrease_slack" begin
     quadratic = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -127,7 +130,7 @@ end
 
 @testset "an infeasible certificate has nothing to measure" begin
     tight = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -155,7 +158,7 @@ const TWO_NODES = PCC.de_bruijn(1, 2)
 
 @testset "the tight subgraph keeps the nodes and drops the slack edges" begin
     certificate = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -176,7 +179,7 @@ end
 
 @testset "a cycle bounds the JSR from below, whatever atol was" begin
     certificate = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
@@ -200,7 +203,7 @@ end
 
 @testset "Theorem 4 is sufficient, not necessary" begin
     exact = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
@@ -215,7 +218,7 @@ end
 
     # The one-mode system has a single tight self-loop, so the condition holds.
     single = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -229,7 +232,7 @@ end
 @testset "the optimality gap is zero when proved, the bracket otherwise" begin
     # Theorem 4 holds on the one-mode system: the gap is exactly zero.
     single = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -240,7 +243,7 @@ end
 
     # On the rotations it does not, and the gap is the cycle bracket.
     rotations = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
@@ -259,7 +262,7 @@ end
         PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
     )
     loose = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         PCC.common_graph(2),
         sheared;
         optimizer = OPTIMIZER,
@@ -271,7 +274,7 @@ end
 
     # An exact certificate read with too small a tolerance: no tight cycle, so no claim.
     single = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,

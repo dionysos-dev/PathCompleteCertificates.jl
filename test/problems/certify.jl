@@ -19,7 +19,7 @@ const GRAPH = PCC.de_bruijn(1, 1)
 
 @testset "certify at a fixed rate" begin
     loose = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -34,7 +34,7 @@ end
 
 @testset "an infeasible rate yields a certificate, not an error" begin
     tight = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -56,12 +56,12 @@ end
 
     @test !PCC.is_feasible(tight)
     @test isempty(PCC.functions(tight))
-    @test !any(f -> f isa SetProg.Sets.Ellipsoid, PCC.functions(tight))
+    @test !any(f -> f isa PCC.QuadraticFunction, PCC.functions(tight))
 end
 
 @testset "jsr_bound agrees with certify at the rate it returns" begin
     bound = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -73,7 +73,7 @@ end
 
     # The bisection ends in exactly this solve.
     direct = PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -84,7 +84,7 @@ end
 
 @testset "optimization_model builds without solving" begin
     model = PCC.optimization_model(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         rate = 0.9,
@@ -121,7 +121,7 @@ end
 
     # The common graph is accepted ...
     model = PCC.optimization_model(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         PCC.common_graph(problem.system),
         problem;
         rate = 1.0,
@@ -135,7 +135,7 @@ end
         add_transition!(partial, 1, 1, mode)
     end
     @test_throws ArgumentError PCC.optimization_model(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         partial,
         problem;
         rate = 1.0,

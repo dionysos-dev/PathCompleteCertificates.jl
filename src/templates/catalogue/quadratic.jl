@@ -1,12 +1,12 @@
 """
     QuadraticTemplate(; conditioning_bound = Inf)
 
-Legacy quadratic node functions for safety and optimal control. Stability
-uses `SetProg.Ellipsoid(symmetric = true)` directly instead.
+Quadratic node functions for stability, safety and optimal control. Stability
+uses SetProg's native ellipsoid model and returns the legacy fitted functions.
 Safety evaluates the quadratic in homogeneous coordinates and permits an
 indefinite coefficient matrix; optimal control uses positive quadratic forms.
-The `conditioning_bound` parameter is retained for the legacy normalization
-primitive.
+A finite `conditioning_bound` also imposes `P ≤ conditioning_bound * I` in
+stability, which can exclude every certificate of a stable system.
 
 """
 struct QuadraticTemplate{T <: Real} <: AbstractTemplate

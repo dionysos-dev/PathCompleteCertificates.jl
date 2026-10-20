@@ -4,7 +4,6 @@ module TestCompare
 # HSCC 2023 (Code Ocean 0480330): five graphs on two modes, one positive
 # system, and the rates its main script prints.
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -86,7 +85,7 @@ const A_STAR = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502
 const SYSTEM = PCC.switched_system(A_STAR)
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 
-const QUADRATIC = SetProg.Ellipsoid(; symmetric = true)
+const QUADRATIC = PCC.QuadraticTemplate()
 const COPOSITIVE = PCC.LinearCopositiveTemplate()
 const DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
 const TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)

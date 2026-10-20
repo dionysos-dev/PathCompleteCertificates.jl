@@ -49,7 +49,7 @@ rotation_graph = PCC.de_bruijn(1, 1)
 rotation_problem = PCC.StabilityProblem(PCC.switched_system(ROTATION))
 
 templates = [
-    ("quadratic", SetProg.Ellipsoid(; symmetric = true)),
+    ("quadratic", PCC.QuadraticTemplate()),
     ("polyhedral, fixed facets", PCC.ParallelFacesPolyhedralTemplate(1, 2)),
     (
         "polyhedral, free facets",
@@ -110,7 +110,7 @@ right = plot(;
 
 for (name, graph) in graphs
     certificate = PCC.jsr_bound(
-        SetProg.Ellipsoid(; symmetric = true),
+        PCC.QuadraticTemplate(),
         graph,
         mixed_problem;
         optimizer = OPTIMIZER,
@@ -150,12 +150,12 @@ one_node = PCC.common_graph(mixed_problem.system)
 two_nodes = PCC.de_bruijn(1, 2)
 
 [
-    ("quadratic, 1 node", bound(SetProg.Ellipsoid(; symmetric = true), one_node)),
+    ("quadratic, 1 node", bound(PCC.QuadraticTemplate(), one_node)),
     (
         "degree 4, 1 node",
         bound(SetProg.PolySet(; symmetric = true, degree = 2 * 2, variables = x), one_node),
     ),
-    ("quadratic, 2 nodes", bound(SetProg.Ellipsoid(; symmetric = true), two_nodes)),
+    ("quadratic, 2 nodes", bound(PCC.QuadraticTemplate(), two_nodes)),
     (
         "degree 4, 2 nodes",
         bound(

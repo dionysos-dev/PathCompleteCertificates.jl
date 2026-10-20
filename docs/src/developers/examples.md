@@ -13,7 +13,6 @@ docs build, so a broken example fails the build.
 
 import PathCompleteCertificates as PCC
 import Clarabel
-import SetProg
 
 # Prose is a `# ` comment between code blocks.
 
@@ -23,7 +22,7 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 # The last expression of a block is what the page shows, so end a block with
 # the value worth seeing rather than printing it.
 
-PCC.jsr_bound(SetProg.Ellipsoid(symmetric = true), PCC.de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer)
+PCC.jsr_bound(PCC.QuadraticTemplate(), PCC.de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer)
 ```
 
 - The `# # Title` line is the sidebar entry; `docs/make.jl` reads it from the

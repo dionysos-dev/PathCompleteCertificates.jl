@@ -78,7 +78,7 @@ both ([Duality](@ref)).
 ## `compare`
 
 ```julia
-c = compare(G, H; templates = (SetProg.Ellipsoid(symmetric = true),), system, optimizer)
+c = compare(G, H; templates = (QuadraticTemplate(),), system, optimizer)
 lifts(c)        # the lifts tried, in order
 simulations(c)  # lift => simulation, for each lift whose lifted G simulates H
 templates(c)    # the templates given for which H is proved no worse than G

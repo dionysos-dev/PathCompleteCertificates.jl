@@ -7,12 +7,11 @@
 # Bruijn graph of the same size.
 
 import PathCompleteCertificates as PCC
-import SetProg
 import Clarabel
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
-const TEMPLATE = SetProg.Ellipsoid(; symmetric = true)
+const TEMPLATE = PCC.QuadraticTemplate()
 
 # A rotation and a shear. No single quadratic function attains the joint
 # spectral radius of this pair, so the bound on the one-node graph is not

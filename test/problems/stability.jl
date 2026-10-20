@@ -1,7 +1,6 @@
 
 module TestStability
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -30,7 +29,7 @@ const OPTIMIZER = Clarabel.Optimizer
 
     @test_throws ArgumentError PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             mode_1_only,
             problem;
             optimizer = OPTIMIZER,
@@ -39,7 +38,7 @@ const OPTIMIZER = Clarabel.Optimizer
     )
 
     @test_throws ArgumentError PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         mode_1_only,
         problem;
         optimizer = OPTIMIZER,
@@ -61,7 +60,7 @@ end
 
     @test_throws ArgumentError PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             mode_1_only,
             problem;
             optimizer = OPTIMIZER,
@@ -73,7 +72,7 @@ end
     # which is exactly the risk the caller has taken on.
     @test PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             mode_1_only,
             problem;
             optimizer = OPTIMIZER,
@@ -101,7 +100,7 @@ end
     @test PCC.is_path_complete(graph, 1:2)
 
     result = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         graph,
         problem;
         optimizer = OPTIMIZER,
@@ -115,7 +114,7 @@ end
 @testset "quadratic stability" begin
     @test PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             GRAPH,
             PROBLEM;
             optimizer = OPTIMIZER,
@@ -125,7 +124,7 @@ end
 
     @test !PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             GRAPH,
             PROBLEM;
             optimizer = OPTIMIZER,
@@ -134,7 +133,7 @@ end
     )
 
     result = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -199,12 +198,12 @@ end
 @testset "every template agrees on the rate" begin
     # The point of `homogeneity_degree`: the same system and graph, three templates
     # of two different degrees, one answer.
-    @test PCC.homogeneity_degree(SetProg.Ellipsoid(symmetric = true)) == 2
+    @test PCC.homogeneity_degree(PCC.QuadraticTemplate()) == 2
     @test PCC.homogeneity_degree(PCC.LinearCopositiveTemplate()) == 1
     @test PCC.homogeneity_degree(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 1
 
     bounds = map((
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         PCC.LinearCopositiveTemplate(),
         PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
@@ -230,7 +229,7 @@ end
     problem = PCC.StabilityProblem(PCC.switched_system([stretched]))
 
     default = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         graph,
         problem;
         optimizer = OPTIMIZER,
@@ -240,7 +239,7 @@ end
     @test abs(default.rate - 0.9) <= 0.01
     @test PCC.is_feasible(
         PCC.certify(
-            SetProg.Ellipsoid(symmetric = true),
+            PCC.QuadraticTemplate(),
             graph,
             problem;
             optimizer = OPTIMIZER,
@@ -251,24 +250,17 @@ end
     # The cap still available, and still conservative -- which is the point of
     # making the caller ask for it.
     capped = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(; conditioning_bound = 100),
         graph,
         problem;
         optimizer = OPTIMIZER,
-        conditioning_bound = 100,
         rtol = 1e-3,
     )
 
     @test capped.rate > default.rate + 0.1
     @test capped.rate >= 0.9          # still a sound upper bound
 
-    @test_throws ArgumentError PCC.certify(
-        SetProg.Ellipsoid(symmetric = true),
-        graph,
-        problem;
-        optimizer = OPTIMIZER,
-        conditioning_bound = 0.5,
-    )
+    @test_throws ArgumentError PCC.QuadraticTemplate(; conditioning_bound = 0.5)
 end
 
 @testset "input validation" begin
@@ -276,7 +268,7 @@ end
     add_transition!(invalid_label_graph, 1, 1, 2)
 
     @test_throws ArgumentError PCC.optimization_model(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         invalid_label_graph,
         PROBLEM;
         rate = 1.0,

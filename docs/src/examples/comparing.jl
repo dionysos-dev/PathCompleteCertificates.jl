@@ -8,8 +8,6 @@
 # that justify each answer, and compares them with certified rates.
 
 import PathCompleteCertificates as PCC
-import SetProg
-import LinearAlgebra
 import Clarabel
 using HybridSystems
 using Plots
@@ -122,7 +120,7 @@ A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
 system = PCC.switched_system(A)
 problem = PCC.StabilityProblem(system)
 
-QUADRATIC = SetProg.Ellipsoid(; symmetric = true)
+QUADRATIC = PCC.QuadraticTemplate()
 COPOSITIVE = PCC.LinearCopositiveTemplate()
 DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
 TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
@@ -181,9 +179,8 @@ bound(template, g) = PCC.jsr_bound(
 on_G1 = bound(QUADRATIC, G1)
 V = PCC.functions(on_G1)
 W = [
-    SetProg.Sets.Ellipsoid(
-        LinearAlgebra.Symmetric(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))),
-    ) for h in 1:PCC.n_nodes(G2)
+    PCC.QuadraticFunction(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))) for
+    h in 1:PCC.n_nodes(G2)
 ]
 scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
 

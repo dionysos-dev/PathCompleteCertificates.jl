@@ -1,6 +1,5 @@
 module TestLiftMin
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC

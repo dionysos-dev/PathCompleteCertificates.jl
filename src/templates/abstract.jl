@@ -1,9 +1,8 @@
 """
     AbstractTemplate
 
-A legacy family of candidate node functions for safety and optimal control,
-passed as an instance such as `QuadraticTemplate()`. Stability accepts SetProg
-set families directly.
+A family of candidate node functions, passed as an instance such as
+`QuadraticTemplate()`. Stability also accepts SetProg set families directly.
 """
 abstract type AbstractTemplate end
 

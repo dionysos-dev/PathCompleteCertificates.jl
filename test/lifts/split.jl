@@ -1,6 +1,5 @@
 module TestLiftSplit
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -328,8 +327,8 @@ end
     @test moved == [template[o] for o in PCC.origins(lifted)]
 
     # A data-free template is its own reindexing.
-    @test PCC.reindex(SetProg.Ellipsoid(symmetric = true), PCC.origins(lifted)) ==
-          SetProg.Ellipsoid(symmetric = true)
+    @test PCC.reindex(PCC.QuadraticTemplate(), PCC.origins(lifted)) ==
+          PCC.QuadraticTemplate()
 end
 
 end # module

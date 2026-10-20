@@ -21,7 +21,7 @@ edgeset(g) = Set(
 )
 
 # The numbers a fitted node function is made of, whatever the template.
-coefficients(V::SetProg.Sets.Ellipsoid) = V.Q
+coefficients(V::PCC.QuadraticFunction) = Matrix(V)
 coefficients(V::SetProg.Sets.PolarPoint) = V.a
 coefficients(V::SetProg.Sets.Intersection) = coefficients(V.set)
 coefficients(V::SetProg.Sets.Polar) = coefficients(SetProg.polar(V))
@@ -36,7 +36,7 @@ const POSITIVE = PCC.switched_system([
 const GENERAL = PCC.switched_system([[0.8 0.3; -0.2 0.5], [0.4 -0.6; 0.5 0.3]])
 
 const CASES = [
-    (SetProg.Ellipsoid(; symmetric = true), GENERAL),
+    (PCC.QuadraticTemplate(), GENERAL),
     (PCC.LinearCopositiveTemplate(), POSITIVE),
     (PCC.DualCopositiveTemplate(), POSITIVE),
 ]
@@ -178,7 +178,7 @@ end
 end
 
 @testset "a template without a dual says so" begin
-    @test PCC.has_dual(SetProg.Ellipsoid(symmetric = true))
+    @test PCC.has_dual(PCC.QuadraticTemplate())
     @test PCC.has_dual(PCC.LinearCopositiveTemplate())
     @test PCC.has_dual(PCC.DualCopositiveTemplate())
     @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))

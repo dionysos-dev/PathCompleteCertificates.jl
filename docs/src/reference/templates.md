@@ -21,7 +21,11 @@ Modules = [PathCompleteCertificates]
 Pages = ["problems/sets.jl", "problems/gauges.jl", "templates/abstract.jl"]
 ```
 
-## Legacy quadratic template for safety and optimal control
+## Quadratic compatibility template
+
+`QuadraticTemplate()` delegates stability modeling to SetProg while preserving
+the existing fitted quadratic functions. Safety and optimal control retain
+their implementations.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]

@@ -1,6 +1,5 @@
 module TestRefine
 
-import SetProg
 using Test
 using HybridSystems
 using Random
@@ -8,7 +7,7 @@ import PathCompleteCertificates as PCC
 import Clarabel
 
 const OPTIMIZER = Clarabel.Optimizer
-const TEMPLATE = SetProg.Ellipsoid(; symmetric = true)
+const TEMPLATE = PCC.QuadraticTemplate()
 
 # A pure rotation scaled by 0.9: since rotations preserve the Euclidean norm
 # exactly, P = I is already the exact quadratic certificate, at exactly the

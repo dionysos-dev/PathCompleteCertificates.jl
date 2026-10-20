@@ -376,3 +376,80 @@ function jsr_lower_bound(
 
     return best
 end
+
+# Compatibility with the quadratic catalogue used by safety and optimal control.
+# Stability models are built entirely by the native SetProg family.
+function optimization_model(
+    template::QuadraticTemplate,
+    graph::CertificateGraph,
+    problem::StabilityProblem;
+    conditioning_bound = template.conditioning_bound,
+    kwargs...,
+)
+    return optimization_model(
+        SetProg.Ellipsoid(; symmetric = true),
+        graph,
+        problem;
+        conditioning_bound,
+        kwargs...,
+    )
+end
+
+function _quadratic_certificate(
+    template::QuadraticTemplate,
+    certificate::StabilityCertificate,
+)
+    data = CertificateData(
+        problem(certificate),
+        template,
+        graph(certificate),
+        [QuadraticFunction(V.Q) for V in functions(certificate)],
+        status(certificate),
+        is_feasible(certificate),
+    )
+    return StabilityCertificate(data, certificate.rate)
+end
+
+function certify(
+    template::QuadraticTemplate,
+    graph::CertificateGraph,
+    problem::StabilityProblem;
+    conditioning_bound = template.conditioning_bound,
+    kwargs...,
+)
+    certificate = certify(
+        SetProg.Ellipsoid(; symmetric = true),
+        graph,
+        problem;
+        conditioning_bound,
+        kwargs...,
+    )
+    return _quadratic_certificate(template, certificate)
+end
+
+function jsr_bound(
+    template::QuadraticTemplate,
+    graph::CertificateGraph,
+    problem::StabilityProblem;
+    conditioning_bound = template.conditioning_bound,
+    kwargs...,
+)
+    certificate = jsr_bound(
+        SetProg.Ellipsoid(; symmetric = true),
+        graph,
+        problem;
+        conditioning_bound,
+        kwargs...,
+    )
+    return _quadratic_certificate(template, certificate)
+end
+
+function best_certificate(
+    template::QuadraticTemplate,
+    graph::CertificateGraph,
+    problem::StabilityProblem;
+    rtol::Real = 1e-6,
+    kwargs...,
+)
+    return jsr_bound(template, graph, problem; rtol, kwargs...)
+end

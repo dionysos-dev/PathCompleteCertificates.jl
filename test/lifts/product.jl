@@ -1,6 +1,5 @@
 module TestLiftProduct
 
-import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -119,14 +118,14 @@ end
     expanded = PCC.expanded_form(w)
 
     on_words = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         w,
         problem;
         optimizer = Clarabel.Optimizer,
         rtol = 1e-5,
     )
     on_letters = PCC.jsr_bound(
-        SetProg.Ellipsoid(symmetric = true),
+        PCC.QuadraticTemplate(),
         expanded,
         problem;
         optimizer = Clarabel.Optimizer,
