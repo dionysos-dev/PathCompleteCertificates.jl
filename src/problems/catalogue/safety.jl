@@ -11,7 +11,11 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     S0::M0
     Su::Mu
 
-    function SafetyProblem(system::S, S0::AbstractMatrix, Su::AbstractMatrix) where {S}
+    function SafetyProblem(
+        system::S,
+        S0::M0,
+        Su::Mu,
+    ) where {S, M0 <: AbstractMatrix, Mu <: AbstractMatrix}
         has_input(system) &&
             throw(ArgumentError("SafetyProblem requires an input-free system"))
 
@@ -28,7 +32,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
 
         isapprox(Su, transpose(Su)) || throw(ArgumentError("Su must be symmetric"))
 
-        return new{typeof(system), typeof(S0), typeof(Su)}(system, S0, Su)
+        return new{S, M0, Mu}(system, S0, Su)
     end
 end
 
