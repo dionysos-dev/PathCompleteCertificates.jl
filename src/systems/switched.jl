@@ -74,25 +74,24 @@ The state matrices `A`, indexed by mode.
 state_matrices(system::_HS.HybridSystem) = _MS.state_matrix.(_maps_by_mode(system))
 
 """
-    state_matrix(system, word)
+    product(system, word)
 
 The product ``A_{i_k} ⋯ A_{i_1}`` of the state matrices along a word
 `(i_1, …, i_k)`.
 """
-state_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
+product(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
     _product(state_matrices(system), word)
 
-# Takes the extracted matrices so that per-edge callers do not rebuild them.
 function _product(A::AbstractVector{<:AbstractMatrix}, word)
     isempty(word) && throw(ArgumentError("a word must read at least one mode"))
 
-    product = A[first(word)]
+    matrix = A[first(word)]
 
     for mode in Iterators.drop(word, 1)
-        product = A[mode] * product
+        matrix = A[mode] * matrix
     end
 
-    return product
+    return matrix
 end
 
 """

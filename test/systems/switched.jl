@@ -102,9 +102,9 @@ end
 
 @testset "the product along a word, newest mode leftmost" begin
     s = PCC.switched_system(A)
-    @test PCC.state_matrix(s, [1, 2]) == A[2] * A[1]
-    @test PCC.state_matrix(s, [2, 2, 1]) == A[1] * A[2] * A[2]
-    @test_throws ArgumentError PCC.state_matrix(s, Int[])
+    @test PCC.product(s, [1, 2]) == A[2] * A[1]
+    @test PCC.product(s, [2, 2, 1]) == A[1] * A[2] * A[2]
+    @test_throws ArgumentError PCC.product(s, Int[])
 end
 
 @testset "positive and invertible systems" begin

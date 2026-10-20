@@ -18,7 +18,7 @@ kinds.
 `switched_system(A, B)` the input matrices as well. The result is a
 `HybridSystem` of HybridSystems.jl, read back with [`n_modes`](@ref),
 [`state_matrices`](@ref), [`input_matrices`](@ref) and [`has_input`](@ref);
-[`state_matrix`](@ref)`(system, word)` is the product of the matrices along a
+[`product`](@ref)`(system, word)` multiplies the matrices along a
 sequence of modes.
 
 ```@docs; canonical=false
