@@ -65,13 +65,7 @@ end
 
 @testset "the bound is a function of the state, and nonnegative" begin
     @test RESULT([1.0, 1.0]) > 0
-    @test PCC.common(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM,
-        PCC.functions(RESULT),
-        [1.0, 1.0],
-    ) > 0
+    @test PCC.common(GRAPH, PROBLEM, PCC.functions(RESULT), [1.0, 1.0]) > 0
 end
 
 @testset "input validation" begin

@@ -38,14 +38,14 @@ reindex(template, origins)                                 # per-node data follo
 has_dual(template), dual(template), dual(template, V)      # the dual norms, when they exist
 
 # Problem axis: one file per problem, composing the above.
-node_value(template, problem, V, x)                           # V(x), or V([x; 1]) for safety
+node_value(problem, V, x)                                     # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
 certify(template, graph, problem; optimizer, ...)             # build, solve, extract
 best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
 
 # The common function: each node value from the problem (node_value), their combination
 # from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.
-common(template, graph, problem, Vs, x)
+common(graph, problem, Vs, x)
 ```
 
 `add_decrease!` is the load-bearing primitive: the cone that quantifies an inequality over

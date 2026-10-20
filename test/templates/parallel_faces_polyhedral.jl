@@ -117,7 +117,7 @@ end
     fitted = PCC.functions(result)
 
     x = [1.0, 2.0]
-    value = PCC.common(template, GRAPH, PROBLEM, fitted, x)
+    value = PCC.common(GRAPH, PROBLEM, fitted, x)
 
     # GRAPH uses mode 1 only, and the system has one mode, so it is complete
     # and the common function is the minimum over nodes.

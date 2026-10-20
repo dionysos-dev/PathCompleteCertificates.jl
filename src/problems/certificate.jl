@@ -3,7 +3,7 @@
 
 The result of [`certify`](@ref): node functions on a graph, and the value
 certified (`rate`, `margin` or `gains`). A certificate `c` is callable: `c(x)`
-is [`common`](@ref)`(template(c), graph(c), problem(c), functions(c), x)`.
+is [`common`](@ref)`(graph(c), problem(c), functions(c), x)`.
 """
 abstract type AbstractCertificate end
 
@@ -73,7 +73,7 @@ The path-complete graph the certificate is built on.
 graph(certificate::AbstractCertificate) = _data(certificate).graph
 
 """
-    common(template, graph, problem, Vs, x)
+    common(graph, problem, Vs, x)
 
 The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
 minimum of maxima of the `Vs` [philippe2017path](@cite). Depending on `problem`,
@@ -81,25 +81,18 @@ a common Lyapunov function, a common barrier function or a bound on the value
 function.
 """
 function common(
-    template::AbstractTemplate,
     graph::CertificateGraph,
     problem::AbstractProblem,
     Vs::AbstractVector,
     x::AbstractVector{<:Real},
 )
-    values = [node_value(template, problem, V, x) for V in Vs]
+    values = [node_value(problem, V, x) for V in Vs]
     states = _common_states(graph, 1:n_modes(problem.system))
     return minimum(maximum(values[node] for node in state) for state in states)
 end
 
 function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
-    return common(
-        template(certificate),
-        graph(certificate),
-        problem(certificate),
-        functions(certificate),
-        x,
-    )
+    return common(graph(certificate), problem(certificate), functions(certificate), x)
 end
 
 """

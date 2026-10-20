@@ -10,12 +10,12 @@ abstract type AbstractProblem end
 _refinable(::AbstractProblem) = false
 
 """
-    node_value(template, problem, V, x)
+    node_value(problem, V, x)
 
 Evaluate the node function `V` at `x`: `V(x)`, or `V([x; 1])` for
 `SafetyProblem`.
 """
-node_value(::AbstractTemplate, ::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
+node_value(::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 
 """
     optimization_model(template, graph, problem; optimizer, kwargs...)

@@ -19,16 +19,14 @@ value(V) = V(X)
     graph = PCC.de_bruijn(1, 2)
     @test PCC.is_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈
-          minimum(value(P) for P in VS)
+    @test PCC.common(graph, PROBLEM, VS, X) ≈ minimum(value(P) for P in VS)
 end
 
 @testset "a co-complete graph combines with a maximum" begin
     graph = PCC.dual(PCC.de_bruijn(1, 2))
     @test PCC.is_co_complete(graph)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈
-          maximum(value(P) for P in VS)
+    @test PCC.common(graph, PROBLEM, VS, X) ≈ maximum(value(P) for P in VS)
 end
 
 @testset "any other graph combines over the observer construction" begin
@@ -48,15 +46,14 @@ end
 
     expected = minimum(maximum(value(VS[node]) for node in state) for state in states)
 
-    @test PCC.common(PCC.QuadraticTemplate(), graph, PROBLEM, VS, X) ≈ expected
+    @test PCC.common(graph, PROBLEM, VS, X) ≈ expected
 end
 
 @testset "the common function is generic in the template" begin
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(PCC.LinearCopositiveTemplate(), graph, PROBLEM, linear, X) ≈
-          minimum(V(X) for V in linear)
+    @test PCC.common(graph, PROBLEM, linear, X) ≈ minimum(V(X) for V in linear)
 
     weights = [
         PCC.ParallelFacesPolyhedralFunction(
@@ -69,13 +66,7 @@ end
         ),
     ]
 
-    @test PCC.common(
-        PCC.ParallelFacesPolyhedralTemplate(2, 2),
-        graph,
-        PROBLEM,
-        weights,
-        X,
-    ) ≈ minimum(V(X) for V in weights)
+    @test PCC.common(graph, PROBLEM, weights, X) ≈ minimum(V(X) for V in weights)
 end
 
 end

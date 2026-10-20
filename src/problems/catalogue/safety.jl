@@ -217,8 +217,7 @@ function _check_safety_data(
 end
 
 # A barrier lives in homogeneous coordinates.
-node_value(::AbstractTemplate, ::SafetyProblem, V, x::AbstractVector{<:Real}) =
-    V([x; one(eltype(x))])
+node_value(::SafetyProblem, V, x::AbstractVector{<:Real}) = V([x; one(eltype(x))])
 
 # Where the barrier is held; `refine` does not run on safety.
 edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)
