@@ -297,8 +297,11 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-edge_slacks(certificate::StabilityCertificate) =
-    _edge_slacks(certificate; rate = certificate.rate)
+edge_slacks(certificate::StabilityCertificate) = _edge_slacks(
+    certificate;
+    rate = certificate.rate,
+    degree = homogeneity_degree(template(certificate)),
+)
 
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool

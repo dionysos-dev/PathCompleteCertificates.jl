@@ -112,6 +112,7 @@ end
 
     @test res isa PCC.SafetyCertificate
     @test !PCC.is_feasible(res)
+    @test_throws ArgumentError res([1.0, 2.0])
 end
 
 end

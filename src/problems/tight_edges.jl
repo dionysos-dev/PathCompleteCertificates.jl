@@ -1,6 +1,7 @@
-# How close to zero a slack counts as tight, by default. A certificate from a
-# bisection stopped at relative tolerance `rtol` keeps slacks of order `rtol` on
-# its active edges, so read it with `atol ≥ 10 rtol`, as `refine` requires.
+# The default threshold below which a slack counts as tight. A bisection stops
+# above the optimal rate, within `rtol`, so the edges that block a smaller rate
+# keep a slack of about `rtol`, not zero. To count them as tight, `atol` must be
+# well above `rtol`: `refine` requires `atol ≥ 10 rtol`.
 const _TIGHT_ATOL = 1e-4
 
 """

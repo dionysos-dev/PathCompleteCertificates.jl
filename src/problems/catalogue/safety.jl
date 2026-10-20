@@ -47,10 +47,9 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
 end
 
 # The decrease condition of `edge`, `B_dst(A x) <= B_src(x)` in homogeneous
-# coordinates: the barrier need only not increase, so the scale is 1 and the
-# rate and degree the slacks pass are ignored. Written once, for the model and
-# for the slacks.
-_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A; kwargs...) =
+# coordinates: the barrier need only not increase, so the scale is 1. Written
+# once, for the model and for the slacks.
+_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
     (_homogeneous_dynamics(A[only(letters(label(graph, edge)))]), 1)
 
 # The matrices the S-procedure keeps above `margin * I` at each node, so that
