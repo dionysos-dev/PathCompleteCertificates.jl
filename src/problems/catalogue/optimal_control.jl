@@ -39,9 +39,10 @@ end
 """
     OptimalControlCertificate
 
-A state-feedback policy, `u = gains[a] * x` at node `a`, and an upper bound on
-its value function, the minimum of the node quadratic forms. Calling the
-certificate `c` as `c(x)` evaluates this bound.
+A gain per node, and an upper bound on the value function of the policy they
+define, the minimum of the node quadratic forms. The policy applies at `x` the
+gain of the node whose form is smallest at `x`; [`simulate`](@ref) runs it.
+Calling the certificate `c` as `c(x)` evaluates the bound.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
@@ -235,8 +236,9 @@ function _check_optimal_control_data(graph, problem; check_path_complete::Bool =
         check_path_complete = check_path_complete,
     )
 
-    # The bound is the plain minimum of the node functions, as for stability on a
-    # complete graph [philippe2019path, Cor. III.3].
+    # The bound, the minimum of the node functions, and the policy, the gain of
+    # the smallest, hold on a complete graph [ninite2026path]; as for stability
+    # [philippe2019path, Cor. III.3].
     modes = n_modes(problem.system)
     is_complete(graph, 1:modes) || throw(
         ArgumentError(
@@ -252,20 +254,19 @@ end
 # --- The closed loop under the certificate's policy ---------------------------
 
 """
-    simulate(certificate::OptimalControlCertificate, x0, modes; node = nothing)
+    simulate(certificate::OptimalControlCertificate, x0, modes)
     simulate(certificate::OptimalControlCertificate, x0, horizon::Integer;
-             rng = Random.default_rng(), node = nothing)
+             rng = Random.default_rng())
 
 Run the closed loop under the policy of `certificate` along `modes`, or along
 `horizon` modes drawn uniformly at random, and return a [`Trajectory`](@ref).
-The gain applied is that of the current graph node, which follows the observed
-modes from `node`, by default the node whose function is smallest at `x0`.
+At each state `x`, the policy applies the gain of the node whose function is
+smallest at `x`: `u = K_s x` with `s ∈ argmin V_s(x)` [ninite2026path](@cite).
 """
 function simulate(
     certificate::OptimalControlCertificate,
     x0::AbstractVector{<:Real},
-    modes::AbstractVector{<:Integer};
-    node::Union{Nothing, Integer} = nothing,
+    modes::AbstractVector{<:Integer},
 )
     is_feasible(certificate) || throw(
         ArgumentError(
@@ -275,20 +276,10 @@ function simulate(
     )
 
     system = problem(certificate).system
-    graph_ = graph(certificate)
     _check_initial_state(system, x0)
 
-    start = node === nothing ? argmin([V(x0) for V in functions(certificate)]) : node
-    _check_node(graph_, start)
-
-    successors = _successors(_letter_graph(graph_, "simulate"))
-    current = Ref(start)
-
-    policy = function (k, x)
-        u = certificate.gains[current[]] * x
-        current[] = _next_node(successors, current[], modes[k])
-        return u
-    end
+    Vs = functions(certificate)
+    policy(_, x) = certificate.gains[argmin([V(x) for V in Vs])] * x
 
     return _run(system, x0, modes, policy)
 end
@@ -298,21 +289,7 @@ function simulate(
     x0::AbstractVector{<:Real},
     horizon::Integer;
     rng::Random.AbstractRNG = Random.default_rng(),
-    node::Union{Nothing, Integer} = nothing,
 )
     modes = _random_modes(rng, problem(certificate).system, horizon)
-    return simulate(certificate, x0, modes; node)
-end
-
-# The node the policy moves to when `mode` is observed at `node`.
-function _next_node(successors, node::Integer, mode::Integer)
-    haskey(successors, (node, mode)) || throw(
-        ArgumentError(
-            "the certificate graph has no edge labelled $mode out of node $node, " *
-            "so the policy has nowhere to go: the graph is not complete for " *
-            "this system's modes",
-        ),
-    )
-
-    return first(successors[(node, mode)])
+    return simulate(certificate, x0, modes)
 end
