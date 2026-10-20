@@ -44,15 +44,13 @@ _empty_like(::_LetterGraph, n_nodes::Integer) = empty_graph(n_nodes)
 _empty_like(::WordGraph, n_nodes::Integer) = WordGraph(n_nodes)
 
 """
-    add_edge!(graph, source, dest, label)
+    add_edge!(graph, s, d, label)
 
-Add an edge from `source` to `dest` reading `label`, a mode or a vector of
-modes, and return it. Only a [`WordGraph`](@ref) accepts a word of several
-modes.
+Add an edge from `s` to `d` reading `label`, a mode or a vector of modes, and
+return it. Only a [`WordGraph`](@ref) accepts a word of several modes.
 """
-function add_edge!(graph::_LetterGraph, s::Integer, d::Integer, mode::Integer)
-    return _HS.add_transition!(graph, s, d, mode)
-end
+add_edge!(graph::_LetterGraph, s::Integer, d::Integer, mode::Integer) =
+    _HS.add_transition!(graph, s, d, mode)
 
 function add_edge!(
     graph::_LetterGraph,
@@ -221,8 +219,7 @@ end
 """
     alphabet(graph)
 
-The distinct modes appearing on the edges of `graph`, sorted, possibly fewer
-than the system's.
+The distinct modes appearing on the edges of `graph`, sorted.
 """
 alphabet(graph::CertificateGraph) =
     sort!(unique(mode for edge in edges(graph) for mode in letters(label(graph, edge))))
