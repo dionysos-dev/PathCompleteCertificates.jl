@@ -201,6 +201,31 @@ function certify(
     )
 end
 
+# The edge inequality read back in `P` and `K`, which `_add_edge_lmi!` imposes
+# in `S` and `Y`: the smallest eigenvalue of
+# `P_src − Q − K'RK − (A + BK)' P_dst (A + BK)`, with `K` the source's gain.
+function edge_slacks(certificate::OptimalControlCertificate)
+    is_feasible(certificate) ||
+        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+
+    problem_ = problem(certificate)
+    graph_ = graph(certificate)
+    P = Matrix.(functions(certificate))
+    A = state_matrices(problem_.system)
+    B = input_matrices(problem_.system)
+
+    return map(edges(graph_)) do edge
+        mode = only(letters(label(graph_, edge)))
+        K = certificate.gains[source(edge)]
+        closed_loop = A[mode] + B[mode] * K
+        residual =
+            P[source(edge)] - problem_.Q - transpose(K) * problem_.R * K -
+            transpose(closed_loop) * P[dest(edge)] * closed_loop
+
+        return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
+    end
+end
+
 # Validate the data.
 function _check_optimal_control_data(graph, problem; check_path_complete::Bool = true)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
@@ -210,7 +235,8 @@ function _check_optimal_control_data(graph, problem; check_path_complete::Bool =
         check_path_complete = check_path_complete,
     )
 
-    # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
+    # The bound is the plain minimum of the node functions, as for stability on a
+    # complete graph [philippe2019path, Cor. III.3].
     modes = n_modes(problem.system)
     is_complete(graph, 1:modes) || throw(
         ArgumentError(

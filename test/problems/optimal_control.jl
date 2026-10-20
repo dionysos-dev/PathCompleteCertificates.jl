@@ -63,6 +63,15 @@ end
     end
 end
 
+@testset "edge_slacks reads the same inequality, so tight_edges applies" begin
+    slacks = PCC.edge_slacks(RESULT)
+
+    @test length(slacks) == PCC.n_edges(GRAPH)
+    @test all(>(-1e-6), slacks)
+    @test PCC.tight_edges(RESULT; atol = minimum(slacks)) ==
+          [e for (e, s) in zip(PCC.edges(GRAPH), slacks) if s <= minimum(slacks)]
+end
+
 @testset "the bound is a function of the state, and nonnegative" begin
     @test RESULT([1.0, 1.0]) > 0
     @test PCC.common(GRAPH, PROBLEM, PCC.functions(RESULT), [1.0, 1.0]) > 0
