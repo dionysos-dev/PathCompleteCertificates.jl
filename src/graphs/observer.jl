@@ -79,7 +79,7 @@ end
 # A subset as a dictionary key: its nodes, sorted, as a tuple.
 _key(subset) = Tuple(sort!(collect(subset)))
 
-# The common function [philippe2017path] is the minimum over these subsets of
+# The common function [philippe2019path] is the minimum over these subsets of
 # the maximum of the node functions within each: every node alone on a complete
 # graph (Cor. III.3), all nodes together on a co-complete one, the observer
 # states otherwise (Thm. III.8). A word graph has none: no state is constrained

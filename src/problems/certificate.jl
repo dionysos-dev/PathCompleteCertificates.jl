@@ -80,7 +80,7 @@ graph(certificate::AbstractCertificate) = _data(certificate).graph
     common(graph, problem, Vs, x)
 
 The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
-minimum of maxima of the `Vs` [philippe2017path](@cite). Depending on `problem`,
+minimum of maxima of the `Vs` [philippe2019path](@cite). Depending on `problem`,
 a common Lyapunov function, a common barrier function or a bound on the value
 function.
 """

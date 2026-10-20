@@ -8,7 +8,7 @@ The `T`-sum lift: nodes are the multisets of `T` nodes, with an `i`-edge from
 `simulation(SumLift(), G, H; optimizer)` decides it
 [debauche2024thesis; Thm. 7.35 and Cor. 8.11](@cite) and returns an integer
 matrix `C` such that `C·V` is a certificate on `H` whenever `V` is one on `G`
-[philippe2017path; Def. IV.2 and Thm. IV.4](@cite). Requires
+[philippe2019path; Def. IV.2 and Thm. IV.4](@cite). Requires
 [`Addition`](@ref).
 """
 struct SumLift{T <: Union{Nothing, Int}} <: AbstractLift
@@ -139,7 +139,7 @@ function _satisfies(G, H, optimizer, C::AbstractMatrix{<:Integer})
     return JuMP.is_solved_and_feasible(check; allow_almost = true)
 end
 
-# The program of [philippe2017path, Def. IV.2], over the multipliers alone when `C`
+# The program of [philippe2019path, Def. IV.2], over the multipliers alone when `C`
 # is given; `nothing` when some mode of `H` is read nowhere in `G`.
 function _sum_program(G, H, optimizer, C)
     model = JuMP.Model(optimizer)
