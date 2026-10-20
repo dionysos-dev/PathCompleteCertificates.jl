@@ -122,6 +122,9 @@ the switching: constrained switching is not supported.
 """
 n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
 
+# The dimension of the state `x`.
+_state_dimension(system::_HS.HybridSystem) = size(first(state_matrices(system)), 1)
+
 # The reset map `x ↦ A_σ x (+ B_σ u)` of each mode σ, in mode order. Every
 # accessor goes through here, so this is where constrained switching, which
 # HybridSystems allows, is rejected. A `OneStateAutomaton` has one transition per

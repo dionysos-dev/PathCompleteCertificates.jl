@@ -1,3 +1,7 @@
+# What every certificate shares: its type, its accessors and `common`. Below
+# them, `dual`, `objective`, `optimality_gap` and `edge_slacks`, which each
+# problem's certificate defines in catalogue/.
+
 """
     AbstractCertificate
 
@@ -99,7 +103,7 @@ end
     dual(certificate)
 
 The certificate on the dual graph made of the dual norms of the node functions.
-Throws for every problem but stability.
+Throws for a certificate whose problem defines no dual.
 """
 dual(certificate::AbstractCertificate) =
     throw(ArgumentError("no dual is defined for $(nameof(typeof(certificate)))"))

@@ -89,7 +89,8 @@ function _add_edge_lmi!(
 end
 
 """
-    optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
+    optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4,
+                       check_path_complete = true)
 
 Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`.
 Only complete graphs and `QuadraticTemplate` are supported. `psd_margin` is the
@@ -107,11 +108,8 @@ function optimization_model(
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    n = _check_optimal_control_data(
-        graph,
-        problem;
-        check_path_complete = check_path_complete,
-    )
+    _check_optimal_control_data(graph, problem; check_path_complete = check_path_complete)
+    n = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     B = input_matrices(problem.system)
     m = size(first(B), 2)
@@ -157,7 +155,8 @@ function optimization_model(
 end
 
 """
-    certify(template, graph, problem; optimizer, psd_margin = 1e-4)
+    certify(template, graph, problem; optimizer, psd_margin = 1e-4,
+            check_path_complete = true)
 
 Synthesise a state-feedback policy and a bound on its value function, returned
 as an [`OptimalControlCertificate`](@ref). Only complete graphs and
@@ -202,10 +201,14 @@ function certify(
     )
 end
 
-# Validate the data and return the state dimension.
+# Validate the data.
 function _check_optimal_control_data(graph, problem; check_path_complete::Bool = true)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
-    n = _check_modes(graph, problem.system; check_path_complete = check_path_complete)
+    _check_graph_suitability(
+        graph,
+        problem.system;
+        check_path_complete = check_path_complete,
+    )
 
     # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
     modes = n_modes(problem.system)
@@ -217,7 +220,7 @@ function _check_optimal_control_data(graph, problem; check_path_complete::Bool =
         ),
     )
 
-    return n
+    return nothing
 end
 
 # --- The closed loop under the certificate's policy ---------------------------

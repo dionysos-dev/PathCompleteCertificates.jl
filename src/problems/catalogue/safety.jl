@@ -60,7 +60,7 @@ _initial_separation(problem::SafetyProblem, P, γ) = -(P + γ * problem.S0)
 _unsafe_separation(problem::SafetyProblem, P, γ) = P - γ * problem.Su
 
 """
-    optimization_model(template, graph, problem; optimizer)
+    optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
 Build, without solving, the barrier program; only `QuadraticTemplate` is supported.
 """
@@ -74,7 +74,8 @@ function optimization_model(
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
-    n = _check_safety_data(graph, problem; check_path_complete = check_path_complete)
+    _check_safety_data(graph, problem; check_path_complete = check_path_complete)
+    n = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     d = n + 1
 
@@ -130,7 +131,7 @@ function optimization_model(
 end
 
 """
-    certify(template, graph, problem; optimizer)
+    certify(template, graph, problem; optimizer, check_path_complete = true)
 
 Solve the barrier program and return a [`SafetyCertificate`](@ref).
 """
@@ -206,14 +207,19 @@ function _homogeneous_dynamics(A::AbstractMatrix)
     ]
 end
 
-# Validate the data and return the state dimension.
+# Validate the data.
 function _check_safety_data(
     graph::CertificateGraph,
     problem::SafetyProblem;
     check_path_complete::Bool = true,
 )
     _require_one_mode_per_edge(graph, "SafetyProblem")
-    return _check_modes(graph, problem.system; check_path_complete = check_path_complete)
+    _check_graph_suitability(
+        graph,
+        problem.system;
+        check_path_complete = check_path_complete,
+    )
+    return nothing
 end
 
 # A barrier lives in homogeneous coordinates.
