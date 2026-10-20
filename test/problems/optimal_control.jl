@@ -77,6 +77,22 @@ end
     @test PCC.common(GRAPH, PROBLEM, PCC.functions(RESULT), [1.0, 1.0]) > 0
 end
 
+@testset "the units of the cost do not change the answer" begin
+    # Scaling Q and R by c scales the value function by c and keeps the gains;
+    # unnormalized, psd_margin = 1e-4 made Q = 1000 I infeasible.
+    c = 1e3
+    scaled = PCC.certify(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PCC.OptimalControlProblem(SYSTEM, c * Q, c * R);
+        optimizer = OPTIMIZER,
+    )
+
+    @test PCC.is_feasible(scaled)
+    @test scaled([1.0, 1.0]) ≈ c * RESULT([1.0, 1.0]) rtol = 1e-3
+    @test all(isapprox.(scaled.gains, RESULT.gains; rtol = 1e-3))
+end
+
 @testset "input validation" begin
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q, [-1.0;;])   # R not pd
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, -Q, R)         # Q not pd

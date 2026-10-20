@@ -13,10 +13,9 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
 
     function OptimalControlProblem(
         system::S,
-        Q::AbstractMatrix,
-        R::AbstractMatrix,
-    ) where {S}
-        # Otherwise a two-mode autonomous system would be split into A and B.
+        Q::MQ,
+        R::MR,
+    ) where {S, MQ <: AbstractMatrix, MR <: AbstractMatrix}
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
@@ -32,17 +31,19 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         LinearAlgebra.isposdef(LinearAlgebra.Symmetric(R)) ||
             throw(ArgumentError("R must be positive definite"))
 
-        return new{typeof(system), typeof(Q), typeof(R)}(system, Q, R)
+        return new{S, MQ, MR}(system, Q, R)
     end
 end
 
 """
     OptimalControlCertificate
 
-A gain per node, and an upper bound on the value function of the policy they
-define, the minimum of the node quadratic forms. The policy applies at `x` the
-gain of the node whose form is smallest at `x`; [`simulate`](@ref) runs it.
-Calling the certificate `c` as `c(x)` evaluates the bound.
+A quadratic function `V_s` and a gain `K_s` at each node `s`.
+
+- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
+  runs it.
+- Its cost from `x` is at most `min_s V_s(x)`. This bound is retrieved by
+  calling the certificate at `x`.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
@@ -53,7 +54,7 @@ end
 # Y = K S; written on S, not P, so it is not an `add_decrease!` call.
 function _add_edge_lmi!(
     model::JuMP.Model,
-    problem::OptimalControlProblem,
+    cost,
     S_src,
     Y_src,
     S_dst,
@@ -61,6 +62,7 @@ function _add_edge_lmi!(
     psd_margin::Real,
 )
     A, B = dynamics
+    Q, R = cost
     n = size(A, 1)
     m = size(B, 2)
 
@@ -71,9 +73,9 @@ function _add_edge_lmi!(
     X22 = S_dst
     X23 = zeros(n, n)
     X24 = zeros(n, m)
-    X33 = inv(problem.Q)
+    X33 = inv(Q)
     X34 = zeros(n, m)
-    X44 = inv(problem.R)
+    X44 = inv(R)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, 3n + m, 3n + m)
 
     JuMP.@constraint(
@@ -90,12 +92,10 @@ function _add_edge_lmi!(
 end
 
 """
-    optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4,
-                       check_path_complete = true)
+    optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`.
-Only complete graphs and `QuadraticTemplate` are supported. `psd_margin` is the
-strictness of every matrix inequality.
+Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`. Only
+complete graphs and `QuadraticTemplate` are supported.
 """
 function optimization_model(
     template::AbstractTemplate,
@@ -103,18 +103,19 @@ function optimization_model(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    check_path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    _check_optimal_control_data(graph, problem; check_path_complete = check_path_complete)
+    _check_optimal_control_data(graph, problem)
     n = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     B = input_matrices(problem.system)
     m = size(first(B), 2)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, n, n)
+    scale = _cost_scale(problem)
+    cost = (problem.Q / scale, problem.R / scale)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
@@ -138,7 +139,7 @@ function optimization_model(
         mode = only(letters(label(graph, edge)))
         _add_edge_lmi!(
             model,
-            problem,
+            cost,
             S[source_index],
             Y[source_index],
             S[destination_index],
@@ -156,8 +157,7 @@ function optimization_model(
 end
 
 """
-    certify(template, graph, problem; optimizer, psd_margin = 1e-4,
-            check_path_complete = true)
+    certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
 Synthesise a state-feedback policy and a bound on its value function, returned
 as an [`OptimalControlCertificate`](@ref). Only complete graphs and
@@ -169,16 +169,8 @@ function certify(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    check_path_complete::Bool = true,
 )
-    model = optimization_model(
-        template,
-        graph,
-        problem;
-        optimizer = optimizer,
-        psd_margin = psd_margin,
-        check_path_complete = check_path_complete,
-    )
+    model = optimization_model(template, graph, problem; optimizer, psd_margin)
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
@@ -192,9 +184,11 @@ function certify(
     S = model[:optimal_control_S]
     Y = model[:optimal_control_Y]
 
-    S_value = [JuMP.value.(matrix) for matrix in S]
-    P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]
-    K = [JuMP.value.(Y[i]) * Matrix(P[i]) for i in eachindex(P)]
+    # The model solved for the cost divided by its scale: `S = (P / scale)⁻¹`.
+    # The value function scales with the cost, the gains do not.
+    scaled = [inv(LinearAlgebra.Symmetric(JuMP.value.(matrix))) for matrix in S]
+    P = [QuadraticFunction(_cost_scale(problem) * matrix) for matrix in scaled]
+    K = [JuMP.value.(Y[i]) * scaled[i] for i in eachindex(scaled)]
 
     return OptimalControlCertificate(
         CertificateData(problem, template, graph, P, termination, true),
@@ -227,26 +221,22 @@ function edge_slacks(certificate::OptimalControlCertificate)
     end
 end
 
+# The model is solved for `Q / k` and `R / k`, with `k` this scale, so that
+# `psd_margin` does not depend on the units of the cost. Scaling the cost scales
+# the value function by the same factor and keeps the gains.
+_cost_scale(problem::OptimalControlProblem) =
+    max(LinearAlgebra.opnorm(problem.Q), LinearAlgebra.opnorm(problem.R))
+
 # Validate the data.
-function _check_optimal_control_data(graph, problem; check_path_complete::Bool = true)
+function _check_optimal_control_data(graph, problem)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
-    _check_graph_suitability(
-        graph,
-        problem.system;
-        check_path_complete = check_path_complete,
-    )
+    # A complete graph is path-complete, so completeness below is the only check.
+    _check_graph_suitability(graph, problem.system; check_path_complete = false)
 
     # The bound, the minimum of the node functions, and the policy, the gain of
-    # the smallest, hold on a complete graph [ninite2026path]; as for stability
-    # [philippe2019path, Cor. III.3].
-    modes = n_modes(problem.system)
-    is_complete(graph, 1:modes) || throw(
-        ArgumentError(
-            "optimal control currently supports only complete graphs; " *
-            "the graph uses labels $(alphabet(graph)) and the " *
-            "system has $modes modes",
-        ),
-    )
+    # the smallest node function, hold on a complete graph [ninite2026path].
+    is_complete(graph, 1:n_modes(problem.system)) ||
+        throw(ArgumentError("optimal control requires a complete graph"))
 
     return nothing
 end
