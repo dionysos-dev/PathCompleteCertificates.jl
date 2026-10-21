@@ -34,10 +34,10 @@ Pages = ["templates/catalogue/quadratic.jl"]
 
 ## Compatibility constructors
 
-The former polyhedral templates are constructors returning native SetProg
+`SumOfSquaresTemplate` and the former polyhedral templates return native SetProg
 families. Their names remain in PCC; there are no separate SetProg template types.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages = ["problems/polytope_compat.jl"]
+Pages = ["problems/polytope_compat.jl", "templates/catalogue/sum_of_squares.jl"]
 ```

@@ -95,6 +95,39 @@ end
     end
 end
 
+@testset "SumOfSquaresTemplate is a native PolySet shortcut" begin
+    @polyvar x[1:2]
+    for degree in 1:3, min_scale in (0.25, 1.0, 2.0)
+        family = PCC.SumOfSquaresTemplate(degree, x; min_scale)
+        @test family isa SetProg.PolySet
+        @test family.degree == 2degree
+        @test family.variables == x
+        @test PCC.homogeneity_degree(family) == 2degree
+        @test PCC._gauge(family.superset, [2.0, 3.0]) ≈ min_scale * 13^degree
+    end
+    @test_throws ArgumentError PCC.SumOfSquaresTemplate(0, x)
+    @test_throws ArgumentError PCC.SumOfSquaresTemplate(1, x[1:0])
+    @test_throws ArgumentError PCC.SumOfSquaresTemplate(1, x; min_scale = 0)
+    problem = PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.25]]))
+    graph = PCC.de_bruijn(1, 1)
+    for min_scale in (0.25, 2.0)
+        family = PCC.SumOfSquaresTemplate(2, x; min_scale)
+        model = Model(optimizer_with_attributes(Clarabel.Optimizer, MOI.Silent() => true))
+        S = PCC.add_function_variables!(model, family, 2, 1)
+        PCC.add_normalization!(model, S.set, S)
+        optimize!(model)
+        @test termination_status(model) in (MOI.OPTIMAL, MOI.ALMOST_OPTIMAL)
+        @test isempty(SetProg.data(model).constraints)
+        @test num_constraints(model; count_variable_in_set_constraints = true) == 1
+        # The custom reference survives dimension filling and normalization.
+        @test SetProg.JuMP.constant.(S.variable.p.Q) ≈ family.superset.p.Q
+        certificate =
+            PCC.certify(family, graph, problem; optimizer = Clarabel.Optimizer, rate = 0.6)
+        @test PCC.is_feasible(certificate)
+        @test certificate([1.0, 1.0]) >= min_scale * 4 - 1e-6
+    end
+end
+
 @testset "Gauge data and duality" begin
     @test_throws ArgumentError PCC.DualCopositiveTemplate(min_weight = 0)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])

@@ -118,8 +118,8 @@ end
 function _with_dimension(family::SetProg.PolySet, n, vars)
     family.symmetric ||
         throw(ArgumentError("a homogeneous polynomial set must be symmetric"))
-    family.point === nothing && family.superset === nothing ||
-        throw(ArgumentError("point and superset are not supported for homogeneous gauges"))
+    family.point === nothing ||
+        throw(ArgumentError("point is not supported for homogeneous gauges"))
     x =
         family.variables === nothing ? (vars === nothing ? SetProg.new_polyvars(n) : vars) :
         family.variables
@@ -131,6 +131,7 @@ function _with_dimension(family::SetProg.PolySet, n, vars)
         convex = family.convex,
         variables = x,
         basis = family.basis,
+        superset = family.superset,
     )
 end
 """
@@ -178,7 +179,8 @@ function _with_superset(f::SetProg.Ellipsoid, unit)
 end
 function _with_superset(f::SetProg.PolySet, unit)
     # SetProg does not support a superset for convex polynomial families.
-    (f.convex || f.superset !== nothing) && return nothing
+    f.superset !== nothing && return f
+    f.convex && return nothing
     return SetProg.PolySet(;
         symmetric = f.symmetric,
         degree = f.degree,

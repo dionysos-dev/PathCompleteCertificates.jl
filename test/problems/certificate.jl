@@ -44,3 +44,75 @@ end
 
     @test STABILITY(x) ≈
           PCC.common(GRAPH, PROBLEM, PCC.functions(STABILITY), x)
+
+    # Positive away from the origin, zero at it -- it is a Lyapunov function.
+    @test STABILITY(x) > 0
+    @test STABILITY([0.0, 0.0]) ≈ 0 atol = 1e-8
+end
+
+@testset "every problem returns the same shape" begin
+    S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
+    Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
+    modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
+
+    safety = PCC.certify(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        PCC.SafetyProblem(PCC.switched_system(modes), S0, Su);
+        optimizer = OPTIMIZER,
+    )
+
+    control = PCC.certify(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        PCC.OptimalControlProblem(
+            PCC.switched_system(
+                [[0.0 1.0; -1.0 0.0], [-0.1 0.0; 0.0 -0.95]],
+                [[1.0; 0.0;;], [1.0; 0.0;;]],
+            ),
+            [1.0 0.0; 0.0 1.0],
+            [1.0;;],
+        );
+        optimizer = JuMP.optimizer_with_attributes(
+            Clarabel.Optimizer,
+            "chordal_decomposition_enable" => false,
+        ),
+    )
+
+    for certificate in (STABILITY, safety, control)
+        @test certificate isa PCC.AbstractCertificate
+        @test PCC.is_feasible(certificate)
+        @test !isempty(PCC.functions(certificate))
+        @test PCC.status(certificate) isa JuMP.MOI.TerminationStatusCode
+        @test certificate([1.0, 1.0]) isa Real
+    end
+
+    # What each problem certifies is a typed field on its own type, not an
+    # entry in a shared bag -- so it is discoverable and documented.
+    @test STABILITY isa PCC.StabilityCertificate
+    @test safety isa PCC.SafetyCertificate
+    @test control isa PCC.OptimalControlCertificate
+
+    @test STABILITY.rate > 0
+    @test safety.margin > 0
+    @test length(control.gains) == PCC.n_nodes(PCC.graph(control))
+end
+
+@testset "an infeasible solve still returns a certificate" begin
+    # Rather than a differently-shaped tuple with `nothing` fields.
+    overlapping = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -1.0]
+    S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
+    modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
+
+    res = PCC.certify(
+        PCC.QuadraticTemplate(),
+        PCC.de_bruijn(1, 2),
+        PCC.SafetyProblem(PCC.switched_system(modes), S0, overlapping);
+        optimizer = OPTIMIZER,
+    )
+
+    @test res isa PCC.SafetyCertificate
+    @test !PCC.is_feasible(res)
+end
+
+end

@@ -42,7 +42,7 @@ using SumOfSquares
 @polyvar x[1:2]
 families = [
     ("quadratic", PCC.QuadraticTemplate()),
-    ("degree 4", PolySet(; symmetric = true, degree = 4, variables = x)),
+    ("degree 4", PCC.SumOfSquaresTemplate(2, x)),
     ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
 ]
 [(name, round(bound(family).rate; digits = 4)) for (name, family) in families]

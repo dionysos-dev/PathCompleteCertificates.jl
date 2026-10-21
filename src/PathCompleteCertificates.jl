@@ -54,6 +54,7 @@ include("problems/certificate.jl")
 include("problems/tight_edges.jl")
 
 include("templates/catalogue/quadratic.jl")
+include("templates/catalogue/sum_of_squares.jl")
 
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")

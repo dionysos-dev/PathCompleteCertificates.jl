@@ -8,7 +8,6 @@
 # function ``V``, evaluated by calling the certificate on ``x``.
 
 import PathCompleteCertificates as PCC
-import SetProg
 import Clarabel
 using HybridSystems
 using SumOfSquares, DynamicPolynomials
@@ -135,10 +134,10 @@ plot(left, right; layout = (1, 2), size = (1100, 620))
 
 # ## Sums of squares
 #
-# `SetProg.PolySet` takes polynomial node functions of higher
-# degree ([parrilo2008approximation](@cite)). It is defined in a package
-# extension loaded with SumOfSquares, and the polynomial variables are created
-# once and shared by every node. Degree 2 is the quadratic template. The table
+# [`SumOfSquaresTemplate`](@ref) takes polynomial node functions of higher
+# degree ([parrilo2008approximation](@cite)). Load SumOfSquares before
+# constructing it. The polynomial variables are created once and shared by
+# every node. Degree 2 is the quadratic template. The table
 # gives the rates of degrees 2 and 4 on one node and on `de_bruijn(1, 2)`.
 
 @polyvar x[1:2]
@@ -151,16 +150,7 @@ two_nodes = PCC.de_bruijn(1, 2)
 
 [
     ("quadratic, 1 node", bound(PCC.QuadraticTemplate(), one_node)),
-    (
-        "degree 4, 1 node",
-        bound(SetProg.PolySet(; symmetric = true, degree = 2 * 2, variables = x), one_node),
-    ),
+    ("degree 4, 1 node", bound(PCC.SumOfSquaresTemplate(2, x), one_node)),
     ("quadratic, 2 nodes", bound(PCC.QuadraticTemplate(), two_nodes)),
-    (
-        "degree 4, 2 nodes",
-        bound(
-            SetProg.PolySet(; symmetric = true, degree = 2 * 2, variables = x),
-            two_nodes,
-        ),
-    ),
+    ("degree 4, 2 nodes", bound(PCC.SumOfSquaresTemplate(2, x), two_nodes)),
 ]
