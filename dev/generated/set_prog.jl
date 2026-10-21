@@ -1,6 +1,6 @@
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
-using SetProg
+using SetProg, SumOfSquares
 using DynamicPolynomials
 using LinearAlgebra
 using Plots

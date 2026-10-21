@@ -17,7 +17,7 @@ controlled = systems[2][2]
 
 PCC.state_matrices(controlled) == A, PCC.input_matrices(controlled) == B
 
-PCC.state_matrix(controlled, [1, 2]) == A[2] * A[1]
+PCC.product(controlled, [1, 2]) == A[2] * A[1]
 
 system = systems[1][2]
 
