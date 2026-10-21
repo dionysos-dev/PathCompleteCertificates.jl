@@ -19,8 +19,8 @@ for the quadratic one.
 
 ¹ Positive systems only: entrywise nonnegative mode matrices.
 
-² Behind a package extension: `using SumOfSquares` first, or `using SetProg`
-for [`SetProgTemplate`](@ref).
+² Behind a package extension: `using SumOfSquares` first, or `using SetProg,
+SumOfSquares` for [`SetProgTemplate`](@ref).
 
 A ✗ throws an `ArgumentError` before any model is built. Optimal control needs
 a **complete** graph, not merely a path-complete one. Stability accepts a

@@ -5,11 +5,12 @@ module PathCompleteCertificatesSetProgExt
 
 import JuMP
 import LinearAlgebra
+import MultivariatePolynomials as MP
 import SetProg
+import SumOfSquares
 import PathCompleteCertificates as PCC
 
 const Sets = SetProg.Sets
-const MP = SetProg.MP
 
 _variable(template::PCC.SetProgTemplate, node::Integer) =
     template.shared ? only(template.variables) :
@@ -148,7 +149,7 @@ function _unit(variable::SetProg.PolySet)
         factorial(half_degree) / prod(factorial, MP.exponents(monomial)) for
         monomial in monomials
     ]
-    gram = SetProg.GramMatrix(Matrix(LinearAlgebra.Diagonal(coefficients)), monomials)
+    gram = SumOfSquares.GramMatrix(Matrix(LinearAlgebra.Diagonal(coefficients)), monomials)
 
     return Sets.PolySet(variable.degree, gram)
 end

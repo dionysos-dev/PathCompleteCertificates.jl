@@ -30,5 +30,5 @@ SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [extensions]
 PathCompleteCertificatesRecipesBaseExt = "RecipesBase"
-PathCompleteCertificatesSetProgExt = "SetProg"
+PathCompleteCertificatesSetProgExt = ["SetProg", "SumOfSquares", "MultivariatePolynomials"]
 PathCompleteCertificatesSumOfSquaresExt = ["SumOfSquares", "MultivariatePolynomials"]
