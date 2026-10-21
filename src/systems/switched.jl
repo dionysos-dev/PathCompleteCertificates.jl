@@ -74,25 +74,24 @@ The state matrices `A`, indexed by mode.
 state_matrices(system::_HS.HybridSystem) = _MS.state_matrix.(_maps_by_mode(system))
 
 """
-    state_matrix(system, word)
+    product(system, word)
 
 The product ``A_{i_k} ⋯ A_{i_1}`` of the state matrices along a word
 `(i_1, …, i_k)`.
 """
-state_matrix(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
+product(system::_HS.HybridSystem, word::AbstractVector{<:Integer}) =
     _product(state_matrices(system), word)
 
-# Takes the extracted matrices so that per-edge callers do not rebuild them.
 function _product(A::AbstractVector{<:AbstractMatrix}, word)
     isempty(word) && throw(ArgumentError("a word must read at least one mode"))
 
-    product = A[first(word)]
+    matrix = A[first(word)]
 
     for mode in Iterators.drop(word, 1)
-        product = A[mode] * product
+        matrix = A[mode] * matrix
     end
 
-    return product
+    return matrix
 end
 
 """
@@ -122,6 +121,9 @@ The number of modes of `system`. Throws on a system whose automaton restricts
 the switching: constrained switching is not supported.
 """
 n_modes(system::_HS.HybridSystem) = length(_maps_by_mode(system))
+
+# The dimension of the state `x`.
+_state_dimension(system::_HS.HybridSystem) = size(first(state_matrices(system)), 1)
 
 # The reset map `x ↦ A_σ x (+ B_σ u)` of each mode σ, in mode order. Every
 # accessor goes through here, so this is where constrained switching, which

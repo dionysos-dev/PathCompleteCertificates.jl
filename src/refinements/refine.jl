@@ -97,8 +97,9 @@ status(trace::RefinementTrace) = trace.status
            stop = Returns(false), depth_max = 5, stall_max = 1, atol = 1e-4,
            gap_tol = 1e-6, rtol = 1e-6, check_path_complete = true, kwargs...)
 
-Refine `graph`, by default [`initial_graph`](@ref)`(algorithm, system)`, until
-the [`optimality_gap`](@ref) of its certificate closes; returns a
+Refine `graph`, by default [`initial_graph`](@ref) of `algorithm` on the system
+of `problem`, until the [`optimality_gap`](@ref) of its certificate closes;
+returns a
 [`RefinementTrace`](@ref). At each step [`next_graph`](@ref) of `algorithm`
 gives the next graph, a lift of the current one.
 
@@ -209,7 +210,6 @@ function refine(
 
         depth == depth_max && break
 
-        # A candidate is solved with the template following its origins.
         solve_lifted = let template = template
             lifted -> solve(reindex(template, origins(lifted)), graph(lifted), false)
         end

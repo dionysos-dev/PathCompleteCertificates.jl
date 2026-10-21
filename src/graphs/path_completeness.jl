@@ -5,8 +5,7 @@
     is_path_complete(graph, alphabet)
 
 Whether every switching sequence over `alphabet` labels a path of `graph`.
-Without a second argument the alphabet is the modes `graph` uses; pass
-`1:`[`n_modes`](@ref)`(system)` to ask about a system.
+Without a second argument the alphabet is the modes `graph` uses.
 """
 is_path_complete(graph::CertificateGraph) = is_path_complete(graph, alphabet(graph))
 
@@ -34,8 +33,9 @@ end
     is_complete(graph, alphabet)
 
 Whether every node has an outgoing edge for every letter of `alphabet`;
-sufficient, not necessary, for [`is_path_complete`](@ref). `false` on a graph
-with a word of several modes.
+sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
+argument the alphabet is the modes `graph` uses. `false` on a graph with a word
+of several modes.
 """
 is_complete(graph::CertificateGraph) = is_complete(graph, alphabet(graph))
 
@@ -50,8 +50,9 @@ is_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_co_complete(graph, alphabet)
 
 Whether every node has an incoming edge for every letter of `alphabet`;
-sufficient, not necessary, for [`is_path_complete`](@ref). `false` on a graph
-with a word of several modes.
+sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
+argument the alphabet is the modes `graph` uses. `false` on a graph with a word
+of several modes.
 """
 is_co_complete(graph::CertificateGraph) = is_co_complete(graph, alphabet(graph))
 

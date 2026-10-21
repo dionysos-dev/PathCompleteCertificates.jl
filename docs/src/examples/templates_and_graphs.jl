@@ -89,7 +89,7 @@ left
 # A rotation and a shear, with quadratic node functions, on the one-node graph
 # and on the De Bruijn graphs of order ``k = 1, 2, 3``, whose nodes record the
 # last ``k`` modes. The common function is a minimum of the node functions
-# ([philippe2017path](@cite)), so its sublevel sets are unions of ellipses and
+# ([philippe2019path](@cite)), so its sublevel sets are unions of ellipses and
 # need not be convex.
 
 MIXED = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]

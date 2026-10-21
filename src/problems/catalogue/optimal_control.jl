@@ -13,10 +13,9 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
 
     function OptimalControlProblem(
         system::S,
-        Q::AbstractMatrix,
-        R::AbstractMatrix,
-    ) where {S}
-        # Otherwise a two-mode autonomous system would be split into A and B.
+        Q::MQ,
+        R::MR,
+    ) where {S, MQ <: AbstractMatrix, MR <: AbstractMatrix}
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
@@ -32,16 +31,19 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         LinearAlgebra.isposdef(LinearAlgebra.Symmetric(R)) ||
             throw(ArgumentError("R must be positive definite"))
 
-        return new{typeof(system), typeof(Q), typeof(R)}(system, Q, R)
+        return new{S, MQ, MR}(system, Q, R)
     end
 end
 
 """
     OptimalControlCertificate
 
-A state-feedback policy, `u = gains[a] * x` at node `a`, and an upper bound on
-its value function, the minimum of the node quadratic forms. Calling the
-certificate `c` as `c(x)` evaluates this bound.
+A quadratic function `V_s` and a gain `K_s` at each node `s`.
+
+- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
+  runs it.
+- Its cost from `x` is at most `min_s V_s(x)`. This bound is retrieved by
+  calling the certificate at `x`.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
@@ -52,7 +54,7 @@ end
 # Y = K S; written on S, not P, so it is not an `add_decrease!` call.
 function _add_edge_lmi!(
     model::JuMP.Model,
-    problem::OptimalControlProblem,
+    cost,
     S_src,
     Y_src,
     S_dst,
@@ -60,6 +62,7 @@ function _add_edge_lmi!(
     psd_margin::Real,
 )
     A, B = dynamics
+    Q, R = cost
     n = size(A, 1)
     m = size(B, 2)
 
@@ -70,9 +73,9 @@ function _add_edge_lmi!(
     X22 = S_dst
     X23 = zeros(n, n)
     X24 = zeros(n, m)
-    X33 = inv(problem.Q)
+    X33 = inv(Q)
     X34 = zeros(n, m)
-    X44 = inv(problem.R)
+    X44 = inv(R)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, 3n + m, 3n + m)
 
     JuMP.@constraint(
@@ -91,9 +94,8 @@ end
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`.
-Only complete graphs and `QuadraticTemplate` are supported. `psd_margin` is the
-strictness of every matrix inequality.
+Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`. Only
+complete graphs and `QuadraticTemplate` are supported.
 """
 function optimization_model(
     template::AbstractTemplate,
@@ -101,21 +103,19 @@ function optimization_model(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    check_path_complete::Bool = true,
 )
     template isa QuadraticTemplate ||
         throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
-    n = _check_optimal_control_data(
-        graph,
-        problem;
-        check_path_complete = check_path_complete,
-    )
+    _check_optimal_control_data(graph, problem)
+    n = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     B = input_matrices(problem.system)
     m = size(first(B), 2)
     margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, n, n)
+    scale = _cost_scale(problem)
+    cost = (problem.Q / scale, problem.R / scale)
 
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
@@ -139,7 +139,7 @@ function optimization_model(
         mode = only(letters(label(graph, edge)))
         _add_edge_lmi!(
             model,
-            problem,
+            cost,
             S[source_index],
             Y[source_index],
             S[destination_index],
@@ -169,16 +169,8 @@ function certify(
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
-    check_path_complete::Bool = true,
 )
-    model = optimization_model(
-        template,
-        graph,
-        problem;
-        optimizer = optimizer,
-        psd_margin = psd_margin,
-        check_path_complete = check_path_complete,
-    )
+    model = optimization_model(template, graph, problem; optimizer, psd_margin)
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
@@ -192,9 +184,11 @@ function certify(
     S = model[:optimal_control_S]
     Y = model[:optimal_control_Y]
 
-    S_value = [JuMP.value.(matrix) for matrix in S]
-    P = [QuadraticFunction(inv(LinearAlgebra.Symmetric(matrix))) for matrix in S_value]
-    K = [JuMP.value.(Y[i]) * Matrix(P[i]) for i in eachindex(P)]
+    # The model solved for the cost divided by its scale: `S = (P / scale)⁻¹`.
+    # The value function scales with the cost, the gains do not.
+    scaled = [inv(LinearAlgebra.Symmetric(JuMP.value.(matrix))) for matrix in S]
+    P = [QuadraticFunction(_cost_scale(problem) * matrix) for matrix in scaled]
+    K = [JuMP.value.(Y[i]) * scaled[i] for i in eachindex(scaled)]
 
     return OptimalControlCertificate(
         CertificateData(problem, template, graph, P, termination, true),
@@ -202,41 +196,67 @@ function certify(
     )
 end
 
-# Validate the data and return the state dimension.
-function _check_optimal_control_data(graph, problem; check_path_complete::Bool = true)
+# The edge inequality read back in `P` and `K`, which `_add_edge_lmi!` imposes
+# in `S` and `Y`: the smallest eigenvalue of
+# `P_src − Q − K'RK − (A + BK)' P_dst (A + BK)`, with `K` the source's gain.
+function edge_slacks(certificate::OptimalControlCertificate)
+    is_feasible(certificate) ||
+        throw(ArgumentError("an infeasible certificate has no functions to measure"))
+
+    problem_ = problem(certificate)
+    graph_ = graph(certificate)
+    P = Matrix.(functions(certificate))
+    A = state_matrices(problem_.system)
+    B = input_matrices(problem_.system)
+
+    return map(edges(graph_)) do edge
+        mode = only(letters(label(graph_, edge)))
+        K = certificate.gains[source(edge)]
+        closed_loop = A[mode] + B[mode] * K
+        residual =
+            P[source(edge)] - problem_.Q - transpose(K) * problem_.R * K -
+            transpose(closed_loop) * P[dest(edge)] * closed_loop
+
+        return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
+    end
+end
+
+# The model is solved for `Q / k` and `R / k`, with `k` this scale, so that
+# `psd_margin` does not depend on the units of the cost. Scaling the cost scales
+# the value function by the same factor and keeps the gains.
+_cost_scale(problem::OptimalControlProblem) =
+    max(LinearAlgebra.opnorm(problem.Q), LinearAlgebra.opnorm(problem.R))
+
+# Validate the data.
+function _check_optimal_control_data(graph, problem)
     _require_one_mode_per_edge(graph, "OptimalControlProblem")
-    n = _check_modes(graph, problem.system; check_path_complete = check_path_complete)
+    # A complete graph is path-complete, so completeness below is the only check.
+    _check_graph_suitability(graph, problem.system; check_path_complete = false)
 
-    # The bound is the plain minimum of Corollary III.3, which needs a complete graph.
-    modes = n_modes(problem.system)
-    is_complete(graph, 1:modes) || throw(
-        ArgumentError(
-            "optimal control currently supports only complete graphs; " *
-            "the graph uses labels $(alphabet(graph)) and the " *
-            "system has $modes modes",
-        ),
-    )
+    # The bound, the minimum of the node functions, and the policy, the gain of
+    # the smallest node function, hold on a complete graph [ninite2026path].
+    is_complete(graph, 1:n_modes(problem.system)) ||
+        throw(ArgumentError("optimal control requires a complete graph"))
 
-    return n
+    return nothing
 end
 
 # --- The closed loop under the certificate's policy ---------------------------
 
 """
-    simulate(certificate::OptimalControlCertificate, x0, modes; node = nothing)
+    simulate(certificate::OptimalControlCertificate, x0, modes)
     simulate(certificate::OptimalControlCertificate, x0, horizon::Integer;
-             rng = Random.default_rng(), node = nothing)
+             rng = Random.default_rng())
 
 Run the closed loop under the policy of `certificate` along `modes`, or along
 `horizon` modes drawn uniformly at random, and return a [`Trajectory`](@ref).
-The gain applied is that of the current graph node, which follows the observed
-modes from `node`, by default the node whose function is smallest at `x0`.
+At each state `x`, the policy applies the gain of the node whose function is
+smallest at `x`: `u = K_s x` with `s ∈ argmin V_s(x)` [ninite2026path](@cite).
 """
 function simulate(
     certificate::OptimalControlCertificate,
     x0::AbstractVector{<:Real},
-    modes::AbstractVector{<:Integer};
-    node::Union{Nothing, Integer} = nothing,
+    modes::AbstractVector{<:Integer},
 )
     is_feasible(certificate) || throw(
         ArgumentError(
@@ -246,20 +266,10 @@ function simulate(
     )
 
     system = problem(certificate).system
-    graph_ = graph(certificate)
     _check_initial_state(system, x0)
 
-    start = node === nothing ? argmin([V(x0) for V in functions(certificate)]) : node
-    _check_node(graph_, start)
-
-    successors = _successors(_letter_graph(graph_, "simulate"))
-    current = Ref(start)
-
-    policy = function (k, x)
-        u = certificate.gains[current[]] * x
-        current[] = _next_node(successors, current[], modes[k])
-        return u
-    end
+    Vs = functions(certificate)
+    policy(_, x) = certificate.gains[argmin([V(x) for V in Vs])] * x
 
     return _run(system, x0, modes, policy)
 end
@@ -269,21 +279,7 @@ function simulate(
     x0::AbstractVector{<:Real},
     horizon::Integer;
     rng::Random.AbstractRNG = Random.default_rng(),
-    node::Union{Nothing, Integer} = nothing,
 )
     modes = _random_modes(rng, problem(certificate).system, horizon)
-    return simulate(certificate, x0, modes; node)
-end
-
-# The node the policy moves to when `mode` is observed at `node`.
-function _next_node(successors, node::Integer, mode::Integer)
-    haskey(successors, (node, mode)) || throw(
-        ArgumentError(
-            "the certificate graph has no edge labelled $mode out of node $node, " *
-            "so the policy has nowhere to go: the graph is not complete for " *
-            "this system's modes",
-        ),
-    )
-
-    return first(successors[(node, mode)])
+    return simulate(certificate, x0, modes)
 end

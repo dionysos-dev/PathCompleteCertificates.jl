@@ -42,8 +42,7 @@ end
 @testset "a certificate is callable, and is the common function" begin
     x = [1.0, 2.0]
 
-    @test STABILITY(x) ≈
-          PCC.common(PCC.QuadraticTemplate(), GRAPH, PROBLEM, PCC.functions(STABILITY), x)
+    @test STABILITY(x) ≈ PCC.common(GRAPH, PROBLEM, PCC.functions(STABILITY), x)
 
     # Positive away from the origin, zero at it -- it is a Lyapunov function.
     @test STABILITY(x) > 0
@@ -113,6 +112,7 @@ end
 
     @test res isa PCC.SafetyCertificate
     @test !PCC.is_feasible(res)
+    @test_throws ArgumentError res([1.0, 2.0])
 end
 
 end

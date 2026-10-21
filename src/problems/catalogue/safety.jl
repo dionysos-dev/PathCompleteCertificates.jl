@@ -11,7 +11,11 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
     S0::M0
     Su::Mu
 
-    function SafetyProblem(system::S, S0::AbstractMatrix, Su::AbstractMatrix) where {S}
+    function SafetyProblem(
+        system::S,
+        S0::M0,
+        Su::Mu,
+    ) where {S, M0 <: AbstractMatrix, Mu <: AbstractMatrix}
         has_input(system) &&
             throw(ArgumentError("SafetyProblem requires an input-free system"))
 
@@ -28,7 +32,7 @@ struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractP
 
         isapprox(Su, transpose(Su)) || throw(ArgumentError("Su must be symmetric"))
 
-        return new{typeof(system), typeof(S0), typeof(Su)}(system, S0, Su)
+        return new{S, M0, Mu}(system, S0, Su)
     end
 end
 
@@ -47,10 +51,9 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
 end
 
 # The decrease condition of `edge`, `B_dst(A x) <= B_src(x)` in homogeneous
-# coordinates: the barrier need only not increase, so the scale is 1 and the
-# rate and degree the slacks pass are ignored. Written once, for the model and
-# for the slacks.
-_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A; kwargs...) =
+# coordinates: the barrier need only not increase, so the scale is 1. Written
+# once, for the model and for the slacks.
+_edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
     (_homogeneous_dynamics(A[only(letters(label(graph, edge)))]), 1)
 
 # The matrices the S-procedure keeps above `margin * I` at each node, so that
@@ -60,7 +63,7 @@ _initial_separation(problem::SafetyProblem, P, γ) = -(P + γ * problem.S0)
 _unsafe_separation(problem::SafetyProblem, P, γ) = P - γ * problem.Su
 
 """
-    optimization_model(template, graph, problem; optimizer)
+    optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
 Build, without solving, the barrier program; only `QuadraticTemplate` is supported.
 """
@@ -74,7 +77,8 @@ function optimization_model(
     template isa QuadraticTemplate ||
         throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
 
-    n = _check_safety_data(graph, problem; check_path_complete = check_path_complete)
+    _check_safety_data(graph, problem; check_path_complete = check_path_complete)
+    n = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     d = n + 1
 
@@ -130,7 +134,7 @@ function optimization_model(
 end
 
 """
-    certify(template, graph, problem; optimizer)
+    certify(template, graph, problem; optimizer, check_path_complete = true)
 
 Solve the barrier program and return a [`SafetyCertificate`](@ref).
 """
@@ -206,19 +210,23 @@ function _homogeneous_dynamics(A::AbstractMatrix)
     ]
 end
 
-# Validate the data and return the state dimension.
+# Validate the data.
 function _check_safety_data(
     graph::CertificateGraph,
     problem::SafetyProblem;
     check_path_complete::Bool = true,
 )
     _require_one_mode_per_edge(graph, "SafetyProblem")
-    return _check_modes(graph, problem.system; check_path_complete = check_path_complete)
+    _check_graph_suitability(
+        graph,
+        problem.system;
+        check_path_complete = check_path_complete,
+    )
+    return nothing
 end
 
 # A barrier lives in homogeneous coordinates.
-node_value(::AbstractTemplate, ::SafetyProblem, V, x::AbstractVector{<:Real}) =
-    V([x; one(eltype(x))])
+node_value(::SafetyProblem, V, x::AbstractVector{<:Real}) = V([x; one(eltype(x))])
 
 # Where the barrier is held; `refine` does not run on safety.
 edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)

@@ -49,10 +49,9 @@ certificate(x)
 
 # ## The policy, run
 #
-# `simulate` closes the loop: at each step it draws an admissible mode, applies
-# the gain of the node the certificate graph is currently in, and advances that
-# node along the mode observed. The current node is part of the state of the
-# controller.
+# `simulate` closes the loop: at each step it draws a mode and applies the gain
+# of the node whose function is smallest at the current state. The policy is a
+# plain state feedback, piecewise linear.
 
 run = PCC.simulate(certificate, [3.0, -2.0], 25; rng = MersenneTwister(1))
 

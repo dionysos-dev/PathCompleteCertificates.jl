@@ -12,7 +12,7 @@ number quoted in the manual was read in the paper it is attributed to.
 | | |
 | :-- | :-- |
 | [ahmadi2014joint](@cite) | path-complete graph Lyapunov functions and the bound on the joint spectral radius: [`StabilityProblem`](@ref), [`is_path_complete`](@ref), [`expanded_form`](@ref) |
-| [philippe2017path](@cite) | complete and co-complete graphs, [`is_complete`](@ref) and [`is_co_complete`](@ref), the common function each licenses, [`common`](@ref), and the linear program of [`SumLift`](@ref)`()` |
+| [philippe2019path](@cite) | complete and co-complete graphs, [`is_complete`](@ref) and [`is_co_complete`](@ref), the common function each licenses, [`common`](@ref), and the linear program of [`SumLift`](@ref)`()` |
 | [philippe2016stability](@cite) | [`common_graph`](@ref), [`ProductLift`](@ref) and [`PathDependentLift`](@ref), and the backward split that takes the De Bruijn hierarchy one order up |
 
 ## The templates

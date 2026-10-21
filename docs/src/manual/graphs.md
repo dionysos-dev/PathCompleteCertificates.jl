@@ -38,7 +38,7 @@ certificate and no error is raised.
 
 ## Complete, co-complete, and the common function
 
-Two stronger properties ([philippe2017path](@cite), Def. III.2): a graph is
+Two stronger properties ([philippe2019path](@cite), Def. III.2): a graph is
 **complete** when every node has an outgoing edge for every mode, and
 **co-complete** when every node has an incoming edge for every mode. Both
 imply path-completeness; neither is necessary. They determine the form of the

@@ -44,7 +44,8 @@ function _edge_decrease(
 end
 
 """
-    optimization_model(template, graph, problem; optimizer, rate = 1)
+    optimization_model(template, graph, problem; optimizer, rate = 1,
+                       check_path_complete = true)
 
 The feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
 `(a, b, w)`, with `p` the template's degree and `|w|` the length of the word.
@@ -59,12 +60,13 @@ function optimization_model(
 )
     rate >= 0 || throw(ArgumentError("the rate must be nonnegative"))
 
-    dimension = _check_stability_data(
+    _check_stability_data(
         template,
         graph,
         problem;
         check_path_complete = check_path_complete,
     )
+    dimension = _state_dimension(problem.system)
     A = state_matrices(problem.system)
     degree = homogeneity_degree(template)
 
@@ -89,7 +91,7 @@ end
 
 """
     jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
-              max_iterations = 100, initial_upper = 1.0)
+              max_iterations = 100, initial_upper = 1.0, check_path_complete = true)
 
 The [`StabilityCertificate`](@ref) of the smallest feasible rate, to relative
 tolerance `rtol`. `initial_upper` is a first guess of a feasible rate.
@@ -169,7 +171,8 @@ function jsr_bound(
 end
 
 """
-    certify(template, graph, problem::StabilityProblem; optimizer, rate = 1)
+    certify(template, graph, problem::StabilityProblem; optimizer, rate = 1,
+            check_path_complete = true)
 
 Solve the stability problem at the fixed `rate`.
 """
@@ -236,8 +239,11 @@ function _check_stability_data(
     problem::StabilityProblem;
     check_path_complete::Bool = true,
 )
-    dimension =
-        _check_modes(graph, problem.system; check_path_complete = check_path_complete)
+    _check_graph_suitability(
+        graph,
+        problem.system;
+        check_path_complete = check_path_complete,
+    )
 
     is_applicable(template, problem.system) || throw(
         ArgumentError(
@@ -246,9 +252,15 @@ function _check_stability_data(
         ),
     )
 
-    return dimension
+    return nothing
 end
 
+"""
+    best_certificate(template, graph, problem::StabilityProblem; optimizer, rtol = 1e-6, kwargs...)
+
+The certificate of smallest rate on `graph`, by [`jsr_bound`](@ref) to
+relative tolerance `rtol`, where [`certify`](@ref) checks one given rate.
+"""
 function best_certificate(
     template::AbstractTemplate,
     graph::CertificateGraph,
@@ -285,8 +297,11 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-edge_slacks(certificate::StabilityCertificate) =
-    _edge_slacks(certificate; rate = certificate.rate)
+edge_slacks(certificate::StabilityCertificate) = _edge_slacks(
+    certificate;
+    rate = certificate.rate,
+    degree = homogeneity_degree(template(certificate)),
+)
 
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool

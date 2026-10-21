@@ -16,7 +16,7 @@ is the inclusion ``(A / \\gamma) S_{src} \\subseteq S_{dst}``. `variable` is one
 where the cones are over the facets of the polytope `P`, which must contain
 the origin in its interior. A vector gives one variable per node.
 
-Requires `using SetProg`. Round the facet normals of `P`, since rounding errors
+Requires `using SetProg, SumOfSquares`. Round the facet normals of `P`, since rounding errors
 can make an almost optimal solution violate the edge inequalities.
 [`decrease_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented.
 """
