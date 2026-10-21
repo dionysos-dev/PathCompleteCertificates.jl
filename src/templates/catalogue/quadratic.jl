@@ -57,20 +57,6 @@ solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
 homogeneity_degree(::QuadraticTemplate) = 2
 
-function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
-    # The edge conditions are homogeneous, so this only fixes the scale.
-    JuMP.@constraint(model, P - LinearAlgebra.I in JuMP.PSDCone())
-
-    if isfinite(template.conditioning_bound)
-        JuMP.@constraint(
-            model,
-            template.conditioning_bound * LinearAlgebra.I - P in JuMP.PSDCone()
-        )
-    end
-
-    return nothing
-end
-
 function add_decrease!(
     model::JuMP.Model,
     ::QuadraticTemplate,

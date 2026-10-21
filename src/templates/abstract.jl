@@ -53,18 +53,6 @@ problem refuses a template that does not, and no lift is valid for it.
 """
 is_applicable(::AbstractTemplate, system) = true
 
-# The node datum of `data` at `node`, or an error naming `what` when the
-# template carries fewer than the graph has nodes.
-function _node_datum(data::AbstractVector, node::Integer, what::AbstractString)
-    node <= length(data) || throw(
-        ArgumentError(
-            "the template carries $(length(data)) $what but the graph has at least " *
-            "$node nodes",
-        ),
-    )
-    return data[node]
-end
-
 """
     decrease_slack(template, V_src, V_dst, map; scale = 1)
 
