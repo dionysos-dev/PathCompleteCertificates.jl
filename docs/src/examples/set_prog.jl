@@ -41,7 +41,7 @@ octagon = polygon([[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2]
 using SumOfSquares
 @polyvar x[1:2]
 families = [
-    ("quadratic", Ellipsoid(; symmetric = true)),
+    ("quadratic", PCC.QuadraticTemplate()),
     ("degree 4", PolySet(; symmetric = true, degree = 4, variables = x)),
     ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
 ]
