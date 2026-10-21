@@ -75,8 +75,7 @@ function test_edges(certificate, template, graph)
         src = V[PCC.source(edge)]
         dst = V[PCC.dest(edge)]
         @test scale * PCC.node_value(PROBLEM, src, point) -
-              PCC.node_value(PROBLEM, dst, A[PCC.label(graph, edge)] * point) >=
-              -1e-5
+              PCC.node_value(PROBLEM, dst, A[PCC.label(graph, edge)] * point) >= -1e-5
     end
 end
 
@@ -105,8 +104,7 @@ const ELLIPSOID = rate(Ellipsoid(; symmetric = true))
     @test V isa SetProg.Sets.Ellipsoid
     # V(cx) = c² V(x), and the normalization `V ≥ ‖x‖²`
     @test PCC.node_value(PROBLEM, V, [2.0, 3.0]) ≈
-          4 * PCC.node_value(PROBLEM, V, [1.0, 1.5]) rtol =
-        1e-6
+          4 * PCC.node_value(PROBLEM, V, [1.0, 1.5]) rtol = 1e-6
     @test PCC.node_value(PROBLEM, V, [1.0, 1.0]) >= 2 - 1e-6
     test_edges(ELLIPSOID, Ellipsoid(symmetric = true), MEMORYLESS)
 end
@@ -227,8 +225,7 @@ end
     family = PolySet(symmetric = true, degree = 4)
     certificate = PCC.certify(family, graph, diagonal; optimizer = OPTIMIZER, rate = 0.6)
     @test PCC.is_feasible(certificate)
-    @test PCC.node_value(diagonal, only(PCC.functions(certificate)), [1.0, 1.0]) >=
-          4 - 1e-5
+    @test PCC.node_value(diagonal, only(PCC.functions(certificate)), [1.0, 1.0]) >= 4 - 1e-5
     @polyvar y[1:2]
     different = [PolySet(symmetric = true, degree = 4, variables = z) for z in (x, y)]
     @test_throws ArgumentError PCC.optimization_model(
@@ -313,14 +310,8 @@ end
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(0, 2)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(Matrix{Float64}[])
     @test_throws ArgumentError PCC.planar_conic_partition(0)
-    @test PCC.node_value(PROBLEM,
-        PCC.DualCopositiveFunction([2.0, 3.0]),
-        [1.0, 1.0],
-    ) ≈ 0.5
-    @test PCC.node_value(PROBLEM,
-        PCC.LinearCopositiveFunction([2.0, 3.0]),
-        [1.0, 1.0],
-    ) ≈ 5
+    @test PCC.node_value(PROBLEM, PCC.DualCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 0.5
+    @test PCC.node_value(PROBLEM, PCC.LinearCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 5
 end
 
 end

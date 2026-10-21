@@ -102,4 +102,3 @@ function _prepared_families(family::_SetFamily, dimension, count)
     end
     return [_with_dimension(f, dimension; variables = x) for f in families]
 end
-

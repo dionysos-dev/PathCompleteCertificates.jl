@@ -19,16 +19,14 @@ value(V) = V(X)
     graph = PCC.de_bruijn(1, 2)
     @test PCC.is_complete(graph)
 
-    @test PCC.common(graph, PROBLEM, VS, X) ≈
-          minimum(value(P) for P in VS)
+    @test PCC.common(graph, PROBLEM, VS, X) ≈ minimum(value(P) for P in VS)
 end
 
 @testset "a co-complete graph combines with a maximum" begin
     graph = PCC.dual(PCC.de_bruijn(1, 2))
     @test PCC.is_co_complete(graph)
 
-    @test PCC.common(graph, PROBLEM, VS, X) ≈
-          maximum(value(P) for P in VS)
+    @test PCC.common(graph, PROBLEM, VS, X) ≈ maximum(value(P) for P in VS)
 end
 
 @testset "any other graph combines over the observer construction" begin
@@ -55,9 +53,8 @@ end
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(graph, PROBLEM, linear, X) ≈ minimum(
-        PCC.node_value(PROBLEM, V, X) for V in linear
-    )
+    @test PCC.common(graph, PROBLEM, linear, X) ≈
+          minimum(PCC.node_value(PROBLEM, V, X) for V in linear)
 
     weights = [
         PCC.ParallelFacesPolyhedralFunction(
@@ -70,14 +67,8 @@ end
         ),
     ]
 
-    @test PCC.common(graph,
-        PROBLEM,
-        weights,
-        X,
-    ) ≈ minimum(
-        PCC.node_value(PROBLEM, V, X) for
-        V in weights
-    )
+    @test PCC.common(graph, PROBLEM, weights, X) ≈
+          minimum(PCC.node_value(PROBLEM, V, X) for V in weights)
 end
 
 end
