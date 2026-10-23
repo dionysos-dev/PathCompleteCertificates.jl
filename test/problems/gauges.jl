@@ -4,6 +4,41 @@ using SumOfSquares, DynamicPolynomials
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS
 
+# A user-defined family inherits the documented default capabilities.
+struct UnknownSetFamily <: SetProg.AbstractVariable end
+
+@testset "Native family capabilities" begin
+    invertible = PCC.switched_system([[0.5 -0.1; 0.2 0.4]])
+    singular = PCC.switched_system([[0.5 0.0; 0.0 0.0]])
+    unknown = UnknownSetFamily()
+    @test PCC.is_applicable(unknown, invertible)
+    @test !PCC.is_closed_under(unknown, PCC.Addition(), invertible)
+    @test !PCC.has_dual(unknown)
+    @test_throws ArgumentError PCC.dual(unknown)
+
+    ellipsoid = Ellipsoid(symmetric = true)
+    # A domain on an ellipsoid is not a linear copositive family.
+    domain = SetProg.Domain(ellipsoid, MOI.Nonnegatives)
+    @test PCC.is_applicable(domain, invertible)
+
+    @polyvar x[1:2]
+    polynomial = PolySet(symmetric = true, degree = 4, variables = x)
+    polytope = Polytope(symmetric = true, dimension = 2)
+    for (family, degree) in ((ellipsoid, 2), (polynomial, 4), (polytope, 1))
+        @test PCC.is_applicable(family, invertible)
+        @test PCC.homogeneity_degree(family) == degree
+        @test PCC.is_closed_under(family, PCC.Addition(), invertible)
+        @test !PCC.is_closed_under(family, PCC.Maximum(), invertible)
+    end
+    @test PCC.homogeneity_degree(SetProg.Sets.Ellipsoid(Symmetric([2.0 0.0; 0.0 3.0]))) == 2
+    @test PCC.homogeneity_degree(SetProg.Sets.PolarPoint([1.0, 2.0])) == 1
+    for operation in (PCC.Composition(), PCC.InverseComposition())
+        @test PCC.is_closed_under(polynomial, operation, invertible)
+        @test !PCC.is_closed_under(polynomial, operation, singular)
+    end
+    @test PCC.dual(ellipsoid) === ellipsoid
+end
+
 @testset "Homogeneous gauges" begin
     A = [0.5 0.0; 0.0 0.25]
     families = (

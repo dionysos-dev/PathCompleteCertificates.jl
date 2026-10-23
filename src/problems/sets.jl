@@ -7,7 +7,9 @@ const _SetFamily =
 Whether the SetProg family applies to the system. Orthant gauges require
 nonnegative dynamics.
 """
-is_applicable(::SetProg.AbstractVariable, system) = true
+function is_applicable(::SetProg.AbstractVariable, system)
+    return true
+end
 is_applicable(f::SetProg.Domain, system) = !_is_linear_copositive(f) || _is_positive(system)
 is_applicable(f::_NormalizedFamily, system) = is_applicable(f.set, system)
 is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
@@ -18,15 +20,21 @@ is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
 
 Whether a SetProg gauge family admits the operation required by a graph lift.
 """
-is_closed_under(::SetProg.AbstractVariable, ::Operation, system) = false
-is_closed_under(::Union{SetProg.Ellipsoid, SetProg.PolySet}, ::Addition, system) = true
+function is_closed_under(::SetProg.AbstractVariable, ::Operation, system)
+    return false
+end
+function is_closed_under(::Union{SetProg.Ellipsoid, SetProg.PolySet}, ::Addition, system)
+    return true
+end
 is_closed_under(f::SetProg.Ellipsoid, ::Composition, system) =
     f.piecewise === nothing && _is_invertible(system)
 is_closed_under(::SetProg.PolySet, ::Composition, system) = _is_invertible(system)
 is_closed_under(f::SetProg.Ellipsoid, ::InverseComposition, system) =
     f.piecewise === nothing && _is_invertible(system)
 is_closed_under(::SetProg.PolySet, ::InverseComposition, system) = _is_invertible(system)
-is_closed_under(::SetProg.Polytope, ::Addition, system) = true
+function is_closed_under(::SetProg.Polytope, ::Addition, system)
+    return true
+end
 is_closed_under(f::_NormalizedFamily, ::Addition, system) =
     !f.contains_reference && is_closed_under(f.set, Addition(), system)
 is_closed_under(f::_NormalizedFamily, ::Maximum, system) = f.contains_reference

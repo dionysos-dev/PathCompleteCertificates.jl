@@ -1,7 +1,9 @@
 const _LinearPolytope = SetProg.Sets.Piecewise{<:Any, <:SetProg.Sets.PolarPoint}
 const _LinearCopositiveSet = SetProg.Sets.Intersection{<:Any, <:SetProg.Sets.PolarPoint}
 
-_is_linear_copositive(::SetProg.AbstractVariable) = false
+function _is_linear_copositive(::SetProg.AbstractVariable)
+    return false
+end
 _is_linear_copositive(f::SetProg.Domain{<:SetProg.Polytope}) =
     f.set.piecewise === nothing &&
     (f.domain === SetProg.MOI.Nonnegatives || f.domain isa SetProg.MOI.Nonnegatives)
@@ -46,15 +48,19 @@ _is_parallelotope(f) = f isa _NormalizedFamily && f.symmetric && f.set isa SetPr
 
 The degree of the homogeneous gauge used to represent a set family.
 """
-homogeneity_degree(::Union{SetProg.Ellipsoid, SetProg.Sets.Ellipsoid}) = 2
+function homogeneity_degree(::Union{SetProg.Ellipsoid, SetProg.Sets.Ellipsoid})
+    return 2
+end
 homogeneity_degree(f::_NormalizedFamily) = homogeneity_degree(f.set)
-homogeneity_degree(
+function homogeneity_degree(
     ::Union{
         SetProg.Polytope,
         SetProg.Sets.PolarPoint,
         SetProg.Sets.Piecewise{<:Any, <:SetProg.Sets.PolarPoint},
     },
-) = 1
+)
+    return 1
+end
 homogeneity_degree(
     family::Union{SetProg.PolySet, SetProg.Sets.PolySet, SetProg.Sets.ConvexPolySet},
 ) = family.degree
@@ -309,7 +315,9 @@ end
 
 Whether the fitted homogeneous gauge has an implemented dual gauge family.
 """
-_supports_dual(::SetProg.AbstractVariable) = false
+function _supports_dual(::SetProg.AbstractVariable)
+    return false
+end
 _supports_dual(f::SetProg.Ellipsoid) = f.symmetric && f.piecewise === nothing
 _supports_dual(f::SetProg.Domain) = _is_linear_copositive(f)
 _supports_dual(f::_NormalizedFamily) = _supports_dual(f.set)
