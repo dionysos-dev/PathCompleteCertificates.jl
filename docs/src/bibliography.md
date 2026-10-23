@@ -19,12 +19,12 @@ number quoted in the manual was read in the paper it is attributed to.
 
 | | |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref), fixed facets and solved-for weights, and the four partial lifts that are [`OutSplitLift`](@ref), [`InSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
-| [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
-| [debauche2024thesis](@cite) | [`DualCopositiveTemplate`](@ref), Def. 2.30 |
+| [athanasopoulos2019polyhedral](@cite) | `ParallelFacesPolyhedralTemplate`, fixed facets and solved-for weights, and the four partial lifts that are [`OutSplitLift`](@ref), [`InSplitLift`](@ref), [`ForwardProductLift`](@ref) and [`BackwardProductLift`](@ref) |
+| [parrilo2008approximation](@cite) | `SetProg.PolySet` |
+| [debauche2024thesis](@cite) | `DualCopositiveTemplate`, Def. 2.30 |
 
-[`QuadraticTemplate`](@ref) and [`LinearCopositiveTemplate`](@ref) are
-standard. [`ConicPolyhedralTemplate`](@ref) is under submission and has no
+`SetProg.Ellipsoid` and `LinearCopositiveTemplate` are
+standard. `ConicPolyhedralTemplate` is under submission and has no
 entry yet.
 
 ## Safety and optimal control

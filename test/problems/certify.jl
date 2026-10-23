@@ -3,6 +3,7 @@ module TestCertify
 # The seam itself: one `certify` per problem, one `optimization_model` per
 # problem, and the failure path they share.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -92,7 +93,8 @@ end
 
     @test model isa JuMP.Model
     @test JuMP.termination_status(model) == JuMP.MOI.OPTIMIZE_NOT_CALLED
-    @test JuMP.num_variables(model) > 0
+    @test length(model[:stability_V]) == PCC.n_nodes(GRAPH)
+    @test all(V -> V isa SetProg.SetVariableRef, model[:stability_V])
 end
 
 @testset "optimal control has a model of its own now" begin

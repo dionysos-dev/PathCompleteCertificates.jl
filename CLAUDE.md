@@ -1,3 +1,14 @@
+## Stability migration
+
+Stability uses SetProg families directly, or vectors with one family per node.
+SetProg is a direct dependency; polynomial support is its optional SumOfSquares
+extension. `QuadraticTemplate` forwards stability modeling to SetProg and keeps
+the fitted quadratic functions for compatibility. The legacy quadratic models
+remain for safety and optimal control, whose migration is deferred. SetProg
+implements set variables and inclusion constraints. Certificate primitives live in `problems/gauges.jl`;
+applicability, graph closures, and reindexing live in `problems/sets.jl`.
+The legacy template architecture described below applies to deferred problems.
+
 # CLAUDE.md
 
 Operating guide for AI coding agents working in **PathCompleteCertificates.jl**. The developer

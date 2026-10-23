@@ -1,15 +1,8 @@
 # # Piecewise semi-ellipsoids: a template from SetProg
 #
-# [SetProg](https://github.com/blegat/SetProg.jl) writes optimisation problems
-# over sets: ellipsoids, sublevel sets of polynomials, polytopes, and sets that
-# are one of these on each cone of a partition. [`SetProgTemplate`](@ref)
-# makes such a set the node function of a node, the function whose unit
-# sublevel set it is, and the stability inequality
-# ``V_d(A_i x) \le \gamma^p V_s(x)`` becomes the inclusion
-# ``(A_i / \gamma)\, S_s \subseteq S_d``, which SetProg imposes. Three of its
-# sets give templates this package already has, and the example checks that
-# they certify the same rates; the fourth, the piecewise semi-ellipsoid, does
-# not.
+# SetProg families are accepted directly by PCC. Their stability inequality
+# is modeled as the inclusion `(A / rate) * S_source ⊆ S_destination`.
+# This example compares polynomial and piecewise set families.
 
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
@@ -43,38 +36,16 @@ polygon(normals) = polyhedron(hrep([HalfSpace(a, norm(a)) for a in normals]), LI
 
 octagon = polygon([[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]])
 
-# ## Three sets that are templates already
-#
-# An ellipsoid is a quadratic form, the sublevel set of a polynomial is a sum
-# of squares, and a polytope that is linear on each cone of a partition is the
-# free-facet polyhedral template on the same cones; the cones over the facets
-# of this octagon are those of [`planar_conic_partition`](@ref)`(1)`. Each
-# pair certifies the same rate.
+# ## Three homogeneous set families
 
+using SumOfSquares
 @polyvar x[1:2]
-
-pairs = [
-    (
-        "quadratic",
-        PCC.QuadraticTemplate(),
-        PCC.SetProgTemplate(Ellipsoid(; symmetric = true)),
-    ),
-    (
-        "sum of squares, degree 4",
-        PCC.SumOfSquaresTemplate(2, x),
-        PCC.SetProgTemplate(PolySet(; symmetric = true, degree = 4, variables = x)),
-    ),
-    (
-        "free facets, 4 cones",
-        PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)]),
-        PCC.SetProgTemplate(Polytope(; symmetric = true, piecewise = octagon)),
-    ),
+families = [
+    ("quadratic", PCC.QuadraticTemplate()),
+    ("degree 4", PCC.SumOfSquaresTemplate(2, x)),
+    ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
 ]
-
-[
-    (name, round(bound(ours).rate; digits = 4), round(bound(theirs).rate; digits = 4)) for
-    (name, ours, theirs) in pairs
-]
+[(name, round(bound(family).rate; digits = 4)) for (name, family) in families]
 
 # ## The piecewise semi-ellipsoid
 #
@@ -106,8 +77,7 @@ sixteen = polygon([
 partitions = [("square", square), ("octagon", octagon), ("16-gon", sixteen)]
 
 piecewise = [
-    (name, bound(PCC.SetProgTemplate(Ellipsoid(; symmetric = true, piecewise = P)))) for
-    (name, P) in partitions
+    (name, bound(Ellipsoid(; symmetric = true, piecewise = P))) for (name, P) in partitions
 ]
 
 [

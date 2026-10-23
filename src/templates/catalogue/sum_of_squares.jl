@@ -1,50 +1,20 @@
 """
     SumOfSquaresTemplate(degree, variables; min_scale = 1)
 
-The template of polynomials ``V(x) = z(x)^\\top Q z(x)`` with ``Q \\succeq 0``,
-where ``z`` runs over the monomials of degree `degree` in the polynomial
-`variables`, shared by every node. `min_scale` is the lower bound on ``c`` in
-``V(x) \\ge c \\|x\\|^{2\\,\\text{degree}}``. Requires `using SumOfSquares`.
-The program is homogeneous, so `min_scale` only fixes its scale; a much
-smaller one lets the solver's absolute tolerance show in the rate.
-[`decrease_slack`](@ref), hence [`edge_slacks`](@ref), is not implemented, so
-[`refine`](@ref) does not run on it.
+Construct a native SetProg `PolySet` of homogeneous SOS polynomials of degree
+`2degree`, using the shared polynomial `variables`. Its gauge is
+`min_scale * sum(variables .^ 2)^degree` plus an SOS remainder, so `min_scale`
+fixes the normalization. Requires `using SumOfSquares`.
+Decrease slacks and refinement are not implemented for polynomial sets.
 """
-struct SumOfSquaresTemplate{V <: AbstractVector, T <: Real} <: AbstractTemplate
-    degree::Int
-    variables::V
-    min_scale::T
-
-    function SumOfSquaresTemplate(
-        degree::Integer,
-        variables::V;
-        min_scale::Real = 1,
-    ) where {V <: AbstractVector}
-        degree >= 1 || throw(ArgumentError("degree must be at least 1, got $degree"))
-        isempty(variables) && throw(ArgumentError("at least one variable is required"))
-        min_scale > 0 || throw(ArgumentError("min_scale must be positive"))
-
-        return new{V, typeof(min_scale)}(Int(degree), variables, min_scale)
-    end
+function SumOfSquaresTemplate(
+    degree::Integer,
+    variables::AbstractVector;
+    min_scale::Real = 1,
+)
+    degree >= 1 || throw(ArgumentError("degree must be at least 1, got $degree"))
+    isempty(variables) && throw(ArgumentError("at least one variable is required"))
+    min_scale > 0 || throw(ArgumentError("min_scale must be positive"))
+    family = SetProg.PolySet(; symmetric = true, degree = 2 * Int(degree), variables)
+    return _with_superset(family, _unit_set(family; scale = min_scale))
 end
-
-"""
-    SumOfSquaresFunction(polynomial, variables)
-
-A fitted node function of a [`SumOfSquaresTemplate`](@ref): a polynomial in
-`variables`.
-"""
-struct SumOfSquaresFunction{P, V <: AbstractVector}
-    polynomial::P
-    variables::V
-end
-
-(V::SumOfSquaresFunction)(x::AbstractVector{<:Real}) =
-    V.polynomial(V.variables => collect(x))
-
-homogeneity_degree(template::SumOfSquaresTemplate) = 2 * template.degree
-
-is_closed_under(::SumOfSquaresTemplate, ::Addition, system) = true
-is_closed_under(::SumOfSquaresTemplate, ::Composition, system) = _is_invertible(system)
-is_closed_under(::SumOfSquaresTemplate, ::InverseComposition, system) =
-    _is_invertible(system)

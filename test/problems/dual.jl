@@ -7,6 +7,7 @@ module TestDual
 # for a template exactly when its dual is valid for the dual template -- and,
 # wherever a lift is valid, that the rate it certifies is no worse.
 
+import SetProg
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
@@ -21,8 +22,10 @@ edgeset(g) = Set(
 
 # The numbers a fitted node function is made of, whatever the template.
 coefficients(V::PCC.QuadraticFunction) = Matrix(V)
-coefficients(V::PCC.DualCopositiveFunction) = V.v
-coefficients(V::PCC.LinearCopositiveFunction) = V.c
+coefficients(V::SetProg.Sets.PolarPoint) = V.a
+coefficients(V::SetProg.Sets.Intersection) = coefficients(V.set)
+coefficients(V::SetProg.Sets.Polar) = coefficients(SetProg.polar(V))
+coefficients(V::SetProg.Sets.Piecewise) = reduce(vcat, [s.a for s in V.sets])
 
 # A positive system for the copositive pair, a general one for the quadratic
 # template; both invertible, so the composition lifts are valid somewhere.

@@ -323,8 +323,8 @@ end
     lifted = PCC.lift(PCC.OutSplitLift(), graph, PCC.outgoing_edges(graph, 1))
 
     moved = PCC.reindex(template, PCC.origins(lifted))
-    @test length(moved.G) == PCC.n_nodes(PCC.graph(lifted))
-    @test moved.G == [template.G[o] for o in PCC.origins(lifted)]
+    @test length(moved) == PCC.n_nodes(PCC.graph(lifted))
+    @test moved == [template[o] for o in PCC.origins(lifted)]
 
     # A data-free template is its own reindexing.
     @test PCC.reindex(PCC.QuadraticTemplate(), PCC.origins(lifted)) ==

@@ -135,9 +135,9 @@ plot(left, right; layout = (1, 2), size = (1100, 620))
 # ## Sums of squares
 #
 # [`SumOfSquaresTemplate`](@ref) takes polynomial node functions of higher
-# degree ([parrilo2008approximation](@cite)). It is defined in a package
-# extension loaded with SumOfSquares, and the polynomial variables are created
-# once and shared by every node. Degree 2 is the quadratic template. The table
+# degree ([parrilo2008approximation](@cite)). Load SumOfSquares before
+# constructing it. The polynomial variables are created once and shared by
+# every node. Degree 2 is the quadratic template. The table
 # gives the rates of degrees 2 and 4 on one node and on `de_bruijn(1, 2)`.
 
 @polyvar x[1:2]

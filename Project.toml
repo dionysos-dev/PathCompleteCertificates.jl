@@ -9,6 +9,7 @@ JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MathematicalSystems = "d14a8603-c872-5ed3-9ece-53e0e82e39da"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SetProg = "39881422-4b75-5582-a5c7-0feb14562a65"
 
 [compat]
 HybridSystems = "0.4"
@@ -16,19 +17,15 @@ JuMP = "1.20"
 LinearAlgebra = "1"
 MathematicalSystems = "0.14"
 Random = "1"
-MultivariatePolynomials = "0.5"
 RecipesBase = "1"
-SetProg = "0.4.4"
-SumOfSquares = "0.7, 0.8"
+SetProg = "0.4.5"
+SumOfSquares = "0.8"
 julia = "1.10"
 
 [weakdeps]
-MultivariatePolynomials = "102ac46a-7ee4-5c85-9060-abc95bfdeaa3"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
-SetProg = "39881422-4b75-5582-a5c7-0feb14562a65"
 SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [extensions]
+PathCompleteCertificatesSumOfSquaresExt = "SumOfSquares"
 PathCompleteCertificatesRecipesBaseExt = "RecipesBase"
-PathCompleteCertificatesSetProgExt = ["SetProg", "SumOfSquares", "MultivariatePolynomials"]
-PathCompleteCertificatesSumOfSquaresExt = ["SumOfSquares", "MultivariatePolynomials"]

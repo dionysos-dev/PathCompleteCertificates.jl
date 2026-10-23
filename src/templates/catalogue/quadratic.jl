@@ -1,11 +1,13 @@
 """
     QuadraticTemplate(; conditioning_bound = Inf)
 
-The template ``V(x) = x^\\top P x``, with ``P`` positive definite.
+Quadratic node functions for stability, safety and optimal control. Stability
+uses SetProg's native ellipsoid model and returns the legacy fitted functions.
+Safety evaluates the quadratic in homogeneous coordinates and permits an
+indefinite coefficient matrix; optimal control uses positive quadratic forms.
+A finite `conditioning_bound` also imposes `P ≤ conditioning_bound * I` in
+stability, which can exclude every certificate of a stable system.
 
-A finite `conditioning_bound` also imposes
-``P_s \\preceq \\text{conditioning\\_bound} \\cdot I``, which can exclude every
-certificate of a stable system.
 """
 struct QuadraticTemplate{T <: Real} <: AbstractTemplate
     conditioning_bound::T
@@ -54,20 +56,6 @@ end
 solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
 homogeneity_degree(::QuadraticTemplate) = 2
-
-function add_normalization!(model::JuMP.Model, template::QuadraticTemplate, P)
-    # The edge conditions are homogeneous, so this only fixes the scale.
-    JuMP.@constraint(model, P - LinearAlgebra.I in JuMP.PSDCone())
-
-    if isfinite(template.conditioning_bound)
-        JuMP.@constraint(
-            model,
-            template.conditioning_bound * LinearAlgebra.I - P in JuMP.PSDCone()
-        )
-    end
-
-    return nothing
-end
 
 function add_decrease!(
     model::JuMP.Model,

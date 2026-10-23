@@ -23,7 +23,13 @@ The fields shared by every certificate:
 - `feasible`, whether the solve produced a certificate, read by
   [`is_feasible`](@ref).
 """
-struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
+struct CertificateData{
+    P <: AbstractProblem,
+    T <: Union{AbstractTemplate, _SetFamily},
+    G,
+    F,
+    S,
+}
     problem::P
     template::T
     graph::G
@@ -33,7 +39,12 @@ struct CertificateData{P <: AbstractProblem, T <: AbstractTemplate, G, F, S}
 end
 
 # The CertificateData of a failed solve.
-function _failed(problem::AbstractProblem, template::AbstractTemplate, graph, status)
+function _failed(
+    problem::AbstractProblem,
+    template::Union{AbstractTemplate, _SetFamily},
+    graph,
+    status,
+)
     return CertificateData(problem, template, graph, Any[], status, false)
 end
 
@@ -167,6 +178,12 @@ function _edge_slacks(certificate::AbstractCertificate; kwargs...)
 
     return map(edges(graph_)) do edge
         dynamics, scale = _edge_decrease(problem_, graph_, edge, A; kwargs...)
-        return decrease_slack(template_, V[source(edge)], V[dest(edge)], dynamics; scale)
+        return decrease_slack(
+            template_ isa AbstractVector ? template_[source(edge)] : template_,
+            V[source(edge)],
+            V[dest(edge)],
+            dynamics;
+            scale,
+        )
     end
 end

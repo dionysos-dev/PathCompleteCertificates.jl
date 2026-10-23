@@ -62,7 +62,7 @@ finds the order. The products give graphs with words on their edges, which
 
 ¹ The linear copositive norms are not closed under `min`, yet the min lift is
 valid for them on positive systems ([debauche2024thesis](@cite), Thm. 7.43):
-[`is_valid`](@ref) reads it through their dual, [`DualCopositiveTemplate`](@ref),
+[`is_valid`](@ref) reads it through their dual, `DualCopositiveTemplate`,
 closed under `max`.
 
 ² Sufficient only: [jongeneel2025ordering](@cite), Ex. IV.3, exhibits two

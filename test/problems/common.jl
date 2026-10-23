@@ -53,7 +53,8 @@ end
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 
-    @test PCC.common(graph, PROBLEM, linear, X) ≈ minimum(V(X) for V in linear)
+    @test PCC.common(graph, PROBLEM, linear, X) ≈
+          minimum(PCC.node_value(PROBLEM, V, X) for V in linear)
 
     weights = [
         PCC.ParallelFacesPolyhedralFunction(
@@ -66,7 +67,8 @@ end
         ),
     ]
 
-    @test PCC.common(graph, PROBLEM, weights, X) ≈ minimum(V(X) for V in weights)
+    @test PCC.common(graph, PROBLEM, weights, X) ≈
+          minimum(PCC.node_value(PROBLEM, V, X) for V in weights)
 end
 
 end
