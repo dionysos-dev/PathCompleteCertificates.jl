@@ -22,30 +22,14 @@ polygon(normals) = polyhedron(hrep([HalfSpace(a, norm(a)) for a in normals]), LI
 
 octagon = polygon([[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]])
 
+using SumOfSquares
 @polyvar x[1:2]
-
-pairs = [
-    (
-        "quadratic",
-        PCC.QuadraticTemplate(),
-        PCC.SetProgTemplate(Ellipsoid(; symmetric = true)),
-    ),
-    (
-        "sum of squares, degree 4",
-        PCC.SumOfSquaresTemplate(2, x),
-        PCC.SetProgTemplate(PolySet(; symmetric = true, degree = 4, variables = x)),
-    ),
-    (
-        "free facets, 4 cones",
-        PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)]),
-        PCC.SetProgTemplate(Polytope(; symmetric = true, piecewise = octagon)),
-    ),
+families = [
+    ("quadratic", PCC.QuadraticTemplate()),
+    ("degree 4", PCC.SumOfSquaresTemplate(2, x)),
+    ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
 ]
-
-[
-    (name, round(bound(ours).rate; digits = 4), round(bound(theirs).rate; digits = 4)) for
-    (name, ours, theirs) in pairs
-]
+[(name, round(bound(family).rate; digits = 4)) for (name, family) in families]
 
 square = polygon([[1, 0], [0, 1], [-1, 0], [0, -1]])
 sixteen = polygon([
@@ -70,8 +54,7 @@ sixteen = polygon([
 partitions = [("square", square), ("octagon", octagon), ("16-gon", sixteen)]
 
 piecewise = [
-    (name, bound(PCC.SetProgTemplate(Ellipsoid(; symmetric = true, piecewise = P)))) for
-    (name, P) in partitions
+    (name, bound(Ellipsoid(; symmetric = true, piecewise = P))) for (name, P) in partitions
 ]
 
 [
