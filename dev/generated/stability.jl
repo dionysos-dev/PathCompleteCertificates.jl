@@ -26,7 +26,7 @@ result = PCC.jsr_bound(
 result.rate
 
 V = PCC.functions(result)
-length(V), V[1]([1.0, 1.0])
+length(V), PCC.node_value(problem, V[1], [1.0, 1.0])
 
 x = [1.0, 1.0]
 result(x)

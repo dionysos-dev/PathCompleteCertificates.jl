@@ -51,11 +51,11 @@ result.rate
 
 # ## What a certificate is
 #
-# [`functions`](@ref) returns the node functions, one per node, each
-# callable.
+# [`functions`](@ref) returns fitted sets, one per node. Use
+# [`node_value`](@ref) to evaluate the corresponding node function.
 
 V = PCC.functions(result)
-length(V), V[1]([1.0, 1.0])
+length(V), PCC.node_value(problem, V[1], [1.0, 1.0])
 
 # The node functions combine into the common function, whose form depends on
 # the graph; here it is their minimum, because the graph is complete. A
