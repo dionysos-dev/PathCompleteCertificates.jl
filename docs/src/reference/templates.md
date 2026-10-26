@@ -34,7 +34,8 @@ Pages = ["templates/abstract.jl", "problems/gauges.jl", "problems/sets.jl"]
 ## SetProg families
 
 The families of [SetProg](https://github.com/blegat/SetProg.jl), which the
-constructors return and stability accepts directly.
+constructors return and stability accepts directly. Safety accepts quadratic
+and polynomial families.
 
 ```@autodocs
 Modules = [SetProg]

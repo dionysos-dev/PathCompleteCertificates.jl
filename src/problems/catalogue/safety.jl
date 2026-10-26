@@ -3,8 +3,9 @@
 
 Safety problem for an input-free switched linear system [anand2024barrier](@cite),
 with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
-The barrier at node `a` is `[x; 1]' P_a [x; 1]` with `P_a` symmetric, not
-necessarily positive semidefinite.
+For a quadratic family, the barrier at node `a` is `[x; 1]' P_a [x; 1]`
+with `P_a` symmetric, not necessarily positive semidefinite. Polynomial
+families construct affine polynomial barriers of the requested degree.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem
     system::S
@@ -50,22 +51,63 @@ struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     unsafe_multipliers::M
 end
 
-# The decrease condition of `edge`, `B_dst(A x) <= B_src(x)` in homogeneous
-# coordinates: the barrier need only not increase, so the scale is 1. Written
-# once, for the model and for the slacks.
+# Barriers are evaluated in physical state coordinates.
 _edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
-    (_homogeneous_dynamics(A[only(letters(label(graph, edge)))]), 1)
+    (A[only(letters(label(graph, edge)))], 1)
 
-# The matrices the S-procedure keeps above `margin * I` at each node, so that
-# the barrier is negative on the initial set and positive on the unsafe set.
-# Written once, for the model and for the check of its solution.
-_initial_separation(problem::SafetyProblem, P, γ) = -(P + γ * problem.S0)
-_unsafe_separation(problem::SafetyProblem, P, γ) = P - γ * problem.Su
+function _safety_family(f::SetProg.Ellipsoid, n, variables)
+    f.dimension === nothing || f.dimension == n || throw(DimensionMismatch())
+    f.point === nothing && f.piecewise === nothing && f.superset === nothing ||
+        throw(ArgumentError("safety does not support point, piecewise, or superset hints"))
+    return SetProg.Ellipsoid(; symmetric = false, psd = false, dimension = n)
+end
+function _safety_family(f::SetProg.PolySet, n, variables)
+    f.dimension === nothing || f.dimension == n || throw(DimensionMismatch())
+    f.point === nothing || throw(ArgumentError("safety does not support a point hint"))
+    length(variables) == n || throw(DimensionMismatch())
+    return SetProg.PolySet(;
+        symmetric = false,
+        psd = false,
+        dimension = n,
+        degree = f.degree,
+        variables,
+        basis = f.basis,
+    )
+end
+_safety_degree(::SetProg.Ellipsoid) = 2
+_safety_degree(f::SetProg.PolySet) = f.degree
+
+function _safety_families(template, n, count)
+    families = template isa AbstractVector ? template : fill(template, count)
+    length(families) == count || throw(ArgumentError("one set family is required per node"))
+    polys = filter(f -> f isa SetProg.PolySet, families)
+    x = nothing
+    if !isempty(polys)
+        explicit = [f.variables for f in polys if f.variables !== nothing]
+        x = isempty(explicit) ? SetProg.new_polyvars(n) : first(explicit)
+        all(==(x), explicit) ||
+            throw(ArgumentError("polynomial sets must share their variables"))
+    end
+    return [_safety_family(f, n, x) for f in families]
+end
+
+# Input matrices have the constant coordinate last, unlike ShiftedEllipsoid.
+_safety_region(M) = SetProg.Sets.ShiftedEllipsoid(
+    LinearAlgebra.Symmetric(M[1:(end - 1), 1:(end - 1)]),
+    M[1:(end - 1), end],
+    M[end, end],
+)
+_safety_reference(f::SetProg.Ellipsoid, sign) = _safety_region(
+    sign * Matrix{Float64}(LinearAlgebra.I, f.dimension + 1, f.dimension + 1),
+)
 
 """
     optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
-Build, without solving, the barrier program; only `QuadraticTemplate` is supported.
+Build the barrier program with quadratic or polynomial SetProg families.
+Safety uses affine barriers without a positivity constraint. Two fixed-scale
+inclusions bound their coefficients; separation from the initial and unsafe
+sets uses nonnegative S-procedure multipliers.
 """
 function optimization_model(
     template::_SetFamily,
@@ -74,61 +116,64 @@ function optimization_model(
     optimizer,
     check_path_complete::Bool = true,
 )
-    legacy = _legacy_quadratic(template, problem)
-
-    _check_safety_data(graph, problem; check_path_complete = check_path_complete)
-    n = _state_dimension(problem.system)
-    A = state_matrices(problem.system)
-    d = n + 1
-
+    _check_safety_data(graph, problem; check_path_complete)
+    families = _safety_families(template, _state_dimension(problem.system), n_nodes(graph))
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
-
-    # No PSD constraint on the barriers: it would force P = 0.
-    Ps = [add_function_variables!(model, legacy, d, i) for i in nodes(graph)]
-
+    sets = [JuMP.@variable(model, variable_type = f) for f in families]
     gamma0 = [
-        JuMP.@variable(model, lower_bound = 0, base_name = "gamma0_$i") for
-        i in nodes(graph)
+        SetProg.SProcedureMultiplier(;
+            degree = _safety_degree(f) - 2,
+            base_name = "gamma0_$i",
+        ) for (i, f) in enumerate(families)
     ]
-
     gammau = [
-        JuMP.@variable(model, lower_bound = 0, base_name = "gammau_$i") for
-        i in nodes(graph)
+        SetProg.SProcedureMultiplier(;
+            degree = _safety_degree(f) - 2,
+            base_name = "gammau_$i",
+        ) for (i, f) in enumerate(families)
     ]
-
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
-
+    initial = _safety_region(-problem.S0)
+    unsafe = _safety_region(-problem.Su)
+    separation = []
     for i in nodes(graph)
-        JuMP.@constraint(
-            model,
-            _initial_separation(problem, Ps[i], gamma0[i]) - eps * LinearAlgebra.I(d) in
-            JuMP.PSDCone()
+        push!(
+            separation,
+            JuMP.@constraint(
+                model,
+                initial ⊆ sets[i],
+                S_procedure_scaling = gamma0[i],
+                margin = eps
+            )
         )
-
-        JuMP.@constraint(
-            model,
-            _unsafe_separation(problem, Ps[i], gammau[i]) - eps * LinearAlgebra.I(d) in
-            JuMP.PSDCone()
+        push!(
+            separation,
+            JuMP.@constraint(
+                model,
+                [sets[i], unsafe] in SetProg.Disjoint(),
+                S_procedure_scaling = gammau[i],
+                margin = eps
+            )
         )
-
-        # -I ⪯ P ⪯ I: the rest is homogeneous, so `max eps` is otherwise unbounded.
-        JuMP.@constraint(model, LinearAlgebra.I(d) - Ps[i] in JuMP.PSDCone())
-        JuMP.@constraint(model, Ps[i] + LinearAlgebra.I(d) in JuMP.PSDCone())
+        # Fixed multipliers bound B between ±(1 + ‖x‖²)^d. For quadratics,
+        # these are exactly I - P ⪰ 0 and P + I ⪰ 0.
+        upper = _safety_reference(families[i], 1)
+        lower = _safety_reference(families[i], -1)
+        JuMP.@constraint(model, upper ⊆ sets[i], S_procedure_scaling = 1)
+        JuMP.@constraint(model, sets[i] ⊆ lower, S_procedure_scaling = 1)
     end
-
+    A = state_matrices(problem.system)
     for edge in edges(graph)
-        dynamics, scale = _edge_decrease(problem, graph, edge, A)
-        add_decrease!(model, legacy, Ps[source(edge)], Ps[dest(edge)], dynamics; scale)
+        dynamics, _ = _edge_decrease(problem, graph, edge, A)
+        JuMP.@constraint(model, dynamics * sets[source(edge)] ⊆ sets[dest(edge)])
     end
-
     JuMP.@objective(model, Max, eps)
-
-    model[:safety_P] = Ps
+    model[:safety_sets] = sets
     model[:safety_gamma0] = gamma0
     model[:safety_gammau] = gammau
     model[:safety_eps] = eps
-
+    model[:safety_separation] = separation
     return model
 end
 
@@ -162,26 +207,17 @@ function certify(
         nothing,
     )
 
-    Ps = model[:safety_P]
-    gamma0 = model[:safety_gamma0]
-    gammau = model[:safety_gammau]
-    eps = model[:safety_eps]
+    Pval = JuMP.value.(model[:safety_sets])
+    gamma0_val = JuMP.value.(model[:safety_gamma0])
+    gammau_val = JuMP.value.(model[:safety_gammau])
+    eps_val = JuMP.value(model[:safety_eps])
 
-    Pval = [solution_value(_QuadraticTemplate(), P) for P in Ps]
-    gamma0_val = JuMP.value.(gamma0)
-    gammau_val = JuMP.value.(gammau)
-    eps_val = JuMP.value(eps)
-
-    # Re-check on the returned numbers rather than trusting the status.
-    separated(S) =
-        minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(S))) >=
-        eps_val - _SAFETY_CHECK_TOLERANCE
-
+    # Re-check the returned PSD/SOS certificates, including their margin.
     feasible =
-        eps_val > _SAFETY_MARGIN_TOLERANCE && all(eachindex(Pval)) do i
-            P = Matrix(Pval[i])
-            return separated(_initial_separation(problem, P, gamma0_val[i])) &&
-                   separated(_unsafe_separation(problem, P, gammau_val[i]))
+        eps_val > _SAFETY_MARGIN_TOLERANCE && all(model[:safety_separation]) do constraint
+            matrix = SetProg.certificate_matrix(constraint)
+            return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(matrix))) >=
+                   -_SAFETY_CHECK_TOLERANCE
         end
 
     return SafetyCertificate(
@@ -224,8 +260,21 @@ function _check_safety_data(
     return nothing
 end
 
-# A barrier lives in homogeneous coordinates.
-node_value(::SafetyProblem, V, x::AbstractVector{<:Real}) = V([x; one(eltype(x))])
+# Evaluate the barrier in physical state coordinates.
+node_value(::SafetyProblem, V, x::AbstractVector{<:Real}) = SetProg.sublevel_eval(V, x) - 1
 
 # Where the barrier is held; `refine` does not run on safety.
 edge_slacks(certificate::SafetyCertificate) = _edge_slacks(certificate)
+
+function decrease_slack(
+    ::SetProg.Ellipsoid,
+    source::SetProg.Sets.ShiftedEllipsoid,
+    destination::SetProg.Sets.ShiftedEllipsoid,
+    A;
+    scale = 1,
+)
+    H(V) = [V.β V.b'; V.b V.Q]
+    dynamics = [1.0 zeros(1, size(A, 2)); zeros(size(A, 1)) A]
+    residual = scale * H(source) - dynamics' * H(destination) * dynamics
+    return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
+end

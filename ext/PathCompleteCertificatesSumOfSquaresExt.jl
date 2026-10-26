@@ -21,4 +21,18 @@ function PCC._gauge(V::Union{SetProg.Sets.PolySet, SetProg.Sets.ConvexPolySet}, 
     return p(SumOfSquares.MP.variables(p) => x)
 end
 
+function PCC._safety_reference(f::SetProg.PolySet, sign)
+    x = f.variables
+    MP = SumOfSquares.MP
+    d = div(f.degree, 2)
+    monos = MP.monomials(x, 0:d)
+    coefficients = [
+        sign * factorial(d) /
+        (factorial(d - MP.degree(m)) * prod(factorial, MP.exponents(m))) for m in monos
+    ]
+    coefficients[end] += 1
+    gram = SumOfSquares.GramMatrix(Matrix(LinearAlgebra.Diagonal(coefficients)), monos)
+    return SetProg.Sets.PolySet(f.degree, gram)
+end
+
 end

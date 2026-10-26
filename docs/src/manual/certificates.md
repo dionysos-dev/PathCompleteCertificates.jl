@@ -239,7 +239,8 @@ tight. [Reading a certificate](@ref) shows how to find the tight edges.
 ## Safety
 
 The node functions are path-complete barrier functions
-([anand2024barrier](@cite)), quadratic in ``[x; 1]``:
+([anand2024barrier](@cite)). With the quadratic template they are quadratic
+in ``[x; 1]``:
 ``V_a(x) = [x; 1]^\top P_a [x; 1]``, with ``P_a`` symmetric, possibly
 indefinite. The program:
 
@@ -255,7 +256,10 @@ indefinite. The program:
 
 where the margin ``\varepsilon`` measures how well the functions separate the
 two sets. [`certify`](@ref) imposes the set conditions through the
-S-procedure, a sufficient condition:
+S-procedure, a sufficient condition. Polynomial families are also supported,
+with explicit monomial degrees, for example `SetProg.PolySet(degree = 0:4,
+dimension = 2)`. Their barriers need not be SOS; their separation certificates
+use SOS multipliers:
 
 ```@example running
 problem = PCC.SafetyProblem(system, S0, Su)

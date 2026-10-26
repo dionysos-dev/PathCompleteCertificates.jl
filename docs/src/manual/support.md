@@ -13,12 +13,13 @@ below is a place where research or a contribution can close it.
 ## Templates and problems
 
 Stability accepts every template, including SetProg families passed directly.
-Safety and optimal control use the quadratic template.
+Safety accepts quadratic and polynomial families; optimal control uses the
+quadratic template.
 
 |                                           | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
 | :---------------------------------------- | :-: | :-: | :-: |
 | [`QuadraticTemplate`](@ref)               | ✓ | ✓ | ✓ |
-| [`SumOfSquaresTemplate`](@ref)            | ✓ | | |
+| [`SumOfSquaresTemplate`](@ref)            | ✓ | ✓ | |
 | [`LinearCopositiveTemplate`](@ref)        | ✓ ¹ | | |
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | | |
@@ -27,8 +28,7 @@ Safety and optimal control use the quadratic template.
 
 ¹ Positive systems only: matrices with nonnegative entries.
 
-An unsupported combination throws an `ArgumentError` before anything is
-solved. Two more conditions on the graph:
+Unsupported combinations report an error before anything is solved. Two more conditions on the graph:
 
 - optimal control needs a **complete** graph, not only a path-complete one;
 - a [`WordGraph`](@ref), with sequences of modes on its edges, is accepted by
@@ -65,9 +65,8 @@ template, problem, lift or refinement algorithm goes.
 
 **Not implemented yet:**
 
-- **safety with other templates:** the edge inequality uses the decrease
-  condition every template provides; only the conditions on the initial and
-  unsafe sets are written for quadratic functions;
+- **safety with polyhedral or piecewise templates:** separation certificates
+  currently support quadratic and polynomial functions;
 - **optimal control on graphs that are not complete:** the convex program
   covers complete graphs only;
 - **refinement with sums of squares and piecewise ellipsoids:** their edge

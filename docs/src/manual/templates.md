@@ -92,7 +92,7 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | Template | Node function | Systems | Program | Problems |
 | :-- | :-- | :-- | :-- | :-- |
 | [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
-| [`SumOfSquaresTemplate`](@ref)`(d, x)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability |
+| [`SumOfSquaresTemplate`](@ref)`(d, x)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety |
 | [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear | stability |
@@ -110,6 +110,13 @@ SetProg families passed directly, piecewise on the cones over the facets of a
 polytope ``P``. To write them, run `Pkg.add("SetProg")` and `using SetProg`:
 the package depends on SetProg, so nothing new is downloaded, but your
 environment must list it for Julia to load it by name.
+
+For safety, quadratic and polynomial families give affine barriers without a
+positivity constraint on the barrier itself. Polynomial variables use an
+explicit degree range, such as `SetProg.PolySet(degree = 0:4, dimension = 2)`.
+The initial and unsafe separation certificates use nonnegative scalar
+multipliers for quadratics and SOS multipliers for higher-degree barriers.
+Optimal control retains its quadratic matrix formulation.
 
 ## How to choose
 
