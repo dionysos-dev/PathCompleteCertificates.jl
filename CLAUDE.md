@@ -2,10 +2,11 @@
 
 Stability uses SetProg families directly, or vectors with one family per node.
 SetProg is a direct dependency; polynomial support is its optional SumOfSquares
-extension. `QuadraticTemplate` forwards stability modeling to SetProg and keeps
-the fitted quadratic functions for compatibility. The legacy quadratic models
-remain for safety and optimal control, whose migration is deferred. SetProg
-implements set variables and inclusion constraints. Certificate primitives live in `problems/gauges.jl`;
+extension. `QuadraticTemplate()` returns a native SetProg ellipsoid family;
+stability certificates contain native SetProg sets. Safety and optimal control
+keep their matrix models behind a private builder, with native family metadata.
+SetProg implements set variables and inclusion constraints. Certificate
+primitives live in `problems/gauges.jl`;
 applicability, graph closures, and reindexing live in `problems/sets.jl`.
 The legacy template architecture described below applies to deferred problems.
 

@@ -81,7 +81,7 @@ discuss a feature, and see the Developer Docs for the setup, conventions and Git
 Stability certificates use [SetProg](https://github.com/blegat/SetProg.jl)
 set families directly. SetProg owns their variables, inclusions and fitted gauges;
 this package owns the systems, graphs, lifts and refinement algorithms.
-Safety and optimal control retain their quadratic templates until their migration.
+Safety and optimal control retain their matrix models until their migration.
 See the [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
 for extending the package.
 

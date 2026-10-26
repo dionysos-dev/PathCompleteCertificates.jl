@@ -23,9 +23,9 @@ Pages = ["problems/sets.jl", "problems/gauges.jl", "templates/abstract.jl"]
 
 ## Quadratic compatibility template
 
-`QuadraticTemplate()` delegates stability modeling to SetProg while preserving
-the existing fitted quadratic functions. Safety and optimal control retain
-their implementations.
+`QuadraticTemplate()` returns a native SetProg ellipsoid family. Stability
+returns native fitted ellipsoids. Safety and optimal control retain their
+matrix implementations behind a private adapter.
 
 ```@autodocs
 Modules = [PathCompleteCertificates]

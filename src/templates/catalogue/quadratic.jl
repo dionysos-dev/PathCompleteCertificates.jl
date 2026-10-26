@@ -1,34 +1,33 @@
 """
-    QuadraticTemplate(; conditioning_bound = Inf)
+    QuadraticTemplate()
 
-Quadratic node functions for stability, safety and optimal control. Stability
-uses SetProg's native ellipsoid model and returns the legacy fitted functions.
-Safety evaluates the quadratic in homogeneous coordinates and permits an
-indefinite coefficient matrix; optimal control uses positive quadratic forms.
-A finite `conditioning_bound` also imposes `P ≤ conditioning_bound * I` in
-stability, which can exclude every certificate of a stable system.
-
+Return `SetProg.Ellipsoid(symmetric = true)`, the native family of homogeneous
+quadratic gauges. Stability returns fitted SetProg ellipsoids; evaluate them
+with `node_value(problem, V, x)` and access their matrices as `V.Q`.
+Use the `conditioning_bound` keyword of `certify` or `jsr_bound` to cap the
+coefficient matrix. Safety and optimal control retain their matrix models.
 """
-struct QuadraticTemplate{T <: Real} <: AbstractTemplate
-    conditioning_bound::T
+function QuadraticTemplate()
+    return SetProg.Ellipsoid(; symmetric = true)
+end
 
-    function QuadraticTemplate(; conditioning_bound::Real = Inf)
-        conditioning_bound >= 1 || throw(
-            ArgumentError(
-                "conditioning_bound must be at least 1, since the normalization " *
-                "already imposes P >= I",
-            ),
-        )
+# Private matrix builder for the deferred safety and optimal-control models.
+struct _QuadraticTemplate end
 
-        return new{typeof(conditioning_bound)}(conditioning_bound)
-    end
+function _legacy_quadratic(template, problem)
+    template == QuadraticTemplate() || throw(
+        ArgumentError(
+            "$(nameof(typeof(problem))) currently supports only QuadraticTemplate()",
+        ),
+    )
+    return _QuadraticTemplate()
 end
 
 """
     QuadraticFunction(P)
 
-A fitted node function `V(x) = x'Px` of a [`QuadraticTemplate`](@ref);
-`Matrix(V)` is `P`.
+A fitted quadratic `V(x) = x'Px`, used by safety and optimal control.
+`Matrix(V)` is `P`. Stability returns native SetProg ellipsoids instead.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M
@@ -40,7 +39,7 @@ Base.Matrix(V::QuadraticFunction) = Matrix(V.P)
 
 function add_function_variables!(
     model::JuMP.Model,
-    ::QuadraticTemplate,
+    ::_QuadraticTemplate,
     dimension::Integer,
     node::Integer,
 )
@@ -53,13 +52,11 @@ function add_function_variables!(
     )
 end
 
-solution_value(::QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
-
-homogeneity_degree(::QuadraticTemplate) = 2
+solution_value(::_QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
 
 function add_decrease!(
     model::JuMP.Model,
-    ::QuadraticTemplate,
+    ::_QuadraticTemplate,
     P_src::LinearAlgebra.Symmetric,
     P_dst::LinearAlgebra.Symmetric,
     map::AbstractMatrix;
@@ -71,7 +68,7 @@ function add_decrease!(
 end
 
 function decrease_slack(
-    ::QuadraticTemplate,
+    ::SetProg.Ellipsoid,
     V_src::QuadraticFunction,
     V_dst::QuadraticFunction,
     map::AbstractMatrix;
@@ -81,13 +78,3 @@ function decrease_slack(
 
     return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(Matrix(residual))))
 end
-
-# AᵀPA is positive definite only when A is invertible.
-is_closed_under(::QuadraticTemplate, ::Addition, system) = true
-is_closed_under(::QuadraticTemplate, ::Composition, system) = _is_invertible(system)
-is_closed_under(::QuadraticTemplate, ::InverseComposition, system) = _is_invertible(system)
-
-# The dual norm of xᵀPx is xᵀP⁻¹x, and the conditioning box is self-dual.
-has_dual(::QuadraticTemplate) = true
-dual(template::QuadraticTemplate) = template
-dual(::QuadraticTemplate, V::QuadraticFunction) = QuadraticFunction(inv(V.P))

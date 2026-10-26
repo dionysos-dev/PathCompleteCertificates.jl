@@ -179,7 +179,7 @@ bound(template, g) = PCC.jsr_bound(
 on_G1 = bound(QUADRATIC, G1)
 V = PCC.functions(on_G1)
 W = [
-    PCC.QuadraticFunction(sum(C[h, g] * Matrix(V[g]) for g in eachindex(V))) for
+    PCC.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for
     h in 1:PCC.n_nodes(G2)
 ]
 scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)

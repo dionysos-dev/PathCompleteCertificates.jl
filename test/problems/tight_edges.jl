@@ -79,12 +79,13 @@ end
         dst = V[PCC.dest(edge)]
         map = A[PCC.label(GRAPH, edge)]
 
-        residual = scale * src.P - transpose(map) * dst.P * map
+        residual = scale * src.Q - transpose(map) * dst.Q * map
         @test slack ≈ minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
 
         # Slack ≥ 0 is exactly the edge inequality holding, sampled.
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, -2.0])
-            @test scale * src(x) - dst(map * x) >= -1e-7
+            @test scale * PCC.node_value(PROBLEM, src, x) -
+                  PCC.node_value(PROBLEM, dst, map * x) >= -1e-7
         end
     end
 end

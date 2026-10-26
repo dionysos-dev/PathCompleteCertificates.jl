@@ -5,6 +5,7 @@ using HybridSystems
 using Random
 import PathCompleteCertificates as PCC
 import Clarabel
+import SetProg
 
 const OPTIMIZER = Clarabel.Optimizer
 const TEMPLATE = PCC.QuadraticTemplate()
@@ -52,6 +53,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
         depth_max = 3,
     )
 
+    @test PCC.template(first(PCC.certificates(trace))) isa SetProg.Ellipsoid
     @test PCC.status(trace) == PCC.OPTIMAL
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1

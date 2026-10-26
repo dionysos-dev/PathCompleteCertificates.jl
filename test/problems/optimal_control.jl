@@ -3,7 +3,6 @@ module TestOptimalControl
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
-struct UnsupportedTemplate <: PCC.AbstractTemplate end
 import Clarabel
 import JuMP
 import LinearAlgebra
@@ -28,6 +27,7 @@ const GRAPH = PCC.de_bruijn(1, 2)
 const RESULT = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
 @testset "a certificate is produced" begin
+    @test PCC.template(RESULT) == PCC.QuadraticTemplate()
     @test PCC.is_feasible(RESULT)
     @test length(PCC.functions(RESULT)) == PCC.n_nodes(GRAPH)
     @test length(RESULT.gains) == PCC.n_nodes(GRAPH)
@@ -100,7 +100,7 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q[1:1, 1:1], R)
 
     @test_throws ArgumentError PCC.certify(
-        UnsupportedTemplate(),
+        PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,

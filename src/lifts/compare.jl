@@ -7,7 +7,7 @@ What [`compare`](@ref) returns: the [`lifts`](@ref) tried, the
 struct Comparison
     lifts::Vector{AbstractLift}
     simulations::Vector{Pair{AbstractLift, Any}}
-    templates::Vector{Union{AbstractTemplate, _SetFamily}}
+    templates::Vector{_SetFamily}
 end
 
 """
@@ -80,7 +80,7 @@ function compare(
         L isa IdentityLift && break
     end
 
-    proven = Union{AbstractTemplate, _SetFamily}[
+    proven = _SetFamily[
         template for
         template in templates if any(is_valid(L, template, system) for (L, _) in found)
     ]

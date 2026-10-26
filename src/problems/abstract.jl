@@ -46,7 +46,7 @@ rate, and `best_certificate` bisects for the smallest, to relative tolerance
 `rtol`.
 """
 function best_certificate(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::AbstractProblem;
     optimizer,

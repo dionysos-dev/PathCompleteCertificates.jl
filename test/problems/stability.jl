@@ -4,6 +4,7 @@ module TestStability
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
+import SetProg
 import Clarabel
 
 const GRAPH = GraphAutomaton(2)
@@ -112,6 +113,7 @@ end
 end
 
 @testset "quadratic stability" begin
+    @test PCC.QuadraticTemplate() isa SetProg.Ellipsoid
     @test PCC.is_feasible(
         PCC.certify(
             PCC.QuadraticTemplate(),
@@ -143,6 +145,8 @@ end
     @test 0.5 <= result.rate <= 0.51
     @test PCC.is_feasible(result)
     @test length(PCC.functions(result)) == 2
+    @test all(V -> V isa SetProg.Sets.Ellipsoid, PCC.functions(result))
+    @test PCC.template(result) == PCC.QuadraticTemplate()
 end
 
 @testset "linear copositive stability" begin
@@ -250,17 +254,24 @@ end
     # The cap still available, and still conservative -- which is the point of
     # making the caller ask for it.
     capped = PCC.jsr_bound(
-        PCC.QuadraticTemplate(; conditioning_bound = 100),
+        PCC.QuadraticTemplate(),
         graph,
         problem;
         optimizer = OPTIMIZER,
+        conditioning_bound = 100,
         rtol = 1e-3,
     )
 
     @test capped.rate > default.rate + 0.1
     @test capped.rate >= 0.9          # still a sound upper bound
 
-    @test_throws ArgumentError PCC.QuadraticTemplate(; conditioning_bound = 0.5)
+    @test_throws ArgumentError PCC.certify(
+        PCC.QuadraticTemplate(),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        conditioning_bound = 0.5,
+    )
 end
 
 @testset "input validation" begin
