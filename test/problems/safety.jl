@@ -21,6 +21,7 @@ certificate(graph) = PCC.certify(
 @testset "the barrier is not the trivial one" begin
     res = certificate(PCC.de_bruijn(1, 2))
     @test PCC.is_feasible(res)
+    @test PCC.template(res) == PCC.QuadraticTemplate()
 
     # A barrier is negative on the initial set and positive on the unsafe one,
     # so its matrix has eigenvalues of both signs. P = 0 would pass every other

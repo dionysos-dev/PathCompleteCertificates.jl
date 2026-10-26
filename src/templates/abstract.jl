@@ -1,10 +1,5 @@
-"""
-    AbstractTemplate
-
-A family of candidate node functions, passed as an instance such as
-`QuadraticTemplate()`. Stability also accepts SetProg set families directly.
-"""
-abstract type AbstractTemplate end
+const _SetFamily =
+    Union{SetProg.AbstractVariable, AbstractVector{<:SetProg.AbstractVariable}}
 
 """
     homogeneity_degree(template) -> Int
@@ -51,7 +46,7 @@ function solution_value end
 Whether `template` applies to the dynamics of `system`; `true` by default. A
 problem refuses a template that does not, and no lift is valid for it.
 """
-is_applicable(::AbstractTemplate, system) = true
+function is_applicable end
 
 """
     decrease_slack(template, V_src, V_dst, map; scale = 1)
@@ -70,7 +65,7 @@ Whether combining members of the template by `operation` gives a member;
 `false` by default. `system` matters only for [`Composition`](@ref) and
 [`InverseComposition`](@ref).
 """
-is_closed_under(::AbstractTemplate, ::Operation, system) = false
+function is_closed_under end
 
 """
     reindex(template, origins)
@@ -78,7 +73,7 @@ is_closed_under(::AbstractTemplate, ::Operation, system) = false
 The template for a lifted graph whose nodes come from `origins`.
 Throws if a node merges origins with different per-node data.
 """
-reindex(template::AbstractTemplate, ::AbstractVector) = template
+function reindex end
 
 # The original nodes of an origin: a node, a subset, or a (node, word) pair.
 _origin_nodes(origin::Integer) = (origin,)
@@ -111,15 +106,11 @@ end
 
 Whether `dual(template)` and `dual(template, V)` are defined; `false` by default.
 """
-has_dual(::AbstractTemplate) = false
-
-dual(template::AbstractTemplate) =
-    throw(ArgumentError("no dual template is defined for $(nameof(typeof(template)))"))
+function has_dual end
 
 """
     dual(template, V)
 
 The dual norm of a fitted node function `V`, as a member of `dual(template)`.
 """
-dual(template::AbstractTemplate, V) =
-    throw(ArgumentError("no dual node function is defined for $(nameof(typeof(template)))"))
+function dual end

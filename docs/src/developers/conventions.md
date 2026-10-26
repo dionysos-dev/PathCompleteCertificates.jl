@@ -33,7 +33,7 @@ decrease_slack(family, source, destination, A; scale)
 PCC owns the system and graph metadata in `src/problems/sets.jl`:
 `is_applicable`, `is_closed_under`, `reindex`, `has_dual`, and `dual`.
 Families are instances; a vector associates a family with each node.
-Safety and optimal control retain the legacy quadratic template and its
+Safety and optimal control retain a private quadratic matrix builder and its
 primitives until their separate migration.
 
 Each problem has its own certificate type. The shared fields live once in

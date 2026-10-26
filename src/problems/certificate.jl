@@ -23,13 +23,7 @@ The fields shared by every certificate:
 - `feasible`, whether the solve produced a certificate, read by
   [`is_feasible`](@ref).
 """
-struct CertificateData{
-    P <: AbstractProblem,
-    T <: Union{AbstractTemplate, _SetFamily},
-    G,
-    F,
-    S,
-}
+struct CertificateData{P <: AbstractProblem, T <: _SetFamily, G, F, S}
     problem::P
     template::T
     graph::G
@@ -39,12 +33,7 @@ struct CertificateData{
 end
 
 # The CertificateData of a failed solve.
-function _failed(
-    problem::AbstractProblem,
-    template::Union{AbstractTemplate, _SetFamily},
-    graph,
-    status,
-)
+function _failed(problem::AbstractProblem, template::_SetFamily, graph, status)
     return CertificateData(problem, template, graph, Any[], status, false)
 end
 

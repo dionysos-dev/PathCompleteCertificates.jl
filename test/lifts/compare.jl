@@ -8,6 +8,7 @@ using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
+import SetProg
 
 const OPTIMIZER = Clarabel.Optimizer
 
@@ -136,6 +137,7 @@ end
 
     # The quadratic and copositive norms add; the dual copositive norms are
     # proved through their dual (Debauche, Prop. 7.5).
+    @test all(t -> t isa SetProg.AbstractVariable, PCC.templates(c))
     @test Set(PCC.templates(c)) == Set(TEMPLATES)
 end
 

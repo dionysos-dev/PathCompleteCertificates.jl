@@ -56,7 +56,7 @@ end
 
     @test !PCC.is_feasible(tight)
     @test isempty(PCC.functions(tight))
-    @test !any(f -> f isa PCC.QuadraticFunction, PCC.functions(tight))
+    @test !any(f -> f isa SetProg.Sets.Ellipsoid, PCC.functions(tight))
 end
 
 @testset "jsr_bound agrees with certify at the rate it returns" begin

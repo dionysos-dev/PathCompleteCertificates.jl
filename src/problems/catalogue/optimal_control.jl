@@ -98,14 +98,13 @@ Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`. O
 complete graphs and `QuadraticTemplate` are supported.
 """
 function optimization_model(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
     psd_margin::Real = 1e-4,
 )
-    template isa QuadraticTemplate ||
-        throw(ArgumentError("optimal control currently supports only QuadraticTemplate"))
+    legacy = _legacy_quadratic(template, problem)
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     _check_optimal_control_data(graph, problem)
@@ -120,7 +119,7 @@ function optimization_model(
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    S = [add_function_variables!(model, template, n, i) for i in nodes(graph)]
+    S = [add_function_variables!(model, legacy, n, i) for i in nodes(graph)]
     Y = [JuMP.@variable(model, [1:m, 1:n], base_name = "Y_$i") for i in nodes(graph)]
     t = JuMP.@variable(model, [1:n_nodes(graph)], base_name = "t")
 
@@ -164,7 +163,7 @@ as an [`OptimalControlCertificate`](@ref). Only complete graphs and
 `QuadraticTemplate` are supported; the solver maximises `Σᵢ log det Pᵢ⁻¹`.
 """
 function certify(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,

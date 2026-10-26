@@ -68,14 +68,13 @@ _unsafe_separation(problem::SafetyProblem, P, γ) = P - γ * problem.Su
 Build, without solving, the barrier program; only `QuadraticTemplate` is supported.
 """
 function optimization_model(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
     check_path_complete::Bool = true,
 )
-    template isa QuadraticTemplate ||
-        throw(ArgumentError("SafetyProblem currently supports only QuadraticTemplate"))
+    legacy = _legacy_quadratic(template, problem)
 
     _check_safety_data(graph, problem; check_path_complete = check_path_complete)
     n = _state_dimension(problem.system)
@@ -86,7 +85,7 @@ function optimization_model(
     JuMP.set_silent(model)
 
     # No PSD constraint on the barriers: it would force P = 0.
-    Ps = [add_function_variables!(model, template, d, i) for i in nodes(graph)]
+    Ps = [add_function_variables!(model, legacy, d, i) for i in nodes(graph)]
 
     gamma0 = [
         JuMP.@variable(model, lower_bound = 0, base_name = "gamma0_$i") for
@@ -120,7 +119,7 @@ function optimization_model(
 
     for edge in edges(graph)
         dynamics, scale = _edge_decrease(problem, graph, edge, A)
-        add_decrease!(model, template, Ps[source(edge)], Ps[dest(edge)], dynamics; scale)
+        add_decrease!(model, legacy, Ps[source(edge)], Ps[dest(edge)], dynamics; scale)
     end
 
     JuMP.@objective(model, Max, eps)
@@ -139,7 +138,7 @@ end
 Solve the barrier program and return a [`SafetyCertificate`](@ref).
 """
 function certify(
-    template::AbstractTemplate,
+    template::_SetFamily,
     graph::CertificateGraph,
     problem::SafetyProblem;
     optimizer,
@@ -168,7 +167,7 @@ function certify(
     gammau = model[:safety_gammau]
     eps = model[:safety_eps]
 
-    Pval = [solution_value(template, P) for P in Ps]
+    Pval = [solution_value(_QuadraticTemplate(), P) for P in Ps]
     gamma0_val = JuMP.value.(gamma0)
     gammau_val = JuMP.value.(gammau)
     eps_val = JuMP.value(eps)

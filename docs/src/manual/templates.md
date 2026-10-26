@@ -13,10 +13,10 @@ family = PCC.QuadraticTemplate()
 certificate = PCC.jsr_bound(family, graph, problem; optimizer)
 ```
 
-`QuadraticTemplate()` uses SetProg's ellipsoid model and returns fitted
-`QuadraticFunction`s. Passing a native SetProg family instead returns fitted
-SetProg sets. Evaluate either with `node_value(problem, V, x)`, or the
-common Lyapunov function with `certificate(x)`.
+`QuadraticTemplate()` returns `SetProg.Ellipsoid(symmetric = true)`. Stability
+returns fitted SetProg sets, with ellipsoid matrices available as `V.Q`.
+Evaluate a node with `node_value(problem, V, x)`, or the common Lyapunov
+function with `certificate(x)`.
 
 ## Families
 

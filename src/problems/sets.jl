@@ -1,6 +1,3 @@
-const _SetFamily =
-    Union{SetProg.AbstractVariable, AbstractVector{<:SetProg.AbstractVariable}}
-
 """
     is_applicable(family, system)
 
