@@ -69,7 +69,7 @@ end
         PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.4),
     )
 
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test PCC.is_feasible(result)
     @test abs(result.rate - 0.5) <= 0.01
@@ -80,7 +80,7 @@ end
     # Not the solver's status: check V_dst(A x) <= gamma * V_src(x) directly,
     # on the fitted weights, at sampled states.
     template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     fitted = PCC.functions(result)
 
@@ -103,7 +103,7 @@ end
     rotation = [cos(theta) -sin(theta); sin(theta) cos(theta)]
     template = PCC.ParallelFacesPolyhedralTemplate([copy(rotation), copy(rotation)])
 
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test PCC.is_feasible(result)
     @test result.rate >= 0.5 - 1e-6      # never below the true rate
@@ -112,7 +112,7 @@ end
 
 @testset "the common function works for this template too" begin
     template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2)
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     fitted = PCC.functions(result)
 
@@ -130,7 +130,7 @@ end
     # `w >= 0` and leave V undefined; dispatching on the template is what stops
     # that, so check the floor is actually in force.
     template = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2; min_weight = 2.5)
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test PCC.is_feasible(result)
     for V in PCC.functions(result)

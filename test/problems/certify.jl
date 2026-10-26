@@ -58,8 +58,8 @@ end
     @test !any(f -> f isa PCC.QuadraticFunction, PCC.functions(tight))
 end
 
-@testset "jsr_bound agrees with certify at the rate it returns" begin
-    bound = PCC.jsr_bound(
+@testset "certify without a rate agrees with certify at the rate it returns" begin
+    bound = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;

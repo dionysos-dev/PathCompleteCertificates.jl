@@ -1,8 +1,8 @@
 """
     StabilityProblem(system)
 
-Stability problem for an input-free switched linear system, certified at a
-given rate by [`certify`](@ref) or at the smallest rate by [`jsr_bound`](@ref).
+Stability problem for an input-free switched linear system, certified by
+[`certify`](@ref) at the smallest rate, or at a given one.
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -90,22 +90,29 @@ function optimization_model(
 end
 
 """
-    jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
-              max_iterations = 100, initial_upper = 1.0, check_path_complete = true)
+    certify(template, graph, problem::StabilityProblem; optimizer, rate = nothing,
+            rtol = 1e-3, max_iterations = 100, initial_upper = 1.0,
+            check_path_complete = true)
 
-The [`StabilityCertificate`](@ref) of the smallest feasible rate, to relative
-tolerance `rtol`. `initial_upper` is a first guess of a feasible rate.
+The [`StabilityCertificate`](@ref) of the smallest feasible rate, an upper bound
+on the joint spectral radius, found by bisection to relative tolerance `rtol`.
+`initial_upper` is a first guess of a feasible rate. Given a `rate`, solve at
+that rate only.
 """
-function jsr_bound(
+function certify(
     template::AbstractTemplate,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
+    rate::Union{Real, Nothing} = nothing,
     rtol::Real = 1e-3,
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
     check_path_complete::Bool = true,
 )
+    rate === nothing ||
+        return _certify_at(template, graph, problem, rate; optimizer, check_path_complete)
+
     rtol > 0 || throw(ArgumentError("rtol must be positive"))
 
     max_iterations > 0 || throw(ArgumentError("max_iterations must be positive"))
@@ -155,12 +162,12 @@ function jsr_bound(
         end
     end
 
-    certificate = certify(
+    certificate = _certify_at(
         template,
         graph,
-        problem;
+        problem,
+        upper;
         optimizer = optimizer,
-        rate = upper,
         check_path_complete = false,
     )
 
@@ -170,19 +177,14 @@ function jsr_bound(
     return certificate
 end
 
-"""
-    certify(template, graph, problem::StabilityProblem; optimizer, rate = 1,
-            check_path_complete = true)
-
-Solve the stability problem at the fixed `rate`.
-"""
-function certify(
+# Solve the stability problem at the fixed `rate`.
+function _certify_at(
     template::AbstractTemplate,
     graph::CertificateGraph,
-    problem::StabilityProblem;
+    problem::StabilityProblem,
+    rate::Real;
     optimizer,
-    rate::Real = 1,
-    check_path_complete::Bool = true,
+    check_path_complete::Bool,
 )
     model =
         optimization_model(template, graph, problem; optimizer, rate, check_path_complete)
@@ -253,23 +255,6 @@ function _check_stability_data(
     )
 
     return nothing
-end
-
-"""
-    best_certificate(template, graph, problem::StabilityProblem; optimizer, rtol = 1e-6, kwargs...)
-
-The certificate of smallest rate on `graph`, by [`jsr_bound`](@ref) to
-relative tolerance `rtol`, where [`certify`](@ref) checks one given rate.
-"""
-function best_certificate(
-    template::AbstractTemplate,
-    graph::CertificateGraph,
-    problem::StabilityProblem;
-    optimizer,
-    rtol::Real = 1e-6,
-    kwargs...,
-)
-    return jsr_bound(template, graph, problem; optimizer, rtol = rtol, kwargs...)
 end
 
 objective(certificate::StabilityCertificate) = certificate.rate

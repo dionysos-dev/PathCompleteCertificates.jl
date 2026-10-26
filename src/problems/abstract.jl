@@ -6,7 +6,8 @@ A property to certify, defined by the inequality imposed along each edge.
 abstract type AbstractProblem end
 
 # Whether `refine` runs on the problem: its certificate type has methods for
-# `objective` and `edge_slacks`.
+# `objective` and `edge_slacks`, and its `certify` takes `rtol`, the relative
+# tolerance on the objective.
 _refinable(::AbstractProblem) = false
 
 """
@@ -29,32 +30,12 @@ function optimization_model end
 """
     certify(template, graph, problem; optimizer, kwargs...)
 
-Build and solve the model, and return an [`AbstractCertificate`](@ref). Check
-[`is_feasible`](@ref) before reading it.
+Build and solve the model, and return the best [`AbstractCertificate`](@ref)
+on `graph`: the smallest rate for stability, the largest margin for safety.
+Check [`is_feasible`](@ref) before reading it. [`refine`](@ref) calls it on
+every graph it visits.
 """
 function certify end
-
-"""
-    best_certificate(template, graph, problem; optimizer, rtol, kwargs...)
-
-The certificate of best [`objective`](@ref) on `graph`. [`refine`](@ref)
-calls it on every graph it visits.
-
-It differs from [`certify`](@ref) only when `certify` fixes the objective
-instead of optimizing it. Stability is that case: `certify` checks one given
-rate, and `best_certificate` bisects for the smallest, to relative tolerance
-`rtol`.
-"""
-function best_certificate(
-    template::AbstractTemplate,
-    graph::CertificateGraph,
-    problem::AbstractProblem;
-    optimizer,
-    rtol = nothing,
-    kwargs...,
-)
-    return certify(template, graph, problem; optimizer, kwargs...)
-end
 
 """
     dual(problem)

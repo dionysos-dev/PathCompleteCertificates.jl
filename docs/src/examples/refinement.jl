@@ -22,7 +22,7 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 
 # ## Running the loop
 #
-# Each step solves [`jsr_bound`](@ref), reads the tight edges, and applies a
+# Each step solves [`certify`](@ref), reads the tight edges, and applies a
 # lift. The default algorithm, [`TightestNodeSplitting`](@ref), splits the node
 # with the most tight outgoing edges, and among those the one with the fewest
 # outgoing edges, so the run is deterministic. It starts from the one-node
@@ -73,7 +73,7 @@ PCC.status(exact), round(PCC.rates(exact)[end]; digits = 6)
 
 de_bruijn = map([1, 2]) do order
     graph = PCC.de_bruijn(order, 2)
-    certificate = PCC.jsr_bound(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+    certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
 
     return PCC.n_nodes(graph), certificate.rate
 end

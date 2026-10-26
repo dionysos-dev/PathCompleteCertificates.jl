@@ -20,13 +20,8 @@ add_transition!(GRAPH, 2, 1, 1)
 const SYSTEM = PCC.switched_system([[0.5 0.0; 0.0 0.25]])
 const PROBLEM = PCC.StabilityProblem(SYSTEM)
 
-const STABILITY = PCC.jsr_bound(
-    PCC.QuadraticTemplate(),
-    GRAPH,
-    PROBLEM;
-    optimizer = OPTIMIZER,
-    rtol = 1e-2,
-)
+const STABILITY =
+    PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-2)
 
 @testset "the accessors are the interface" begin
     @test STABILITY isa PCC.StabilityCertificate

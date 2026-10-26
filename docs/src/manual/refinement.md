@@ -18,12 +18,12 @@ bound on it, and it can be proved exact.
 A path-complete graph with a quadratic function at each node gives an upper
 bound ``γ^*(G)`` on the joint spectral radius, the optimum of ``\min γ``
 subject to ``γ^2 P_a \succeq A_i^\top P_b A_i`` on every edge ``(a, b, i)``
-and ``P_a \succ 0``; [`jsr_bound`](@ref) bisects on ``γ``. A lifted graph
+and ``P_a \succ 0``; [`certify`](@ref) bisects on ``γ``. A lifted graph
 gives a bound at least as good, with a larger program. [`de_bruijn`](@ref)
 adds nodes everywhere, remembering the last `k` modes at `mᵏ` nodes;
 [`refine`](@ref) adds them where the solution is tight. At each step:
 
-1. **Solve.** [`jsr_bound`](@ref) returns a certificate: the rate and one
+1. **Solve.** [`certify`](@ref) returns a certificate: the rate and one
    function per node.
 2. **Find the tight edges.** An edge is **tight** when its inequality is active.
    [`edge_slacks`](@ref) measures them, [`tight_edges`](@ref) names them,
@@ -108,7 +108,7 @@ lower bound equals the rate at the first step.
 
 | | |
 | :-- | :-- |
-| `rtol` | bisection tolerance of each [`jsr_bound`](@ref) call |
+| `rtol` | bisection tolerance of each [`certify`](@ref) call |
 | `atol` | how close to zero counts as tight |
 | `gap_tol` | the gap between the rate and the lower bound at which the run stops |
 
@@ -119,12 +119,12 @@ bound the rate from below, and [`is_jsr_exact`](@ref) answers `false`, since
 at the optimum the tight subgraph contains a cycle
 ([ninite2026lifting](@cite), Prop. 1). [`refine`](@ref) therefore requires
 `atol ≥ 10 rtol`. Every function reading tight edges shares the default
-`atol = 1e-4`; read a certificate from [`jsr_bound`](@ref) with an `atol` at
+`atol = 1e-4`; read a certificate from [`certify`](@ref) with an `atol` at
 least ten times the `rtol` it was computed to.
 
 ## Other problems
 
-[`refine`](@ref) reads [`best_certificate`](@ref), [`objective`](@ref),
+[`refine`](@ref) reads [`certify`](@ref), [`objective`](@ref),
 [`edge_slacks`](@ref) and [`optimality_gap`](@ref) of a certificate; only
 stability defines them all, and the literature refines graphs for stability
 only. On any other problem [`refine`](@ref) throws.

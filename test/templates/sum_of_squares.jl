@@ -39,14 +39,14 @@ end
 end
 
 @testset "degree 1 reproduces the quadratic template" begin
-    quadratic = PCC.jsr_bound(
+    quadratic = PCC.certify(
         PCC.QuadraticTemplate(),
         MEMORYLESS,
         PROBLEM;
         optimizer = OPTIMIZER,
         rtol = 1e-4,
     )
-    sos = PCC.jsr_bound(
+    sos = PCC.certify(
         PCC.SumOfSquaresTemplate(1, x),
         MEMORYLESS,
         PROBLEM;
@@ -61,7 +61,7 @@ end
 
 @testset "raising the degree tightens the bound" begin
     rates = map((1, 2, 3)) do degree
-        PCC.jsr_bound(
+        PCC.certify(
             PCC.SumOfSquaresTemplate(degree, x),
             MEMORYLESS,
             PROBLEM;
@@ -80,7 +80,7 @@ end
 
 @testset "the fitted function is callable and homogeneous" begin
     degree = 2
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         PCC.SumOfSquaresTemplate(degree, x),
         MEMORYLESS,
         PROBLEM;
@@ -104,7 +104,7 @@ end
 @testset "the template and the system must agree on the dimension" begin
     @polyvar y[1:3]
 
-    @test_throws ArgumentError PCC.jsr_bound(
+    @test_throws ArgumentError PCC.certify(
         PCC.SumOfSquaresTemplate(1, y),
         MEMORYLESS,
         PROBLEM;
@@ -113,7 +113,7 @@ end
 end
 
 @testset "the edge inequality holds where it was imposed" begin
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         PCC.SumOfSquaresTemplate(2, x),
         MEMORYLESS,
         PROBLEM;
@@ -143,8 +143,7 @@ end
     @test PCC.n_nodes(graph) == 2
     @test PCC.n_edges(graph) == 4
 
-    certificate =
-        PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+    certificate = PCC.certify(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
     @test PCC.is_feasible(certificate)
 
     V = PCC.functions(certificate)
@@ -152,7 +151,7 @@ end
 
     # Memory buys something here, so the two-node bound beats the one-node one.
     memoryless =
-        PCC.jsr_bound(template, MEMORYLESS, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
+        PCC.certify(template, MEMORYLESS, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-4)
     @test certificate.rate <= memoryless.rate + 1e-6
 
     # The nodes really do carry different functions.

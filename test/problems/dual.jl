@@ -59,7 +59,7 @@ const STEPS = [
 apply(L::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(L, base))
 apply(L::PCC.AbstractLift, base, edge_list) = PCC.graph(PCC.lift(L, base, edge_list))
 
-bound(template, g, problem) = PCC.jsr_bound(
+bound(template, g, problem) = PCC.certify(
     template,
     g,
     problem;

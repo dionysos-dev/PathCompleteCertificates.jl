@@ -35,7 +35,7 @@ const SYSTEM = PCC.switched_system([[9.007 0.274; 2.069 8.272], [0.014 2.458; 8.
 
     problem = PCC.StabilityProblem(SYSTEM)
     rate(graph) =
-        PCC.jsr_bound(template, graph, problem; optimizer = HiGHS.Optimizer, rtol = 1e-9).rate
+        PCC.certify(template, graph, problem; optimizer = HiGHS.Optimizer, rtol = 1e-9).rate
 
     @test rate(PCC.common_graph(2)) >= rate(G4) * (1 - 1e-7)
 end

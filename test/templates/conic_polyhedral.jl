@@ -47,7 +47,7 @@ end
 
     @test PCC.homogeneity_degree(template) == 1
 
-    result = PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    result = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 
     @test PCC.is_feasible(result)
     @test abs(result.rate - 0.5) <= 0.01
@@ -84,7 +84,7 @@ end
     add_transition!(graph, 1, 1, 1)
     problem = PCC.StabilityProblem(PCC.switched_system([rotated]))
 
-    fixed = PCC.jsr_bound(
+    fixed = PCC.certify(
         PCC.ParallelFacesPolyhedralTemplate(1, 2),
         graph,
         problem;
@@ -96,7 +96,7 @@ end
 
     bounds = map(1:4) do order
         template = PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(order)])
-        PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).rate
+        PCC.certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4).rate
     end
 
     @test all(>=(0.9 - 1e-4), bounds)          # never below the true JSR
@@ -117,7 +117,7 @@ end
 
     # A partition for fewer nodes than the graph has.
     single = PCC.ConicPolyhedralTemplate([cones])
-    @test_throws ArgumentError PCC.jsr_bound(single, GRAPH, PROBLEM; optimizer = OPTIMIZER)
+    @test_throws ArgumentError PCC.certify(single, GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
     # Integer rays take the default bound in floating point.
     integer = PCC.ConicPolyhedralTemplate([[[1 0; 0 1]]])

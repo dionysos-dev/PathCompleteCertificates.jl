@@ -111,7 +111,7 @@ gives the next graph, a lift of the current one.
 - `check_path_complete = false` skips the path-completeness check of the starting
   graph.
 
-Other keywords go to [`best_certificate`](@ref).
+Other keywords go to [`certify`](@ref).
 """
 function refine(
     template::AbstractTemplate,
@@ -157,7 +157,7 @@ function refine(
         ),
     )
 
-    solve(tmpl, g, first_step) = best_certificate(
+    solve(tmpl, g, first_step) = certify(
         tmpl,
         g,
         problem;

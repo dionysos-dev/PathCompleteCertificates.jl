@@ -117,14 +117,14 @@ end
     w = PCC.graph(lifted)
     expanded = PCC.expanded_form(w)
 
-    on_words = PCC.jsr_bound(
+    on_words = PCC.certify(
         PCC.QuadraticTemplate(),
         w,
         problem;
         optimizer = Clarabel.Optimizer,
         rtol = 1e-5,
     )
-    on_letters = PCC.jsr_bound(
+    on_letters = PCC.certify(
         PCC.QuadraticTemplate(),
         expanded,
         problem;

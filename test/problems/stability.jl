@@ -37,7 +37,7 @@ const OPTIMIZER = Clarabel.Optimizer
         ),
     )
 
-    @test_throws ArgumentError PCC.jsr_bound(
+    @test_throws ArgumentError PCC.certify(
         PCC.QuadraticTemplate(),
         mode_1_only,
         problem;
@@ -99,7 +99,7 @@ end
     @test !PCC.is_co_complete(graph, 1:2)
     @test PCC.is_path_complete(graph, 1:2)
 
-    result = PCC.jsr_bound(
+    result = PCC.certify(
         PCC.QuadraticTemplate(),
         graph,
         problem;
@@ -132,7 +132,7 @@ end
         ),
     )
 
-    result = PCC.jsr_bound(
+    result = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -170,7 +170,7 @@ end
         ),
     )
 
-    result = PCC.jsr_bound(
+    result = PCC.certify(
         PCC.LinearCopositiveTemplate(),
         GRAPH,
         PROBLEM;
@@ -207,7 +207,7 @@ end
         PCC.LinearCopositiveTemplate(),
         PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
-        PCC.jsr_bound(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
+        PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
     end
 
     for bound in bounds
@@ -228,7 +228,7 @@ end
     add_transition!(graph, 1, 1, 1)
     problem = PCC.StabilityProblem(PCC.switched_system([stretched]))
 
-    default = PCC.jsr_bound(
+    default = PCC.certify(
         PCC.QuadraticTemplate(),
         graph,
         problem;
@@ -249,7 +249,7 @@ end
 
     # The cap still available, and still conservative -- which is the point of
     # making the caller ask for it.
-    capped = PCC.jsr_bound(
+    capped = PCC.certify(
         PCC.QuadraticTemplate(; conditioning_bound = 100),
         graph,
         problem;
