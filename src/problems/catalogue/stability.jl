@@ -91,13 +91,17 @@ end
 
 """
     certify(template, graph, problem::StabilityProblem; optimizer, rate = nothing,
-            rtol = 1e-3, max_iterations = 100, initial_upper = 1.0,
+            rtol = 1e-6, max_iterations = 100, initial_upper = 1.0,
             check_path_complete = true)
 
 The [`StabilityCertificate`](@ref) of the smallest feasible rate, an upper bound
 on the joint spectral radius, found by bisection to relative tolerance `rtol`.
 `initial_upper` is a first guess of a feasible rate. Given a `rate`, solve at
 that rate only.
+
+`rtol` is that of [`refine`](@ref), so that the default `atol` of
+[`tight_edges`](@ref) is at least ten times it: a certificate read at a coarser
+`rtol` needs a larger `atol`.
 """
 function certify(
     template::AbstractTemplate,
@@ -105,7 +109,7 @@ function certify(
     problem::StabilityProblem;
     optimizer,
     rate::Union{Real, Nothing} = nothing,
-    rtol::Real = 1e-3,
+    rtol::Real = 1e-6,
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
     check_path_complete::Bool = true,
