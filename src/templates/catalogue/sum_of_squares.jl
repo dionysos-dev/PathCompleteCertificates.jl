@@ -1,11 +1,15 @@
 """
     SumOfSquaresTemplate(degree, variables; min_scale = 1)
 
-Construct a SetProg `PolySet` of homogeneous SOS polynomials of degree
-`2degree`, using the shared polynomial `variables`. Its gauge is
-`min_scale * sum(variables .^ 2)^degree` plus an SOS remainder, so `min_scale`
-fixes the normalization. Requires `using SumOfSquares`.
-Decrease slacks and refinement are not implemented for polynomial sets.
+The sums of squares ``V(x) = \\sum_j q_j(x)^2``, each ``q_j`` a homogeneous
+polynomial of degree `degree` in the polynomial `variables`, so that ``V`` has
+degree `2degree`, as a SetProg `PolySet`; `degree = 1` gives the quadratic
+forms. It applies to every system, for stability, gives semidefinite programs,
+and needs `using SumOfSquares`.
+
+Each node function is `min_scale * sum(x .^ 2)^degree` plus a sum of squares,
+which excludes ``V \\equiv 0``. [`refine`](@ref) does not run on this template:
+its edge slacks are not implemented. See [Choosing a template](@ref).
 """
 function SumOfSquaresTemplate(
     degree::Integer,

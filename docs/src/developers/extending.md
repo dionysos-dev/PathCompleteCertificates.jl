@@ -4,11 +4,11 @@ CurrentModule = PathCompleteCertificates
 
 # Extending the package
 
-A new problem, lift or refinement algorithm is one file in the `catalogue/`
-folder of its directory, and a new template is a SetProg family. The functions
-to implement are listed in [Conventions](@ref); this page says where each piece
-goes. Each extension closes a gap of [What works with what](@ref), the map of
-what the package covers.
+The code of a new problem, lift or refinement algorithm is one file in the
+`catalogue/` folder of its directory, and a new template is a SetProg family.
+The functions to implement are listed in [Conventions](@ref); this page says
+where each piece goes, and what to wire in around it. Each extension closes a
+gap of [What works with what](@ref), the map of what the package covers.
 
 ## Every extension
 
@@ -17,8 +17,8 @@ what the package covers.
 2. Include it in `src/PathCompleteCertificates.jl`.
 3. Give every public name a docstring, and add the file to the `Pages` list of
    its page under `docs/src/reference/`, or the docs build fails.
-4. Add a test file under `test/<directory>/`, and list it in `TEST_FILES` in
-   `test/runtests.jl`.
+4. Add a test file under `test/<directory>/`, `test/problems/` for a
+   template, and list it in `TEST_FILES` in `test/runtests.jl`.
 5. Update [What works with what](@ref), its tables and the gap the extension
    closes, and present the extension on the manual page of its kind:
    [Choosing a template](@ref), [Lifts](@ref) or
@@ -47,9 +47,10 @@ A subtype of `AbstractProblem` holding the system, and a certificate type
 holding a `CertificateData` and what the problem certifies. Implement
 `optimization_model`, and `certify`, which returns the best certificate on the
 graph. Write the edge inequality once, in a private `_edge_decrease` used both
-to build the model and to measure the slacks. For [`refine`](@ref) to run on
-it, define `objective` and `edge_slacks`, `_refinable(::YourProblem) = true`,
-and let `certify` take `rtol`, the relative tolerance on the objective.
+to build the model and to measure the slacks, as stability and safety do. For
+[`refine`](@ref) to run on it, define `objective` and `edge_slacks`,
+`_refinable(::YourProblem) = true`, and let `certify` take `rtol`, the
+relative tolerance on the objective.
 
 ## A lift
 

@@ -28,7 +28,7 @@ bounded. Each certificate is built on a path-complete graph, a graph whose paths
 sequence of modes. You choose the graph, or let the package build it:
 
 <p align="center">
-  <img src="docs/src/assets/architecture.png" width="640"
+  <img src="docs/src/assets/architecture.png" width="480"
        alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
 </p>
 
@@ -82,7 +82,7 @@ The package aims to implement the state of the art on path-complete certificates
 [What works with what](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/manual/support/)
 lists the gaps, and
 [Extending the package](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/extending/)
-says how to close one: a new template, problem, lift or refinement algorithm is one file.
+says how to close one, with a new template, problem, lift or refinement algorithm.
 
 ## Citing
 

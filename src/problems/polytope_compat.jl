@@ -1,7 +1,10 @@
 """
     LinearCopositiveTemplate()
 
-Linear gauges on the nonnegative orthant, represented by a SetProg polytope.
+The linear functions ``V(x) = c^\\top x`` on the nonnegative orthant, as a
+SetProg polytope on that orthant. It applies to positive systems, whose
+matrices have nonnegative entries, for stability, and gives linear programs.
+Its dual is [`DualCopositiveTemplate`](@ref). See [Choosing a template](@ref).
 """
 LinearCopositiveTemplate() =
     SetProg.Domain(SetProg.Polytope(; symmetric = true), SetProg.MOI.Nonnegatives)
@@ -9,7 +12,11 @@ LinearCopositiveTemplate() =
 """
     DualCopositiveTemplate(; min_weight = 1)
 
-Blocking polars of linear copositive gauges, represented by a SetProg polytope.
+The functions ``V(x) = \\max_i x_i / v_i`` on the nonnegative orthant, the
+duals of those of [`LinearCopositiveTemplate`](@ref), as a SetProg polytope on
+that orthant. It applies to positive systems, for stability, and gives linear
+programs. `min_weight` normalizes the node functions: every weight ``v_i`` is
+at least `min_weight`.
 """
 function DualCopositiveTemplate(; min_weight = 1)
     isfinite(min_weight) && min_weight > 0 ||
@@ -21,7 +28,13 @@ end
     ParallelFacesPolyhedralTemplate(n_nodes, dimension; min_weight = 1)
     ParallelFacesPolyhedralTemplate(matrices; min_weight = 1)
 
-One SetProg polytope per node, with prescribed pairs of parallel faces.
+The polyhedral functions ``V(x) = \\max_k |(G x)_k| / w_k``, whose faces come
+in parallel pairs, normal to the rows of ``G``, as one SetProg polytope per
+node: ``G`` is the identity, of size `dimension`, at each of `n_nodes` nodes,
+or one of the invertible `matrices` per node. The weights ``w`` are the variables. It
+applies to every system, for stability, and gives linear programs.
+`min_weight` normalizes the node functions: every weight is at least
+`min_weight`.
 """
 function ParallelFacesPolyhedralTemplate(
     n_nodes::Integer,
@@ -60,9 +73,13 @@ end
 """
     ConicPolyhedralTemplate(node_partitions; min_scale = 1)
 
-One SetProg polytope per node. Each partition polytope describes the cones over
-its facets and must contain the origin in its interior. `min_scale` scales the
-partition's gauge used for normalization.
+The polyhedral functions linear on each cone over the facets of a polytope, as
+one SetProg polytope per node, with the polytope of each node in
+`node_partitions`; each polytope must contain the origin in its interior, and
+[`planar_conic_partition`](@ref) builds one in the plane. It applies to every
+system, for stability, and gives linear programs. `min_scale` normalizes the
+node functions: each is at least `min_scale` times the function equal to one
+on the boundary of its polytope.
 """
 function ConicPolyhedralTemplate(node_partitions; min_scale = 1)
     isempty(node_partitions) && throw(ArgumentError("at least one node is required"))
@@ -85,9 +102,12 @@ end
 """
     planar_conic_partition(order; library = nothing)
 
-Return a centrally symmetric partition polytope with `8 * 2^(order - 1)` facets.
-The cones over its facets have the same boundary rays as the planar conic
-partition. `library` can supply a Polyhedra library with an LP solver.
+A partition of the plane for [`ConicPolyhedralTemplate`](@ref): a centrally
+symmetric polygon with `8 * 2^(order - 1)` facets. The cones over its facets
+lie between the rays of ``(1, 0)``, ``(1, 1)``, ``(0, 1)``, ``(-1, 1)`` and
+their opposites, each split in two at every further order by the sum of its
+two rays. `library` gives a Polyhedra library, with a linear programming
+solver.
 """
 function planar_conic_partition(order::Integer; library = nothing)
     order >= 1 || throw(ArgumentError("the order must be positive"))
@@ -108,7 +128,9 @@ end
 """
     LinearCopositiveFunction(c)
 
-A fitted linear copositive function represented by a SetProg set.
+The function ``V(x) = c^\\top x`` on the nonnegative orthant, a node function
+of [`LinearCopositiveTemplate`](@ref), as a SetProg set; evaluate it with
+[`node_value`](@ref).
 """
 function LinearCopositiveFunction(c::AbstractVector)
     n = length(c)
@@ -120,13 +142,17 @@ end
 """
     DualCopositiveFunction(v)
 
-A fitted dual copositive function represented by a SetProg set.
+The function ``V(x) = \\max_i x_i / v_i`` on the nonnegative orthant, a node
+function of [`DualCopositiveTemplate`](@ref), as a SetProg set; evaluate it
+with [`node_value`](@ref).
 """
 DualCopositiveFunction(v::AbstractVector) = _dual_value(LinearCopositiveFunction(v))
 """
     ParallelFacesPolyhedralFunction(G, w)
 
-A fitted parallel-faces polyhedral function represented by a SetProg set.
+The function ``V(x) = \\max_k |(G x)_k| / w_k``, a node function of
+[`ParallelFacesPolyhedralTemplate`](@ref), as a SetProg set; evaluate it with
+[`node_value`](@ref).
 """
 function ParallelFacesPolyhedralFunction(
     G::AbstractMatrix,

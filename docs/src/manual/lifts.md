@@ -4,13 +4,14 @@ CurrentModule = PathCompleteCertificates
 
 # Lifts
 
-A **lift** turns a path-complete graph into another path-complete graph whose
-best certificate is at least as good, for the templates the lift is
-**valid** for ([debauche2021comparison](@cite), Def. 6): a certificate on the
-graph gives one on the lifted graph, with the same value. Lifts are the steps of [refinement](@ref "Refining the graph"), which
-applies them where a certificate is tight, and the tools of
-[comparison](@ref "Comparing graphs"), which uses them to prove that a graph
-is at least as good as another.
+A **lift** turns a path-complete graph into another path-complete graph. It
+is **valid** for a template when every certificate on the graph, in that
+template, gives one on the lifted graph with the same value
+([debauche2021comparison](@cite), Def. 6): for that template, the lifted
+graph is then at least as good. Lifts are the steps of
+[refinement](@ref "Refining the graph"), which applies them where a
+certificate is tight, and the tools of [comparison](@ref "Comparing graphs"),
+which uses them to prove that a graph is at least as good as another.
 
 ## Why a lift never makes the certificate worse
 
@@ -46,7 +47,7 @@ check.
 
 [`lift`](@ref)`(L, graph)` applies the lift `L` to the whole graph,
 `lift(L, graph, edges)` at the given edges, and `lift(L, graph, node)` at one
-node; each lift supports the forms its definition gives it. The result is a
+node; each lift has the forms its definition allows. The result is a
 [`Lifted`](@ref): the new graph, [`graph`](@ref), and the [`origins`](@ref) of
 its nodes, what each stands for in the old graph.
 
@@ -117,4 +118,5 @@ tests a plain simulation, which holds for every template.
 
 ## Adding a lift
 
-A new lift is one file: see [Extending the package](@ref).
+A new lift is one file of code, in `src/lifts/catalogue/`: see
+[Extending the package](@ref).

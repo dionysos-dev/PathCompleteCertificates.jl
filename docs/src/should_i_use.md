@@ -28,7 +28,8 @@ It fits best when, in addition:
   and piecewise linear functions of
   [SetProg.jl](https://github.com/blegat/SetProg.jl);
 - you want to choose the solver: any JuMP solver for the kind of program the
-  template sets, semidefinite or linear;
+  template sets, semidefinite or linear, with a log-determinant for optimal
+  control;
 - you study the path-complete framework itself, and want to compare graphs,
   use duality, benchmark methods from different papers, or add a template, a
   problem or an algorithm.

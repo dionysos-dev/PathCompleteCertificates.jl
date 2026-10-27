@@ -26,8 +26,8 @@ and `graph = PCC.common_graph(system)`, solved with Clarabel and HiGHS.
 
 ## What a template changes
 
-The template fixes the shape of the node functions, and so the bound and the
-program, which sets the solver:
+The template fixes the shape of the node functions. It changes the bound, and
+the kind of program, which decides the solver:
 
 ```@example running
 quadratic = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
@@ -50,7 +50,7 @@ function shapes_figure(system, problem, graph)
     @polyvar x[1:2]
     templates = [
         "quadratic" => (PCC.QuadraticTemplate(), Clarabel.Optimizer),
-        "sum of squares, degree 2" => (PCC.SumOfSquaresTemplate(2, x), Clarabel.Optimizer),
+        "sum of squares, degree 4" => (PCC.SumOfSquaresTemplate(2, x), Clarabel.Optimizer),
         "parallel faces" =>
             (PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
         "conic polyhedral" =>
@@ -77,12 +77,22 @@ end
 shapes_figure(system, problem, graph) # hide
 ```
 
+The data of a template matter too. `ParallelFacesPolyhedralTemplate` fixes
+the normals of the faces of its functions: the axes by default, or the rows
+of a matrix per node. With the axes, and with the diagonals of the figure:
+
+```@example running
+on_axes = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(graph), 2)
+on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
+[PCC.certify(t, graph, problem; optimizer = HiGHS.Optimizer).rate for t in (on_axes, on_diagonals)]
+```
+
 ## The templates
 
 | Template | Node function | Systems | Program | Problems |
 | :-- | :-- | :-- | :-- | :-- |
 | [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
-| [`SumOfSquaresTemplate`](@ref)`(d, x)` | a sum of squares of polynomials of degree ``d`` | all | semidefinite | stability |
+| [`SumOfSquaresTemplate`](@ref)`(d, x)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability |
 | [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear | stability |
@@ -91,9 +101,10 @@ shapes_figure(system, problem, graph) # hide
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
 **Templates are SetProg families.** Each constructor returns a
-[SetProg](https://github.com/blegat/SetProg.jl) family of sets, and a node
-function stands for its set ``\{x : V(x) \le 1\}``: `QuadraticTemplate()`,
-for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
+[SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
+two polyhedral templates with data per node, a vector of families, one per
+node. A node function stands for its set ``\{x : V(x) \le 1\}``:
+`QuadraticTemplate()`, for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
 these sets, which [`node_value`](@ref) evaluates. The last two rows are
 SetProg families passed directly, piecewise on the cones over the facets of a
 polytope ``P``. To write them, run `Pkg.add("SetProg")` and `using SetProg`:
@@ -112,17 +123,16 @@ environment must list it for Julia to load it by name.
   programs:
   - `ParallelFacesPolyhedralTemplate(n_nodes(graph), n)` fixes the normals of
     the faces: the axes by default, or the rows of a matrix ``G`` per node,
-    given instead. The normals matter: on the running example, the axes give
-    a bound of about ``1.30``, above one, and the diagonals,
-    `ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])`, about ``0.92``;
+    given instead; the normals change the bound, as above;
   - `ConicPolyhedralTemplate(partitions)` fixes, at each node, a partition of
     the space into the cones over the facets of a polytope, on each of which
     the function is linear; in the plane, [`planar_conic_partition`](@ref)
     builds one.
 - **For a polynomial function**, `SumOfSquaresTemplate(d, x)`, with the
   variables `@polyvar x[1:n]` of DynamicPolynomials, and the SumOfSquares
-  package loaded (see [Installation](@ref)). Degree 1 gives the quadratic
-  forms; each higher degree adds variables.
+  package loaded (see [Installation](@ref)). Its functions have degree
+  ``2d``: ``d = 1`` gives the quadratic forms, and each higher ``d`` adds
+  variables.
 - **For a function piecewise on cones**, a SetProg family passed directly:
   `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone, or
   `Polytope(symmetric = true, piecewise = P)`, linear on each; see

@@ -55,8 +55,8 @@ Every certificate is computed by a solver, through [JuMP](https://jump.dev/).
 Two open-source solvers cover all the templates:
 
 - [Clarabel](https://github.com/oxfordcontrol/Clarabel.jl), for semidefinite
-  programs: the quadratic and sum-of-squares templates, and piecewise
-  ellipsoids;
+  programs: the quadratic and sum-of-squares templates and piecewise
+  ellipsoids, including the log-determinant objective of optimal control;
 - [HiGHS](https://github.com/jump-dev/HiGHS.jl), for linear programs: the
   copositive and polyhedral templates, and piecewise polytopes.
 

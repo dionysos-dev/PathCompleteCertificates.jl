@@ -17,8 +17,17 @@ julia --project=docs -e 'using Pkg; Pkg.instantiate()'
 `Manifest.toml` is not tracked, so each clone resolves for itself. When
 `Pkg.test()` reports a dependency missing from the manifest, delete the
 manifest of the environment that failed, root, `test/` or `docs/`, and resolve
-again. The docs environment reaches the package through a relative `[sources]`
-entry; do not `Pkg.develop` it.
+again.
+
+The `test/` and `docs/` environments reach the package through a relative
+`[sources]` entry. Julia 1.11 and later read it, so `instantiate` is enough.
+Julia 1.10 ignores it: there, develop the package into both environments
+before instantiating them, as the docs workflow does:
+
+```
+julia --project=test -e 'using Pkg; Pkg.develop(path = ".")'
+julia --project=docs -e 'using Pkg; Pkg.develop(path = ".")'
+```
 
 ## Run the tests
 
@@ -31,9 +40,10 @@ julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips the
 julia --project -e 'using Pkg; Pkg.test()'                           # everything
 ```
 
-The `:slow` suites are the ones that solve programs, and most regressions
-surface there, so a change is not tested until they pass. A new test file goes
-in `TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it solves.
+The `:slow` suites are the expensive ones, most of which solve programs. Most
+regressions surface there, so a change is not tested until they pass. A new
+test file goes in `TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it
+takes long; the summary the suite prints, slowest first, shows which do.
 
 While iterating, keep one Julia session open with Revise and `include` the
 file you are working on; a cold start costs about half a minute.

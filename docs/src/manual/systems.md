@@ -90,8 +90,8 @@ others,** as the next section shows.
 ## What can be certified
 
 Each of the three properties is a problem, built from the system. Simulations
-cannot prove any of them, and a figure for each problem shows why, on a small system that
-is fragile under switching:
+cannot prove any of them, and a figure for each problem shows why, on a small
+system that is fragile under switching:
 
 ```@example running
 M1 = [0.1 1.25; 0.0 0.1]
@@ -255,10 +255,9 @@ for every switching sequence.
 On the fragile system with the input matrix ``B = (-0.6, 0.8)`` in both
 modes, and ``Q = I``, ``R = 1``, take the policy ``u = K x``, with ``K`` the
 gain of the linear-quadratic regulator designed for mode 1. The closed loop of
-each mode is stable,
-and every random run has a small cost, yet along the alternating sequence the
-closed loop grows by about ``1.23`` per step, and the cost grows without
-bound.
+each mode is stable, and every random run has a small cost, yet along the
+alternating sequence the closed loop grows by about ``1.23`` per step, and the
+cost grows without bound.
 
 ```@example running
 control_figure([M1, M2], [-0.6; 0.8;;], [1.0 0.0; 0.0 1.0], [1.0;;]) # hide

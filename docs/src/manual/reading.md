@@ -54,7 +54,7 @@ graph. [`status`](@ref) gives the solver's termination status, for diagnosis.
 
 ## What every certificate holds
 
-| | |
+| Accessor | Returns |
 | :-- | :-- |
 | [`functions`](@ref)`(c)` | the node functions, one per node; for stability, fitted SetProg sets, evaluated with [`node_value`](@ref) |
 | [`graph`](@ref)`(c)` | the graph of the certificate |
@@ -91,9 +91,9 @@ those whose slack is at most `atol`, ``10^{-4}`` by default:
 PCC.edge_slacks(lyapunov), PCC.edge_slacks(barrier), PCC.edge_slacks(controller)
 ```
 
-Both edges are tight for stability and for safety; the inequalities of the
-controller have slack. Tight edges are what [Refining the graph](@ref) reads to
-grow the graph.
+Both edges are tight for stability and for safety; for the controller, both
+slacks exceed `atol`, so neither edge counts as tight. Tight edges are what
+[Refining the graph](@ref) reads to grow the graph.
 
 !!! note "Tolerances for stability"
     [`certify`](@ref) stops within `rtol` of the smallest rate, so the slacks
@@ -128,8 +128,8 @@ the lower bound otherwise:
 PCC.jsr_lower_bound(lyapunov), PCC.is_jsr_exact(lyapunov), PCC.optimality_gap(lyapunov)
 ```
 
-The joint spectral radius of the running example therefore lies between the
-lower bound and the rate. Another template or another graph may lower the
+The joint spectral radius of the running example therefore lies between
+``0.80`` and ``0.959``. Another template or another graph may lower the
 rate: see [Choosing a template](@ref) and [Choosing a graph](@ref).
 
 ### The dual certificate

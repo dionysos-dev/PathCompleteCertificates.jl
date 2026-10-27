@@ -31,7 +31,7 @@ The code on this page uses the running example of
 
 ```@example running
 trace = PCC.refine(PCC.QuadraticTemplate(), problem; optimizer = Clarabel.Optimizer)
-PCC.rates(trace), PCC.n_nodes.(PCC.graphs(trace))
+PCC.rates(trace), PCC.n_nodes.(PCC.graphs(trace)), PCC.n_edges.(PCC.graphs(trace))
 ```
 
 In two steps, the rate drops from about ``0.959`` to ``0.869`` with 3 nodes and
@@ -96,6 +96,6 @@ The [`RefinementTrace`](@ref) keeps every step: [`certificates`](@ref),
 
 !!! note "Tolerances"
     Three tolerances drive the run: `rtol`, the bisection tolerance of each
-    solve; `atol`, below which a slack counts as tight, at least `10 rtol`;
-    and `gap_tol`, the gap between the rate and its lower bound at which the
-    run stops.
+    solve; `atol`, below which a slack counts as tight, at least ten times
+    `rtol`; and `gap_tol`, the gap between the rate and its lower bound at
+    which the run stops.

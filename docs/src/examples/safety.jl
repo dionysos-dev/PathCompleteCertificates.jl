@@ -89,8 +89,8 @@ contour!(
     lw = 4,
     colorbar = false,
 )
-plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
 ## `contour!` adds no legend entry of its own.
+plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
 for (a, V) in enumerate(PCC.functions(certificate))
     color = (:darkorange, :purple)[a]
     values = [PCC.node_value(problem, V, [x, y]) for y in grid, x in grid]
@@ -135,7 +135,7 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 #
 # The margin is positive, so the region where ``B < 0`` contains the initial
 # set, is invariant under every switching sequence, and avoids the unsafe set
-# (see [Reading a certificate](@ref)). A finer graph adds nothing here: the
+# (see [How a certificate works](@ref)). A finer graph adds nothing here: the
 # De Bruijn graph of order 2 certifies the same margin.
 
 PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin

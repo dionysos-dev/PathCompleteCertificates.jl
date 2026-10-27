@@ -35,9 +35,9 @@ G \le_{\mathcal V} H
 
 so that ``H`` is at least as good as ``G``, whatever the system
 ([debauche2021comparison](@cite), Def. 4). The order depends on the two
-graphs and the template only: it tells, before any system
-is given, whether a larger graph can pay off, and it orders the graphs of the
-literature into hierarchies. Two tools prove it:
+graphs and the template only: it tells, before any system is given, whether a
+larger graph can pay off, and it orders the graphs of the literature into
+hierarchies. Two tools prove it:
 
 - **a simulation**, which proves it for every template;
 - **a simulation after a lift**, which proves it for the templates closed
@@ -111,8 +111,8 @@ PCC.simulations(c)
 ```
 
 The min lift of the De Bruijn graph of order 1 simulates the one-node graph.
-For the templates the min lift is valid for, such as the linear copositive
-template on a positive system, this De Bruijn graph therefore gives no better
-certificate than the one-node graph. Given `templates` and a `system`,
+For every template for which the min lift is valid, such as the linear
+copositive template on a positive system, this De Bruijn graph therefore gives
+no better certificate than the one-node graph. Given `templates` and a `system`,
 [`compare`](@ref) also lists the templates for which the order is proved; see
 [Compare two graphs](@ref).
