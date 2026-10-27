@@ -256,22 +256,30 @@ end
 end
 
 @testset "a loose bound is never certified exact, whatever the tolerances" begin
-    # A rotation and a shear: the one-node bound is loose. At the default
-    # bisection tolerance its active edges keep slacks above the default `atol`,
-    # so nothing looks tight; Theorem 4 must then say "unknown", not "exact".
+    # A rotation and a shear: the one-node bound is loose. At a coarse
+    # bisection its active edges keep slacks above the default `atol`, so
+    # nothing looks tight; at the default one they are tight. Theorem 4 must say
+    # "unknown", not "exact", either way.
     sheared = PCC.StabilityProblem(
         PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
     )
-    loose = PCC.certify(
+    loose(rtol) = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.common_graph(2),
         sheared;
         optimizer = OPTIMIZER,
+        rtol = rtol,
     )
+    coarse = loose(1e-3)
+    default = loose(1e-6)
 
-    @test isempty(PCC.tight_edges(loose))
-    @test !PCC.is_jsr_exact(loose)
-    @test PCC.optimality_gap(loose) > 0.05
+    @test isempty(PCC.tight_edges(coarse))
+    @test !isempty(PCC.tight_edges(default))
+
+    for certificate in (coarse, default)
+        @test !PCC.is_jsr_exact(certificate)
+        @test PCC.optimality_gap(certificate) > 0.05
+    end
 
     # An exact certificate read with too small a tolerance: no tight cycle, so no claim.
     single = PCC.certify(
