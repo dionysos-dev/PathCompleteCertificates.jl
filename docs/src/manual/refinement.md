@@ -12,46 +12,61 @@ system = PCC.switched_system(A)
 problem = PCC.StabilityProblem(system)
 ```
 
+The graph decides how good the certificate can be and how much it costs, and
+a generic graph pays for nodes everywhere: the De Bruijn graph of order ``k``
+has ``M^k`` nodes whatever the system, and on the running example, orders 3
+and 4 double the nodes for no better bound (see [Choosing a graph](@ref)).
+Refinement builds the graph from the certificate instead: it solves, reads
+where the certificate is tight, lifts the graph there, and solves again. An
+outer loop searches over graphs, and on each graph [`certify`](@ref) computes
+the best certificate.
+
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
 `problem = PCC.StabilityProblem(system)`, solved with Clarabel.
 
 ## In one call
 
-[`refine`](@ref) starts from the one-node graph, solves, and lifts the graph
-where the certificate is tight, until the bound is proved exact or a limit is
-reached:
+[`refine`](@ref) starts from the one-node graph and runs the loop:
 
 ```@example running
 trace = PCC.refine(PCC.QuadraticTemplate(), problem; optimizer = Clarabel.Optimizer)
 PCC.rates(trace), PCC.n_nodes.(PCC.graphs(trace))
 ```
 
-`refine(template, graph, problem)` starts from your graph instead. Refinement
-runs on stability only.
+In two steps, the rate drops from about ``0.959`` to ``0.869`` with 3 nodes and
+6 edges, where the De Bruijn hierarchy needs order 2, with 4 nodes and 8
+edges, for the same bound. `refine(template, graph, problem)` starts from
+your graph instead. Refinement runs on stability only.
 
-## The algorithms
+## How a step works
 
-`refine` takes an `algorithm` keyword.
+A step reads the tight edges of the certificate, those whose edge inequality
+is active (see [Reading a certificate](@ref)). Two results of
+[ninite2026lifting](@cite) say where to lift:
 
-### TightestNodeSplitting
+- **Only the tight edges matter.** The tight edges alone give the same rate
+  (Prop. 1): they hold the rate up, so the graph is lifted where they are.
+- **A node with a single tight outgoing edge is not worth splitting.**
+  Splitting it cannot lower the rate (Prop. 3); a node with two or more may.
 
-The default, based on Algorithm 1 of [ninite2026lifting](@cite): at each step,
-split the node with the most tight outgoing edges into one copy per outgoing
-edge ([`OutSplitLift`](@ref)). From the one-node graph, the first step gives
-the dual De Bruijn graph of order 1.
+The default algorithm, [`TightestNodeSplitting`](@ref), follows Algorithm 1
+of [ninite2026lifting](@cite): it splits the node with the most tight
+outgoing edges into one copy per outgoing edge, with [`OutSplitLift`](@ref),
+and solves again. From the one-node graph, the first step gives the dual De
+Bruijn graph of order 1. When no node has two tight outgoing edges, the rate
+is the joint spectral radius (Thm. 4), and the run stops.
 
-### BestOfTightEdgeLifts
+Every step is a lift that needs nothing from the template (see [Lifts](@ref)),
+so the rate never increases, up to the bisection tolerance, and the lifted
+graph is path-complete without a new check.
 
-The procedure of Example 2 of [athanasopoulos2019polyhedral](@cite): apply each
-split and each product at every tight edge, solve every candidate graph, and
-keep the one with the lowest rate. A step costs one solve per candidate.
+## Another algorithm
 
-## Why the bound never gets worse
-
-Every step is a lift that needs nothing from the template, so a certificate on
-a graph gives one on the next graph, at the same rate. Up to the bisection
-tolerance, the rate never increases.
+`refine` takes an `algorithm` keyword. [`BestOfTightEdgeLifts`](@ref) follows
+Example 2 of [athanasopoulos2019polyhedral](@cite): it applies each split and
+each product at every tight edge, solves every candidate graph, and keeps the
+one with the lowest rate. A step costs one solve per candidate.
 
 ## When it stops
 
@@ -75,6 +90,8 @@ The [`RefinementTrace`](@ref) keeps every step: [`certificates`](@ref),
 [`graphs`](@ref), [`rates`](@ref), and [`steps`](@ref), each step a
 [`Lifted`](@ref) graph with the [`origins`](@ref) of its nodes.
 
-Three tolerances drive the run: `rtol`, the bisection tolerance of each solve;
-`atol`, below which a slack counts as tight, at least `10 rtol`; and `gap_tol`,
-the gap between the rate and its lower bound at which the run stops.
+!!! note "Tolerances"
+    Three tolerances drive the run: `rtol`, the bisection tolerance of each
+    solve; `atol`, below which a slack counts as tight, at least `10 rtol`;
+    and `gap_tol`, the gap between the rate and its lower bound at which the
+    run stops.

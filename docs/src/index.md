@@ -73,8 +73,8 @@ and [Installation](@ref), then Part I of the manual.
     turns a certificate into another just as good.
 
   [What works with what](@ref) says which templates each problem accepts,
-  which lifts are valid for each template, and where refinement and comparison
-  apply.
+  which lifts are valid for each template, where refinement and comparison
+  apply, and which gaps remain.
 - **Tutorials.** One problem solved from start to end per page.
 - **Background.** The theory behind the package, and the papers it implements.
 - **API Reference.** Every function, from its docstring.

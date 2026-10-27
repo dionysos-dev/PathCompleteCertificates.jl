@@ -101,8 +101,8 @@ const PAGES = Any[
             "Reading a certificate" => "manual/reading.md",
         ],
         "II. Let the package improve the graph" => [
-            "Lifts" => "manual/lifts.md",
             "Refining the graph" => "manual/refinement.md",
+            "Lifts" => "manual/lifts.md",
         ],
         "III. Going further" => [
             "Comparing graphs" => "manual/comparing.md",
