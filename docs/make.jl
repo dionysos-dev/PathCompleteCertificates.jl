@@ -18,7 +18,7 @@ const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"
 # appended alphabetically with a notice, so adding one is just a file in the
 # folder, while the order stays curated.
 const ORDER =
-    ["stability", "safety", "optimal_control", "refinement", "comparing", "set_prog"]
+    ["stability", "safety", "optimal_control", "refinement", "set_prog", "comparing"]
 
 function example_stems()
     stems = sort([f[1:(end - 3)] for f in readdir(EXAMPLES_DIR) if endswith(f, ".jl")])

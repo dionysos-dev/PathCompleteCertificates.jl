@@ -126,7 +126,7 @@ environment must list it for Julia to load it by name.
 - **For a function piecewise on cones**, a SetProg family passed directly:
   `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone, or
   `Polytope(symmetric = true, piecewise = P)`, linear on each; see
-  [Use SetProg families](@ref).
+  [Try a richer template](@ref).
 
 Which template gives the lowest bound depends on the system, and a template
 with more variables builds a larger program: try several.

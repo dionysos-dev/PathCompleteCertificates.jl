@@ -1,124 +1,109 @@
-# # Use SetProg families
+# # Try a richer template
 #
-# SetProg families are accepted directly by PCC. Their stability inequality
-# is modeled as the inclusion `(A / rate) * S_source ⊆ S_destination`.
-# This example compares polynomial and piecewise set families.
+# [Bound the joint spectral radius of my system](@ref) proved stability with a
+# bigger graph. This page keeps the one-node graph and changes the template
+# instead: a sum of squares of degree 4 proves stability where a quadratic form
+# cannot. [Choosing a template](@ref) lists the templates; here they are
+# compared on one system, including SetProg families passed directly.
 
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
-using SetProg, SumOfSquares
-using DynamicPolynomials
-using LinearAlgebra
+import LinearAlgebra
+using SetProg, SumOfSquares, DynamicPolynomials
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
+nothing #hide
 
-# The rotation and shear of the other examples, on the one-node graph, so that
-# the rates differ only by the template.
+# ## The system
+#
+# The rotation and the shear of
+# [Bound the joint spectral radius of my system](@ref), on the one-node graph:
+# every difference below comes from the template.
 
-A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
+A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 graph = PCC.common_graph(problem.system)
 
-bound(template) = PCC.certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-3)
+certified(template) =
+    PCC.certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)
+nothing #hide
 
-# A partition is given by a polytope with the origin in its interior; its
-# pieces are the cones over its facets. The polytope is built with Polyhedra on
-# a linear programming solver, which SetProg uses on the pieces; HiGHS is a
-# simplex solver.
+# ## Five templates
+#
+# The quadratic forms; sums of squares of degree 4 and 6, on the variables
+# `x` of DynamicPolynomials; and two SetProg families passed directly, a
+# function quadratic on each cone of a partition and one linear on each. The
+# partition is given by an octagon, whose cones are those over its facets; the
+# octagon is built with Polyhedra, on a linear programming solver.
 
 LIBRARY = Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
+normals = [[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]]
+octagon = polyhedron(hrep([HalfSpace(a, LinearAlgebra.norm(a)) for a in normals]), LIBRARY)
 
-polygon(normals) = polyhedron(hrep([HalfSpace(a, norm(a)) for a in normals]), LIBRARY)
-
-octagon = polygon([[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]])
-
-# ## Three homogeneous set families
-
-using SumOfSquares
 @polyvar x[1:2]
-families = [
-    ("quadratic", PCC.QuadraticTemplate()),
-    ("degree 4", PCC.SumOfSquaresTemplate(2, x)),
-    ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
+templates = [
+    "quadratic" => PCC.QuadraticTemplate(),
+    "piecewise quadratic, octagon" =>
+        Ellipsoid(; symmetric = true, piecewise = octagon),
+    "piecewise linear, octagon" => Polytope(; symmetric = true, piecewise = octagon),
+    "sum of squares, degree 4" => PCC.SumOfSquaresTemplate(2, x),
+    "sum of squares, degree 6" => PCC.SumOfSquaresTemplate(3, x),
 ]
-[(name, round(bound(family).rate; digits = 4)) for (name, family) in families]
+certificates = [name => certified(template) for (name, template) in templates]
 
-# ## The piecewise semi-ellipsoid
+[name => certificate.rate for (name, certificate) in certificates]
+
+# On this system, the sums of squares go below one: on a single node, they
+# prove what the quadratic form cannot, at the price of larger semidefinite
+# programs, with more variables at each degree. The piecewise families do not,
+# and the piecewise linear one does worse than the quadratic form: the best
+# template depends on the system.
+
+# ## The certificates, drawn
 #
-# `Ellipsoid(symmetric = true, piecewise = P)` is a function quadratic on each
-# cone of `P` and continuous across them; no other template gives it.
-# Refining the partition cannot increase the rate, since a function quadratic
-# on each cone of a partition is quadratic on each cone of a finer one.
+# On the left, the set ``\{x : V(x) \le 1\}`` of each certificate, scaled to
+# the same size: the shape each template allows. On the right, the rates,
+# against the stability threshold and the joint spectral radius, ``0.976``,
+# found in [Improve my bound](@ref).
 
-square = polygon([[1, 0], [0, 1], [-1, 0], [0, -1]])
-sixteen = polygon([
-    [1, 0],
-    [2, 1],
-    [1, 1],
-    [1, 2],
-    [0, 1],
-    [-1, 2],
-    [-1, 1],
-    [-2, 1],
-    [-1, 0],
-    [-2, -1],
-    [-1, -1],
-    [-1, -2],
-    [0, -1],
-    [1, -2],
-    [1, -1],
-    [2, -1],
-])
+directions = [[cos(t), sin(t)] for t in range(0, 2pi; length = 721)]
 
-partitions = [("square", square), ("octagon", octagon), ("16-gon", sixteen)]
-
-piecewise = [
-    (name, bound(Ellipsoid(; symmetric = true, piecewise = P))) for (name, P) in partitions
-]
-
-[
-    (name, nhalfspaces(P), round(certificate.rate; digits = 4)) for
-    ((name, P), (_, certificate)) in zip(partitions, piecewise)
-]
-
-# On the four cones of the square the piecewise function certifies the rate of
-# the plain ellipsoid; the octagon's eight cones improve on it, and sixteen
-# cones of degree two give a lower rate than the polynomial of degree four
-# above.
-
-# ## Drawing it
-#
-# The sublevel set ``\{x : V(x) \le 1\}`` of each function. The piecewise one
-# is a union of arcs of ellipses, meeting along the rays of the partition.
-
-function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.homogeneity_degree(PCC.template(certificate))
-    angles = range(0, 2pi; length = samples)
-    radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
-    radii ./= maximum(radii)
-
-    return radii .* cos.(angles), radii .* sin.(angles)
-end
-
-figure = plot(;
-    title = "one node, three partitions",
+left = plot(;
     aspect_ratio = :equal,
-    legend = :outerbottom,
     framestyle = :origin,
+    legend = :outerbottom,
+    title = "the sets V ≤ 1",
 )
-
-for (name, certificate) in piecewise
-    xs, ys = sublevel_boundary(certificate)
-    plot!(
-        figure,
-        xs,
-        ys;
-        label = "$name, rate $(round(certificate.rate; digits = 3))",
-        lw = 2,
-    )
+for (name, certificate) in certificates
+    p = PCC.homogeneity_degree(PCC.template(certificate))
+    points = [d ./ certificate(d)^(1 / p) for d in directions]
+    radius = maximum(LinearAlgebra.norm, points)
+    plot!(left, first.(points) ./ radius, last.(points) ./ radius; lw = 2, label = name)
 end
 
-figure
+rates = [certificate.rate for (_, certificate) in certificates]
+right = bar(
+    1:5,
+    rates;
+    color = 1:5,
+    label = "",
+    legend = :topright,
+    ylims = (0.9, 1.12),
+    xticks = (1:5, ["quad.", "pw quad.", "pw lin.", "SOS 4", "SOS 6"]),
+    ylabel = "rate",
+    title = "the rates",
+)
+hline!(right, [1.0]; color = :red, ls = :dot, lw = 2, label = "stability threshold")
+hline!(right, [0.976]; color = :black, ls = :dash, lw = 2, label = "joint spectral radius")
+
+plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
+
+# ## What it proves
+#
+# The sum of squares of degree 4 proves stability on a single node, and degree
+# 6 comes within 0.3% of the joint spectral radius. The graph and the template
+# are the two choices of a certificate (see [How a certificate works](@ref)):
+# a bigger graph, a richer template, or both.
