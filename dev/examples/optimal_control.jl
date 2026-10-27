@@ -45,8 +45,9 @@ PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(
 
 # ## A path-complete graph
 #
-# Optimal control needs a complete graph, and the De Bruijn graphs are. They
-# give one function and one gain per node, and a lower bound with each order:
+# Optimal control needs a complete graph, and the primal De Bruijn graphs are.
+# They give one function and one gain per node, and the bound drops with each
+# order:
 
 bounds = [
     PCC.certify(TEMPLATE, PCC.de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for

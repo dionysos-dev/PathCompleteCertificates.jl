@@ -102,14 +102,12 @@ draw_graphs(GRAPHS, NAMES; node_label = node_name) #hide
 # All five are path-complete; `G0`, `G3` and `G4` are also complete and
 # co-complete, `G1` and `G2` neither:
 
-[
-    (
-        name,
-        PCC.is_path_complete(g, 1:2),
-        PCC.is_complete(g, 1:2),
-        PCC.is_co_complete(g, 1:2),
-    ) for (name, g) in zip(NAMES, GRAPHS)
-]
+satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g, 1:2)]
+(
+    path_complete = satisfying(PCC.is_path_complete),
+    complete = satisfying(PCC.is_complete),
+    co_complete = satisfying(PCC.is_co_complete),
+)
 
 # ## One comparison
 #
@@ -193,16 +191,16 @@ end
 #
 # `G4` against the one-node graph: its min and max lifts simulate `G0`, its sum
 # lift does not. So `G4` gives no better certificate than `G0` for the
-# templates closed under minimum or maximum, here the two copositive ones, but
-# may for the quadratic template:
+# templates for which the min or the max lift is valid, here the two copositive
+# ones, but may for the quadratic template:
 
 c40 = compared(G4, G0)
 outcome(c40)
 
 # `G3`, with as many nodes and edges, is no better than `G0` for any template
-# closed under addition: its sum lift simulates `G0`, with a single row,
-# ``2V_a + V_b + V_c + 2V_d + 2V_e``, a common function of any certificate on
-# `G3`.
+# for which the sum lift is valid: its sum lift simulates `G0`, with a single
+# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``, a common function of any certificate
+# on `G3`.
 
 c30 = compared(G3, G0)
 Dict(PCC.simulations(c30))[PCC.SumLift()]
@@ -230,6 +228,7 @@ for (name, _) in TEMPLATES
 end
 figure
 
-# No lifted graph was built: a relation decides the min and max lifts, and a
-# linear program the sum lift, while the lifted graphs grow exponentially.
+# The min, max and sum lifts were never built: a relation decides the first
+# two, and a linear program the third, while these lifted graphs grow
+# exponentially. Only the composition lifts, of length 1, are built.
 # [Improve my bound](@ref) builds a better graph instead of comparing given ones.

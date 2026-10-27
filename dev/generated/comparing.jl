@@ -82,14 +82,12 @@ node_name(k) = string('a' + k - 1)
 
 draw_graphs(GRAPHS, NAMES; node_label = node_name) #hide
 
-[
-    (
-        name,
-        PCC.is_path_complete(g, 1:2),
-        PCC.is_complete(g, 1:2),
-        PCC.is_co_complete(g, 1:2),
-    ) for (name, g) in zip(NAMES, GRAPHS)
-]
+satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g, 1:2)]
+(
+    path_complete = satisfying(PCC.is_path_complete),
+    complete = satisfying(PCC.is_complete),
+    co_complete = satisfying(PCC.is_co_complete),
+)
 
 A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
 system = PCC.switched_system(A)

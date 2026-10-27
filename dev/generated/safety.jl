@@ -57,8 +57,8 @@ contour!(
     lw = 4,
     colorbar = false,
 )
-plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
 # `contour!` adds no legend entry of its own.
+plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
 for (a, V) in enumerate(PCC.functions(certificate))
     color = (:darkorange, :purple)[a]
     values = [PCC.node_value(problem, V, [x, y]) for y in grid, x in grid]
