@@ -1,22 +1,22 @@
 import PathCompleteCertificates as PCC
 import Clarabel
-using HybridSystems
 using Plots
+include(joinpath(pkgdir(PCC), "docs", "graph_drawing.jl")) #hide
 
 const OPTIMIZER = Clarabel.Optimizer
+nothing #hide
 
-function graph(edges, n_nodes)
-    g = GraphAutomaton(n_nodes)
-    for (s, d, mode) in edges
-        add_transition!(g, s, d, mode)
+function build(n_nodes, edges)
+    graph = PCC.empty_graph(n_nodes)
+    for (a, b, mode) in edges
+        PCC.add_edge!(graph, a, b, mode)
     end
-    return g
+    return graph
 end
 
-node_name(k) = string('a' + k - 1)
-
-G0 = graph([(1, 1, 1), (1, 1, 2)], 1)
-G1 = graph(
+G0 = build(1, [(1, 1, 1), (1, 1, 2)])
+G1 = build(
+    5,
     [
         (1, 2, 1),
         (2, 1, 1),
@@ -27,9 +27,9 @@ G1 = graph(
         (1, 5, 2),
         (5, 1, 2),
     ],
-    5,
 )
-G2 = graph(
+G2 = build(
+    4,
     [
         (1, 3, 2),
         (1, 4, 2),
@@ -40,9 +40,9 @@ G2 = graph(
         (4, 2, 1),
         (4, 1, 1),
     ],
-    4,
 )
-G3 = graph(
+G3 = build(
+    5,
     [
         (1, 2, 1),
         (1, 5, 2),
@@ -57,9 +57,9 @@ G3 = graph(
         (5, 1, 1),
         (5, 1, 2),
     ],
-    5,
 )
-G4 = graph(
+G4 = build(
+    5,
     [
         (1, 2, 1),
         (2, 4, 1),
@@ -74,11 +74,13 @@ G4 = graph(
         (4, 5, 2),
         (5, 1, 2),
     ],
-    5,
 )
 
 GRAPHS = [G0, G1, G2, G3, G4]
 NAMES = ["G0", "G1", "G2", "G3", "G4"]
+node_name(k) = string('a' + k - 1)
+
+draw_graphs(GRAPHS, NAMES; node_label = node_name) #hide
 
 [
     (
@@ -94,34 +96,38 @@ system = PCC.switched_system(A)
 problem = PCC.StabilityProblem(system)
 
 QUADRATIC = PCC.QuadraticTemplate()
-COPOSITIVE = PCC.LinearCopositiveTemplate()
-DUAL_COPOSITIVE = PCC.DualCopositiveTemplate()
-TEMPLATES = (QUADRATIC, COPOSITIVE, DUAL_COPOSITIVE)
+TEMPLATES = [
+    "quadratic" => QUADRATIC,
+    "copositive" => PCC.LinearCopositiveTemplate(),
+    "dual copositive" => PCC.DualCopositiveTemplate(),
+]
+nothing #hide
 
-c12 = PCC.compare(G1, G2; templates = TEMPLATES, system, optimizer = OPTIMIZER)
-PCC.lifts(c12)
+compared(G, H) =
+    PCC.compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
+lift_name(lift) =
+    lift isa PCC.MinLift ? "min" :
+    lift isa PCC.MaxLift ? "max" :
+    lift isa PCC.SumLift ? "sum" : string(nameof(typeof(lift)))
+outcome(c) = (
+    simulating = lift_name.(first.(PCC.simulations(c))),
+    proved_for = [
+        name for (name, template) in TEMPLATES if any(t -> t === template, PCC.templates(c))
+    ],
+)
 
-first.(PCC.simulations(c12))
-
-PCC.templates(c12)
+c12 = compared(G1, G2)
+outcome(c12)
 
 C = Dict(PCC.simulations(c12))[PCC.SumLift()]
-
 combination(row) = join(
     [(c == 1 ? "" : "$c·") * "V_" * node_name(g) for (g, c) in enumerate(row) if c > 0],
     " + ",
 )
-
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:PCC.n_nodes(G2)]
 
-bound(template, g) = PCC.jsr_bound(
-    template,
-    g,
-    problem;
-    optimizer = OPTIMIZER,
-    rtol = 1e-6,
-    initial_upper = 100.0,
-)
+bound(template, graph) =
+    PCC.certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
 
 on_G1 = bound(QUADRATIC, G1)
 V = PCC.functions(on_G1)
@@ -130,48 +136,35 @@ W = [
     h in 1:PCC.n_nodes(G2)
 ]
 scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
-
-slacks = [
-    PCC.decrease_slack(
+all(PCC.edges(G2)) do edge
+    return PCC.decrease_slack(
         QUADRATIC,
-        W[PCC.source(e)],
-        W[PCC.dest(e)],
-        A[PCC.label(G2, e)];
+        W[PCC.source(edge)],
+        W[PCC.dest(edge)],
+        A[PCC.label(G2, edge)];
         scale,
-    ) for e in PCC.edges(G2)
-]
+    ) >= -1e-6
+end
 
-all(>=(-1e-6), slacks)
+c40 = compared(G4, G0)
+outcome(c40)
 
-c40 = PCC.compare(G4, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
-first.(PCC.simulations(c40)), PCC.templates(c40)
-
-c30 = PCC.compare(G3, G0; templates = TEMPLATES, system, optimizer = OPTIMIZER)
+c30 = compared(G3, G0)
 Dict(PCC.simulations(c30))[PCC.SumLift()]
 
-c04 = PCC.compare(G0, G4; templates = TEMPLATES, system)
-PCC.lifts(c04), PCC.templates(c04)
-
-RATES = [
-    (name, [bound(template, g).rate for g in GRAPHS]) for (name, template) in (
-        ("quadratic", QUADRATIC),
-        ("copositive", COPOSITIVE),
-        ("dual copositive", DUAL_COPOSITIVE),
-    )
-]
-
-rows = [hcat(name, round.(rates; digits = 4)') for (name, rates) in RATES]
-
-vcat(reshape(["template"; NAMES], 1, :), rows...)
+rates = Dict(
+    name => [bound(template, g).rate for g in GRAPHS] for (name, template) in TEMPLATES
+)
 
 figure = plot(;
     xticks = (1:5, NAMES),
     ylabel = "certified rate",
-    legend = :bottomleft,
+    legend = :outerright,
+    size = (800, 420),
     title = "five graphs, three templates",
 )
-for (name, rates) in RATES
-    plot!(figure, 1:5, rates; marker = :circle, markersize = 6, lw = 2, label = name)
+for (name, _) in TEMPLATES
+    plot!(figure, 1:5, rates[name]; marker = :circle, markersize = 6, lw = 2, label = name)
 end
 figure
 

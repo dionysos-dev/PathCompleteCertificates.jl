@@ -1,94 +1,69 @@
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
-using SetProg, SumOfSquares
-using DynamicPolynomials
-using LinearAlgebra
+import LinearAlgebra
+using SetProg, SumOfSquares, DynamicPolynomials
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
+nothing #hide
 
-A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
+A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 graph = PCC.common_graph(problem.system)
 
-bound(template) =
-    PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-3)
+certified(template) =
+    PCC.certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)
+nothing #hide
 
 LIBRARY = Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
+normals = [[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]]
+octagon = polyhedron(hrep([HalfSpace(a, LinearAlgebra.norm(a)) for a in normals]), LIBRARY)
 
-polygon(normals) = polyhedron(hrep([HalfSpace(a, norm(a)) for a in normals]), LIBRARY)
-
-octagon = polygon([[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]])
-
-using SumOfSquares
 @polyvar x[1:2]
-families = [
-    ("quadratic", PCC.QuadraticTemplate()),
-    ("degree 4", PCC.SumOfSquaresTemplate(2, x)),
-    ("polyhedral", Polytope(; symmetric = true, piecewise = octagon)),
+templates = [
+    "quadratic" => PCC.QuadraticTemplate(),
+    "piecewise quadratic, octagon" =>
+        Ellipsoid(; symmetric = true, piecewise = octagon),
+    "piecewise linear, octagon" => Polytope(; symmetric = true, piecewise = octagon),
+    "sum of squares, degree 4" => PCC.SumOfSquaresTemplate(2, x),
+    "sum of squares, degree 6" => PCC.SumOfSquaresTemplate(3, x),
 ]
-[(name, round(bound(family).rate; digits = 4)) for (name, family) in families]
+certificates = [name => certified(template) for (name, template) in templates]
 
-square = polygon([[1, 0], [0, 1], [-1, 0], [0, -1]])
-sixteen = polygon([
-    [1, 0],
-    [2, 1],
-    [1, 1],
-    [1, 2],
-    [0, 1],
-    [-1, 2],
-    [-1, 1],
-    [-2, 1],
-    [-1, 0],
-    [-2, -1],
-    [-1, -1],
-    [-1, -2],
-    [0, -1],
-    [1, -2],
-    [1, -1],
-    [2, -1],
-])
+[name => certificate.rate for (name, certificate) in certificates]
 
-partitions = [("square", square), ("octagon", octagon), ("16-gon", sixteen)]
+directions = [[cos(t), sin(t)] for t in range(0, 2pi; length = 721)]
 
-piecewise = [
-    (name, bound(Ellipsoid(; symmetric = true, piecewise = P))) for (name, P) in partitions
-]
-
-[
-    (name, nhalfspaces(P), round(certificate.rate; digits = 4)) for
-    ((name, P), (_, certificate)) in zip(partitions, piecewise)
-]
-
-function sublevel_boundary(certificate; samples = 721)
-    degree = PCC.homogeneity_degree(PCC.template(certificate))
-    angles = range(0, 2pi; length = samples)
-    radii = [certificate([cos(a), sin(a)])^(-1 / degree) for a in angles]
-    radii ./= maximum(radii)
-
-    return radii .* cos.(angles), radii .* sin.(angles)
-end
-
-figure = plot(;
-    title = "one node, three partitions",
+left = plot(;
     aspect_ratio = :equal,
-    legend = :outerbottom,
     framestyle = :origin,
+    legend = :outerbottom,
+    title = "the sets V ≤ 1",
 )
-
-for (name, certificate) in piecewise
-    xs, ys = sublevel_boundary(certificate)
-    plot!(
-        figure,
-        xs,
-        ys;
-        label = "$name, rate $(round(certificate.rate; digits = 3))",
-        lw = 2,
-    )
+for (name, certificate) in certificates
+    p = PCC.homogeneity_degree(PCC.template(certificate))
+    points = [d ./ certificate(d)^(1 / p) for d in directions]
+    radius = maximum(LinearAlgebra.norm, points)
+    plot!(left, first.(points) ./ radius, last.(points) ./ radius; lw = 2, label = name)
 end
 
-figure
+rates = [certificate.rate for (_, certificate) in certificates]
+right = bar(
+    1:5,
+    rates;
+    color = 1:5,
+    label = "",
+    legend = :topright,
+    ylims = (0.9, 1.12),
+    xticks = (1:5, ["quad.", "pw quad.", "pw lin.", "SOS 4", "SOS 6"]),
+    ylabel = "rate",
+    title = "the rates",
+)
+hline!(right, [1.0]; color = :red, ls = :dot, lw = 2, label = "stability threshold")
+hline!(right, [0.976]; color = :black, ls = :dash, lw = 2, label = "joint spectral radius")
+
+plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
