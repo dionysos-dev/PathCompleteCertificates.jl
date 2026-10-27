@@ -13,10 +13,12 @@ problem = PCC.StabilityProblem(system)
 graph = PCC.common_graph(system)
 ```
 
-The template is the family the node functions are drawn from: for stability, a
-[SetProg](https://github.com/blegat/SetProg.jl) set family, whose sets' gauges
-are the node functions. This page shows what it changes, lists the templates
-and how to build each, and helps you choose.
+The template is the family the node functions are drawn from. In the program
+that [`certify`](@ref) solves, it gives the variables and decides the kind of
+program, semidefinite or linear; with the graph, it decides how good the
+certificate can be and how much it costs (see [How a certificate works](@ref)).
+This page shows what a template changes, lists the templates, and helps you
+choose.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, `problem = PCC.StabilityProblem(system)`
@@ -24,8 +26,8 @@ and `graph = PCC.common_graph(system)`, solved with Clarabel and HiGHS.
 
 ## What a template changes
 
-The template fixes the shape of the node functions. It also sets the program
-to solve, and so the solver, and it changes the bound:
+The template fixes the shape of the node functions, and so the bound and the
+program, which sets the solver:
 
 ```@example running
 quadratic = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
@@ -33,9 +35,9 @@ copositive = PCC.certify(PCC.LinearCopositiveTemplate(), graph, problem; optimiz
 quadratic.rate, copositive.rate
 ```
 
-The quadratic template solves a semidefinite program, the linear copositive
-template a linear program; the latter applies here because the matrices have
-nonnegative entries.
+The quadratic template solves a semidefinite program, with Clarabel; the
+linear copositive template a linear program, with HiGHS. The latter applies
+here because the matrices have nonnegative entries.
 
 The level set ``V(x) = 1`` of the certificate that four templates find on the
 running example shows their shapes:
@@ -88,20 +90,24 @@ shapes_figure(system, problem, graph) # hide
 | `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
-Each constructor returns a SetProg family: `QuadraticTemplate()`, for
-instance, is `Ellipsoid(symmetric = true)`. The last two rows are SetProg
-families passed directly, with the cones over the facets of a polytope ``P``.
-A positive system has matrices with nonnegative entries, so its trajectories
-that start in the nonnegative orthant stay there; the copositive functions are
-defined on that orthant. The sum-of-squares template needs a package of its
-own: see [Installation](@ref).
+**Templates are SetProg families.** Each constructor returns a
+[SetProg](https://github.com/blegat/SetProg.jl) family of sets, and a node
+function stands for its set ``\{x : V(x) \le 1\}``: `QuadraticTemplate()`,
+for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
+these sets, which [`node_value`](@ref) evaluates. The last two rows are
+SetProg families passed directly, piecewise on the cones over the facets of a
+polytope ``P``. To write them, run `Pkg.add("SetProg")` and `using SetProg`:
+the package depends on SetProg, so nothing new is downloaded, but your
+environment must list it for Julia to load it by name.
 
 ## How to choose
 
 - **Start with** `QuadraticTemplate()`. It applies to every system and every
   problem.
-- **For a positive system**, `LinearCopositiveTemplate()` and
-  `DualCopositiveTemplate()` solve linear programs.
+- **For a positive system**, whose matrices have nonnegative entries, so that
+  trajectories that start in the nonnegative orthant stay there:
+  `LinearCopositiveTemplate()` and `DualCopositiveTemplate()`, defined on that
+  orthant, solve linear programs.
 - **For a polyhedral function on any system**, two templates solve linear
   programs:
   - `ParallelFacesPolyhedralTemplate(n_nodes(graph), n)` fixes the normals of
@@ -114,14 +120,16 @@ own: see [Installation](@ref).
     the function is linear; in the plane, [`planar_conic_partition`](@ref)
     builds one.
 - **For a polynomial function**, `SumOfSquaresTemplate(d, x)`, with the
-  variables `@polyvar x[1:n]` of DynamicPolynomials. Degree 1 gives quadratic
-  forms.
+  variables `@polyvar x[1:n]` of DynamicPolynomials, and the SumOfSquares
+  package loaded (see [Installation](@ref)). Degree 1 gives the quadratic
+  forms; each higher degree adds variables.
 - **For a function piecewise on cones**, a SetProg family passed directly:
-  `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone over a
-  facet of the polytope ``P``, or `Polytope(symmetric = true, piecewise = P)`,
-  linear on each; see [Use SetProg families](@ref).
+  `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone, or
+  `Polytope(symmetric = true, piecewise = P)`, linear on each; see
+  [Use SetProg families](@ref).
 
-Which template gives the lowest bound depends on the system: try several.
+Which template gives the lowest bound depends on the system, and a template
+with more variables builds a larger program: try several.
 [What works with what](@ref) lists the problems and methods each template
 supports.
 

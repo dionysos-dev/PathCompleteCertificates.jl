@@ -64,7 +64,9 @@ by an automaton is planned: see
 
 [`simulate`](@ref) runs a system from an initial state along a sequence of
 modes, or along random modes when given a number of steps, and returns a
-[`Trajectory`](@ref):
+[`Trajectory`](@ref). Here the system runs from ``x_0 = (1, 1)`` along the
+modes ``1, 2, 2, 1``, and [`states`](@ref) returns the state trajectory,
+``x_0`` to ``x_4``:
 
 ```@example running
 trajectory = PCC.simulate(system, [1.0, 1.0], [1, 2, 2, 1])
@@ -72,20 +74,23 @@ PCC.states(trajectory)
 ```
 
 A controlled system also needs its inputs, as a vector of inputs or as a
-feedback law `u(x)`:
+feedback law `u(x)`, here ``u(x) = -0.5 x_1``:
 
 ```@example running
 trajectory = PCC.simulate(controlled, [1.0, 1.0], [1, 2, 2, 1]; u = x -> [-0.5 * x[1]])
 PCC.states(trajectory)
 ```
 
-With Plots loaded, `plot(trajectory)` draws it. A run shows one behaviour of
-the system and proves nothing about the others, as the next section shows.
+[`switching`](@ref) and [`inputs`](@ref) return the modes and the inputs of a
+trajectory. With Plots loaded, `plot(trajectory)` draws it.
+
+**A run shows one behaviour of the system and proves nothing about the
+others,** as the next section shows.
 
 ## What can be certified
 
-Each property is a problem, built from the system. Simulations cannot prove
-any of them, and a figure for each problem shows why, on a small system that
+Each of the three properties is a problem, built from the system. Simulations
+cannot prove any of them, and a figure for each problem shows why, on a small system that
 is fragile under switching:
 
 ```@example running
@@ -159,12 +164,12 @@ function regulator(A, B, Q, R)
 end
 
 function control_figure(A, B, Q, R)
-    gains = [regulator(A[i], B, Q, R) for i in eachindex(A)]
+    gain = regulator(A[1], B, Q, R)  # one gain, whatever the mode
     function cost(modes)
         x = [1.0, 1.0]
         total = [0.0]
         for i in modes
-            u = gains[i] * x
+            u = gain * x
             push!(total, last(total) + x' * Q * x + u' * R * u)
             x = A[i] * x + B * u
         end
@@ -242,16 +247,18 @@ A complete example: [Prove my system safe](@ref).
 
 Given a controlled system and the stage cost ``x_k^\top Q x_k + u_k^\top R u_k``,
 with ``Q`` and ``R`` positive definite, an optimal control certificate gives a
-state-feedback policy and an upper bound on its total cost
-``\sum_{k \ge 0} x_k^\top Q x_k + u_k^\top R u_k``, for every switching
-sequence.
+state-feedback policy ``u_k = \phi(x_k)``, a function of the state only, and
+an upper bound on its total cost
+``\sum_{k \ge 0} x_k^\top Q x_k + u_k^\top R u_k`` from each initial state,
+for every switching sequence.
 
 On the fragile system with the input matrix ``B = (-0.6, 0.8)`` in both
-modes, and ``Q = I``, ``R = 1``, take one gain per mode, the linear-quadratic
-regulator of that mode alone, used whenever the mode is active. Each closed
-loop is stable, and every random run has a small cost, yet along the
-alternating sequence the closed loop grows by about ``1.09`` per step, and the
-cost grows without bound.
+modes, and ``Q = I``, ``R = 1``, take the policy ``u = K x``, with ``K`` the
+gain of the linear-quadratic regulator designed for mode 1. The closed loop of
+each mode is stable,
+and every random run has a small cost, yet along the alternating sequence the
+closed loop grows by about ``1.23`` per step, and the cost grows without
+bound.
 
 ```@example running
 control_figure([M1, M2], [-0.6; 0.8;;], [1.0 0.0; 0.0 1.0], [1.0;;]) # hide

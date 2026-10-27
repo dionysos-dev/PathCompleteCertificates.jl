@@ -12,9 +12,13 @@ system = PCC.switched_system(A)
 problem = PCC.StabilityProblem(system)
 ```
 
-The graph decides which node function applies at each step of a trajectory.
-This page presents the classical graphs, how to build your own, and how a
-graph is checked.
+The graph gives the structure of the program that [`certify`](@ref) solves:
+one node function per node, and one edge inequality per edge. Along a
+trajectory, a path of the graph that reads its modes says which node function
+applies at each step. With the template, the graph decides how good the
+certificate can be and how much it costs (see [How a certificate works](@ref)).
+This page presents the classical graphs, which graphs are valid, and how to
+build your own.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
@@ -50,19 +54,20 @@ const MODE_COLORS = [:royalblue, :darkorange]
 # A drawing of a graph with two modes, its nodes at the given positions.
 function draw_graph(graph, positions; title)
     panel = plot(; aspect_ratio = :equal, framestyle = :none, legend = false, title,
-                 titlefontsize = 10, xlims = (-1.6, 1.6), ylims = (-1.1, 1.3))
+                 titlefontsize = 10, xlims = (-1.9, 1.9), ylims = (-0.75, 0.75))
     for edge in PCC.edges(graph)
         a, b = PCC.source(edge), PCC.dest(edge)
         mode = only(PCC.letters(PCC.label(graph, edge)))
         color = MODE_COLORS[mode]
         if a == b
-            # A loop, above the node for mode 1 and below it for mode 2.
+            # A loop on the side of the node, away from the other nodes; on a
+            # node alone, mode 1 on the left and mode 2 on the right.
             x, y = positions[a]
-            side = mode == 1 ? 1 : -1
+            side = x == 0 ? (mode == 1 ? -1 : 1) : sign(x)
             t = range(-0.85pi, 0.85pi; length = 50)
-            plot!(panel, x .+ 0.32 .* sin.(t), y .+ side .* (0.38 .+ 0.32 .* cos.(t));
+            plot!(panel, x .+ side .* (0.38 .+ 0.32 .* cos.(t)), y .+ 0.32 .* sin.(t);
                   color, lw = 2, arrow = arrow(:closed, 0.25, 0.25))
-            annotate!(panel, x, y + side * 0.85, text("$mode", 10, color))
+            annotate!(panel, x + side * 0.85, y, text("$mode", 10, color))
         else
             # An arc bent to the left of its direction, so that opposite edges part.
             (x1, y1), (x2, y2) = positions[a], positions[b]
@@ -86,7 +91,7 @@ function de_bruijn_figure()
     return plot(draw_graph(PCC.de_bruijn(0, 2), [(0.0, 0.0)]; title = "one node"),
                 draw_graph(PCC.de_bruijn(1, 2), pair; title = "primal, order 1"),
                 draw_graph(PCC.dual(PCC.de_bruijn(1, 2)), pair; title = "dual, order 1");
-                layout = (1, 3), size = (900, 290))
+                layout = (1, 3), size = (900, 200))
 end
 ```
 
@@ -94,17 +99,17 @@ end
 de_bruijn_figure() # hide
 ```
 
-In the primal graph, the edge reading mode ``i`` enters node ``i``: the node
-is the last mode read. In the dual graph, it leaves node ``i``: the node is
-the next mode.
+At order 1, a node is one mode: the edge reading mode ``i`` enters node ``i``
+in the primal graph, and leaves it in the dual graph.
 
 ### The De Bruijn hierarchy
 
 The one-node graph is the De Bruijn graph of order 0. Each order simulates the
 next, so each order gives a bound at least as good as the one before, for
-every template (see [Comparing graphs](@ref)). The price is ``M`` times more
-nodes, and each node adds a function to find and each edge an inequality, so
-the program grows with the order. The bounds for the first orders:
+every template (see [Comparing graphs](@ref)). The price is the size: order
+``k`` has ``M^k`` nodes and ``M^{k+1}`` edges, so each order multiplies the
+variables and the constraints of the program by ``M``. The bounds for the
+first orders:
 
 ```@example running
 template = PCC.QuadraticTemplate()
@@ -118,10 +123,37 @@ end
 ```
 
 On this system, the primal and dual hierarchies give the same bounds. Beyond
-order 2, they only grow: order 3 doubles the nodes for the same bound, and so
-does order 4. The hierarchy adds nodes everywhere at once, whether they help
-or not; the end of this page shows a smaller graph that reaches the same
-bound.
+order 2, the bound stops improving while the graphs keep growing: orders 3
+and 4 each double the nodes for the same bound. The hierarchy adds nodes
+everywhere at once, whether they help or not; the end of this page shows a
+smaller graph that reaches the same bound.
+
+## Path-complete, complete and co-complete graphs
+
+A graph is **path-complete** when every sequence of modes is read along some
+path of it; [`is_path_complete`](@ref) decides it. Two stronger properties
+are cheap to check:
+
+- **complete:** every node has an outgoing edge for every mode,
+  [`is_complete`](@ref);
+- **co-complete:** every node has an incoming edge for every mode,
+  [`is_co_complete`](@ref).
+
+Primal De Bruijn graphs are complete, and dual ones co-complete. On these two
+kinds of graphs, the common function of the certificate is the minimum or the
+maximum of the node functions (see [How a certificate works](@ref)).
+
+Stability and safety need a path-complete graph, and optimal control a
+complete one: [`certify`](@ref) checks before solving, and throws if not. A
+certificate on a graph that is not path-complete would prove the property
+only for the sequences the graph reads.
+
+!!! warning "The check can be costly"
+    Deciding path-completeness is PSPACE-complete in general, so on a large
+    graph that is neither complete nor co-complete, the check before solving
+    can take long (see [Deciding path-completeness](@ref)).
+    `check_path_complete = false` skips it, for a graph you know to be
+    path-complete.
 
 ## Your own graph
 
@@ -156,28 +188,6 @@ In a [`WordGraph`](@ref), an edge can read a sequence of modes, and imposes one
 inequality on the product of their matrices. Words are supported for
 stability only. [`expanded_form`](@ref) gives a graph that reads the same
 sequences with one mode per edge.
-
-## Checking a graph
-
-Before solving, stability and safety check that the graph is path-complete
-for the system's modes, and optimal control that it is complete; each throws
-if not. A certificate on a graph that is not path-complete would prove the
-property only for the sequences the graph reads.
-
-!!! warning
-    `is_path_complete(graph)` alone asks about the modes the graph uses, so a
-    graph that never reads a mode passes. Ask about the system's modes:
-    `is_path_complete(graph, 1:n_modes(system))`.
-
-A graph is **complete** when every node has an outgoing edge for every mode,
-and **co-complete** when every node has an incoming edge for every mode. Both
-imply path-completeness and are cheap to check, with [`is_complete`](@ref)
-and [`is_co_complete`](@ref). Primal De Bruijn graphs are complete, so they
-suit optimal control, and dual ones are co-complete.
-
-Deciding path-completeness can be slow on large graphs.
-`check_path_complete = false` skips the check, for a graph you know to be
-path-complete.
 
 ## Not sure which graph to use?
 
