@@ -42,7 +42,7 @@ solved. Two more conditions on the graph:
 | [`QuadraticTemplate`](@ref) | sum; composition and backward composition if the matrices are invertible |
 | [`SumOfSquaresTemplate`](@ref) | sum; composition and backward composition if the matrices are invertible |
 | [`LinearCopositiveTemplate`](@ref) | sum; composition if the matrices are nonnegative with no zero column; backward composition if they are invertible with nonnegative inverses; through its dual: min |
-| [`DualCopositiveTemplate`](@ref) | max; through its dual: sum, composition if the matrices are invertible with nonnegative inverses, backward composition if they are nonnegative with no zero column |
+| [`DualCopositiveTemplate`](@ref) | max; through its dual: sum, composition if the matrices are invertible with nonnegative inverses, backward composition if they are nonnegative with no zero row |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | max if every node has the same faces |
 | [`ConicPolyhedralTemplate`](@ref) | sum if every node has the same partition |
 | piecewise SetProg ellipsoid or polytope | sum if every node has the same partition |
@@ -60,8 +60,8 @@ mode per edge.
 ## The gaps
 
 Each gap is either a method the package does not implement yet, or a question
-the literature leaves open. A new template, problem, lift or refinement
-algorithm is one file: see [Extending the package](@ref).
+the literature leaves open. [Extending the package](@ref) says where a new
+template, problem, lift or refinement algorithm goes.
 
 **Not implemented yet:**
 

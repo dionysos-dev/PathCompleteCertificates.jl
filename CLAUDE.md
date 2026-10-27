@@ -54,8 +54,9 @@ common(graph, problem, Vs, x)
 ```
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge inequality is one call
-with `scale = γᵖ`. Each problem writes its edge inequality once, in a private `_edge_decrease`,
-which both builds the model and measures the slacks. Each problem owns its certificate type;
+with `scale = γᵖ`. Stability and safety write their edge inequality once, in a private
+`_edge_decrease`, which both builds the model and measures the slacks; optimal control builds
+its model in `S, Y` and measures its slacks in `P, K`. Each problem owns its certificate type;
 what it certifies is a typed field (`rate`, `margin`, `gains`), and the shared fields live once
 in `CertificateData`.
 
@@ -65,9 +66,10 @@ from quadratic matrices, behind the private `_legacy_quadratic` in
 convex only after `S = P⁻¹`, `Y = KS`, and says so in place.
 
 **A new problem, lift or refinement algorithm is one file in the `catalogue/` of its
-directory, and touches nothing else.** A new template is a SetProg family: its constructor goes
-in `templates/catalogue/`, and a family new to the package needs its methods in
-`problems/gauges.jl` and `problems/sets.jl`.
+directory, and changes no other code**; its wiring (the include, a test, a reference page,
+What works with what) is listed in `docs/src/developers/extending.md`. A new template is a
+SetProg family: its constructor goes in `templates/catalogue/`, and a family new to the
+package needs its methods in `problems/gauges.jl` and `problems/sets.jl`.
 
 ## 3. Repository map
 

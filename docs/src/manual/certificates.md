@@ -95,7 +95,7 @@ The template and the graph therefore decide:
 The two pull against each other: a template with more functions, or a graph
 with more nodes, can give a better certificate, but builds a larger program.
 For instance, the sum-of-squares template gives the quadratic forms at degree
-1, and polynomials of higher degree beyond, with more variables at each
+2, and polynomials of higher degree beyond, with more variables at each
 degree.
 
 For stability on the running example, the program has one quadratic form, so

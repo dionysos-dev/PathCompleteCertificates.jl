@@ -9,7 +9,7 @@ paper, what the package takes from each.
 
 ## Certificates
 
-| | |
+| Paper | What the package takes from it |
 | :-- | :-- |
 | [ahmadi2014joint](@cite) | path-complete graphs, and the bound on the joint spectral radius: [`StabilityProblem`](@ref), [`is_path_complete`](@ref), [`expanded_form`](@ref) |
 | [philippe2019path](@cite) | complete and co-complete graphs, and the common function: [`common`](@ref) |
@@ -19,7 +19,7 @@ paper, what the package takes from each.
 
 ## Templates
 
-| | |
+| Paper | What the package takes from it |
 | :-- | :-- |
 | [athanasopoulos2019polyhedral](@cite) | [`ParallelFacesPolyhedralTemplate`](@ref) |
 | [parrilo2008approximation](@cite) | [`SumOfSquaresTemplate`](@ref) |
@@ -30,7 +30,7 @@ standard. [`ConicPolyhedralTemplate`](@ref) is not published yet.
 
 ## Lifts and graphs
 
-| | |
+| Paper | What the package takes from it |
 | :-- | :-- |
 | [athanasopoulos2019polyhedral](@cite) | the partial lifts: [`OutSplitLift`](@ref), [`InSplitLift`](@ref), [`ForwardProductLift`](@ref), [`BackwardProductLift`](@ref) |
 | [philippe2016stability](@cite) | [`PathDependentLift`](@ref) and [`ProductLift`](@ref) |
@@ -43,7 +43,7 @@ standard. [`ConicPolyhedralTemplate`](@ref) is not published yet.
 
 ## Refinement
 
-| | |
+| Paper | What the package takes from it |
 | :-- | :-- |
 | [ninite2026lifting](@cite) | [`TightestNodeSplitting`](@ref), the tight subgraph and [`is_jsr_exact`](@ref) |
 | [athanasopoulos2019polyhedral](@cite) | [`BestOfTightEdgeLifts`](@ref) |

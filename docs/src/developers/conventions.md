@@ -22,16 +22,21 @@ independent axes, and neither names the other:
 | Safety | ``V_b(A_i x) \le V_a(x)``, in the coordinates ``[x; 1]`` |
 | Optimal control | ``x^\top Q x + u^\top R u + V_b(A_i x + B_i u) \le V_a(x)``, with ``u = K_a x`` |
 
-Each problem writes its edge inequality once, in a private `_edge_decrease`,
-which both builds the model and measures the slacks. Each problem owns its
-certificate type: the shared fields live once in `CertificateData`, and what
-the problem certifies is a typed field of its own, `rate`, `margin` or
-`gains`.
+Stability and safety write their edge inequality once, in a private
+`_edge_decrease`, which both builds the model and measures the slacks.
+Optimal control, convex only after the change of variables ``S = P^{-1}``,
+``Y = K S``, builds its model in ``S`` and ``Y`` and measures its slacks in
+``P`` and ``K``. Each problem owns its certificate type: the shared fields
+live once in `CertificateData`, and what the problem certifies is a typed
+field of its own, `rate`, `margin` or `gains`.
 
 **A new problem, lift or refinement algorithm is one file in the `catalogue/`
-of its directory, and touches nothing else.** Every directory with an
-interface has that shape: the interface at the top, one file per inhabitant
-under `catalogue/`, named after the type without the directory's suffix.
+of its directory, and changes no other code**: the rest is wiring, listed in
+[Extending the package](@ref). Every directory with an interface has that
+shape: the interface at the top, one file per inhabitant under `catalogue/`,
+named after the type without the directory's suffix. The exception is the
+templates, whose copositive and polyhedral constructors live in
+`src/problems/polytope_compat.jl`.
 
 ## Templates are SetProg families
 
@@ -68,36 +73,37 @@ builder, and accept the quadratic template only.
 ## Lifts and refinement algorithms
 
 **A lift is an operation on a graph; `refine` is an algorithm that applies
-lifts.** A lift maps a path-complete graph to a path-complete graph no worse
-for every template closed under its `requirements`. The same lift can be a
-step of a refinement algorithm and a test of `compare`, where a simulation of
-``H`` by the lifted ``G`` proves ``G \le_V H``.
+lifts.** A lift maps a path-complete graph to a path-complete graph at least
+as good for every template the lift is valid for: closed under its
+`requirements`, or with a dual closed under the dual operations. The same
+lift can be a step of a refinement algorithm and a test of `compare`, where a
+simulation of ``H`` by the lifted ``G`` proves ``G \le_V H``.
 
 ```julia
 # src/lifts/operations.jl: what a template is closed under and a lift requires.
 Addition(), Maximum(), Minimum(), Composition(), InverseComposition()
 
-# A lift, src/lifts/catalogue/: the forms its definition gives it.
-lift(L, graph)                               # a Lifted: the graph and what each node stands for
-lift(L, graph, edges)                        # at each edge, for the splits and products
-lift(L, graph, node)                         # at a node, for the splits
-requirements(L)                              # the operations it needs; () by default
-simulation(L, G, H; optimizer)               # inherited; overridden where the theory decides cheaper
-is_valid(L, template, system)                # written once against the two
-dual(L)                                      # a DualLift, applied on the dual graph
-compare(G, H; templates, system, optimizer)  # the entry point of comparison
+# A lift, src/lifts/catalogue/: the forms its definition allows.
+lift(L, graph)                                   # a Lifted: the graph and what each node stands for
+lift(L, graph, edges)                            # at each edge, for the splits and products
+lift(L, graph, node)                             # at a node, for the splits
+requirements(L)                                  # the operations it needs; () by default
+simulation(L, G, H; optimizer)                   # inherited; overridden where the theory decides cheaper
+is_valid(L, template, system)                    # written once against the two
+dual(L)                                          # a DualLift, applied on the dual graph
+compare(G, H; templates, system, optimizer)      # the entry point of comparison
 
 # A refinement algorithm, src/refinements/catalogue/: one method to write.
-next_graph(algorithm, certificate; atol, solve) # the next Lifted graph, or nothing
-initial_graph(algorithm, system)             # where it starts; common_graph by default
-refine(template, graph, problem; algorithm)  # the entry point: the loop
+next_graph(algorithm, certificate; atol, solve)  # (lifted, its certificate or nothing), or nothing
+initial_graph(algorithm, system)                 # where it starts; common_graph by default
+refine(template, graph, problem; algorithm)      # the entry point: the loop
 ```
 
 - What a lift supports is the methods it has, never a flag.
 - Validity is read from the closures a template declares, never by
   dispatching on its concrete type, which would need a method per pair.
-- A lift valid on a template not closed under its requirements is read
-  through the dual template: the min lift is valid on the linear copositive
+- A lift valid for a template not closed under its requirements is read
+  through the dual template: the min lift is valid for the linear copositive
   template because its dual is closed under maximum. Declare a closure; never
   override `is_valid`.
 - The min, max and sum lifts are never built to decide an order: a relation

@@ -28,7 +28,12 @@ any of the three problems. Or, for stability, you leave the graph out, and
 [`refine`](@ref) builds one: it solves, reads where the certificate is tight,
 lifts the graph there, and solves again.
 
-![The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.](assets/architecture.png)
+```@raw html
+<p style="text-align: center;">
+  <img src="assets/architecture.png" style="width: 100%; max-width: 480px;"
+       alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
+</p>
+```
 
 ## An example
 

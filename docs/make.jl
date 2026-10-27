@@ -9,7 +9,7 @@ const OUTPUT_DIR = joinpath(SRC_DIR, "generated")
 const REFERENCE_DIR = joinpath(SRC_DIR, "reference")
 
 # Executing the examples dominates the build -- each solves a sequence of
-# semidefinite programs, and two of them draw. Skip it for fast local iteration
+# programs and draws its figures. Skip it for fast local iteration
 # on prose with PCC_SKIP_LITERATE=true; pages whose markdown is not already in
 # `src/generated` are then dropped from the nav rather than breaking the build.
 const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"

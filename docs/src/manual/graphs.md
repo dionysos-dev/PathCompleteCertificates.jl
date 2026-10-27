@@ -17,8 +17,8 @@ one node function per node, and one edge inequality per edge. Along a
 trajectory, a path of the graph that reads its modes says which node function
 applies at each step. With the template, the graph decides how good the
 certificate can be and how much it costs (see [How a certificate works](@ref)).
-This page presents the classical graphs, which graphs are valid, and how to
-build your own.
+This page presents the classical graphs, the property every graph must have,
+and how to build your own.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
