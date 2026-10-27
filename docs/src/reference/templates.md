@@ -4,40 +4,39 @@ CurrentModule = PathCompleteCertificates
 
 # Template reference
 
-Stability takes SetProg families directly. See [Choosing a template](@ref)
-for their parameters and [What works with what](@ref) for support by problem.
+A template is a SetProg family. The constructors below build the families that
+[Choosing a template](@ref) presents, and stability also accepts SetProg
+families directly; [What works with what](@ref) says which problems each
+supports.
+
+## Constructors
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages = [
+    "templates/catalogue/quadratic.jl",
+    "templates/catalogue/sum_of_squares.jl",
+    "problems/polytope_compat.jl",
+]
+```
+
+## The template interface
+
+What a template provides to a problem: the primitives that build its node
+functions and edge inequalities, and what the package needs to know about it.
+[Extending the package](@ref) says which to implement for a new family.
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages = ["templates/abstract.jl", "problems/gauges.jl", "problems/sets.jl"]
+```
 
 ## SetProg families
+
+The families of [SetProg](https://github.com/blegat/SetProg.jl), which the
+constructors return and stability accepts directly.
 
 ```@autodocs
 Modules = [SetProg]
 Pages = ["variables.jl"]
-```
-
-## Graph operations on families
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages = ["problems/sets.jl", "problems/gauges.jl", "templates/abstract.jl"]
-```
-
-## Quadratic compatibility template
-
-`QuadraticTemplate()` returns a native SetProg ellipsoid family. Stability
-returns native fitted ellipsoids. Safety and optimal control retain their
-matrix implementations behind a private adapter.
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages = ["templates/catalogue/quadratic.jl"]
-```
-
-## Compatibility constructors
-
-`SumOfSquaresTemplate` and the former polyhedral templates return native SetProg
-families. Their names remain in PCC; there are no separate SetProg template types.
-
-```@autodocs
-Modules = [PathCompleteCertificates]
-Pages = ["problems/polytope_compat.jl", "templates/catalogue/sum_of_squares.jl"]
 ```

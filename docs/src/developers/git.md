@@ -34,7 +34,7 @@ line.
 | `ADD` | new feature |
 | `IMP` | improvement |
 | `FIX` | bug fix |
-| `REF` | refactor, no behaviour change |
+| `REF` | refactor, no behavior change |
 | `REM` | removal |
 | `MOV` | move or rename |
 | `REV` | revert |

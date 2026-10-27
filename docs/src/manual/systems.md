@@ -84,7 +84,7 @@ PCC.states(trajectory)
 [`switching`](@ref) and [`inputs`](@ref) return the modes and the inputs of a
 trajectory. With Plots loaded, `plot(trajectory)` draws it.
 
-**A run shows one behaviour of the system and proves nothing about the
+**A run shows one behavior of the system and proves nothing about the
 others,** as the next section shows.
 
 ## What can be certified

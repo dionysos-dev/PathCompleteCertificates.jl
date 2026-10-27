@@ -74,7 +74,7 @@ algorithm is one file: see [Extending the package](@ref).
   slacks need an optimization of their own;
 - **constrained switching**, for instance by an automaton: planned, see
   [issue #45](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues/45);
-- **further problems** of the path-complete literature, such as stabilisation.
+- **further problems** of the path-complete literature, such as stabilization.
 
 **Open questions:**
 
