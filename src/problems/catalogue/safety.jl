@@ -3,7 +3,7 @@
 
 Safety problem for an input-free switched linear system [anand2024barrier](@cite),
 with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
-The barrier at node `v` is `[x; 1]' P_v [x; 1]` with `P_v` symmetric, not
+The barrier at node `a` is `[x; 1]' P_a [x; 1]` with `P_a` symmetric, not
 necessarily positive semidefinite.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem

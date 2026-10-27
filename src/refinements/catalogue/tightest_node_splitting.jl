@@ -1,10 +1,10 @@
 """
     TightestNodeSplitting(; rng = nothing)
 
-Algorithm 1 of [ninite2026lifting](@cite): the out-splitting,
-[`OutSplitLift`](@ref) at a node, of the node with the most tight outgoing
-edges, among those with at least two. When no node
-has two tight outgoing edges, there is no next graph.
+Algorithm 1 of [ninite2026lifting](@cite), with [`OutSplitLift`](@ref) at a
+node, which refines their forward lift: split the node with the most tight
+outgoing edges, among those with at least two, into one copy per outgoing
+edge. When no node has two tight outgoing edges, there is no next graph.
 
 Several nodes can hold as many tight edges. Among them the one with the fewest
 outgoing edges is split, since its lift adds the fewest nodes; a tie that

@@ -30,24 +30,47 @@ Modules = [PathCompleteCertificates]
 Pages   = ["lifts/dual.jl"]
 ```
 
-## The catalogue
+## Splits
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
 Pages   = [
-    "lifts/catalogue/identity.jl",
     "lifts/catalogue/out_split.jl",
     "lifts/catalogue/in_split.jl",
+    "lifts/catalogue/path_dependent.jl",
+]
+```
+
+## Products
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = [
     "lifts/catalogue/forward_product.jl",
     "lifts/catalogue/backward_product.jl",
-    "lifts/catalogue/path_dependent.jl",
     "lifts/catalogue/product.jl",
-    "lifts/catalogue/min.jl",
-    "lifts/catalogue/max.jl",
-    "lifts/catalogue/sum.jl",
-    "lifts/catalogue/composition.jl",
-    "lifts/catalogue/backward_composition.jl",
 ]
+```
+
+## Combinations
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["lifts/catalogue/min.jl", "lifts/catalogue/max.jl", "lifts/catalogue/sum.jl"]
+```
+
+## Compositions
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["lifts/catalogue/composition.jl", "lifts/catalogue/backward_composition.jl"]
+```
+
+## The identity
+
+```@autodocs
+Modules = [PathCompleteCertificates]
+Pages   = ["lifts/catalogue/identity.jl"]
 ```
 
 ## Comparing two graphs

@@ -43,11 +43,9 @@ end
 
 _is_parallelotope(f) = f isa _NormalizedFamily && f.symmetric && f.set isa SetProg.Polytope
 
-"""
-    homogeneity_degree(family)
+# The template primitives for SetProg families; the functions are documented in
+# templates/abstract.jl.
 
-The degree of the homogeneous gauge used to represent a set family.
-"""
 function homogeneity_degree(::Union{SetProg.Ellipsoid, SetProg.Sets.Ellipsoid})
     return 2
 end
@@ -75,12 +73,8 @@ function homogeneity_degree(families::AbstractVector{<:SetProg.AbstractVariable}
     return only(degrees)
 end
 
-"""
-    _with_dimension(family, dimension; variables = nothing)
-
-Fill the dimension of a homogeneous gauge family, validating explicit data.
-`variables` supplies a shared polynomial coordinate system when needed.
-"""
+# Fill the dimension of a homogeneous gauge family, validating explicit data.
+# `variables` supplies a shared polynomial coordinate system when needed.
 function _with_dimension(family::SetProg.AbstractVariable, n::Integer; variables = nothing)
     n > 0 || throw(ArgumentError("the dimension must be positive"))
     family.dimension === nothing || family.dimension == n || throw(DimensionMismatch())
@@ -140,11 +134,8 @@ function _with_dimension(family::SetProg.PolySet, n, vars)
         superset = family.superset,
     )
 end
-"""
-    _unit_set(family)
 
-The unit gauge used to normalize a set variable in a homogeneous certificate.
-"""
+# The unit gauge used to normalize a set variable in a homogeneous certificate.
 function _unit_set(f::SetProg.Ellipsoid)
     ball = SetProg.Sets.Ellipsoid(
         LinearAlgebra.Symmetric(Matrix{Float64}(LinearAlgebra.I, f.dimension, f.dimension)),
@@ -197,11 +188,7 @@ function _with_superset(f::SetProg.PolySet, unit)
     )
 end
 
-"""
-    add_function_variables!(model, family, dimension, node)
-
-Create a homogeneous set variable, named for `node`, for a certificate model.
-"""
+# A homogeneous set variable, named after `node`.
 function add_function_variables!(
     model::JuMP.Model,
     family::SetProg.AbstractVariable,
@@ -212,15 +199,8 @@ function add_function_variables!(
     return JuMP.@variable(model, variable_type = variable, base_name = "S_$node")
 end
 
-"""
-    add_normalization!(model, family, S; conditioning_bound = Inf)
-
-Exclude the zero gauge with a fixed reference set. Ellipsoid and polynomial
-families use SetProg's `superset` construction when supported; other families
-use an inclusion constraint.
-A finite ellipsoid conditioning bound also requires
-`Q ≤ conditioning_bound * LinearAlgebra.I`.
-"""
+# Ellipsoid and polynomial families use SetProg's `superset` construction when
+# supported; other families use an inclusion constraint.
 function add_normalization!(
     model::JuMP.Model,
     family::SetProg.AbstractVariable,
@@ -255,11 +235,7 @@ function add_normalization!(
     return nothing
 end
 
-"""
-    add_decrease!(model, family, source, destination, A; scale = 1)
-
-Require `V_destination(A * x) ≤ scale * V_source(x)`, using set inclusion.
-"""
+# The decrease as a set inclusion: `(A / γ) * source ⊆ destination`.
 function add_decrease!(
     model::JuMP.Model,
     family::SetProg.AbstractVariable,
@@ -278,21 +254,11 @@ function add_decrease!(
     return nothing
 end
 
-"""
-    solution_value(family, variable)
-
-The fitted set with solver values substituted for its variables.
-"""
 solution_value(::SetProg.AbstractVariable, variable::SetProg.SetVariableRef) =
     JuMP.value(variable)
 
-"""
-    decrease_slack(family, source, destination, A; scale = 1)
-
-Measure the fitted gauge's decrease condition. A nonnegative slack certifies
-that the modeled edge inequality holds. Polynomial and piecewise-quadratic
-slacks require a separate optimization and are not implemented.
-"""
+# Polynomial and piecewise-quadratic slacks would need an optimization of their
+# own, and are not implemented.
 function decrease_slack(
     ::SetProg.Ellipsoid,
     source::SetProg.Sets.Ellipsoid,
@@ -310,11 +276,7 @@ function decrease_slack(family::SetProg.AbstractVariable, source, destination, A
     return throw(ArgumentError("decrease slacks are not implemented for $(typeof(family))"))
 end
 
-"""
-    _supports_dual(family)
-
-Whether the fitted homogeneous gauge has an implemented dual gauge family.
-"""
+# Whether the homogeneous gauge family has an implemented dual family.
 function _supports_dual(::SetProg.AbstractVariable)
     return false
 end
@@ -322,12 +284,8 @@ _supports_dual(f::SetProg.Ellipsoid) = f.symmetric && f.piecewise === nothing
 _supports_dual(f::SetProg.Domain) = _is_linear_copositive(f)
 _supports_dual(f::_NormalizedFamily) = _supports_dual(f.set)
 
-"""
-    _dual_family(family)
-
-The family of dual homogeneous gauges. On the positive orthant this uses
-blocking duality between positive simplices and boxes.
-"""
+# The family of dual homogeneous gauges. On the positive orthant this uses
+# blocking duality between positive simplices and boxes.
 _dual_family(f::SetProg.Ellipsoid) =
     _supports_dual(f) ? f :
     throw(ArgumentError("piecewise ellipsoid duals are not implemented"))
@@ -344,11 +302,7 @@ function _dual_family(f::_NormalizedFamily)
     )
 end
 
-"""
-    _dual_value(set)
-
-The fitted dual gauge, represented as a set in the primal space.
-"""
+# The fitted dual gauge, represented as a set in the primal space.
 _dual_value(set::SetProg.Sets.Ellipsoid) =
     SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(inv(set.Q)))
 

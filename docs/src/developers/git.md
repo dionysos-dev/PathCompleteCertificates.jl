@@ -34,7 +34,7 @@ line.
 | `ADD` | new feature |
 | `IMP` | improvement |
 | `FIX` | bug fix |
-| `REF` | refactor, no behaviour change |
+| `REF` | refactor, no behavior change |
 | `REM` | removal |
 | `MOV` | move or rename |
 | `REV` | revert |
@@ -44,7 +44,7 @@ The module is the directory touched: `graphs`, `systems`, `templates`,
 `docs/src/examples/`, and `meta` for configuration, CI and tooling.
 
 ```
-ADD problems: optimal control edge constraint
+ADD problems: optimal control edge inequality
 FIX graphs: path-completeness on an empty alphabet
 IMP meta: one actions/checkout version across workflows
 ```

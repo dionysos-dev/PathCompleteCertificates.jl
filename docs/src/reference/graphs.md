@@ -6,7 +6,7 @@ CurrentModule = PathCompleteCertificates
 
 A certificate is built on a labelled graph: a `HybridSystems.GraphAutomaton`,
 one mode per edge, or a [`WordGraph`](@ref), one word per edge. See
-[Path-complete graphs](@ref) for what the predicates mean.
+[Choosing a graph](@ref) for what the predicates mean.
 
 ## Queries
 

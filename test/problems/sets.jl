@@ -62,7 +62,7 @@ const OCTAGON = polyhedron(
 
 # Every bound is bisected to `rtol`, so two of them agree to about twice that.
 rate(template, graph = MEMORYLESS) =
-    PCC.jsr_bound(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    PCC.certify(template, graph, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
 const AGREE = 2e-3
 
 # The edge inequality `V_dst(A x) ≤ γᵈ V_src(x)`, sampled on the circle.

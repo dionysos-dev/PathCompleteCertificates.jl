@@ -17,81 +17,85 @@
 [aqua-img]: https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
-<!-- Deliberately absent until they would mean something:
-     * a `docs-stable` badge -- there is no released version, so the URL 404s;
-     * PkgEval -- the report only exists once the package is in the General
-       registry, so the badge renders empty until then.
-     Add both at registration (plan P7), not before. -->
+<!-- Deliberately absent until they would mean something: a `docs-stable` badge,
+     since there is no released version, and PkgEval, whose report only exists
+     once the package is in the General registry. Add both at registration. -->
 
-Tools for constructing, comparing and refining certificates for switched systems within the
-**path-complete framework**, with the two components of a certificate, the template and the
-graph, both explicit.
+PathCompleteCertificates.jl is a [Julia](https://julialang.org/) package that computes
+certificates for **discrete-time switched linear systems** under arbitrary switching: proofs
+that the system is stable, that it stays safe, or that a feedback policy keeps its cost
+bounded. Each certificate is built on a path-complete graph, a graph whose paths read every
+sequence of modes. You choose the graph, or let the package build it:
 
-## What it does
+<p align="center">
+  <img src="docs/src/assets/architecture.png" width="640"
+       alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
+</p>
 
-A path-complete certificate is three things: a **labelled graph** whose labels are the modes
-of a switched system, a function at each node drawn from a **template**, and one **inequality
-along each edge**, fixed by the **problem**. When every admissible switching sequence can be
-read as a path in the graph, the local inequalities imply a property of the whole system. Only
-the inequality changes between stability, safety and optimal control.
+## Example
 
-What the package adds to that framework is the graph as an object in its own right:
+The simplest case of the first way: a planar switched linear system with two modes, the
+quadratic template, and a graph with one node. Together they give a common quadratic Lyapunov
+function, whose rate is an upper bound on the joint spectral radius:
 
-| | |
-| :-- | :-- |
-| **Certify** | stability, safety or optimal control on a graph you supply, with quadratic, copositive, polyhedral or sum-of-squares templates |
-| **Build** | De Bruijn graphs, the common Lyapunov function graph, duals, graphs reading words |
-| **Refine** | grow a graph where its certificate is tight, by the lifts and algorithms of the literature, until the bound is proved to be the joint spectral radius |
-| **Compare** | decide whether one graph is guaranteed no worse than another for a template, with the simulation that proves it: a map, a relation or an integer matrix |
+```julia
+import PathCompleteCertificates as PCC
+import Clarabel
 
-## How it relates to the other tools
+A1 = [0.1552 0.0447; 0.7641 0.7472]     # mode 1
+A2 = [0.0475 0.9176; 0.1896 0.0185]     # mode 2
+system = PCC.switched_system([A1, A2])  # planar switched linear system, two modes
 
-| | Question it answers |
-| :-- | :-- |
-| **[SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl)** | How large is the joint spectral radius, and how tightly can I bound it? Invariant sets via sum-of-squares. |
-| **[JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)** (MATLAB) | The same question, and the baseline the literature is written against. |
-| **This package** | Path-complete graphs as objects: build them, compare two of them, refine one iteratively, and attach certificates of any of the three problems to them. |
-
-The first two use a path-complete graph, when they do, as an internal device for getting a
-bound. This one makes the graph the thing you work on.
+certificate = PCC.certify(
+    PCC.QuadraticTemplate(),         # V(x) = xᵀPx at each node
+    PCC.common_graph(system),        # one node, one loop per mode
+    PCC.StabilityProblem(system);    # V(Aᵢx) ≤ γ² V(x) along each edge
+    optimizer = Clarabel.Optimizer,  # the solver of the semidefinite program
+)
+certificate.rate                     # 0.9587: below one, the system is stable
+```
 
 ## Installation
 
-Not yet registered.
+The package is not registered yet. Install it, and a solver, from the Julia REPL:
 
 ```julia
-] add https://github.com/dionysos-dev/PathCompleteCertificates.jl
+import Pkg
+Pkg.add(url = "https://github.com/dionysos-dev/PathCompleteCertificates.jl")
+Pkg.add("Clarabel")
 ```
 
 ## Documentation
 
-The [development documentation](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/)
-covers the manual, the examples and the API reference. It also carries the
-[Developer Docs](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/setup/),
-with the setup, the conventions and the Git workflow.
-
-There is no released version yet, so there is no stable documentation.
+The [documentation](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/) has a
+manual, one tutorial per use case, the API reference and the developer guide.
+[Should you use it?](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/should_i_use/)
+says what the package does and does not cover, and which other tools to use instead.
 
 ## Contributing
 
-Contributions are welcome. Please open an
+Contributions are welcome: open an
 [issue](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues) to report a bug or
-discuss a feature, and see the Developer Docs for the setup, conventions and Git workflow.
+discuss a feature.
 
-Stability certificates use [SetProg](https://github.com/blegat/SetProg.jl)
-set families directly. SetProg owns their variables, inclusions and fitted gauges;
-this package owns the systems, graphs, lifts and refinement algorithms.
-Safety and optimal control retain their matrix models until their migration.
-See the [conventions](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/conventions/)
-for extending the package.
+The package aims to implement the state of the art on path-complete certificates.
+[What works with what](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/manual/support/)
+lists the gaps, and
+[Extending the package](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/extending/)
+says how to close one: a new template, problem, lift or refinement algorithm is one file.
 
-## References
+## Citing
 
-The [bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/)
-lists every paper the package implements, grouped by what each one underwrites: the
-predicates, the templates, the problems, the lifts and the refinement algorithms.
+A paper describing the package is in preparation; until it is published, cite this
+repository. For the algorithms and theoretical results the package implements, cite the papers
+they come from, listed in the
+[Bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/).
+
+## License
+
+PathCompleteCertificates.jl is licensed under the [MIT license](LICENSE).
 
 ## Acknowledgements
 
 This project has received funding from the European Research Council (ERC) under the European
-Union's Horizon 2020 research and innovation programme under grant agreement No 864017 — L2C.
+Union's Horizon 2020 research and innovation programme under grant agreement No 864017 (L2C).

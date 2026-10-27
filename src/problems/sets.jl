@@ -1,9 +1,7 @@
-"""
-    is_applicable(family, system)
+# The template metadata for SetProg families; the functions are documented in
+# templates/abstract.jl.
 
-Whether the SetProg family applies to the system. Orthant gauges require
-nonnegative dynamics.
-"""
+# The orthant gauges of the copositive templates require nonnegative dynamics.
 function is_applicable(::SetProg.AbstractVariable, system)
     return true
 end
@@ -12,11 +10,6 @@ is_applicable(f::_NormalizedFamily, system) = is_applicable(f.set, system)
 is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
     all(f -> is_applicable(f, system), families)
 
-"""
-    is_closed_under(family, operation, system)
-
-Whether a SetProg gauge family admits the operation required by a graph lift.
-"""
 function is_closed_under(::SetProg.AbstractVariable, ::Operation, system)
     return false
 end
@@ -61,21 +54,12 @@ function is_closed_under(
     return allequal(families) && is_closed_under(first(families), operation, system)
 end
 
-"""
-    reindex(family, origins)
-
-Follow node origins when lifting a graph. A shared family is unchanged; a
-vector supplies one SetProg family per node and cannot merge unequal families.
-"""
+# A shared family is unchanged; a vector, one family per node, follows the
+# origins and cannot merge unequal families.
 reindex(family::SetProg.AbstractVariable, ::AbstractVector) = family
 reindex(families::AbstractVector{<:SetProg.AbstractVariable}, origins::AbstractVector) =
     _reindexed_data(families, origins, "set families")
 
-"""
-    has_dual(family)
-
-Whether a SetProg gauge family has an implemented dual.
-"""
 has_dual(family::SetProg.AbstractVariable) = _supports_dual(family)
 has_dual(families::AbstractVector{<:SetProg.AbstractVariable}) = all(has_dual, families)
 
@@ -84,11 +68,7 @@ dual(family::SetProg.AbstractVariable) =
     throw(ArgumentError("no dual gauge family is implemented for $(typeof(family))"))
 dual(families::AbstractVector{<:SetProg.AbstractVariable}) = dual.(families)
 
-"""
-    dual(family, set)
-
-The fitted dual homogeneous gauge as a SetProg set.
-"""
+# The fitted dual gauge, as a SetProg set.
 dual(family::SetProg.AbstractVariable, set) =
     has_dual(family) ? _dual_value(set) :
     throw(ArgumentError("no dual gauge is implemented for $(typeof(family))"))

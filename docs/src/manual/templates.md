@@ -2,110 +2,137 @@
 CurrentModule = PathCompleteCertificates
 ```
 
-# Templates
+# Choosing a template
 
-For stability, use PCC's compatibility constructors or a SetProg set family.
-Pass the template to [`certify`](@ref), [`jsr_bound`](@ref), [`compare`](@ref),
-or [`refine`](@ref). For example:
-
-```julia
-family = PCC.QuadraticTemplate()
-certificate = PCC.jsr_bound(family, graph, problem; optimizer)
+```@setup running
+import PathCompleteCertificates as PCC
+import Clarabel, HiGHS
+A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
+system = PCC.switched_system(A)
+problem = PCC.StabilityProblem(system)
+graph = PCC.common_graph(system)
 ```
 
-`QuadraticTemplate()` returns `SetProg.Ellipsoid(symmetric = true)`. Stability
-returns fitted SetProg sets, with ellipsoid matrices available as `V.Q`.
-Evaluate a node with `node_value(problem, V, x)`, or the common Lyapunov
-function with `certificate(x)`.
+The template is the family the node functions are drawn from. In the program
+that [`certify`](@ref) solves, it gives the variables and decides the kind of
+program, semidefinite or linear; with the graph, it decides how good the
+certificate can be and how much it costs (see [How a certificate works](@ref)).
+This page shows what a template changes, lists the templates, and helps you
+choose.
 
-## Families
+The code on this page uses the running example of
+[Systems and problems](@ref): `system`, `problem = PCC.StabilityProblem(system)`
+and `graph = PCC.common_graph(system)`, solved with Clarabel and HiGHS.
 
-| Template or SetProg family | Node function | Degree | Program |
-| :-- | :-- | :-: | :-- |
-| `QuadraticTemplate()` | `x'Qx` | 2 | semidefinite |
-| `Domain(Polytope(symmetric = true), MOI.Nonnegatives)` | `c'x` on the nonnegative orthant | 1 | linear |
-| `DualCopositiveTemplate()` | `maximum(x ./ v)` on the nonnegative orthant | 1 | linear |
-| `ParallelFacesPolyhedralTemplate([G])` | `maximum(abs.(G*x) ./ w)` | 1 | linear |
-| `SumOfSquaresTemplate(d, x)` | sum-of-squares polynomial | 2d | semidefinite |
-| `Ellipsoid(symmetric = true, piecewise = partition)` | quadratic on each partition cone | 2 | semidefinite |
-| `Polytope(symmetric = true, piecewise = partition)` | linear on each partition cone | 1 | linear |
+## What a template changes
 
-`SumOfSquaresTemplate(d, x; min_scale = 1)` returns a native
-`PolySet(symmetric = true, degree = 2d, variables = x)` with its normalization
-superset. `min_scale` preserves the lower bound on the Euclidean gauge.
-Load `SumOfSquares` before constructing it or a `PolySet`; otherwise SetProg gives
-an error explaining the missing extension. Polynomial variables may be
-supplied with `variables = x`, or inferred in a shared coordinate system.
-SetProg is a direct dependency of PCC; its polynomial dependencies are optional.
+The template fixes the shape of the node functions, and so the bound and the
+program, which sets the solver:
 
-`Domain(Polytope(symmetric = true), MOI.Nonnegatives)` has one linear piece
-restricted to the nonnegative orthant, with its dimension inferred from the
-model. PCC normalizes its coefficients to be at least one using a fixed
-unit-simplex inclusion. Partition polytopes describe the linear pieces'
-regions through the cones over their facets, retaining facet adjacency.
-A cross-polytope supplies the orthant partition for parallel-face families.
-SetProg chooses the modeling space from the normalization constraints.
-
-The existing `LinearCopositiveTemplate`, `DualCopositiveTemplate`,
-`ParallelFacesPolyhedralTemplate`, and `ConicPolyhedralTemplate` constructors
-also remain available. Positive-orthant families require nonnegative dynamics.
-`PCC.planar_conic_partition(order; library)` supplies a partition polytope.
-Pass one polytope per node to `ConicPolyhedralTemplate`; separate cone matrices
-are no longer accepted. Its `min_scale` keyword scales the partition gauge
-used for normalization.
-The other polyhedral compatibility constructors retain their coefficient-floor
-keyword arguments.
-
-`DualCopositiveTemplate` and `ParallelFacesPolyhedralTemplate` retain their
-compatibility constructors. A PCC normalization adapter stores the native
-SetProg family and a fixed reference set. Requiring that reference to lie in
-the variable selects dual modeling through SetProg's inclusion rules;
-`min_weight` remains a lower bound on the box widths. Parallel-face families
-also impose central symmetry using `-S ⊆ S`. No variable polarity option is
-used, and normalization and gauge evaluation stay in PCC.
-
-The degree `p`, returned by [`homogeneity_degree`](@ref), satisfies
-`V(c*x) = c^p * V(x)`. Stability uses `rate^p` in each edge inequality,
-so every family's rate bounds the joint spectral radius.
-Ellipsoids and polynomial sets are normalized against the Euclidean unit gauge.
-A finite `conditioning_bound` keyword in `certify` or `jsr_bound` also bounds
-an ellipsoid's matrix by `conditioning_bound * I`; the default is `Inf`.
-
-Clarabel solves semidefinite and linear models; HiGHS solves linear models.
-
-## Closure and duality
-
-Graph operations remain in PCC. [`is_closed_under`](@ref) declares a family's
-closures; [`is_valid`](@ref) checks a lift, also using the dual family when available.
-
-| Family | Addition | Maximum | Composition with invertible dynamics |
-| :-- | :-: | :-: | :-- |
-| symmetric ellipsoid | ✓ | | ✓ |
-| polynomial set | ✓ | | ✓ |
-| positive simplex | ✓ | | if nonnegative with no zero column |
-| positive box | | ✓ | |
-| parallelotope | | ✓ when all node matrices coincide | |
-| conic polytope | | | |
-| piecewise ellipsoid or polytope | ✓ when the nodes share a partition | | |
-
-Symmetric nonpiecewise ellipsoids are self-dual. Positive simplices and boxes
-are each other's blocking duals on the nonnegative orthant. Other families
-have no fitted dual implementation here. See [Duality](@ref).
-
-## Per-node data
-
-A single family is shared by all nodes. A vector supplies one family per node:
-
-```julia
-families = PCC.ParallelFacesPolyhedralTemplate([G1, G2])
-certificate = PCC.jsr_bound(families, graph, problem; optimizer)
+```@example running
+quadratic = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
+copositive = PCC.certify(PCC.LinearCopositiveTemplate(), graph, problem; optimizer = HiGHS.Optimizer)
+quadratic.rate, copositive.rate
 ```
 
-[`reindex`](@ref) follows node origins through lifts. Copies retain their
-origin's family, and merging nodes requires equal families.
-All nodes must use gauges of the same degree.
+The quadratic template solves a semidefinite program, with Clarabel; the
+linear copositive template a linear program, with HiGHS. The latter applies
+here because the matrices have nonnegative entries.
 
-## Deferred problems
+The level set ``V(x) = 1`` of the certificate that four templates find on the
+running example shows their shapes:
 
-Safety and optimal control still use [`QuadraticTemplate`](@ref) and their
-existing fitted quadratic functions. Their migration to SetProg is deferred.
+```@setup running
+using Plots
+using SumOfSquares, DynamicPolynomials
+
+function shapes_figure(system, problem, graph)
+    @polyvar x[1:2]
+    templates = [
+        "quadratic" => (PCC.QuadraticTemplate(), Clarabel.Optimizer),
+        "sum of squares, degree 2" => (PCC.SumOfSquaresTemplate(2, x), Clarabel.Optimizer),
+        "parallel faces" =>
+            (PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
+        "conic polyhedral" =>
+            (PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(2)]), HiGHS.Optimizer),
+    ]
+    figure = plot(; aspect_ratio = :equal, framestyle = :box, legend = :outerbottom,
+                  size = (520, 640))
+    for (name, (template, optimizer)) in templates
+        certificate = PCC.certify(template, graph, problem; optimizer)
+        fitted = only(PCC.functions(certificate))
+        V(x) = PCC.node_value(problem, fitted, x)
+        p = PCC.homogeneity_degree(template)
+        # V is homogeneous of degree p: scaling each direction d by V(d)^(-1/p)
+        # lands on the level set V = 1.
+        points = [d ./ V(d)^(1 / p)
+                  for d in ([cos(t), sin(t)] for t in range(0, 2pi; length = 400))]
+        plot!(figure, first.(points), last.(points); lw = 2, label = name)
+    end
+    return figure
+end
+```
+
+```@example running
+shapes_figure(system, problem, graph) # hide
+```
+
+## The templates
+
+| Template | Node function | Systems | Program | Problems |
+| :-- | :-- | :-- | :-- | :-- |
+| [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
+| [`SumOfSquaresTemplate`](@ref)`(d, x)` | a sum of squares of polynomials of degree ``d`` | all | semidefinite | stability |
+| [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
+| [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
+| [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear | stability |
+| [`ConicPolyhedralTemplate`](@ref)`(partitions)` | ``\max_i \lvert p_i^\top x \rvert`` | all | linear | stability |
+| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
+| `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
+
+**Templates are SetProg families.** Each constructor returns a
+[SetProg](https://github.com/blegat/SetProg.jl) family of sets, and a node
+function stands for its set ``\{x : V(x) \le 1\}``: `QuadraticTemplate()`,
+for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
+these sets, which [`node_value`](@ref) evaluates. The last two rows are
+SetProg families passed directly, piecewise on the cones over the facets of a
+polytope ``P``. To write them, run `Pkg.add("SetProg")` and `using SetProg`:
+the package depends on SetProg, so nothing new is downloaded, but your
+environment must list it for Julia to load it by name.
+
+## How to choose
+
+- **Start with** `QuadraticTemplate()`. It applies to every system and every
+  problem.
+- **For a positive system**, whose matrices have nonnegative entries, so that
+  trajectories that start in the nonnegative orthant stay there:
+  `LinearCopositiveTemplate()` and `DualCopositiveTemplate()`, defined on that
+  orthant, solve linear programs.
+- **For a polyhedral function on any system**, two templates solve linear
+  programs:
+  - `ParallelFacesPolyhedralTemplate(n_nodes(graph), n)` fixes the normals of
+    the faces: the axes by default, or the rows of a matrix ``G`` per node,
+    given instead. The normals matter: on the running example, the axes give
+    a bound of about ``1.30``, above one, and the diagonals,
+    `ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])`, about ``0.92``;
+  - `ConicPolyhedralTemplate(partitions)` fixes, at each node, a partition of
+    the space into the cones over the facets of a polytope, on each of which
+    the function is linear; in the plane, [`planar_conic_partition`](@ref)
+    builds one.
+- **For a polynomial function**, `SumOfSquaresTemplate(d, x)`, with the
+  variables `@polyvar x[1:n]` of DynamicPolynomials, and the SumOfSquares
+  package loaded (see [Installation](@ref)). Degree 1 gives the quadratic
+  forms; each higher degree adds variables.
+- **For a function piecewise on cones**, a SetProg family passed directly:
+  `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone, or
+  `Polytope(symmetric = true, piecewise = P)`, linear on each; see
+  [Try a richer template](@ref).
+
+Which template gives the lowest bound depends on the system, and a template
+with more variables builds a larger program: try several.
+[What works with what](@ref) lists the problems and methods each template
+supports.
+
+## Adding a template
+
+A new template is a SetProg family: see [Extending the package](@ref).

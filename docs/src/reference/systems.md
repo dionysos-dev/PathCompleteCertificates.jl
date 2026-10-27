@@ -5,7 +5,11 @@ CurrentModule = PathCompleteCertificates
 # System reference
 
 A switched system is the input to every problem. See
-[Switched systems](@ref) for the concepts.
+[Systems and problems](@ref) for the concepts.
+
+```@docs
+PathCompleteCertificates
+```
 
 ## Systems
 

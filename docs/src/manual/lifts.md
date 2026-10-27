@@ -4,105 +4,117 @@ CurrentModule = PathCompleteCertificates
 
 # Lifts
 
-A **lift** is an operation on a path-complete graph, and [`refine`](@ref) is an
-algorithm that applies lifts. A lift `L` maps a graph ``G`` to a path-complete
-graph ``L(G)`` that is no worse than ``G`` for every template closed under the
-operations it requires: a certificate on ``G`` gives one on ``L(G)``. The
-literature calls every operation below a lift.
+A **lift** turns a path-complete graph into another path-complete graph whose
+best certificate is at least as good, for the templates the lift is
+**valid** for ([debauche2021comparison](@cite), Def. 6): a certificate on the
+graph gives one on the lifted graph, with the same value. Lifts are the steps of [refinement](@ref "Refining the graph"), which
+applies them where a certificate is tight, and the tools of
+[comparison](@ref "Comparing graphs"), which uses them to prove that a graph
+is at least as good as another.
 
-Lifts serve two uses. [`refine`](@ref) applies them, one step at a time,
-where a certificate is tight; see [Graph refinement](@ref). [`compare`](@ref)
-asks whether ``L(G)`` simulates another graph ``H``, which proves
-``G \le_{\mathcal V} H``; see [Graph comparison via lifts](@ref).
+## Why a lift never makes the certificate worse
+
+A lift builds the new graph from the old one, and a certificate on the new
+graph from a certificate on the old one, in one of four ways:
+
+- **Copy.** A split replaces a node by copies, and each copy takes the
+  function of the node: every edge inequality of the new graph is one of the
+  old ones.
+- **Chain.** A product replaces an edge by its products with the edges that
+  follow or precede it: two chained edge inequalities imply the inequality of
+  their product ([athanasopoulos2019polyhedral](@cite)).
+- **Combine.** The min, max and sum lifts make a node from a set of nodes,
+  whose function is the minimum, the maximum or the sum of theirs.
+- **Compose.** The composition lifts compose node functions with the
+  dynamics.
+
+Copying and chaining need nothing from the template, so they are valid for
+every template. Combining and composing need a template closed under the
+operation ([debauche2021comparison](@cite), Def. 7): the sum of two quadratic
+forms is a quadratic form, so the sum lift is valid for the quadratic
+template, but their minimum is not, so the min lift is not. A lift is also
+valid when the dual template is closed under the dual operation: on positive
+systems, the min lift is valid for the linear copositive template, whose dual
+is closed under maximum ([debauche2024thesis](@cite), Thm. 7.43).
+[`is_valid`](@ref)`(L, template, system)` says whether a lift is valid, and
+[What works with what](@ref) lists the lifts valid for each template.
+
+Every lift also keeps the graph path-complete, so a lifted graph needs no new
+check.
 
 ## Applying a lift
 
-[`lift`](@ref)`(L, G)` applies `L` to the whole graph, `lift(L, G, edges)` at
-each of the given edges, and `lift(L, G, node)` at a node; a lift has the forms
-its definition gives it, and another form throws a `MethodError`. A lift
-applied at edges is applied at every edge when none are given. The result is a
-[`Lifted`](@ref): the graph and the [`origins`](@ref) of its nodes, what each
-stands for in ``G``.
+[`lift`](@ref)`(L, graph)` applies the lift `L` to the whole graph,
+`lift(L, graph, edges)` at the given edges, and `lift(L, graph, node)` at one
+node; each lift supports the forms its definition gives it. The result is a
+[`Lifted`](@ref): the new graph, [`graph`](@ref), and the [`origins`](@ref) of
+its nodes, what each stands for in the old graph.
+
+Splitting the node of the one-node graph, one copy per outgoing edge, gives
+the dual De Bruijn graph of order 1, drawn in [Choosing a graph](@ref):
+
+```@example
+import PathCompleteCertificates as PCC
+lifted = PCC.lift(PCC.OutSplitLift(), PCC.common_graph(2), 1)
+PCC.n_nodes(PCC.graph(lifted)), PCC.origins(lifted)
+```
+
+Both new nodes are copies of node 1.
 
 ## The lifts
 
-| Lift | Paper's name | Applied at | Requires | Used by |
-| :-- | :-- | :-- | :-- | :-- |
-| [`IdentityLift`](@ref) | | the whole graph | nothing | [`compare`](@ref) |
-| [`OutSplitLift`](@ref) | out-splitting at a node, [ninite2026lifting](@cite), Def. 3; partial P\*-lift at an edge, [athanasopoulos2019polyhedral](@cite), Def. 7 | a node, edges | nothing | [`TightestNodeSplitting`](@ref), [`BestOfTightEdgeLifts`](@ref) |
-| [`InSplitLift`](@ref) | in-splitting at a node, [ninite2026lifting](@cite); partial P-lift at an edge, [athanasopoulos2019polyhedral](@cite), Def. 6 | a node, edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
-| [`ForwardProductLift`](@ref) | partial T-lift, [athanasopoulos2019polyhedral](@cite), Def. 4 | edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
-| [`BackwardProductLift`](@ref) | partial T\*-lift, [athanasopoulos2019polyhedral](@cite), Def. 5 | edges | nothing | [`BestOfTightEdgeLifts`](@ref) |
-| [`PathDependentLift`](@ref)`(M)` | ``M``-path-dependent lifting, [philippe2016stability](@cite), Def. 3 | the whole graph | nothing | |
-| [`ProductLift`](@ref)`(T)` | ``T``-product lift, [philippe2016stability](@cite), Def. 2 | the whole graph | nothing | |
-| [`MinLift`](@ref) | min lift, [debauche2021comparison](@cite) | the whole graph | `min` | [`compare`](@ref) |
-| [`MaxLift`](@ref) | max lift, [debauche2021comparison](@cite) | the whole graph | `max` | [`compare`](@ref) |
-| [`SumLift`](@ref)`(T)` | ``T``-sum lift, [debauche2021comparison](@cite), Def. 8 | the whole graph | `+` | [`compare`](@ref) |
-| [`CompositionLift`](@ref)`(T)` | ``T``-forward composition lift, [debauche2024thesis](@cite), Def. 7.58 | the whole graph | composition with the dynamics | [`compare`](@ref) |
-| [`BackwardCompositionLift`](@ref)`(T)` | ``T``-backward composition lift, [debauche2024thesis](@cite), Def. 7.61 | the whole graph | composition with the inverse dynamics | [`compare`](@ref) |
+The lifts fall into the four groups above, plus the identity. Within a group,
+they come in dual pairs: the out- and in-splits, the forward and backward
+products, the min and max lifts, the forward and backward compositions (see
+[Duality](@ref)). Refinement applies splits and products at nodes or edges;
+comparison uses the identity, the combinations and the compositions.
 
-The last column gives the defaults; any lift can be passed to
-the `lifts` of [`compare`](@ref) and [`BestOfTightEdgeLifts`](@ref).
+### Splits: copying nodes
 
-## Validity
+Valid for every template.
 
-A lift is **valid** for a template on a system when ``G \le_{\mathcal V} L(G)``
-for every path-complete ``G`` ([debauche2021comparison](@cite), Defs. 6 and 7).
-[`is_valid`](@ref) reads it from [`requirements`](@ref): the template, or its
-dual on the dual system, must be closed under each operation listed, as
-returned by [`is_closed_under`](@ref) and tabulated on the [Templates](@ref)
-page. A lift that requires nothing is valid for every template: the splits give
-each copy the function of the node it came from
-([ninite2026lifting](@cite), Thm. 3), and the products chain two edge
-inequalities ([athanasopoulos2019polyhedral](@cite), Thm. 1).
+| Lift | What it does | Used by |
+| :-- | :-- | :-- |
+| [`OutSplitLift`](@ref) | copies a node, one copy per outgoing edge, at a node or at given edges | both refinement algorithms |
+| [`InSplitLift`](@ref) | copies a node, one copy per incoming edge, at a node or at given edges | [`BestOfTightEdgeLifts`](@ref) |
+| [`PathDependentLift`](@ref)`(M)` | in-splits every edge, ``M`` times: from the one-node graph, the De Bruijn graph of order ``M`` | none |
 
-## Splits and products
+### Products: chaining edges
 
-The splits and products act at an edge ``(s, d, w)``, forward or backward.
+Valid for every template. A product writes a sequence of modes on an edge,
+which stability alone supports.
 
-Drawn at the edge `s ─w─▶ d` of a graph where `s` also reads `u` to `f` and
-is entered by `a`, and `d` is also entered by `b` and leaves for `e`:
+| Lift | What it does | Used by |
+| :-- | :-- | :-- |
+| [`ForwardProductLift`](@ref) | replaces the given edges by their products with the edges that follow them | [`BestOfTightEdgeLifts`](@ref) |
+| [`BackwardProductLift`](@ref) | replaces the given edges by their products with the edges that precede them | [`BestOfTightEdgeLifts`](@ref) |
+| [`ProductLift`](@ref)`(T)` | replaces every edge by the paths of ``T`` edges | none |
 
-```
-      before                      OutSplitLift               InSplitLift
+### Combinations: minimum, maximum and sum
 
- a ──v──▶ s ──w──▶ d ──x──▶ e     a ──v──▶ s′ ──w──▶ d ──x──▶ e   a ──v──▶ s ──w──▶ d′ ──x──▶ e
-          │        ▲              │                  ▲                     │
-          u        t              v                  t                     u    b ──t──▶ d ──x──▶ e
-          ▼        │              ▼                  │                     ▼
-          f        b              s ──u──▶ f         b                     f
+Valid for the templates closed under the operation.
 
-      ForwardProductLift                              BackwardProductLift
+| Lift | What it does | Used by |
+| :-- | :-- | :-- |
+| [`MinLift`](@ref) | a node per set of nodes, with the minimum of their functions | [`compare`](@ref), without building it |
+| [`MaxLift`](@ref) | a node per set of nodes, with the maximum of their functions | [`compare`](@ref), without building it |
+| [`SumLift`](@ref)`(T)` | a node per multiset of ``T`` nodes, with the sum of their functions; `SumLift()` stands for every ``T`` | [`compare`](@ref), as `SumLift()` with an `optimizer`, without building it |
 
- a ──v──▶ s ──w·x──▶ e                                a ──v·w──▶ d ──x──▶ e
-          │                                           │          ▲
-          u          b ──t──▶ d ──x──▶ e              v          t
-          ▼                                           ▼          │
-          f                                           s ──u──▶ f b
-```
+### Compositions
 
-A split adds a node and splits the inequalities that passed through it. A
-product adds no node and writes a **word** on an edge: one inequality on
-``A_x A_w`` with nothing imposed on the state in between, which is sound for
-stability only. A [`WordGraph`](@ref) carries words, and its
-[`expanded_form`](@ref) reads the same language with one mode per edge; for a
-template closed under composition the two certify the same rate, the word
-graph with fewer variables ([debauche2024thesis](@cite), Prop. 7.70).
+Valid for the templates closed under composition with the matrices of the
+system, for the forward lift, or with their inverses, for the backward one.
 
-At a node, [`OutSplitLift`](@ref) makes one copy per outgoing edge, owning
-that edge, as in [ninite2026lifting](@cite), Def. 3; at an edge it makes one
-copy owning that edge, so the lift at a node is the lift at all its outgoing
-edges. On the one-node graph it gives the dual De Bruijn graph of order 1.
+| Lift | What it does | Used by |
+| :-- | :-- | :-- |
+| [`CompositionLift`](@ref)`(T)` | a node per node and sequence of ``T`` modes, composing its function with the dynamics | [`compare`](@ref), with ``T = 1`` |
+| [`BackwardCompositionLift`](@ref)`(T)` | the same with the inverse dynamics | [`compare`](@ref), with ``T = 1`` |
 
-Each backward lift is the [`dual`](@ref) of the forward one,
-`dual(L)(G) = dual(L(dual(G)))`, and the classical hierarchies are lifts of the
-whole graph:
+### The identity
 
-- [`InSplitLift`](@ref) at every edge is
-  [`PathDependentLift`](@ref)`(1)`; iterated from the one-node graph it gives
-  the [`de_bruijn`](@ref) graphs;
-- either product at every edge is [`ProductLift`](@ref)`(2)`.
+[`IdentityLift`](@ref) returns the graph unchanged: with it, [`compare`](@ref)
+tests a plain simulation, which holds for every template.
 
-```@docs; canonical=false
-lift
-```
+## Adding a lift
+
+A new lift is one file: see [Extending the package](@ref).

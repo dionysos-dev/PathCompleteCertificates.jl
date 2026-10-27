@@ -3,9 +3,9 @@
     simulate(system, x0, horizon::Integer; u = nothing, rng = Random.default_rng())
 
 Run `system` from `x0` along `modes`, or along `horizon` modes drawn uniformly
-at random, and return a
-[`Trajectory`](@ref). `u`, a vector of inputs or a feedback law `u(x)`, is
-required exactly when [`has_input`](@ref)`(system)`; otherwise it throws.
+at random, and return a [`Trajectory`](@ref). `u`, a vector of inputs or a
+feedback law `u(x)`, is required exactly when [`has_input`](@ref)`(system)`;
+otherwise it throws.
 """
 function simulate(
     system::_HS.HybridSystem,

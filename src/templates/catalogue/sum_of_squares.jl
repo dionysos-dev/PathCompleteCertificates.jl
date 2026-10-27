@@ -1,7 +1,7 @@
 """
     SumOfSquaresTemplate(degree, variables; min_scale = 1)
 
-Construct a native SetProg `PolySet` of homogeneous SOS polynomials of degree
+Construct a SetProg `PolySet` of homogeneous SOS polynomials of degree
 `2degree`, using the shared polynomial `variables`. Its gauge is
 `min_scale * sum(variables .^ 2)^degree` plus an SOS remainder, so `min_scale`
 fixes the normalization. Requires `using SumOfSquares`.

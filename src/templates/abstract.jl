@@ -17,10 +17,12 @@ make it a member of the template, and return the function.
 function add_function_variables! end
 
 """
-    add_normalization!(model, template, V)
+    add_normalization!(model, template, V; conditioning_bound = Inf)
 
 Constrain `V` to be positive away from the origin, at a fixed scale, which
-excludes the trivial function `V ≡ 0`.
+excludes the trivial function `V ≡ 0`: its set contains, or lies in, a fixed
+reference set. For an ellipsoid, a finite `conditioning_bound` also bounds its
+matrix by `conditioning_bound * I`.
 """
 function add_normalization! end
 
@@ -29,22 +31,25 @@ function add_normalization! end
 
 The decrease condition of an edge: `V_dst` after `map` is at most `scale`
 times `V_src`. Constrain, for every ``x``,
-``\\text{scale} \\cdot V_{src}(x) \\ge V_{dst}(\\text{map} \\cdot x)``.
+``\\text{scale} \\cdot V_{src}(x) \\ge V_{dst}(\\text{map} \\cdot x)``; for a
+SetProg family, as a set inclusion.
 """
 function add_decrease! end
 
 """
     solution_value(template, V)
 
-The node function `V` after `optimize!`, with values in place of variables.
+The node function `V` after `optimize!`, with values in place of variables:
+for a SetProg family, the fitted set.
 """
 function solution_value end
 
 """
     is_applicable(template, system) -> Bool
 
-Whether `template` applies to the dynamics of `system`; `true` by default. A
-problem refuses a template that does not, and no lift is valid for it.
+Whether `template` applies to the dynamics of `system`; `true` by default. The
+copositive templates apply to positive systems only. A problem refuses a
+template that does not apply, and no lift is valid for it.
 """
 function is_applicable end
 
@@ -54,7 +59,8 @@ function is_applicable end
 The slack of the decrease condition `scale · V_src(x) ≥ V_dst(map · x)` for
 fitted node functions: nonnegative when it holds, zero exactly when it is
 tight. It is in the units of the fitted functions, so compare slacks within
-one certificate only.
+one certificate only. Not implemented for polynomial and piecewise-quadratic
+families, whose slacks would need an optimization of their own.
 """
 function decrease_slack end
 
@@ -70,8 +76,9 @@ function is_closed_under end
 """
     reindex(template, origins)
 
-The template for a lifted graph whose nodes come from `origins`.
-Throws if a node merges origins with different per-node data.
+The template for a lifted graph whose nodes come from `origins`. A single
+template is unchanged; a vector, one template per node, follows `origins`, and
+throws if a node merges origins with different templates.
 """
 function reindex end
 
@@ -104,13 +111,8 @@ end
 """
     has_dual(template) -> Bool
 
-Whether `dual(template)` and `dual(template, V)` are defined; `false` by default.
+Whether `dual(template)` and `dual(template, V)` are defined; `false` by
+default. The quadratic template is its own dual, and the two copositive
+templates are each other's.
 """
 function has_dual end
-
-"""
-    dual(template, V)
-
-The dual norm of a fitted node function `V`, as a member of `dual(template)`.
-"""
-function dual end

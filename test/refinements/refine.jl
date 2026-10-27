@@ -5,6 +5,7 @@ using HybridSystems
 using Random
 import PathCompleteCertificates as PCC
 import Clarabel
+import LinearAlgebra
 import SetProg
 
 const OPTIMIZER = Clarabel.Optimizer
@@ -108,7 +109,7 @@ end
 
     # The last graph visited still carries a genuine certificate, independent
     # of the bookkeeping inside `refine` itself.
-    final = PCC.jsr_bound(
+    final = PCC.certify(
         TEMPLATE,
         PCC.graphs(trace)[end],
         TWO_MODE_PROBLEM;
@@ -166,8 +167,8 @@ end
     # On this system the dual De Bruijn graph of order 1 certifies the rate of
     # De Bruijn of order 1; four nodes reached by lifting is *not* De Bruijn of
     # order 2, and is strictly better than it.
-    memory_1 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
-    memory_2 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
+    memory_1 = PCC.certify(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
+    memory_2 = PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
 
     @test isapprox(rates[2], memory_1.rate; rtol = 1e-3)
     @test rates[4] < memory_2.rate
@@ -408,6 +409,20 @@ end
         safety;
         optimizer = OPTIMIZER,
     )
+end
+
+@testset "a large normalization does not hide the tight edges" begin
+    # The running example of the manual: its node functions come out with
+    # eigenvalues in the hundreds, which made absolute slacks of tight edges
+    # exceed `atol`. Relative slacks see them, and Thm. 4 proves the rate exact.
+    A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
+    problem = PCC.StabilityProblem(PCC.switched_system(A))
+    trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER)
+
+    jsr = maximum(abs, LinearAlgebra.eigvals(A[1] * A[1] * A[2]))^(1 / 3)
+    @test PCC.status(trace) == PCC.OPTIMAL
+    @test isapprox(last(PCC.rates(trace)), jsr; atol = 1e-5)
+    @test PCC.is_jsr_exact(last(PCC.certificates(trace)))
 end
 
 end # module

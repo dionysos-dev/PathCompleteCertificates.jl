@@ -4,9 +4,10 @@ CurrentModule = PathCompleteCertificates
 
 # Problem reference
 
-A problem fixes the inequality imposed along each edge of the graph. See
-[Problems](@ref) for the concepts. A certificate `c` is callable: `c(x)`
-evaluates its common function, [`common`](@ref).
+A problem fixes the edge inequality, and owns the type of its certificate. See
+[How a certificate works](@ref) and [Reading a certificate](@ref) for the
+concepts. A certificate `c` is callable: `c(x)` evaluates its common function,
+[`common`](@ref).
 
 ## The interface
 

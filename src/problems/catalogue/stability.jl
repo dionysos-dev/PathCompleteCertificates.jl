@@ -1,8 +1,8 @@
 """
     StabilityProblem(system)
 
-Stability problem for an input-free switched linear system, certified at a
-given rate by [`certify`](@ref) or at the smallest rate by [`jsr_bound`](@ref).
+Stability problem for an input-free switched linear system, certified by
+[`certify`](@ref) at the smallest rate, or at a given one.
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -47,12 +47,13 @@ function _edge_decrease(
 end
 
 """
-    optimization_model(family, graph, problem; optimizer, rate = 1,
-                       conditioning_bound = Inf)
+    optimization_model(template, graph, problem::StabilityProblem; optimizer,
+                       rate = 1, check_path_complete = true, conditioning_bound = Inf)
 
-A SetProg model, whose set variables are expanded when optimized, for
-the feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
-`(a, b, w)`, with `p` the template's degree and `|w|` the length of the word.
+Build, without solving, the SetProg model of the feasibility problem
+`V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge `(a, b, w)`, with `p` the
+template's degree and `|w|` the length of the word; its set variables are
+expanded when it is optimized.
 """
 function optimization_model(
     template::_SetFamily,
@@ -103,23 +104,43 @@ function optimization_model(
 end
 
 """
-    jsr_bound(template, graph, problem; optimizer, rtol = 1e-3,
-              max_iterations = 100, initial_upper = 1.0, check_path_complete = true)
+    certify(template, graph, problem::StabilityProblem; optimizer, rate = nothing,
+            rtol = 1e-6, max_iterations = 100, initial_upper = 1.0,
+            check_path_complete = true, conditioning_bound = Inf)
 
-The [`StabilityCertificate`](@ref) of the smallest feasible rate, to relative
-tolerance `rtol`. `initial_upper` is a first guess of a feasible rate.
+The [`StabilityCertificate`](@ref) of the smallest feasible rate, an upper bound
+on the joint spectral radius, found by bisection to relative tolerance `rtol`,
+using a SetProg family or a vector of families, one per node. `initial_upper`
+is a first guess of a feasible rate. Given a `rate`, solve at that rate only. A
+finite `conditioning_bound` bounds ellipsoid gauge matrices between `I` and
+`conditioning_bound * I`.
+
+`rtol` is that of [`refine`](@ref), so that the default `atol` of
+[`tight_edges`](@ref) is at least ten times it: a certificate read at a coarser
+`rtol` needs a larger `atol`.
 """
-function jsr_bound(
+function certify(
     template::_SetFamily,
     graph::CertificateGraph,
     problem::StabilityProblem;
     optimizer,
-    rtol::Real = 1e-3,
+    rate::Union{Real, Nothing} = nothing,
+    rtol::Real = 1e-6,
     max_iterations::Integer = 100,
     initial_upper::Real = 1.0,
     check_path_complete::Bool = true,
     conditioning_bound::Real = Inf,
 )
+    rate === nothing || return _certify_at(
+        template,
+        graph,
+        problem,
+        rate;
+        optimizer,
+        check_path_complete,
+        conditioning_bound,
+    )
+
     rtol > 0 || throw(ArgumentError("rtol must be positive"))
 
     max_iterations > 0 || throw(ArgumentError("max_iterations must be positive"))
@@ -134,74 +155,57 @@ function jsr_bound(
         check_path_complete = check_path_complete,
     )
 
-    function feasible(rate)
-        model = optimization_model(
-            template,
-            graph,
-            problem;
-            optimizer,
-            rate,
-            check_path_complete = false,
-            conditioning_bound = conditioning_bound,
-        )
-        JuMP.optimize!(model)
-        return JuMP.is_solved_and_feasible(model; allow_almost = true)
-    end
+    solve(rate) = _certify_at(
+        template,
+        graph,
+        problem,
+        rate;
+        optimizer,
+        check_path_complete = false,
+        conditioning_bound,
+    )
 
-    lower = zero(initial_upper)
-    upper = initial_upper
+    # The bisection keeps the certificate of its last feasible solve: solving
+    # again at that rate, within solver tolerance of the boundary, may fail.
+    upper = float(initial_upper)
+    lower = zero(upper)
+    best = solve(upper)
 
-    while !feasible(upper)
+    while !is_feasible(best)
         upper *= 2
 
         isfinite(upper) ||
             throw(ArgumentError("could not find a finite feasible upper bound"))
+
+        best = solve(upper)
     end
 
     for _ in 1:max_iterations
         upper - lower <= rtol * upper && break
 
         candidate = (lower + upper) / 2
+        attempt = solve(candidate)
 
-        if feasible(candidate)
+        if is_feasible(attempt)
             upper = candidate
+            best = attempt
         else
             lower = candidate
         end
     end
 
-    certificate = certify(
-        template,
-        graph,
-        problem;
-        optimizer,
-        rate = upper,
-        check_path_complete = false,
-        conditioning_bound,
-    )
-
-    is_feasible(certificate) ||
-        throw(ArgumentError("the final stability problem is not feasible"))
-
-    return certificate
+    return best
 end
 
-"""
-    certify(template, graph, problem::StabilityProblem; optimizer, rate = 1,
-            check_path_complete = true)
-
-Solve the stability problem at the fixed `rate`, using a SetProg family or
-a vector of families, one per node. A finite `conditioning_bound` bounds
-ellipsoid gauge matrices between `I` and `conditioning_bound * I`.
-"""
-function certify(
+# Solve the stability problem at the fixed `rate`.
+function _certify_at(
     template::_SetFamily,
     graph::CertificateGraph,
-    problem::StabilityProblem;
+    problem::StabilityProblem,
+    rate::Real;
     optimizer,
-    rate::Real = 1,
-    check_path_complete::Bool = true,
-    conditioning_bound::Real = Inf,
+    check_path_complete::Bool,
+    conditioning_bound::Real,
 )
     model = optimization_model(
         template,
@@ -281,23 +285,6 @@ function _check_stability_data(
     return nothing
 end
 
-"""
-    best_certificate(template, graph, problem::StabilityProblem; optimizer, rtol = 1e-6, kwargs...)
-
-The certificate of smallest rate on `graph`, by [`jsr_bound`](@ref) to
-relative tolerance `rtol`, where [`certify`](@ref) checks one given rate.
-"""
-function best_certificate(
-    template::_SetFamily,
-    graph::CertificateGraph,
-    problem::StabilityProblem;
-    optimizer,
-    rtol::Real = 1e-6,
-    kwargs...,
-)
-    return jsr_bound(template, graph, problem; optimizer, rtol = rtol, kwargs...)
-end
-
 objective(certificate::StabilityCertificate) = certificate.rate
 
 _refinable(::StabilityProblem) = true
@@ -323,11 +310,26 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-edge_slacks(certificate::StabilityCertificate) = _edge_slacks(
-    certificate;
-    rate = certificate.rate,
-    degree = homogeneity_degree(template(certificate)),
-)
+# Relative to the scale of the node functions, which the normalization fixes
+# from below only: a certificate scaled by any constant is the same certificate,
+# and its relative slacks are the same, of the order of `rtol` when tight.
+function edge_slacks(certificate::StabilityCertificate)
+    degree = homogeneity_degree(template(certificate))
+    slacks = _edge_slacks(certificate; rate = certificate.rate, degree)
+    scale = iszero(certificate.rate) ? one(certificate.rate) : certificate.rate^degree
+    return slacks ./ (scale * _function_scale(certificate))
+end
+
+# The largest value of a node function on the unit vectors.
+function _function_scale(certificate::StabilityCertificate)
+    problem_ = problem(certificate)
+    n = _state_dimension(problem_.system)
+    units = [[i == j ? 1.0 : 0.0 for j in 1:n] for i in 1:n]
+
+    return maximum(
+        node_value(problem_, V, unit) for V in functions(certificate) for unit in units
+    )
+end
 
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool

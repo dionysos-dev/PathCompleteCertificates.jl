@@ -1,15 +1,17 @@
 """
     dual(x)
+    dual(template, V)
 
 The dual of a graph, lift, operation, template, system, problem or certificate;
-`dual(template, V)` is the dual of one node function.
+`dual(template, V)` is the dual norm of a fitted node function `V`, as a member
+of `dual(template)`.
 """
 function dual end
 
 """
     dual(graph)
 
-The dual graph: every edge `s → d` reversed into `d → s`, every word reversed.
+The dual graph: every edge `a → b` reversed into `b → a`, every word reversed.
 Path-completeness is preserved.
 """
 dual(graph::CertificateGraph) = first(_dual_with_images(graph))

@@ -38,12 +38,12 @@ end
 """
     OptimalControlCertificate
 
-A quadratic function `V_s` and a gain `K_s` at each node `s`.
+A quadratic function `V_a` and a gain `K_a` at each node `a`.
 
-- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
+- The policy is `u = K_a x`, where `a` minimizes `V_a(x)`; [`simulate`](@ref)
   runs it.
-- Its cost from `x` is at most `min_s V_s(x)`. This bound is retrieved by
-  calling the certificate at `x`.
+- Its worst-case cost from `x` is at most `min_a V_a(x)`, which calling the
+  certificate at `x` returns.
 """
 struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     data::D
@@ -158,9 +158,9 @@ end
 """
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Synthesise a state-feedback policy and a bound on its value function, returned
-as an [`OptimalControlCertificate`](@ref). Only complete graphs and
-`QuadraticTemplate` are supported; the solver maximises `Σᵢ log det Pᵢ⁻¹`.
+Synthesize a state-feedback policy and an upper bound on its worst-case cost,
+returned as an [`OptimalControlCertificate`](@ref). Only complete graphs and
+`QuadraticTemplate` are supported; the solver maximizes `Σₐ log det Pₐ⁻¹`.
 """
 function certify(
     template::_SetFamily,
@@ -250,7 +250,7 @@ end
 Run the closed loop under the policy of `certificate` along `modes`, or along
 `horizon` modes drawn uniformly at random, and return a [`Trajectory`](@ref).
 At each state `x`, the policy applies the gain of the node whose function is
-smallest at `x`: `u = K_s x` with `s ∈ argmin V_s(x)` [ninite2026path](@cite).
+smallest at `x`: `u = K_a x` with `a ∈ argmin V_a(x)` [ninite2026path](@cite).
 """
 function simulate(
     certificate::OptimalControlCertificate,

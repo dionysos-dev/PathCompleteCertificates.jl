@@ -4,95 +4,132 @@ CurrentModule = PathCompleteCertificates
 
 # PathCompleteCertificates.jl
 
-Certificates of stability, safety and optimal control for switched systems in
-the path-complete framework. A certificate consists of a **graph** and a
-**template**, both chosen by the user. The package solves for a certificate on
-a given graph and template, refines a graph using its certificate, and compares
-two graphs.
+PathCompleteCertificates.jl is a [Julia](https://julialang.org/) package that
+computes certificates for **discrete-time switched linear systems** under
+arbitrary switching: proofs that the system is stable, that it stays safe, or
+that a feedback policy keeps its cost bounded. Each certificate is built on a
+path-complete graph, a graph whose paths read every sequence of modes. You
+choose the graph, or let the package build it.
 
-## Path-complete certificates
+## What it certifies
 
-A switched linear system evolves according to
-``x_{k+1} = A_{\sigma(k)}\, x_k``, where ``\sigma`` is a switching signal taking
-values in a finite set of modes, under arbitrary switching. A certificate must
-hold for every switching sequence.
-In the path-complete framework ([ahmadi2014joint](@cite))
-a certificate is specified by three ingredients:
+- **Stability.** An upper bound on the joint spectral radius, the worst
+  asymptotic growth rate of the trajectories. A bound below one proves the
+  system stable.
+- **Safety.** That no trajectory starting in an initial set reaches an unsafe
+  set.
+- **Optimal control.** A state-feedback policy, and an upper bound on its cost
+  for every switching sequence.
 
-1. a **labelled graph** whose labels are the modes;
-2. a function ``V_s`` at each node, drawn from a **template**;
-3. one **inequality along each edge**, determined by the **problem**.
+## Two ways to use it
 
-When the graph is **path-complete**, meaning that every admissible switching
-sequence can be read as a path in it, these local inequalities imply a property
-of the whole system. The three problems differ in the edge inequality and in
-the conditions on the node functions:
+You give the graph, and [`certify`](@ref) computes a certificate on it, for
+any of the three problems. Or, for stability, you leave the graph out, and
+[`refine`](@ref) builds one: it solves, reads where the certificate is tight,
+lifts the graph there, and solves again.
 
-| Problem | Edge inequality on ``(s, d, i)`` | Conditions on the node functions | The certificate carries |
-| :-- | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` | positive definite, homogeneous of degree ``p`` | `rate`, an upper bound on the joint spectral radius |
-| [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)`` | negative on the initial set, positive on the unsafe set | `margin`, how strictly the two sets are separated |
-| [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | positive definite quadratic | `gains`, a feedback per node, and the bound ``V`` on the cost |
+![The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.](assets/architecture.png)
 
-## What you can do
+## An example
 
-| | Takes | Gives |
-| :-- | :-- | :-- |
-| **Certify** | a template, a graph and a problem | a certificate: the node functions, what the problem certifies (`rate`, `margin` or `gains`), and the common function, evaluated by calling the certificate `c` as `c(x)` |
-| **Build** | an order and an alphabet, or a system | De Bruijn graphs and their duals, the common Lyapunov function graph, graphs with words on their edges |
-| **Refine** | a template, a graph and a problem | a sequence of graphs, each lifted where its certificate is tight, until the bound is proved exact or a budget is reached |
-| **Compare** | two graphs, and optionally templates and a system | whether the second graph is no worse than the first, for which templates, and the simulation that proves it |
+The simplest case of the first way: a planar switched linear system with two
+modes, ``x_{k+1} = A_{\sigma(k)} x_k``; the quadratic template,
+``V(x) = x^\top P x``; and a graph with one node. Together they give a
+stability certificate, a common quadratic Lyapunov function, whose rate
+``\gamma`` is an upper bound on the joint spectral radius of the system:
 
-The manual follows the same order: [Switched systems](@ref),
-[Path-complete graphs](@ref), [Templates](@ref) and [Problems](@ref) for
-certifying, then [Lifts](@ref), [Graph refinement](@ref) and
-[Graph comparison via lifts](@ref).
+```@example
+import PathCompleteCertificates as PCC
+import Clarabel
 
-## Where to start
+A1 = [0.1552 0.0447; 0.7641 0.7472]     # mode 1
+A2 = [0.0475 0.9176; 0.1896 0.0185]     # mode 2
+system = PCC.switched_system([A1, A2])  # planar switched linear system, two modes
 
-In reading order:
-
-1. [Switched systems: building and running one](@ref), the two kinds of
-   system and a run of one.
-2. [Stability: a first certificate](@ref), one system, one graph, one bound.
-3. [Templates and graphs: the two axes](@ref), three templates on one graph,
-   one template on four graphs, and a sum-of-squares template.
-4. [Refinement: splitting nodes at tight edges](@ref), [`refine`](@ref)
-   compared with a De Bruijn graph of the same size.
-5. [Comparing graphs: five graphs, three templates](@ref), the five graphs of
-   [debauche2023ordering](@cite) compared for three templates, with the
-   simulation behind each result.
-
-Safety and optimal control have one example each,
-[Safety: a barrier certificate](@ref) and
-[Optimal control: a feedback per node](@ref), and so do SetProg
-piecewise families, [Piecewise semi-ellipsoids: a template from SetProg](@ref).
-
-## Scope
-
-Stability uses SetProg families directly. Safety and optimal control retain
-the legacy quadratic template until their migration. [`compare`](@ref) is stated
-for stability, as in the literature, and [`refine`](@ref) runs on stability;
-[What works with what](@ref) gives the full table. A bound is always an upper
-bound, and a negative answer means that no certificate was found in this
-template on this graph, not that the property fails.
-
-## Other tools
-
-[SwitchOnSafety.jl](https://github.com/blegat/SwitchOnSafety.jl) and the MATLAB
-[JSR Toolbox](https://www.mathworks.com/matlabcentral/fileexchange/33202-the-jsr-toolbox)
-compute bounds on the joint spectral radius by several methods, some of which
-use path-complete graphs. This package is restricted to path-complete
-certificates, and adds the comparison and refinement of their graphs.
-
-## Installation
-
-Not yet registered.
-
-```julia
-] add https://github.com/dionysos-dev/PathCompleteCertificates.jl
+certificate = PCC.certify(
+    PCC.QuadraticTemplate(),         # V(x) = xᵀPx at each node
+    PCC.common_graph(system),        # one node, one loop per mode
+    PCC.StabilityProblem(system);    # V(Aᵢx) ≤ γ² V(x) along each edge
+    optimizer = Clarabel.Optimizer,  # the solver of the semidefinite program
+)
+certificate.rate
 ```
 
-```@docs
-PathCompleteCertificates
-```
+The bound is below one, so the system is stable under arbitrary switching.
+
+[How a certificate works](@ref) explains the optimization problem that the
+template, the graph and the problem build, and why its solution proves
+stability, safety or a bound on the cost, for every switching sequence.
+
+## How the documentation is structured
+
+New to the package? Read [Should you use PathCompleteCertificates.jl?](@ref)
+and [Installation](@ref), then Part I of the manual.
+
+- **Manual.** How to solve your problem with the package, in three parts, the
+  first two following the two ways above:
+  - **I. Certify your system with a graph you choose.** Define the system and
+    the problem, choose a template and a graph, call [`certify`](@ref), and
+    read the certificate. Start at [Systems and problems](@ref).
+  - **II. Let the package improve the graph.** When you do not know which
+    graph to choose, or want a better certificate,
+    [Refining the graph](@ref) improves it step by step, applying
+    [Lifts](@ref) where the certificate is tight; each lift gives a
+    certificate at least as good.
+  - **III. Going further.** Tools on the framework itself, beyond one system:
+    [Comparing graphs](@ref), to prove when possible that a graph gives a
+    certificate at least as good as another for every system, and
+    [Duality](@ref), which reverses the graph, transposes the system, and
+    turns a certificate into another just as good.
+
+  [What works with what](@ref) says which templates each problem accepts,
+  which lifts are valid for each template, where refinement and comparison
+  apply, and which gaps remain.
+- **Tutorials.** One problem solved from start to end per page.
+- **Bibliography.** The papers the package implements, and what it takes
+  from each.
+- **API Reference.** Every function, from its docstring.
+- **Developers.** How to set up, test and extend the package.
+
+## For researchers
+
+The package aims to implement the state of the art on path-complete
+certificates, and its documentation to survey the literature behind it:
+results spread across many papers, brought together in one implementation and
+one notation. The manual cites, where each result is used, the paper and the
+theorem it comes from, and the [Bibliography](@ref) says which paper each part
+of the package comes from.
+
+Since every template, graph and problem shares one interface, methods from
+different papers run on the same system with the same solver, and their
+conservativeness and solve time can be benchmarked side by side.
+
+To keep the implementation and the survey current, the package is built to
+receive new methods:
+[What works with what](@ref) shows the combinations not yet covered, and
+[Extending the package](@ref) how to add a template, a problem, a lift or a
+refinement algorithm.
+
+## Getting help
+
+For questions, bug reports and suggestions, open an issue on
+[GitHub](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues).
+
+## Citing
+
+The package and the methods it implements are cited separately:
+
+- **The package.** If you use PathCompleteCertificates.jl in your work, please
+  cite it. A paper describing the package is in preparation; until it is
+  published, cite the
+  [GitHub repository](https://github.com/dionysos-dev/PathCompleteCertificates.jl).
+- **The methods.** For the algorithms and theoretical results the package
+  implements, please cite the papers they come from, listed in the
+  [Bibliography](@ref).
+
+## License
+
+PathCompleteCertificates.jl is licensed under the
+[MIT license](https://github.com/dionysos-dev/PathCompleteCertificates.jl/blob/master/LICENSE).
+It is used with solvers and other packages that have their own licenses;
+consult their repositories for the licenses that apply.

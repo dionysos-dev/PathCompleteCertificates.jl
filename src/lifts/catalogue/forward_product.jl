@@ -1,9 +1,9 @@
 """
     ForwardProductLift()
 
-Replace each given edge `(s, d, w)` by the edges `(s, d′, w·u)` for every
-edge `(d, d′, u)`, in a [`WordGraph`](@ref) on the same nodes: the partial
-T-lift of [athanasopoulos2019polyhedral; Def. 4](@cite). Throws when `d` has
+Replace each given edge `(a, b, w)` by the edges `(a, b′, w·u)` for every
+edge `(b, b′, u)`, in a [`WordGraph`](@ref) on the same nodes: the partial
+T-lift of [athanasopoulos2019polyhedral; Def. 4](@cite). Throws when `b` has
 no outgoing edge. No requirement: two chained edge inequalities imply the
 product's.
 """

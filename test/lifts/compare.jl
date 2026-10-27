@@ -216,7 +216,7 @@ end
     expected_copositive = [9.2696, 9.1712, 8.7019, 9.2696, 9.2696]
 
     for (k, g) in enumerate((G0, G1, G2, G3, G4))
-        q = PCC.jsr_bound(
+        q = PCC.certify(
             QUADRATIC,
             g,
             PROBLEM;
@@ -224,7 +224,7 @@ end
             rtol = 1e-6,
             initial_upper = 100.0,
         )
-        c = PCC.jsr_bound(
+        c = PCC.certify(
             COPOSITIVE,
             g,
             PROBLEM;
@@ -240,7 +240,7 @@ end
     # primal on the original (Debauche, Lemma 6.25).
     dual_problem = PCC.StabilityProblem(PCC.dual(SYSTEM))
     for g in (G1, G4)
-        primal = PCC.jsr_bound(
+        primal = PCC.certify(
             COPOSITIVE,
             g,
             PROBLEM;
@@ -248,7 +248,7 @@ end
             rtol = 1e-6,
             initial_upper = 100.0,
         )
-        dualised = PCC.jsr_bound(
+        dualised = PCC.certify(
             DUAL_COPOSITIVE,
             PCC.dual(g),
             dual_problem;

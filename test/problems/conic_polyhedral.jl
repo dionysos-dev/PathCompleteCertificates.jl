@@ -75,9 +75,9 @@ end
     )
     native = Polytope(symmetric = true, piecewise = octagon)
     conic =
-        PCC.jsr_bound(families, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
+        PCC.certify(families, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
     baseline =
-        PCC.jsr_bound(native, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
+        PCC.certify(native, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
     @test PCC.is_feasible(conic)
     @test PCC.is_feasible(baseline)
     @test abs(conic.rate - baseline.rate) <= 2e-3
