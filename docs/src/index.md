@@ -9,7 +9,7 @@ computes certificates for **discrete-time switched linear systems** under
 arbitrary switching: proofs that the system is stable, that it stays safe, or
 that a feedback policy keeps its cost bounded. Each certificate is built on a
 path-complete graph, a graph whose paths read every sequence of modes. You
-choose the graph, or let the package improve it.
+choose the graph, or let the package build it.
 
 ## What it certifies
 
@@ -21,10 +21,19 @@ choose the graph, or let the package improve it.
 - **Optimal control.** A state-feedback policy, and an upper bound on its cost
   for every switching sequence.
 
+## Two ways to use it
+
+You give the graph, and [`certify`](@ref) computes a certificate on it, for
+any of the three problems. Or, for stability, you leave the graph out, and
+[`refine`](@ref) builds one: it solves, reads where the certificate is tight,
+lifts the graph there, and solves again.
+
+![The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.](assets/architecture.png)
+
 ## An example
 
-Take the simplest case: a planar switched linear system with two modes,
-``x_{k+1} = A_{\sigma(k)} x_k``; the quadratic template,
+The simplest case of the first way: a planar switched linear system with two
+modes, ``x_{k+1} = A_{\sigma(k)} x_k``; the quadratic template,
 ``V(x) = x^\top P x``; and a graph with one node. Together they give a
 stability certificate, a common quadratic Lyapunov function, whose rate
 ``\gamma`` is an upper bound on the joint spectral radius of the system:
@@ -57,7 +66,8 @@ stability, safety or a bound on the cost, for every switching sequence.
 New to the package? Read [Should you use PathCompleteCertificates.jl?](@ref)
 and [Installation](@ref), then Part I of the manual.
 
-- **Manual.** How to solve your problem with the package, in three parts:
+- **Manual.** How to solve your problem with the package, in three parts, the
+  first two following the two ways above:
   - **I. Certify your system with a graph you choose.** Define the system and
     the problem, choose a template and a graph, call [`certify`](@ref), and
     read the certificate. Start at [Systems and problems](@ref).
