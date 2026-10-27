@@ -154,56 +154,46 @@ function certify(
         check_path_complete = check_path_complete,
     )
 
-    function feasible(rate)
-        model = optimization_model(
-            template,
-            graph,
-            problem;
-            optimizer,
-            rate,
-            check_path_complete = false,
-            conditioning_bound = conditioning_bound,
-        )
-        JuMP.optimize!(model)
-        return JuMP.is_solved_and_feasible(model; allow_almost = true)
-    end
+    solve(rate) = _certify_at(
+        template,
+        graph,
+        problem,
+        rate;
+        optimizer,
+        check_path_complete = false,
+        conditioning_bound,
+    )
 
-    lower = zero(initial_upper)
-    upper = initial_upper
+    # The bisection keeps the certificate of its last feasible solve: solving
+    # again at that rate, within solver tolerance of the boundary, may fail.
+    upper = float(initial_upper)
+    lower = zero(upper)
+    best = solve(upper)
 
-    while !feasible(upper)
+    while !is_feasible(best)
         upper *= 2
 
         isfinite(upper) ||
             throw(ArgumentError("could not find a finite feasible upper bound"))
+
+        best = solve(upper)
     end
 
     for _ in 1:max_iterations
         upper - lower <= rtol * upper && break
 
         candidate = (lower + upper) / 2
+        attempt = solve(candidate)
 
-        if feasible(candidate)
+        if is_feasible(attempt)
             upper = candidate
+            best = attempt
         else
             lower = candidate
         end
     end
 
-    certificate = _certify_at(
-        template,
-        graph,
-        problem,
-        upper;
-        optimizer,
-        check_path_complete = false,
-        conditioning_bound,
-    )
-
-    is_feasible(certificate) ||
-        throw(ArgumentError("the final stability problem is not feasible"))
-
-    return certificate
+    return best
 end
 
 # Solve the stability problem at the fixed `rate`.
