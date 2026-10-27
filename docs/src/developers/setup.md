@@ -1,6 +1,8 @@
 # Set up
 
-Julia 1.10 or later.
+Working on the package needs Julia 1.10 or later and git. This page sets up
+the three environments, the package, its tests and its documentation, and
+says how to run the tests, format the code and build the documentation.
 
 ## Clone and instantiate
 
@@ -30,8 +32,8 @@ julia --project -e 'using Pkg; Pkg.test()'                           # everythin
 ```
 
 The `:slow` suites are the ones that solve programs, and most regressions
-surface there, so a change is not tested until they pass. A new test file goes in
-`TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it solves.
+surface there, so a change is not tested until they pass. A new test file goes
+in `TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it solves.
 
 While iterating, keep one Julia session open with Revise and `include` the
 file you are working on; a cold start costs about half a minute.
@@ -48,14 +50,14 @@ julia -e 'using JuliaFormatter; format(".")'
 ## Build the documentation
 
 ```
-julia --project=docs docs/make.jl                          # runs the examples, a few minutes
-PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl   # prose only
+julia --project=docs docs/make.jl                          # everything, a few minutes
+PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl   # skips the tutorials
 ```
 
-The build executes every example under `docs/src/examples/`. With the
-examples skipped, a page not
-already generated is dropped from the navigation, so run a full build before
-opening a pull request.
+The build executes every code block of the manual and every tutorial under
+`docs/src/examples/`. With the tutorials skipped, a tutorial page not already
+generated is dropped from the navigation, so run a full build before opening
+a pull request.
 
 Docstrings are checked twice. Nothing is exported, so `test/docstrings.jl` fails
 on any name reachable as `PathCompleteCertificates.name` without one. And the
@@ -73,3 +75,4 @@ there.
 | `documentation.yml` | the docs build and its deployment |
 | `blob-size-guard.yml` | no file over 5 MB |
 | `doc-preview-cleanup.yml` | removes a pull request's docs preview when it closes |
+| `TagBot.yml` | tags each release once it is registered |

@@ -32,6 +32,7 @@ PCC.certify(PCC.QuadraticTemplate(), PCC.de_bruijn(1, 1), problem; optimizer = C
   two code blocks, and a line ending in `#src` is dropped from the page.
 - End a block with the value, not a `println`.
 - Admonitions, `@ref` and `@cite` work in the prose.
+- To draw a graph, include `docs/graph_drawing.jl`, as the manual pages do.
 
 ## Wiring it in
 
@@ -45,7 +46,7 @@ notice.
 julia --project=docs docs/src/examples/stability.jl
 ```
 
-The docs environment carries the solver and Plots; the package and its tests
-depend on neither. The tutorials use Clarabel, and a setting a solver needs is
-set in the tutorial: `optimal_control.jl` disables Clarabel's chordal
-decomposition, which fails on its model.
+The docs environment carries the solvers and Plots; the package depends on
+neither, and its tests on the solvers only. The tutorials use Clarabel, and a
+setting a solver needs is set in the tutorial: `optimal_control.jl` disables
+Clarabel's chordal decomposition, which fails on its model.
