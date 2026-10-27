@@ -76,7 +76,8 @@ and [Installation](@ref), then Part I of the manual.
   which lifts are valid for each template, where refinement and comparison
   apply, and which gaps remain.
 - **Tutorials.** One problem solved from start to end per page.
-- **Background.** The theory behind the package, and the papers it implements.
+- **Bibliography.** The papers the package implements, and what it takes
+  from each.
 - **API Reference.** Every function, from its docstring.
 - **Developers.** How to set up, test and extend the package.
 
@@ -85,9 +86,9 @@ and [Installation](@ref), then Part I of the manual.
 The package aims to implement the state of the art on path-complete
 certificates, and its documentation to survey the literature behind it:
 results spread across many papers, brought together in one implementation and
-one notation. The Background pages explain the theory with the papers it comes
-from, and the [Bibliography](@ref) says which paper each part of the package
-comes from.
+one notation. The manual cites, where each result is used, the paper and the
+theorem it comes from, and the [Bibliography](@ref) says which paper each part
+of the package comes from.
 
 Since every template, graph and problem shares one interface, methods from
 different papers run on the same system with the same solver, and their

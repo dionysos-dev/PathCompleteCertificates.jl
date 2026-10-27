@@ -4,7 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # Bibliography
 
-What the package takes from each paper.
+The manual cites each result where it uses it. This page says, paper by
+paper, what the package takes from each.
 
 ## Certificates
 
@@ -14,7 +15,7 @@ What the package takes from each paper.
 | [philippe2019path](@cite) | complete and co-complete graphs, and the common function: [`common`](@ref) |
 | [anand2024barrier](@cite) | path-complete barrier functions: [`SafetyProblem`](@ref) |
 | [ninite2026path](@cite) | path-complete optimal control: [`OptimalControlProblem`](@ref) |
-| [abate2026succinct](@cite) | the characterisation of path-completeness by the subset construction |
+| [abate2026succinct](@cite) | the characterization of path-completeness by the subset construction |
 
 ## Templates
 

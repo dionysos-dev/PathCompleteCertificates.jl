@@ -117,8 +117,9 @@ The documentation is part of the package; write it with the same care as the cod
 - **Structure.** Introduction (index, should you use it, installation); Manual, Part I (systems
   and problems, how a certificate works, choosing a template, choosing a graph, reading a
   certificate), Part II (refining the graph, lifts), Part III (comparing graphs, duality),
-  then What works with what; Tutorials (`docs/src/examples/`, Literate); Background; API
-  Reference; Developers.
+  then What works with what; Tutorials (`docs/src/examples/`, Literate); Bibliography; API
+  Reference; Developers. There is no separate theory section: the manual explains each result
+  where it is used.
 - **One running example**, defined in Systems and problems. A page keeps its data in a hidden
   `@setup` block and says which names its code uses.
 - **One word per concept, the code's word**: node function, edge inequality, common function,
@@ -131,8 +132,10 @@ The documentation is part of the package; write it with the same care as the cod
 - **Style.** A page opens with what it is for; definitions in math when shorter; lists for
   parallel items; graph drawings from `docs/graph_drawing.jl`. No em dashes. No claim that one
   template is more or less conservative than another.
-- **Citations.** Read every definition and theorem number in the PDF in `sources/` before
-  writing it; no citation without its entry in `docs/src/references.bib`.
+- **Citations.** Cite a result where the manual uses it, as `([key](@cite), Thm. N)`, and keep
+  the Bibliography's table of what the package takes from each paper current. Read every
+  definition and theorem number in the PDF in `sources/` before writing it; no citation
+  without its entry in `docs/src/references.bib`.
 
 ## 6. Gotchas
 

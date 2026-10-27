@@ -171,5 +171,6 @@ refine(template, graph, problem; algorithm)  # the entry point: the loop
   its hidden setup block.
 - [What works with what](@ref) is the single reference for the supported
   combinations and the gaps.
-- Before citing a definition or theorem number, read it in the paper it is
-  attributed to.
+- Cite a result where the manual uses it, as `([key](@cite), Thm. N)`, and
+  keep the [Bibliography](@ref) current. Before citing a definition or theorem
+  number, read it in the paper it is attributed to.

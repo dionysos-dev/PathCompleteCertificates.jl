@@ -114,25 +114,16 @@ const PAGES = Any[
 
 isempty(TUTORIAL_PAGES) || push!(PAGES, "Tutorials" => TUTORIAL_PAGES)
 
-push!(
-    PAGES,
-    "Background" => [
-        "Path-complete Lyapunov functions" => "background/pclf.md",
-        "Deciding path-completeness" => "background/path_completeness.md",
-        "Why lifts are valid" => "background/lifts.md",
-        "Why duality holds" => "background/duality.md",
-        "Bibliography" => "background/bibliography.md",
-    ],
-)
+push!(PAGES, "Bibliography" => "bibliography.md")
 push!(
     PAGES,
     "API Reference" => [
         "Systems" => "reference/systems.md",
-        "Graphs" => "reference/graphs.md",
-        "Templates" => "reference/templates.md",
         "Problems" => "reference/problems.md",
-        "Lifts" => "reference/lifts.md",
+        "Templates" => "reference/templates.md",
+        "Graphs" => "reference/graphs.md",
         "Refinement" => "reference/refinement.md",
+        "Lifts" => "reference/lifts.md",
     ],
 )
 push!(

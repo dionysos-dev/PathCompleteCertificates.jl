@@ -33,8 +33,9 @@ G \le_{\mathcal V} H
 \text{ in } \mathcal V \text{ also has one on } H,
 ```
 
-so that ``H`` is at least as good as ``G``, whatever the system. The order
-depends on the two graphs and the template only: it tells, before any system
+so that ``H`` is at least as good as ``G``, whatever the system
+([debauche2021comparison](@cite), Def. 4). The order depends on the two
+graphs and the template only: it tells, before any system
 is given, whether a larger graph can pay off, and it orders the graphs of the
 literature into hierarchies. Two tools prove it:
 
@@ -54,8 +55,10 @@ nodes of ``G`` keeps every edge:
 
 Each node ``a`` of ``H`` then takes the function ``V_{f(a)}`` of its image,
 and every edge inequality on ``H`` is one on ``G``: a certificate on ``G``
-gives one on ``H``, in any template. [`simulation`](@ref)`(G, H)` returns
-``f``, or `nothing`.
+gives one on ``H``, in any template. Conversely, ``G \le_{\mathcal V} H`` for
+every template only when ``G`` simulates ``H``
+([philippe2019complete](@cite), Thm. 3.5). [`simulation`](@ref)`(G, H)`
+returns ``f``, or `nothing`.
 
 On the De Bruijn hierarchy, order 1 simulates order 2. Each node of ``H`` is
 colored as its image in ``G``, and every edge of ``H`` has an edge of ``G``
@@ -88,6 +91,9 @@ makes ``G`` worse (see [Lifts](@ref)), so when the lifted ``G`` simulates
 | [`MaxLift`](@ref) | maximum | the same relation on the dual graphs | the order fails for some such template |
 | [`SumLift`](@ref)`()` | addition | a linear program, which needs an `optimizer` | the order fails for some such template |
 | [`CompositionLift`](@ref)`(T)`, [`BackwardCompositionLift`](@ref)`(T)` | composition with the matrices of a system, or with their inverses | building the lift and searching it | nothing is proved |
+
+The four rows are Theorems 8.1 and 8.5, Corollary 8.11, and Theorems 7.65
+and 7.66 of [debauche2024thesis](@cite).
 
 [`is_closed_under`](@ref) gives the closures of a template, and
 [`is_valid`](@ref) whether a lift is valid for a template on a system, which

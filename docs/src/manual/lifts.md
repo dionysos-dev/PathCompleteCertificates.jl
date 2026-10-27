@@ -5,9 +5,9 @@ CurrentModule = PathCompleteCertificates
 # Lifts
 
 A **lift** turns a path-complete graph into another path-complete graph whose
-best certificate is at least as good, for the templates the lift is valid
-for: a certificate on the graph gives one on the lifted graph, with the same
-value. Lifts are the steps of [refinement](@ref "Refining the graph"), which
+best certificate is at least as good, for the templates the lift is
+**valid** for ([debauche2021comparison](@cite), Def. 6): a certificate on the
+graph gives one on the lifted graph, with the same value. Lifts are the steps of [refinement](@ref "Refining the graph"), which
 applies them where a certificate is tight, and the tools of
 [comparison](@ref "Comparing graphs"), which uses them to prove that a graph
 is at least as good as another.
@@ -22,7 +22,7 @@ graph from a certificate on the old one, in one of four ways:
   old ones.
 - **Chain.** A product replaces an edge by its products with the edges that
   follow or precede it: two chained edge inequalities imply the inequality of
-  their product.
+  their product ([athanasopoulos2019polyhedral](@cite)).
 - **Combine.** The min, max and sum lifts make a node from a set of nodes,
   whose function is the minimum, the maximum or the sum of theirs.
 - **Compose.** The composition lifts compose node functions with the
@@ -30,14 +30,14 @@ graph from a certificate on the old one, in one of four ways:
 
 Copying and chaining need nothing from the template, so they are valid for
 every template. Combining and composing need a template closed under the
-operation: the sum of two quadratic forms is a quadratic form, so the sum
-lift is valid for the quadratic template, but their minimum is not, so the
-min lift is not. A lift is also valid when the dual template is closed under
-the dual operation: on positive systems, the min lift is valid for the linear
-copositive template, whose dual is closed under maximum.
-[`is_valid`](@ref)`(L, template, system)` says whether a lift is valid,
-[What works with what](@ref) lists the lifts valid for each template, and
-[Why lifts are valid](@ref) gives the proofs.
+operation ([debauche2021comparison](@cite), Def. 7): the sum of two quadratic
+forms is a quadratic form, so the sum lift is valid for the quadratic
+template, but their minimum is not, so the min lift is not. A lift is also
+valid when the dual template is closed under the dual operation: on positive
+systems, the min lift is valid for the linear copositive template, whose dual
+is closed under maximum ([debauche2024thesis](@cite), Thm. 7.43).
+[`is_valid`](@ref)`(L, template, system)` says whether a lift is valid, and
+[What works with what](@ref) lists the lifts valid for each template.
 
 Every lift also keeps the graph path-complete, so a lifted graph needs no new
 check.

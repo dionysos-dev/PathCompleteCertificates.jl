@@ -114,7 +114,7 @@ V(x) = \min_{P \in \mathcal{P}} \, \max_{a \in P} V_a(x),
 where the sets of nodes ``\mathcal{P}`` depend on the graph: the single nodes
 on a complete graph, so ``V = \min_a V_a``; all the nodes at once on a
 co-complete graph, so ``V = \max_a V_a``; the nodes of the
-[`observer_graph`](@ref) otherwise.
+[`observer_graph`](@ref) otherwise ([philippe2019path](@cite)).
 [Choosing a graph](@ref "Path-complete, complete and co-complete graphs")
 defines complete and co-complete graphs. `certificate(x)` evaluates ``V``.
 
@@ -215,8 +215,8 @@ certificate = PCC.certify(template, graph, problem; optimizer = Clarabel.Optimiz
 certificate.rate
 ```
 
-The rate is an upper bound on the joint spectral radius, below one, so the
-system is stable.
+The rate is an upper bound on the joint spectral radius
+([ahmadi2014joint](@cite), Thm. 2.4), below one, so the system is stable.
 
 **Why it holds.** The common function satisfies
 ``V(A_i x) \le \gamma^p \, V(x)`` for every mode ``i``: it is a common
@@ -238,7 +238,8 @@ tight. [Reading a certificate](@ref) shows how to find the tight edges.
 
 ## Safety
 
-The node functions are quadratic in ``[x; 1]``:
+The node functions are path-complete barrier functions
+([anand2024barrier](@cite)), quadratic in ``[x; 1]``:
 ``V_a(x) = [x; 1]^\top P_a [x; 1]``, with ``P_a`` symmetric, possibly
 indefinite. The program:
 
@@ -281,7 +282,7 @@ safety_figure(certificate, system) # hide
 ## Optimal control
 
 The node functions are quadratic forms ``V_a(x) = x^\top P_a x``, and each
-node also carries a gain ``K_a``. The program:
+node also carries a gain ``K_a`` ([ninite2026path](@cite)). The program:
 
 ```math
 \begin{aligned}

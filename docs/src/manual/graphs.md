@@ -94,8 +94,12 @@ smaller graph that reaches the same bound.
 ## Path-complete, complete and co-complete graphs
 
 A graph is **path-complete** when every sequence of modes is read along some
-path of it; [`is_path_complete`](@ref) decides it. Two stronger properties
-are cheap to check:
+path of it ([ahmadi2014joint](@cite), Def. 2.2). [`is_path_complete`](@ref)
+decides it by the subset construction: start from the set of all nodes, let
+each mode map a set of nodes to the nodes its edges reach, and the graph is
+path-complete exactly when the empty set is never reached
+([abate2026succinct](@cite), Prop. 3.1). Two stronger properties are cheap to
+check, and `is_path_complete` tries them first:
 
 - **complete:** every node has an outgoing edge for every mode,
   [`is_complete`](@ref);
@@ -112,9 +116,10 @@ certificate on a graph that is not path-complete would prove the property
 only for the sequences the graph reads.
 
 !!! warning "The check can be costly"
-    Deciding path-completeness is PSPACE-complete in general, so on a large
-    graph that is neither complete nor co-complete, the check before solving
-    can take long (see [Deciding path-completeness](@ref)).
+    Deciding path-completeness is PSPACE-complete in general, as recalled in
+    [abate2026succinct](@cite): the subset construction can visit
+    exponentially many sets, so on a large graph that is neither complete nor
+    co-complete, the check before solving can take long.
     `check_path_complete = false` skips it, for a graph you know to be
     path-complete.
 
@@ -150,7 +155,8 @@ PCC.is_path_complete(partial, 1:PCC.n_modes(system))
 In a [`WordGraph`](@ref), an edge can read a sequence of modes, and imposes one
 inequality on the product of their matrices. Words are supported for
 stability only. [`expanded_form`](@ref) gives a graph that reads the same
-sequences with one mode per edge.
+sequences with one mode per edge, and the graph is path-complete exactly when
+its expanded form is ([ahmadi2014joint](@cite), Defs. 2.1 and 2.2).
 
 ## Not sure which graph to use?
 

@@ -18,7 +18,12 @@ each node function by its dual. [`dual`](@ref) computes it, and applying it
 twice gives the object back. For stability, duality turns a certificate into
 another one, on the reversed graph, for the transposed system, at the same
 rate. It is a tool on the framework itself: each graph, lift and certificate
-gets a counterpart at no cost. Why it works is in [Why duality holds](@ref).
+gets a counterpart at no cost.
+
+Why it holds: for a template of norms, node functions form a certificate on a
+graph for a system exactly when their dual norms form one on the dual graph
+for the transposed system ([debauche2024thesis](@cite), Lemma 6.25). The
+numbers below refer to the same thesis.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
@@ -28,7 +33,7 @@ The code on this page uses the running example of
 
 | `dual` of | gives |
 | :-- | :-- |
-| a graph | the same nodes with every edge reversed, path-complete exactly when the graph is |
+| a graph | the same nodes with every edge reversed, path-complete exactly when the graph is (Prop. 6.6) |
 | a system | the same modes with every matrix transposed |
 | a stability problem | the stability problem of the dual system |
 | a template | the template of the dual functions, when [`has_dual`](@ref) holds |
@@ -58,9 +63,12 @@ from the one-node graph gives the dual De Bruijn graph of order 1.
 [`OutSplitLift`](@ref), [`ForwardProductLift`](@ref), [`MinLift`](@ref) and
 [`CompositionLift`](@ref).
 
-**Comparisons through the dual.** A lift is valid for a template when the
-dual template is closed under the dual operation: on positive systems, the
-min lift is valid for the linear copositive template because the dual
-copositive template is closed under maximum. The max lift is decided by the
-relation of the min lift on the dual graphs. See [Lifts](@ref) and
+**Comparisons through the dual.** ``G \le_{\mathcal V} H`` exactly when
+``\operatorname{dual}(G) \le_{\mathcal V^*} \operatorname{dual}(H)``, with
+``\mathcal V^*`` the template of the dual norms (Prop. 6.27), and a lift is
+valid for a template exactly when its dual lift is valid for the dual template
+(Prop. 7.5). So, on positive systems, the min lift is valid for the linear
+copositive template because the dual copositive template is closed under
+maximum, and the max lift, the dual of the min lift (Lemma 7.45), is decided
+by the relation of the min lift on the dual graphs. See [Lifts](@ref) and
 [Comparing graphs](@ref).
