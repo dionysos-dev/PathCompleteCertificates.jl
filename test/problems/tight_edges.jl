@@ -39,7 +39,7 @@ const GRAPH = PCC.de_bruijn(1, 1)
 end
 
 @testset "the bound is attained exactly where an edge goes tight" begin
-    bound = PCC.jsr_bound(
+    bound = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -158,7 +158,7 @@ const ROTATION_PROBLEM = PCC.StabilityProblem(PCC.switched_system(ROTATIONS))
 const TWO_NODES = PCC.de_bruijn(1, 2)
 
 @testset "the tight subgraph keeps the nodes and drops the slack edges" begin
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -179,7 +179,7 @@ const TWO_NODES = PCC.de_bruijn(1, 2)
 end
 
 @testset "a cycle bounds the JSR from below, whatever atol was" begin
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
@@ -203,7 +203,7 @@ end
 end
 
 @testset "Theorem 4 is sufficient, not necessary" begin
-    exact = PCC.jsr_bound(
+    exact = PCC.certify(
         PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
@@ -218,7 +218,7 @@ end
     @test isapprox(exact.rate, 0.9; atol = 1e-3)
 
     # The one-mode system has a single tight self-loop, so the condition holds.
-    single = PCC.jsr_bound(
+    single = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -232,7 +232,7 @@ end
 
 @testset "the optimality gap is zero when proved, the bracket otherwise" begin
     # Theorem 4 holds on the one-mode system: the gap is exactly zero.
-    single = PCC.jsr_bound(
+    single = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -243,7 +243,7 @@ end
     @test PCC.optimality_gap(single; atol = 1e-4) == 0
 
     # On the rotations it does not, and the gap is the cycle bracket.
-    rotations = PCC.jsr_bound(
+    rotations = PCC.certify(
         PCC.QuadraticTemplate(),
         TWO_NODES,
         ROTATION_PROBLEM;
@@ -262,7 +262,7 @@ end
     sheared = PCC.StabilityProblem(
         PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
     )
-    loose = PCC.jsr_bound(
+    loose = PCC.certify(
         PCC.QuadraticTemplate(),
         PCC.common_graph(2),
         sheared;
@@ -274,7 +274,7 @@ end
     @test PCC.optimality_gap(loose) > 0.05
 
     # An exact certificate read with too small a tolerance: no tight cycle, so no claim.
-    single = PCC.jsr_bound(
+    single = PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;

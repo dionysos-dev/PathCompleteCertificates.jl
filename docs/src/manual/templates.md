@@ -5,12 +5,12 @@ CurrentModule = PathCompleteCertificates
 # Templates
 
 For stability, use PCC's compatibility constructors or a SetProg set family.
-Pass the template to [`certify`](@ref), [`jsr_bound`](@ref), [`compare`](@ref),
+Pass the template to [`certify`](@ref), [`compare`](@ref),
 or [`refine`](@ref). For example:
 
 ```julia
 family = PCC.QuadraticTemplate()
-certificate = PCC.jsr_bound(family, graph, problem; optimizer)
+certificate = PCC.certify(family, graph, problem; optimizer)
 ```
 
 `QuadraticTemplate()` returns `SetProg.Ellipsoid(symmetric = true)`. Stability
@@ -68,7 +68,7 @@ The degree `p`, returned by [`homogeneity_degree`](@ref), satisfies
 `V(c*x) = c^p * V(x)`. Stability uses `rate^p` in each edge inequality,
 so every family's rate bounds the joint spectral radius.
 Ellipsoids and polynomial sets are normalized against the Euclidean unit gauge.
-A finite `conditioning_bound` keyword in `certify` or `jsr_bound` also bounds
+A finite `conditioning_bound` keyword in `certify` also bounds
 an ellipsoid's matrix by `conditioning_bound * I`; the default is `Inf`.
 
 Clarabel solves semidefinite and linear models; HiGHS solves linear models.
@@ -98,7 +98,7 @@ A single family is shared by all nodes. A vector supplies one family per node:
 
 ```julia
 families = PCC.ParallelFacesPolyhedralTemplate([G1, G2])
-certificate = PCC.jsr_bound(families, graph, problem; optimizer)
+certificate = PCC.certify(families, graph, problem; optimizer)
 ```
 
 [`reindex`](@ref) follows node origins through lifts. Copies retain their

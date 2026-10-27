@@ -35,17 +35,12 @@ PCC.is_feasible(at_six_tenths), PCC.is_feasible(at_four_tenths)
 
 # ## The best rate
 #
-# [`jsr_bound`](@ref) bisects on the rate, one feasibility problem per step,
+# [`certify`](@ref) bisects on the rate, one feasibility problem per step,
 # and returns the certificate at the tightest rate this template can certify
 # on this graph.
 
-result = PCC.jsr_bound(
-    PCC.QuadraticTemplate(),
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-    rtol = 1e-2,
-)
+result =
+    PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER, rtol = 1e-2)
 
 result.rate
 

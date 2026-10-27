@@ -4,7 +4,7 @@
 Return `SetProg.Ellipsoid(symmetric = true)`, the native family of homogeneous
 quadratic gauges. Stability returns fitted SetProg ellipsoids; evaluate them
 with `node_value(problem, V, x)` and access their matrices as `V.Q`.
-Use the `conditioning_bound` keyword of `certify` or `jsr_bound` to cap the
+Use the `conditioning_bound` keyword of `certify` to cap the
 coefficient matrix. Safety and optimal control retain their matrix models.
 """
 function QuadraticTemplate()

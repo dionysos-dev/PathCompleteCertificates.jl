@@ -20,8 +20,7 @@ A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 problem = PCC.StabilityProblem(PCC.switched_system(A))
 graph = PCC.common_graph(problem.system)
 
-bound(template) =
-    PCC.jsr_bound(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-3)
+bound(template) = PCC.certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-3)
 
 # A partition is given by a polytope with the origin in its interior; its
 # pieces are the cones over its facets. The polytope is built with Polyhedra on

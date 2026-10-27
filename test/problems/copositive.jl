@@ -67,7 +67,7 @@ end
         end
         @test PCC.decrease_slack(FAMILY, V, V, [-0.5 0.0; 0.0 0.25]) == -Inf
     end
-    bound = PCC.jsr_bound(FAMILY, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
+    bound = PCC.certify(FAMILY, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3)
     @test PCC.is_feasible(bound)
     @test abs(bound.rate - 0.5) <= 1e-3
     @test all(>=(-1e-6), PCC.edge_slacks(bound))

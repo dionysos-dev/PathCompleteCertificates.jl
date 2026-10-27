@@ -52,8 +52,8 @@ has_dual(template), dual(template), dual(template, V)      # the dual norms, whe
 # Problem axis: one file per problem, composing the above.
 node_value(problem, V, x)                                     # V(x), or V([x; 1]) for safety
 optimization_model(template, graph, problem; optimizer, ...)   # build, do not solve
-certify(template, graph, problem; optimizer, ...)             # build, solve, extract
-best_certificate, objective, optimality_gap, edge_slacks       # what refine reads
+certify(template, graph, problem; optimizer, ...)             # the best certificate on graph
+objective, optimality_gap, edge_slacks                         # what refine reads
 
 # The common function: each node value from the problem (node_value), their combination
 # from the graph alone (graphs/observer.jl); the public method is in problems/certificate.jl.

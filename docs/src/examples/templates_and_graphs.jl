@@ -64,7 +64,7 @@ left = plot(;
 )
 
 for (name, template) in templates
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         template,
         rotation_graph,
         rotation_problem;
@@ -108,7 +108,7 @@ right = plot(;
 )
 
 for (name, graph) in graphs
-    certificate = PCC.jsr_bound(
+    certificate = PCC.certify(
         PCC.QuadraticTemplate(),
         graph,
         mixed_problem;
@@ -143,7 +143,7 @@ plot(left, right; layout = (1, 2), size = (1100, 620))
 @polyvar x[1:2]
 
 bound(template, graph) =
-    PCC.jsr_bound(template, graph, mixed_problem; optimizer = OPTIMIZER, rtol = 1e-4).rate
+    PCC.certify(template, graph, mixed_problem; optimizer = OPTIMIZER, rtol = 1e-4).rate
 
 one_node = PCC.common_graph(mixed_problem.system)
 two_nodes = PCC.de_bruijn(1, 2)

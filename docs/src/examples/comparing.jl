@@ -167,7 +167,7 @@ combination(row) = join(
 # matrices with ``C``, and checks that every edge inequality of `G2` holds at
 # the same rate, that is, that every slack is nonnegative.
 
-bound(template, g) = PCC.jsr_bound(
+bound(template, g) = PCC.certify(
     template,
     g,
     problem;

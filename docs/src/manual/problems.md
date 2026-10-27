@@ -9,7 +9,7 @@ an edge must satisfy, and therefore the property a certificate proves.
 
 | Problem | Edge inequality on ``(s, d, i)`` | Entry points |
 | :-- | :-- | :-- |
-| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` | [`certify`](@ref), [`jsr_bound`](@ref) |
+| [`StabilityProblem`](@ref) | ``V_d(A_i x) \le \gamma^{p}\, V_s(x)`` | [`certify`](@ref) |
 | [`SafetyProblem`](@ref) | ``B_d(A_i x) \le B_s(x)``, plus the separation of the two sets | [`certify`](@ref) |
 | [`OptimalControlProblem`](@ref) | ``x^\top Q x + u^\top R u + V_d(A_i x + B_i u) \le V_s(x)`` | [`certify`](@ref) |
 
@@ -22,19 +22,15 @@ path-complete Lyapunov functions give certified upper bounds on it
 certificate at rate ``\gamma`` proves the system scaled by ``1/\gamma``
 stable:
 
+- [`certify`](@ref)`(template, graph, problem)` bisects on the rate and
+  returns the certificate at the smallest rate found, to the tolerance `rtol`;
 - [`certify`](@ref)`(template, graph, problem; rate)` attempts to certify one
   candidate bound, and [`is_feasible`](@ref) of the result says whether it
-  did;
-- [`jsr_bound`](@ref) bisects on the rate and returns the certificate at the
-  smallest rate found, to the tolerance `rtol`.
+  did.
 
 The edge inequality scales as ``\gamma^p`` with ``p`` the template's
 [`homogeneity_degree`](@ref), so that ``\gamma`` is a per-step bound whatever
 the template, and as ``\gamma^{pk}`` on an edge reading a word of ``k`` modes.
-
-```@docs; canonical=false
-jsr_bound
-```
 
 !!! warning "A bound is always an *upper* bound"
     An infeasible result means that no certificate was found **in this

@@ -108,7 +108,7 @@ end
 
     # The last graph visited still carries a genuine certificate, independent
     # of the bookkeeping inside `refine` itself.
-    final = PCC.jsr_bound(
+    final = PCC.certify(
         TEMPLATE,
         PCC.graphs(trace)[end],
         TWO_MODE_PROBLEM;
@@ -166,8 +166,8 @@ end
     # On this system the dual De Bruijn graph of order 1 certifies the rate of
     # De Bruijn of order 1; four nodes reached by lifting is *not* De Bruijn of
     # order 2, and is strictly better than it.
-    memory_1 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
-    memory_2 = PCC.jsr_bound(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
+    memory_1 = PCC.certify(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
+    memory_2 = PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
 
     @test isapprox(rates[2], memory_1.rate; rtol = 1e-3)
     @test rates[4] < memory_2.rate
