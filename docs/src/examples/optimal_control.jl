@@ -1,4 +1,4 @@
-# # Optimal control: a feedback per node
+# # Design a controller robust to switching
 #
 # The value-function upper bound of [ninite2026path](@cite), for a switched
 # system with an input, where the mode is chosen by an adversary and the input

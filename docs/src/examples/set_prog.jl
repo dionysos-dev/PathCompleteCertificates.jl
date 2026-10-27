@@ -1,4 +1,4 @@
-# # Piecewise semi-ellipsoids: a template from SetProg
+# # Use SetProg families
 #
 # SetProg families are accepted directly by PCC. Their stability inequality
 # is modeled as the inclusion `(A / rate) * S_source ⊆ S_destination`.
@@ -91,9 +91,8 @@ piecewise = [
 
 # ## Drawing it
 #
-# The sublevel set ``\{x : V(x) \le 1\}`` of each function, normalised as in
-# [Templates and graphs: the two axes](@ref). The piecewise one is a union of
-# arcs of ellipses, meeting along the rays of the partition.
+# The sublevel set ``\{x : V(x) \le 1\}`` of each function. The piecewise one
+# is a union of arcs of ellipses, meeting along the rays of the partition.
 
 function sublevel_boundary(certificate; samples = 721)
     degree = PCC.homogeneity_degree(PCC.template(certificate))

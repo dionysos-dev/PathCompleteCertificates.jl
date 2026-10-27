@@ -14,20 +14,11 @@ const REFERENCE_DIR = joinpath(SRC_DIR, "reference")
 # `src/generated` are then dropped from the nav rather than breaking the build.
 const SKIP_LITERATE = get(ENV, "PCC_SKIP_LITERATE", "false") == "true"
 
-# Reading order, roughly "what is a system" through "why the two axes matter".
-# Anything not listed here is appended alphabetically with a notice, so adding
-# an example is just a file in the folder -- no edit to this file required --
-# while the reading order stays curated.
-const ORDER = [
-    "switched_systems",
-    "stability",
-    "templates_and_graphs",
-    "set_prog",
-    "safety",
-    "optimal_control",
-    "refinement",
-    "comparing",
-]
+# The order of the tutorials in the sidebar. A tutorial not listed here is
+# appended alphabetically with a notice, so adding one is just a file in the
+# folder, while the order stays curated.
+const ORDER =
+    ["stability", "safety", "optimal_control", "refinement", "comparing", "set_prog"]
 
 function example_stems()
     stems = sort([f[1:(end - 3)] for f in readdir(EXAMPLES_DIR) if endswith(f, ".jl")])
@@ -83,7 +74,7 @@ end
 
 has_page(stem) = !SKIP_LITERATE || isfile(joinpath(OUTPUT_DIR, stem * ".md"))
 
-const EXAMPLE_PAGES = [
+const TUTORIAL_PAGES = [
     example_title(joinpath(EXAMPLES_DIR, stem * ".jl")) => "generated/$stem.md" for
     stem in example_stems() if has_page(stem)
 ]
@@ -96,22 +87,43 @@ DocMeta.setdocmeta!(
 )
 
 const PAGES = Any[
-    "Home" => "index.md",
+    "Introduction" => [
+        "Introduction" => "index.md",
+        "Should you use PathCompleteCertificates.jl?" => "should_i_use.md",
+        "Installation" => "installation.md",
+    ],
     "Manual" => [
-        "Switched systems" => "manual/systems.md",
-        "Path-complete graphs" => "manual/graphs.md",
-        "Templates" => "manual/templates.md",
-        "Problems" => "manual/problems.md",
-        "Lifts" => "manual/lifts.md",
-        "Graph refinement" => "manual/refinement.md",
-        "Graph comparison via lifts" => "manual/comparing.md",
-        "Duality" => "manual/duality.md",
+        "I. Certify your system with a graph you choose" => [
+            "Systems and problems" => "manual/systems.md",
+            "How a certificate works" => "manual/certificates.md",
+            "Choosing a template" => "manual/templates.md",
+            "Choosing a graph" => "manual/graphs.md",
+            "Reading a certificate" => "manual/reading.md",
+        ],
+        "II. Let the package improve the graph" => [
+            "Lifts" => "manual/lifts.md",
+            "Refining the graph" => "manual/refinement.md",
+        ],
+        "III. Going further" => [
+            "Comparing graphs" => "manual/comparing.md",
+            "Duality" => "manual/duality.md",
+        ],
         "What works with what" => "manual/support.md",
     ],
 ]
 
-isempty(EXAMPLE_PAGES) || push!(PAGES, "Examples" => EXAMPLE_PAGES)
+isempty(TUTORIAL_PAGES) || push!(PAGES, "Tutorials" => TUTORIAL_PAGES)
 
+push!(
+    PAGES,
+    "Background" => [
+        "Path-complete Lyapunov functions" => "background/pclf.md",
+        "Deciding path-completeness" => "background/path_completeness.md",
+        "Why lifts are valid" => "background/lifts.md",
+        "Why duality holds" => "background/duality.md",
+        "Bibliography" => "background/bibliography.md",
+    ],
+)
 push!(
     PAGES,
     "API Reference" => [
@@ -125,14 +137,14 @@ push!(
 )
 push!(
     PAGES,
-    "Developer Docs" => [
+    "Developers" => [
         "Set up" => "developers/setup.md",
         "Conventions" => "developers/conventions.md",
-        "Adding an example" => "developers/examples.md",
+        "Extending the package" => "developers/extending.md",
+        "Adding a tutorial" => "developers/examples.md",
         "Git" => "developers/git.md",
     ],
 )
-push!(PAGES, "Bibliography" => "bibliography.md")
 
 makedocs(;
     modules = [PathCompleteCertificates],

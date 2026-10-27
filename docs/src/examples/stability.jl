@@ -1,4 +1,4 @@
-# # Stability: a first certificate
+# # Bound the joint spectral radius of my system
 #
 # A switched linear system and a path-complete graph give an upper bound on the
 # joint spectral radius, with the node functions that prove it.
@@ -21,10 +21,10 @@ problem = PCC.StabilityProblem(PCC.switched_system(A))
 
 # ## One solve at a given rate
 #
-# [`certify`](@ref) asks whether the system contracts at a given rate on this
-# graph, in this template. It returns a certificate in both cases, and
-# [`is_feasible`](@ref) says whether the problem was feasible: here at `0.6`
-# and not at `0.4`, which is below the spectral radius.
+# Given a `rate`, [`certify`](@ref) asks whether the system contracts at that
+# rate on this graph, in this template. It returns a certificate in both
+# cases, and [`is_feasible`](@ref) says whether the problem was feasible: here
+# at `0.6` and not at `0.4`, which is below the spectral radius.
 
 at_six_tenths =
     PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER, rate = 0.6)
@@ -35,9 +35,9 @@ PCC.is_feasible(at_six_tenths), PCC.is_feasible(at_four_tenths)
 
 # ## The best rate
 #
-# [`certify`](@ref) bisects on the rate, one feasibility problem per step,
-# and returns the certificate at the tightest rate this template can certify
-# on this graph.
+# Without a `rate`, [`certify`](@ref) bisects on the rate, one feasibility
+# problem per step, and returns the certificate at the tightest rate this
+# template can certify on this graph.
 
 result =
     PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = OPTIMIZER, rtol = 1e-2)
@@ -63,5 +63,4 @@ result(x)
 #     An infeasible result means no certificate was found in this template on
 #     this graph, not that the system is unstable. See
 #     [What works with what](@ref) for the templates available, and
-#     [Templates and graphs: the two axes](@ref) for the effect of the
-#     template and the graph on the bound.
+#     [Choosing a template](@ref) and [Choosing a graph](@ref) to try others.

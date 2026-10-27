@@ -1,4 +1,4 @@
-# # Safety: a barrier certificate
+# # Prove my system safe
 #
 # The path-complete barrier functions of [anand2024barrier](@cite): one
 # function per node, negative on the initial set, positive on the unsafe set,

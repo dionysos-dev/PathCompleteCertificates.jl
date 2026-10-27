@@ -1,13 +1,14 @@
-# Adding an example
+# Adding a tutorial
 
-An example is a Julia file in `docs/src/examples/`, rendered into the manual by
-[Literate.jl](https://github.com/fredrikekre/Literate.jl) and executed by the
-docs build, so a broken example fails the build.
+A tutorial is a Julia file in `docs/src/examples/`, rendered into the
+Tutorials section by [Literate.jl](https://github.com/fredrikekre/Literate.jl)
+and executed by the docs build, so a broken tutorial fails the build. Each
+tutorial solves one problem from start to end.
 
 ## The shape of a file
 
 ```julia
-# # Title of the example
+# # Title of the tutorial
 #
 # A paragraph saying what this shows and why someone would read it.
 
@@ -35,7 +36,7 @@ PCC.certify(PCC.QuadraticTemplate(), PCC.de_bruijn(1, 1), problem; optimizer = C
 ## Wiring it in
 
 Add the file's basename to `ORDER` in `docs/make.jl` to place it in the
-reading order. An example missing from `ORDER` is appended at the end with a
+reading order. A tutorial missing from `ORDER` is appended at the end with a
 notice.
 
 ## Running it
@@ -45,6 +46,6 @@ julia --project=docs docs/src/examples/stability.jl
 ```
 
 The docs environment carries the solver and Plots; the package and its tests
-depend on neither. The examples use Clarabel, and a setting a solver needs is
-set in the example: `optimal_control.jl` disables Clarabel's chordal
+depend on neither. The tutorials use Clarabel, and a setting a solver needs is
+set in the tutorial: `optimal_control.jl` disables Clarabel's chordal
 decomposition, which fails on its model.

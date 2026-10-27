@@ -1,4 +1,4 @@
-# # Refinement: splitting nodes at tight edges
+# # Improve my bound
 #
 # [`refine`](@ref) starts from a small graph and enlarges it: after each solve
 # it reads which edge inequalities are tight and splits the node with the most

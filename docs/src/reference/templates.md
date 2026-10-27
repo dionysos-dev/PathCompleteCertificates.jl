@@ -4,8 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # Template reference
 
-Stability takes SetProg families directly. See [Templates](@ref) for their
-parameters and [What works with what](@ref) for support by problem.
+Stability takes SetProg families directly. See [Choosing a template](@ref)
+for their parameters and [What works with what](@ref) for support by problem.
 
 ## SetProg families
 

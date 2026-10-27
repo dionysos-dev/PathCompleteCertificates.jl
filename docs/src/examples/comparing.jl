@@ -1,4 +1,4 @@
-# # Comparing graphs: five graphs, three templates
+# # Compare two graphs
 #
 # Two path-complete graphs and one template: is a certificate on the first
 # guaranteed to give one on the second, whatever the system? That is the
@@ -257,6 +257,6 @@ figure
 
 # No lifted graph was built above: a relation decides the min and max lifts
 # and a linear program the sum lift, in polynomial time, while the lifted
-# graphs have exponential size. [Graph comparison via lifts](@ref) explains
-# the method; [Refinement: splitting nodes at tight edges](@ref) constructs a
-# better graph instead of ordering two given ones.
+# graphs have exponential size. [Comparing graphs](@ref) explains the method;
+# [Improve my bound](@ref) constructs a better graph instead of ordering two
+# given ones.
