@@ -144,6 +144,9 @@ makedocs(;
     format = Documenter.HTML(;
         canonical = "https://dionysos-dev.github.io/PathCompleteCertificates.jl",
         prettyurls = get(ENV, "CI", "false") == "true",
+        # Every section of the sidebar opens and closes, as in JuMP's docs;
+        # the section of the current page is open.
+        collapselevel = 1,
     ),
     pages = PAGES,
     plugins = [
