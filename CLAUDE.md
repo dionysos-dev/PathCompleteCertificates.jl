@@ -175,10 +175,11 @@ The documentation is part of the package; write it with the same care as the cod
 - **`certify` is the single entry point.** For stability without a `rate`, it bisects to
   `rtol = 1e-6`, the default of `refine`, and keeps the certificate of its last feasible solve:
   solving again at the final rate, within solver tolerance of the boundary, may fail.
-- **Slacks are absolute.** `tight_edges` reads them with `atol = 1e-4`, at least ten times
-  `rtol`, but their scale follows the normalization of the node functions, which bounds `P`
-  from below only. Large `P` hide tight edges: on the running example, `refine` reaches the
-  joint spectral radius and stops `EXHAUSTED` instead of `OPTIMAL`. Open.
+- **Stability slacks are relative.** The normalization bounds the node functions from below
+  only, so their scale is arbitrary; `edge_slacks` for stability divides by `rate^p` times
+  the largest node value on the unit vectors. A tight edge then has a slack of the order of
+  `rtol`, and `atol = 1e-4`, at least ten times it, sees it. Absolute slacks once hid the tight
+  edges of the running example, and `refine` stopped `EXHAUSTED` instead of `OPTIMAL`.
 - **A fitted node function is a SetProg set, not a callable.** Evaluate it with
   `node_value(problem, V, x)`; `certificate(x)` evaluates the common function.
 - **Clarabel's chordal decomposition crashes on optimal-control programs.** Pass

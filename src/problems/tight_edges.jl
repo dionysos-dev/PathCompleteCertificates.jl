@@ -8,8 +8,9 @@ const _TIGHT_ATOL = 1e-4
     tight_edges(certificate; atol = 1e-4)
 
 The edges of the certificate's graph whose slack is at most `atol`, in
-`edges(graph(certificate))` order. `atol` is absolute, so its meaning depends on
-the scale of the certificate.
+`edges(graph(certificate))` order. For stability, slacks are relative to the
+scale of the node functions, so `atol` compares with the `rtol` of
+[`certify`](@ref): read them with `atol` at least ten times `rtol`.
 """
 function tight_edges(certificate::AbstractCertificate; atol::Real = _TIGHT_ATOL)
     slacks = edge_slacks(certificate)

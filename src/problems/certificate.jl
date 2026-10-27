@@ -148,7 +148,9 @@ optimality_gap(::AbstractCertificate; kwargs...) = Inf
     edge_slacks(certificate)
 
 The slack of every edge inequality, in `edges(graph(certificate))` order; zero
-means tight. Throws on an infeasible certificate.
+means tight. For stability, slacks are relative to the scale of the node
+functions, so they do not depend on its normalization, and a tight edge has a
+slack of the order of `rtol`. Throws on an infeasible certificate.
 """
 function edge_slacks end
 

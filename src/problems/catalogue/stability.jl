@@ -310,11 +310,26 @@ end
 
 # --- Reading a solved certificate: where it is tight --------------------------
 
-edge_slacks(certificate::StabilityCertificate) = _edge_slacks(
-    certificate;
-    rate = certificate.rate,
-    degree = homogeneity_degree(template(certificate)),
-)
+# Relative to the scale of the node functions, which the normalization fixes
+# from below only: a certificate scaled by any constant is the same certificate,
+# and its relative slacks are the same, of the order of `rtol` when tight.
+function edge_slacks(certificate::StabilityCertificate)
+    degree = homogeneity_degree(template(certificate))
+    slacks = _edge_slacks(certificate; rate = certificate.rate, degree)
+    scale = iszero(certificate.rate) ? one(certificate.rate) : certificate.rate^degree
+    return slacks ./ (scale * _function_scale(certificate))
+end
+
+# The largest value of a node function on the unit vectors.
+function _function_scale(certificate::StabilityCertificate)
+    problem_ = problem(certificate)
+    n = _state_dimension(problem_.system)
+    units = [[i == j ? 1.0 : 0.0 for j in 1:n] for i in 1:n]
+
+    return maximum(
+        node_value(problem_, V, unit) for V in functions(certificate) for unit in units
+    )
+end
 
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool

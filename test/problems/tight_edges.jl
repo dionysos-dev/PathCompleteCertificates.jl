@@ -74,13 +74,19 @@ end
     V = PCC.functions(certificate)
     scale = 0.8^PCC.homogeneity_degree(PCC.QuadraticTemplate())
 
+    # Stability slacks are relative to the scale of the node functions: the
+    # largest value of a node function on the unit vectors, times `scale`.
+    units = ([1.0, 0.0], [0.0, 1.0])
+    reference = scale * maximum(PCC.node_value(PROBLEM, v, e) for v in V for e in units)
+
     for (edge, slack) in zip(PCC.edges(GRAPH), PCC.edge_slacks(certificate))
         src = V[PCC.source(edge)]
         dst = V[PCC.dest(edge)]
         map = A[PCC.label(GRAPH, edge)]
 
         residual = scale * src.Q - transpose(map) * dst.Q * map
-        @test slack ≈ minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
+        @test slack ≈
+              minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual))) / reference
 
         # Slack ≥ 0 is exactly the edge inequality holding, sampled.
         for x in ([1.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, -2.0])

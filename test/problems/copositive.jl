@@ -61,9 +61,11 @@ end
         for map in A, x in ([1.0, 0.0], [0.0, 1.0], [0.5, 2.0])
             @test rate * certificate(x) - certificate(map * x) >= -1e-7
         end
+        # Relative to the largest value of the node function on the unit vectors.
         for (edge, slack) in zip(PCC.edges(GRAPH), PCC.edge_slacks(certificate))
             map = A[only(PCC.letters(PCC.label(GRAPH, edge)))]
-            @test slack ≈ minimum(rate * V.set.a - map' * V.set.a)
+            @test slack ≈
+                  minimum(rate * V.set.a - map' * V.set.a) / (rate * maximum(V.set.a))
         end
         @test PCC.decrease_slack(FAMILY, V, V, [-0.5 0.0; 0.0 0.25]) == -Inf
     end

@@ -84,6 +84,10 @@ one with the lowest rate. A step costs one solve per candidate.
 PCC.status(trace)
 ```
 
+On the running example, the run stops with `OPTIMAL`: on its three nodes, every
+node has one tight outgoing edge, so the rate ``0.869`` is the joint spectral
+radius of the system, reached and proved in two steps.
+
 ## The trace
 
 The [`RefinementTrace`](@ref) keeps every step: [`certificates`](@ref),
