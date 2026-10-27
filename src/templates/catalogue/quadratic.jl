@@ -1,12 +1,15 @@
 """
     QuadraticTemplate()
 
-Return `SetProg.Ellipsoid(symmetric = true)`, the family of homogeneous
-quadratic gauges. Stability returns fitted SetProg ellipsoids; evaluate them
-with `node_value(problem, V, x)` and access their matrices as `V.Q`.
-Use the `conditioning_bound` keyword of `certify` to cap the
-coefficient matrix. Safety and optimal control return a
-[`QuadraticFunction`](@ref) per node.
+The quadratic forms ``V(x) = x^\\top P x``, as the SetProg family
+`Ellipsoid(symmetric = true)`. It applies to every system and every problem,
+and gives semidefinite programs.
+
+For stability, a fitted node function `V` is a SetProg ellipsoid: evaluate it
+with [`node_value`](@ref), and read ``P`` as `V.Q`. The `conditioning_bound`
+keyword of [`certify`](@ref) bounds ``P`` between ``I`` and
+`conditioning_bound` times ``I``. Safety and optimal control return a
+[`QuadraticFunction`](@ref) per node. See [Choosing a template](@ref).
 """
 function QuadraticTemplate()
     return SetProg.Ellipsoid(; symmetric = true)
@@ -27,8 +30,10 @@ end
 """
     QuadraticFunction(P)
 
-A fitted quadratic `V(x) = x'Px`, used by safety and optimal control.
-`Matrix(V)` is `P`. Stability returns SetProg ellipsoids instead.
+The quadratic form ``V(z) = z^\\top P z``, a fitted node function of safety,
+with ``z = [x; 1]``, and of optimal control, with ``z = x``. `Matrix(V)` is
+``P``. Stability returns SetProg ellipsoids instead: see
+[`QuadraticTemplate`](@ref).
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M
