@@ -6,8 +6,8 @@
     AbstractCertificate
 
 The result of [`certify`](@ref): node functions on a graph, and what the
-problem certifies. A certificate `c` is callable: `c(x)` returns
-the value of its [`common`](@ref) function at `x`.
+problem certifies. A certificate `c` is callable: `c(x)` returns the value of
+its [`common`](@ref) function at `x`.
 """
 abstract type AbstractCertificate end
 

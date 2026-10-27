@@ -1,7 +1,7 @@
 """
     AbstractProblem
 
-A property to certify, defined by the inequality imposed along each edge.
+A property to certify, defined by its edge inequality.
 """
 abstract type AbstractProblem end
 
@@ -14,8 +14,8 @@ _refinable(::AbstractProblem) = false
     node_value(problem, V, x)
 
 The value of the node function `V` at the state `x`: `V(x)` by default. A
-problem whose node functions take other coordinates than `x` defines its own
-method, e.g. `V([x; 1])` for [`SafetyProblem`](@ref), in homogeneous
+problem whose node functions take coordinates other than `x` defines its own
+method, such as `V([x; 1])` for [`SafetyProblem`](@ref), in homogeneous
 coordinates.
 """
 node_value(::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
@@ -31,7 +31,8 @@ function optimization_model end
     certify(template, graph, problem; optimizer, kwargs...)
 
 Build and solve the model, and return the best [`AbstractCertificate`](@ref)
-on `graph`: the smallest rate for stability, the largest margin for safety.
+on `graph`: the smallest rate for stability, the largest margin for safety,
+and a policy with a small cost bound for optimal control.
 Check [`is_feasible`](@ref) before reading it. [`refine`](@ref) calls it on
 every graph it visits.
 """

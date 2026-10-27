@@ -1,11 +1,12 @@
 """
     QuadraticTemplate()
 
-Return `SetProg.Ellipsoid(symmetric = true)`, the native family of homogeneous
+Return `SetProg.Ellipsoid(symmetric = true)`, the family of homogeneous
 quadratic gauges. Stability returns fitted SetProg ellipsoids; evaluate them
 with `node_value(problem, V, x)` and access their matrices as `V.Q`.
 Use the `conditioning_bound` keyword of `certify` to cap the
-coefficient matrix. Safety and optimal control retain their matrix models.
+coefficient matrix. Safety and optimal control return a
+[`QuadraticFunction`](@ref) per node.
 """
 function QuadraticTemplate()
     return SetProg.Ellipsoid(; symmetric = true)
@@ -27,7 +28,7 @@ end
     QuadraticFunction(P)
 
 A fitted quadratic `V(x) = x'Px`, used by safety and optimal control.
-`Matrix(V)` is `P`. Stability returns native SetProg ellipsoids instead.
+`Matrix(V)` is `P`. Stability returns SetProg ellipsoids instead.
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M

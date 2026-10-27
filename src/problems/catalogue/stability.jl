@@ -47,12 +47,13 @@ function _edge_decrease(
 end
 
 """
-    optimization_model(family, graph, problem; optimizer, rate = 1,
-                       conditioning_bound = Inf)
+    optimization_model(template, graph, problem::StabilityProblem; optimizer,
+                       rate = 1, check_path_complete = true, conditioning_bound = Inf)
 
-A SetProg model, whose set variables are expanded when optimized, for
-the feasibility problem `V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge
-`(a, b, w)`, with `p` the template's degree and `|w|` the length of the word.
+Build, without solving, the SetProg model of the feasibility problem
+`V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge `(a, b, w)`, with `p` the
+template's degree and `|w|` the length of the word; its set variables are
+expanded when it is optimized.
 """
 function optimization_model(
     template::_SetFamily,

@@ -2,7 +2,7 @@
     expanded_form(graph)
 
 The graph with one mode per edge obtained by breaking every word edge
-`(s, d, i₁…iₖ)` into a chain `s → m₁ → ⋯ → mₖ₋₁ → d` through `k − 1` new
+`(a, b, i₁…iₖ)` into a chain `a → m₁ → ⋯ → mₖ₋₁ → b` through `k − 1` new
 nodes. Nodes `1:n_nodes(graph)` keep their number; the new ones follow.
 """
 expanded_form(graph::_LetterGraph) = graph
