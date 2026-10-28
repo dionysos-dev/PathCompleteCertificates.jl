@@ -8,14 +8,15 @@ and gives semidefinite programs.
 For stability, a fitted node function `V` is a SetProg ellipsoid: evaluate it
 with [`node_value`](@ref), and read ``P`` as `V.Q`. The `conditioning_bound`
 keyword of [`certify`](@ref) bounds ``P`` between ``I`` and
-`conditioning_bound` times ``I``. Safety and optimal control return a
-[`QuadraticFunction`](@ref) per node. See [Choosing a template](@ref).
+`conditioning_bound` times ``I``. Safety returns affine SetProg quadratics;
+optimal control returns a [`QuadraticFunction`](@ref) per node.
+See [Choosing a template](@ref).
 """
 function QuadraticTemplate()
     return SetProg.Ellipsoid(; symmetric = true)
 end
 
-# Private matrix builder for the deferred safety and optimal-control models.
+# Private matrix builder for the deferred optimal-control model.
 struct _QuadraticTemplate end
 
 function _legacy_quadratic(template, problem)
@@ -30,10 +31,9 @@ end
 """
     QuadraticFunction(P)
 
-The quadratic form ``V(z) = z^\\top P z``, a fitted node function of safety,
-with ``z = [x; 1]``, and of optimal control, with ``z = x``. `Matrix(V)` is
-``P``. Stability returns SetProg ellipsoids instead: see
-[`QuadraticTemplate`](@ref).
+The quadratic form ``V(x) = x^\\top P x``, a fitted node function of optimal
+control. `Matrix(V)` is ``P``. Stability and safety return native SetProg sets
+instead: see [`QuadraticTemplate`](@ref).
 """
 struct QuadraticFunction{M <: AbstractMatrix}
     P::M
@@ -56,21 +56,6 @@ function add_function_variables!(
         Symmetric,
         base_name = "P_$(node)",
     )
-end
-
-solution_value(::_QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
-
-function add_decrease!(
-    model::JuMP.Model,
-    ::_QuadraticTemplate,
-    P_src::LinearAlgebra.Symmetric,
-    P_dst::LinearAlgebra.Symmetric,
-    map::AbstractMatrix;
-    scale = 1,
-)
-    JuMP.@constraint(model, scale * P_src - transpose(map) * P_dst * map in JuMP.PSDCone())
-
-    return nothing
 end
 
 function decrease_slack(

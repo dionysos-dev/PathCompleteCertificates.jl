@@ -139,3 +139,8 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 # De Bruijn graph of order 2 certifies the same margin.
 
 PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
+
+# Polynomial barriers are also available: pass
+# `SetProg.PolySet(degree = 0:4, dimension = 2)` after `using SumOfSquares`.
+# Safety uses affine polynomials without an SOS constraint on the barrier
+# itself; the separation certificates use SOS multipliers.

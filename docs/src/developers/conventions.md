@@ -19,7 +19,7 @@ independent axes, and neither names the other:
 | Problem | Edge inequality on ``(a, b, i)`` |
 | :-- | :-- |
 | Stability | ``V_b(A_i x) \le \gamma^{p}\, V_a(x)`` |
-| Safety | ``V_b(A_i x) \le V_a(x)``, in the coordinates ``[x; 1]`` |
+| Safety | ``V_b(A_i x) \le V_a(x)`` |
 | Optimal control | ``x^\top Q x + u^\top R u + V_b(A_i x + B_i u) \le V_a(x)``, with ``u = K_a x`` |
 
 Stability and safety write their edge inequality once, in a private
@@ -66,9 +66,10 @@ The package adds what a certificate needs:
 `add_decrease!` is the load-bearing primitive: stability's whole edge
 inequality is one call with `scale = γᵖ`. A fitted node function is a SetProg
 set, evaluated with `node_value(problem, V, x)`, so that each problem chooses
-its coordinates. Stability uses the families directly; safety and optimal
-control still build their programs from quadratic matrices, behind a private
-builder, and accept the quadratic template only.
+its coordinates. Stability and safety use SetProg families directly. Safety
+models initial-set inclusion and unsafe-set disjointness without positivity
+constraints on the barriers. Optimal control retains its private quadratic
+matrix builder and accepts the quadratic template only.
 
 ## Lifts and refinement algorithms
 
