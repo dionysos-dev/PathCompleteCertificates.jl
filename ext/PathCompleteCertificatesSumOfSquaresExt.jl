@@ -24,8 +24,11 @@ end
 function PCC._safety_reference(f::SetProg.PolySet, sign)
     x = f.variables
     MP = SumOfSquares.MP
-    d = div(f.degree, 2)
+    d = div(PCC._safety_degree(f), 2)
     monos = MP.monomials(x, 0:d)
+    # Multinomial weights give sign * w(x), where
+    # w(x) = (1 + x₁² + ⋯ + xₙ²)^d. For n = 2 and d = 2,
+    # w(x) = 1 + 2x₁² + 2x₂² + x₁⁴ + 2x₁²x₂² + x₂⁴.
     coefficients = [
         sign * factorial(d) /
         (factorial(d - MP.degree(m)) * prod(factorial, MP.exponents(m))) for m in monos

@@ -69,13 +69,13 @@ function _safety_family(f::SetProg.PolySet, n, variables)
         symmetric = false,
         psd = false,
         dimension = n,
-        degree = f.degree,
+        degree = 0:maximum(f.degree),
         variables,
         basis = f.basis,
     )
 end
 _safety_degree(::SetProg.Ellipsoid) = 2
-_safety_degree(f::SetProg.PolySet) = f.degree
+_safety_degree(f::SetProg.PolySet) = maximum(f.degree)
 
 function _safety_families(template, n, count)
     families = template isa AbstractVector ? template : fill(template, count)

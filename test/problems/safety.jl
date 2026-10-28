@@ -161,8 +161,15 @@ end
 @testset "polynomial safety" begin
     DynamicPolynomials.@polyvar x[1:2]
     problem = PCC.SafetyProblem(PCC.switched_system([[0.5 0.0; 0.0 0.5]]), S0, SU)
-    for degree in (2, 4)
-        family = SetProg.PolySet(; degree, variables = x)
+    families = (
+        SetProg.PolySet(; degree = 2, variables = x),
+        SetProg.PolySet(; degree = 0:2, variables = x),
+        SetProg.PolySet(; degree = 4, variables = x),
+        SetProg.PolySet(; degree = 0:4, variables = x),
+        PCC.SumOfSquaresTemplate(2, x),
+    )
+    for family in families
+        degree = maximum(family.degree)
         res = PCC.certify(
             family,
             PCC.de_bruijn(1, 1),
@@ -173,6 +180,7 @@ end
         @test res.margin > 1e-6
         V = only(PCC.functions(res))
         @test V isa SetProg.Sets.PolySet
+        @test V.degree == 0:degree
         @test PCC.node_value(problem, V, [0.0, 0.0]) < 0
         for angle in range(0, 2pi; length = 9)
             direction = [cos(angle), sin(angle)]
