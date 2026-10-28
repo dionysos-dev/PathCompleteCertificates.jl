@@ -3,6 +3,7 @@ module TestSafety
 using Test
 import PathCompleteCertificates as PCC
 import Clarabel
+import HiGHS
 import LinearAlgebra
 import JuMP
 import SetProg
@@ -188,6 +189,73 @@ end
             @test PCC.node_value(problem, V, 6 * direction) > 0
         end
     end
+end
+
+@testset "Polyhedral safety certificates" begin
+    system = PCC.switched_system([[0.5 0.0; 0.0 0.5]])
+    graph = PCC.de_bruijn(1, 1)
+    problem = PCC.SafetyProblem(system, S0, SU)
+    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
+    model = PCC.optimization_model(template, graph, problem; optimizer = Clarabel.Optimizer)
+    JuMP.optimize!(model)
+    @test JuMP.is_solved_and_feasible(model)
+    @test JuMP.value(model[:safety_eps]) ≈ (6 - 4sqrt(2)) / (1 + sqrt(2)) atol = 1e-6
+    @test SetProg.data(model).space == SetProg.DualSpace
+    @test all(
+        type -> !(type[2] <: JuMP.MOI.PositiveSemidefiniteConeTriangle),
+        JuMP.list_of_constraint_types(model),
+    )
+    @test length(JuMP.dual(model[:safety_separation][1])) == 4
+    @test length(JuMP.dual(model[:safety_separation][2])) == 4
+    res = PCC.certify(template, graph, problem; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(res)
+    @test all(isnothing, res.initial_multipliers)
+    @test all(isnothing, res.unsafe_multipliers)
+    @test all(>=(-1e-6), PCC.edge_slacks(res))
+    V = only(PCC.functions(res))
+    @test PCC.node_value(problem, V, [0.0, 0.0]) == -1
+    for angle in range(0, 2pi; length = 17)
+        direction = [cos(angle), sin(angle)]
+        @test PCC.node_value(problem, V, 4 * direction) < 0
+        @test PCC.node_value(problem, V, 6 * direction) > 0
+    end
+    # A four-face box cannot fit in this smaller safe disk. An eight-face
+    # polytope can, using exactly the same containment and invariance model.
+    tighter = PCC.SafetyProblem(system, S0, [1.0 0 0; 0 1 0; 0 0 -25])
+    @test !PCC.is_feasible(
+        PCC.certify(template, graph, tighter; optimizer = Clarabel.Optimizer),
+    )
+    lib = SetProg.Polyhedra.DefaultLibrary{Float64}(
+        JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
+    )
+    vertices = [
+        [2.0, 1],
+        [1.0, 2],
+        [-1.0, 2],
+        [-2.0, 1],
+        [-2.0, -1],
+        [-1.0, -2],
+        [1.0, -2],
+        [2.0, -1],
+    ]
+    partition = SetProg.polyhedron(SetProg.vrep(vertices), lib)
+    conic = PCC.ConicPolyhedralTemplate([partition])
+    polygon = PCC.certify(conic, graph, tighter; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(polygon)
+    @test polygon.margin > 1e-6
+    @test all(>=(-1e-6), PCC.edge_slacks(polygon))
+    overlap = PCC.SafetyProblem(system, S0, [1.0 0 0; 0 1 0; 0 0 -1])
+    @test !PCC.is_feasible(
+        PCC.certify(conic, graph, overlap; optimizer = Clarabel.Optimizer),
+    )
+    shifted =
+        PCC.SafetyProblem(system, [-1.0 0 1; 0 -1 0; 1 0 0], [1.0 0 -1; 0 1 0; -1 0 -35])
+    translated = PCC.certify(template, graph, shifted; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(translated)
+    @test translated.margin ≈ sqrt(126) - 10 atol = 1e-6
+    V = only(PCC.functions(translated))
+    @test PCC.node_value(shifted, V, [1.0, 0.0]) < 0
+    @test PCC.node_value(shifted, V, [-5.0, 0.0]) > 0
 end
 
 end

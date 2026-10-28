@@ -13,8 +13,8 @@ below is a place where research or a contribution can close it.
 ## Templates and problems
 
 Stability accepts every template, including SetProg families passed directly.
-Safety accepts quadratic and polynomial families; optimal control uses the
-quadratic template.
+Safety accepts quadratic, polynomial, and polyhedral families; optimal
+control uses the quadratic template.
 
 |                                           | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
 | :---------------------------------------- | :-: | :-: | :-: |
@@ -22,11 +22,15 @@ quadratic template.
 | [`SumOfSquaresTemplate`](@ref)            | ✓ | ✓ | |
 | [`LinearCopositiveTemplate`](@ref)        | ✓ ¹ | | |
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
-| [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | | |
-| [`ConicPolyhedralTemplate`](@ref)         | ✓ | | |
+| [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | ✓ ² | |
+| [`ConicPolyhedralTemplate`](@ref)         | ✓ | ✓ ² | |
 | piecewise SetProg ellipsoid or polytope   | ✓ | | |
 
 ¹ Positive systems only: matrices with nonnegative entries.
+
+² Polyhedral safety currently supports a bounded ellipsoidal initial region
+and an unsafe region equal to the exterior of a bounded ellipsoid. It uses
+linear and second-order cone constraints.
 
 Unsupported combinations report an error before anything is solved. Two more conditions on the graph:
 
@@ -65,8 +69,8 @@ template, problem, lift or refinement algorithm goes.
 
 **Not implemented yet:**
 
-- **safety with polyhedral or piecewise templates:** separation certificates
-  currently support quadratic and polynomial functions;
+- **safety with copositive or piecewise-quadratic templates**, and polyhedral
+  separation from a bounded unsafe obstacle;
 - **optimal control on graphs that are not complete:** the convex program
   covers complete graphs only;
 - **refinement with sums of squares and piecewise ellipsoids:** their edge

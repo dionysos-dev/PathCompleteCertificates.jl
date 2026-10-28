@@ -35,6 +35,11 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
+      - name: Use SetProg main
+        shell: julia --project=. {0}
+        run: |
+          using Pkg
+          Pkg.add(PackageSpec(url="https://github.com/blegat/SetProg.jl", rev="main"))
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
