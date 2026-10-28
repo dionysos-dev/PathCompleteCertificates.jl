@@ -45,6 +45,7 @@ jobs:
         run: |
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
+          Pkg.add(PackageSpec(url="https://github.com/blegat/SetProg.jl", rev="main"))
           Pkg.instantiate()
       - name: Build and deploy
         env:

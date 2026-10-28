@@ -16,18 +16,6 @@ function QuadraticTemplate()
     return SetProg.Ellipsoid(; symmetric = true)
 end
 
-# Private matrix builder for the deferred optimal-control model.
-struct _QuadraticTemplate end
-
-function _legacy_quadratic(template, problem)
-    template == QuadraticTemplate() || throw(
-        ArgumentError(
-            "$(nameof(typeof(problem))) currently supports only QuadraticTemplate()",
-        ),
-    )
-    return _QuadraticTemplate()
-end
-
 """
     QuadraticFunction(P)
 
@@ -42,21 +30,6 @@ end
 (V::QuadraticFunction)(x::AbstractVector{<:Real}) = LinearAlgebra.dot(x, V.P * x)
 
 Base.Matrix(V::QuadraticFunction) = Matrix(V.P)
-
-function add_function_variables!(
-    model::JuMP.Model,
-    ::_QuadraticTemplate,
-    dimension::Integer,
-    node::Integer,
-)
-    @assert dimension > 0
-    return JuMP.@variable(
-        model,
-        [1:dimension, 1:dimension],
-        Symmetric,
-        base_name = "P_$(node)",
-    )
-end
 
 function decrease_slack(
     ::SetProg.Ellipsoid,
