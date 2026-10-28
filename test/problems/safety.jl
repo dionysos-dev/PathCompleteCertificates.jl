@@ -6,7 +6,6 @@ import Clarabel
 import LinearAlgebra
 import JuMP
 import SetProg
-import DynamicPolynomials
 import SumOfSquares
 
 # Anand, Jungers, Zamani & Allgöwer, CDC 2024: two modes on the plane, initial
@@ -159,17 +158,16 @@ end
 end
 
 @testset "polynomial safety" begin
-    DynamicPolynomials.@polyvar x[1:2]
     problem = PCC.SafetyProblem(PCC.switched_system([[0.5 0.0; 0.0 0.5]]), S0, SU)
     families = (
-        SetProg.PolySet(; degree = 2, variables = x),
-        SetProg.PolySet(; degree = 0:2, variables = x),
-        SetProg.PolySet(; degree = 4, variables = x),
-        SetProg.PolySet(; degree = 0:4, variables = x),
-        PCC.SumOfSquaresTemplate(2, x),
+        SetProg.PolySet(; degree = 2),
+        SetProg.PolySet(; degree = 0:2),
+        SetProg.PolySet(; degree = 4),
+        SetProg.PolySet(; degree = 0:4),
+        PCC.SumOfSquaresTemplate(2),
     )
     for family in families
-        degree = maximum(family.degree)
+        degree = maximum(PCC.homogeneity_degree(family))
         res = PCC.certify(
             family,
             PCC.de_bruijn(1, 1),

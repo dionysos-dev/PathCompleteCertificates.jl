@@ -74,6 +74,9 @@ function _safety_family(f::SetProg.PolySet, n, variables)
         basis = f.basis,
     )
 end
+_safety_family(f::_NormalizedFamily{<:SetProg.PolySet}, n, variables) =
+    _safety_family(f.set, n, variables)
+
 function _safety_degree(::SetProg.Ellipsoid)
     return 2
 end
@@ -82,7 +85,7 @@ _safety_degree(f::SetProg.PolySet) = maximum(f.degree)
 function _safety_families(template, n, count)
     families = template isa AbstractVector ? template : fill(template, count)
     length(families) == count || throw(ArgumentError("one set family is required per node"))
-    polys = filter(f -> f isa SetProg.PolySet, families)
+    polys = filter(!isnothing, _polynomial_family.(families))
     x = nothing
     if !isempty(polys)
         explicit = [f.variables for f in polys if f.variables !== nothing]
@@ -102,6 +105,12 @@ _safety_region(M) = SetProg.Sets.ShiftedEllipsoid(
 _safety_reference(f::SetProg.Ellipsoid, sign) = _safety_region(
     sign * Matrix{Float64}(LinearAlgebra.I, f.dimension + 1, f.dimension + 1),
 )
+
+function _safety_reference(f::SetProg.PolySet, sign)
+    # This is the same multinomial weight used in the separation margin.
+    w = (1 + sum(f.variables .^ 2))^div(_safety_degree(f), 2)
+    return SetProg.Sets.PolySet(f.degree, 1 + sign * w)
+end
 
 """
     optimization_model(template, graph, problem; optimizer, check_path_complete = true)

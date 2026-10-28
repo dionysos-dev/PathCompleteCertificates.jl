@@ -77,7 +77,7 @@ dual(families::AbstractVector{<:SetProg.AbstractVariable}, set) = _dual_value(se
 function _prepared_families(family::_SetFamily, dimension, count)
     families = family isa AbstractVector ? family : fill(family, count)
     length(families) == count || throw(ArgumentError("one set family is required per node"))
-    polynomials = filter(f -> f isa SetProg.PolySet, families)
+    polynomials = filter(!isnothing, _polynomial_family.(families))
     x = nothing
     if !isempty(polynomials)
         explicit = [f.variables for f in polynomials if f.variables !== nothing]

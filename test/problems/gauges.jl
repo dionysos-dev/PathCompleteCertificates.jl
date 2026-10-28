@@ -1,6 +1,6 @@
 module TestGauges
 using Test, LinearAlgebra, SetProg
-using SumOfSquares, DynamicPolynomials
+using SumOfSquares
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS
 
@@ -21,7 +21,7 @@ struct UnknownSetFamily <: SetProg.AbstractVariable end
     domain = SetProg.Domain(ellipsoid, MOI.Nonnegatives)
     @test PCC.is_applicable(domain, invertible)
 
-    @polyvar x[1:2]
+    x = SetProg.new_polyvars(2)
     polynomial = PolySet(symmetric = true, degree = 4, variables = x)
     polytope = Polytope(symmetric = true, dimension = 2)
     for (family, degree) in ((ellipsoid, 2), (polynomial, 4), (polytope, 1))
@@ -48,7 +48,7 @@ end
         only(PCC.ParallelFacesPolyhedralTemplate(1, 2)),
         only(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])),
     )
-    @polyvar x[1:2]
+    x = SetProg.new_polyvars(2)
     families = (
         families...,
         PolySet(symmetric = true, degree = 4, variables = x),
@@ -95,7 +95,7 @@ end
 end
 
 @testset "Normalization uses a native PSD or SOS remainder" begin
-    @polyvar x[1:2]
+    x = SetProg.new_polyvars(2)
     for (family, dimension) in (
         (Ellipsoid(symmetric = true), 3),
         (PolySet(symmetric = true, degree = 4, variables = x), 2),
@@ -130,23 +130,22 @@ end
     end
 end
 
-@testset "SumOfSquaresTemplate is a native PolySet shortcut" begin
-    @polyvar x[1:2]
+@testset "SumOfSquaresTemplate infers its polynomial coordinates" begin
     for degree in 1:3, min_scale in (0.25, 1.0, 2.0)
-        family = PCC.SumOfSquaresTemplate(degree, x; min_scale)
+        family = PCC.SumOfSquaresTemplate(degree; min_scale)
+        family = PCC._with_dimension(family, 2)
         @test family isa SetProg.PolySet
         @test family.degree == 2degree
-        @test family.variables == x
+        @test length(family.variables) == 2
         @test PCC.homogeneity_degree(family) == 2degree
         @test PCC._gauge(family.superset, [2.0, 3.0]) ≈ min_scale * 13^degree
     end
-    @test_throws ArgumentError PCC.SumOfSquaresTemplate(0, x)
-    @test_throws ArgumentError PCC.SumOfSquaresTemplate(1, x[1:0])
-    @test_throws ArgumentError PCC.SumOfSquaresTemplate(1, x; min_scale = 0)
+    @test_throws ArgumentError PCC.SumOfSquaresTemplate(0)
+    @test_throws ArgumentError PCC.SumOfSquaresTemplate(1; min_scale = 0)
     problem = PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.25]]))
     graph = PCC.de_bruijn(1, 1)
     for min_scale in (0.25, 2.0)
-        family = PCC.SumOfSquaresTemplate(2, x; min_scale)
+        family = PCC.SumOfSquaresTemplate(2; min_scale)
         model = Model(optimizer_with_attributes(Clarabel.Optimizer, MOI.Silent() => true))
         S = PCC.add_function_variables!(model, family, 2, 1)
         PCC.add_normalization!(model, S.set, S)
@@ -155,7 +154,8 @@ end
         @test isempty(SetProg.data(model).constraints)
         @test num_constraints(model; count_variable_in_set_constraints = true) == 1
         # The custom reference survives dimension filling and normalization.
-        @test SetProg.JuMP.constant.(S.variable.p.Q) ≈ family.superset.p.Q
+        @test JuMP.constant(SetProg.sublevel_eval(S.variable, [2.0, 3.0])) ≈
+              min_scale * 13^2
         certificate =
             PCC.certify(family, graph, problem; optimizer = Clarabel.Optimizer, rate = 0.6)
         @test PCC.is_feasible(certificate)
@@ -187,7 +187,7 @@ end
 end
 
 @testset "Gauge normalization and edge directions" begin
-    @polyvar x[1:2]
+    x = SetProg.new_polyvars(2)
     family = PCC._with_dimension(PolySet(symmetric = true, degree = 6), 2; variables = x)
     @test family.variables == x
     @test PCC._gauge(PCC._unit_set(family), [2.0, 3.0]) ≈ 13^3
