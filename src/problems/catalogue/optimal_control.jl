@@ -50,52 +50,13 @@ struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
     gains::K
 end
 
-# P_src >= Q + K'RK + (A + BK)' P_dst (A + BK), convex only under S = P^-1,
-# Y = K S; written on S, not P, so it is not an `add_decrease!` call.
-function _add_edge_lmi!(
-    model::JuMP.Model,
-    cost,
-    S_src,
-    Y_src,
-    S_dst,
-    dynamics;
-    psd_margin::Real,
-)
-    A, B = dynamics
-    Q, R = cost
-    n = size(A, 1)
-    m = size(B, 2)
-
-    X11 = S_src
-    X12 = S_src * transpose(A) + transpose(B * Y_src)
-    X13 = S_src
-    X14 = transpose(Y_src)
-    X22 = S_dst
-    X23 = zeros(n, n)
-    X24 = zeros(n, m)
-    X33 = inv(Q)
-    X34 = zeros(n, m)
-    X44 = inv(R)
-    margin = psd_margin * Matrix{typeof(psd_margin)}(LinearAlgebra.I, 3n + m, 3n + m)
-
-    JuMP.@constraint(
-        model,
-        [
-            X11 X12 X13 X14;
-            transpose(X12) X22 X23 X24;
-            transpose(X13) transpose(X23) X33 X34;
-            transpose(X14) transpose(X24) transpose(X34) X44
-        ] - margin in JuMP.PSDCone(),
-    )
-
-    return nothing
-end
-
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
 Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`. Only
-complete graphs and `QuadraticTemplate` are supported.
+complete graphs and `QuadraticTemplate` are supported. Bellman inequalities
+use SetProg `PolarLpSum` inclusions with exponent two, producing block PSD
+certificates.
 """
 function optimization_model(
     template::_SetFamily,
@@ -104,7 +65,9 @@ function optimization_model(
     optimizer,
     psd_margin::Real = 1e-4,
 )
-    legacy = _legacy_quadratic(template, problem)
+    template == QuadraticTemplate() || throw(
+        ArgumentError("OptimalControlProblem currently supports only QuadraticTemplate()"),
+    )
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     _check_optimal_control_data(graph, problem)
@@ -119,7 +82,13 @@ function optimization_model(
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
 
-    S = [add_function_variables!(model, legacy, n, i) for i in nodes(graph)]
+    S = [
+        JuMP.@variable(model, [1:n, 1:n], Symmetric, base_name = "P_$i") for
+        i in nodes(graph)
+    ]
+    sets = [SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(matrix)) for matrix in S]
+    state_cost = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(cost[1]))
+    input_cost = SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(cost[2]))
     Y = [JuMP.@variable(model, [1:m, 1:n], base_name = "Y_$i") for i in nodes(graph)]
     t = JuMP.@variable(model, [1:n_nodes(graph)], base_name = "t")
 
@@ -136,13 +105,21 @@ function optimization_model(
         source_index = source(edge)
         destination_index = dest(edge)
         mode = only(letters(label(graph, edge)))
-        _add_edge_lmi!(
+        # Write x = S_src * z and u = Y_src * z, so K = Y_src / S_src.
+        # The source gauge is z'S_src*z. Every term on the right is a
+        # squared gauge, composed with the corresponding linear map.
+        next_value = SetProg.Sets.LinearPreImage(
+            SetProg.polar(sets[destination_index]),
+            A[mode] * S[source_index] + B[mode] * Y[source_index],
+        )
+        stage_cost = SetProg.PolarLpSum(
+            SetProg.Sets.LinearPreImage(state_cost, S[source_index]),
+            SetProg.Sets.LinearPreImage(input_cost, Y[source_index]),
+            2,
+        )
+        JuMP.@constraint(
             model,
-            cost,
-            S[source_index],
-            Y[source_index],
-            S[destination_index],
-            (A[mode], B[mode]);
+            sets[source_index] ⊆ SetProg.PolarLpSum(next_value, stage_cost, 2),
             psd_margin = psd_margin,
         )
     end
