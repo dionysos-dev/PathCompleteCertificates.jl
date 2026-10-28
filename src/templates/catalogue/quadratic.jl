@@ -58,21 +58,6 @@ function add_function_variables!(
     )
 end
 
-solution_value(::_QuadraticTemplate, P) = QuadraticFunction(JuMP.value.(P))
-
-function add_decrease!(
-    model::JuMP.Model,
-    ::_QuadraticTemplate,
-    P_src::LinearAlgebra.Symmetric,
-    P_dst::LinearAlgebra.Symmetric,
-    map::AbstractMatrix;
-    scale = 1,
-)
-    JuMP.@constraint(model, scale * P_src - transpose(map) * P_dst * map in JuMP.PSDCone())
-
-    return nothing
-end
-
 function decrease_slack(
     ::SetProg.Ellipsoid,
     V_src::QuadraticFunction,

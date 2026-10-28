@@ -74,7 +74,9 @@ function _safety_family(f::SetProg.PolySet, n, variables)
         basis = f.basis,
     )
 end
-_safety_degree(::SetProg.Ellipsoid) = 2
+function _safety_degree(::SetProg.Ellipsoid)
+    return 2
+end
 _safety_degree(f::SetProg.PolySet) = maximum(f.degree)
 
 function _safety_families(template, n, count)
