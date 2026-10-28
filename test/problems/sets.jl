@@ -6,7 +6,7 @@ using Test
 using LinearAlgebra
 using HybridSystems
 using SetProg
-using SumOfSquares, DynamicPolynomials
+using SumOfSquares
 import PathCompleteCertificates as PCC
 import Clarabel
 import HiGHS
@@ -58,7 +58,7 @@ const OCTAGON = polyhedron(
     LIB,
 )
 
-@polyvar x[1:2]
+x = SetProg.new_polyvars(2)
 
 # Every bound is bisected to `rtol`, so two of them agree to about twice that.
 rate(template, graph = MEMORYLESS) =
@@ -205,7 +205,7 @@ end
 @testset "family validation and zero rate" begin
     @test_throws ArgumentError rate(Ellipsoid(dimension = 2))
     @test_throws ArgumentError rate(Polytope(symmetric = true, dimension = 2))
-    @polyvar y[1:3]
+    y = SetProg.new_polyvars(3)
     @test_throws DimensionMismatch rate(
         PolySet(symmetric = true, degree = 4, variables = y),
     )
@@ -226,7 +226,7 @@ end
     certificate = PCC.certify(family, graph, diagonal; optimizer = OPTIMIZER, rate = 0.6)
     @test PCC.is_feasible(certificate)
     @test PCC.node_value(diagonal, only(PCC.functions(certificate)), [1.0, 1.0]) >= 4 - 1e-5
-    @polyvar y[1:2]
+    y = SetProg.new_polyvars(2)
     different = [PolySet(symmetric = true, degree = 4, variables = z) for z in (x, y)]
     @test_throws ArgumentError PCC.optimization_model(
         different,

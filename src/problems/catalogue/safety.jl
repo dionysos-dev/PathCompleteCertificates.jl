@@ -83,6 +83,8 @@ end
 function _safety_family(f::_NormalizedFamily{<:SetProg.Polytope}, n, variables)
     return _safety_family(f.set, n, variables)
 end
+_safety_family(f::_NormalizedFamily{<:SetProg.PolySet}, n, variables) =
+    _safety_family(f.set, n, variables)
 
 function _safety_degree(::SetProg.Ellipsoid)
     return 2
@@ -92,7 +94,7 @@ _safety_degree(f::SetProg.PolySet) = maximum(f.degree)
 function _safety_families(template, n, count)
     families = template isa AbstractVector ? template : fill(template, count)
     length(families) == count || throw(ArgumentError("one set family is required per node"))
-    polys = filter(f -> f isa SetProg.PolySet, families)
+    polys = filter(!isnothing, _polynomial_family.(families))
     x = nothing
     if !isempty(polys)
         explicit = [f.variables for f in polys if f.variables !== nothing]
@@ -132,6 +134,11 @@ function _safety_normalization!(model, ::SetProg.Polytope, set)
     # The safe ellipsoid bounds the set, and initial containment bounds the
     # separation margin; no coefficient normalization is needed.
     return nothing
+end
+function _safety_reference(f::SetProg.PolySet, sign)
+    # This is the same multinomial weight used in the separation margin.
+    w = (1 + sum(f.variables .^ 2))^div(_safety_degree(f), 2)
+    return SetProg.Sets.PolySet(f.degree, 1 + sign * w)
 end
 
 """
@@ -181,7 +188,9 @@ function optimization_model(
         )
         _safety_normalization!(model, families[i], sets[i])
         original = template isa AbstractVector ? template[i] : template
-        if original isa _NormalizedFamily
+        # Signed polynomial barriers use the bounds above, not the positive
+        # homogeneous normalization of their stability template.
+        if original isa _NormalizedFamily{<:SetProg.Polytope}
             add_normalization!(model, original, sets[i])
         end
     end
