@@ -44,13 +44,12 @@ running example shows their shapes:
 
 ```@setup running
 using Plots
-using SumOfSquares, DynamicPolynomials
+using SumOfSquares
 
 function shapes_figure(system, problem, graph)
-    @polyvar x[1:2]
     templates = [
         "quadratic" => (PCC.QuadraticTemplate(), Clarabel.Optimizer),
-        "sum of squares, degree 4" => (PCC.SumOfSquaresTemplate(2, x), Clarabel.Optimizer),
+        "sum of squares, degree 4" => (PCC.SumOfSquaresTemplate(2), Clarabel.Optimizer),
         "parallel faces" =>
             (PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
         "conic polyhedral" =>
@@ -92,7 +91,7 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | Template | Node function | Systems | Program | Problems |
 | :-- | :-- | :-- | :-- | :-- |
 | [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
-| [`SumOfSquaresTemplate`](@ref)`(d, x)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety |
+| [`SumOfSquaresTemplate`](@ref)`(d)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety |
 | [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear | stability |
@@ -135,9 +134,8 @@ Optimal control retains its quadratic matrix formulation.
     the space into the cones over the facets of a polytope, on each of which
     the function is linear; in the plane, [`planar_conic_partition`](@ref)
     builds one.
-- **For a polynomial function**, `SumOfSquaresTemplate(d, x)`, with the
-  variables `@polyvar x[1:n]` of DynamicPolynomials, and the SumOfSquares
-  package loaded (see [Installation](@ref)). Its functions have degree
+- **For a polynomial function**, `SumOfSquaresTemplate(d)`, with the
+  SumOfSquares package loaded (see [Installation](@ref)). Its functions have degree
   ``2d``: ``d = 1`` gives the quadratic forms, and each higher ``d`` adds
   variables.
 - **For a function piecewise on cones**, a SetProg family passed directly:

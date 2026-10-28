@@ -73,6 +73,12 @@ function homogeneity_degree(families::AbstractVector{<:SetProg.AbstractVariable}
     return only(degrees)
 end
 
+function _polynomial_family(f)
+    return nothing
+end
+_polynomial_family(f::SetProg.PolySet) = f
+_polynomial_family(f::_NormalizedFamily{<:SetProg.PolySet}) = f.set
+
 # Fill the dimension of a homogeneous gauge family, validating explicit data.
 # `variables` supplies a shared polynomial coordinate system when needed.
 function _with_dimension(family::SetProg.AbstractVariable, n::Integer; variables = nothing)
@@ -106,6 +112,11 @@ function _with_dimension(family::SetProg.Polytope, n, vars)
         dimension = n,
         piecewise = family.piecewise,
     )
+end
+# Resolve the radial normalization once the system supplies its dimension.
+function _with_dimension(family::_NormalizedFamily{<:SetProg.PolySet}, n, vars)
+    set = _with_dimension(family.set, n, vars)
+    return _with_superset(set, _unit_set(set; scale = family.reference))
 end
 function _with_dimension(family::_NormalizedFamily, n, vars)
     return _NormalizedFamily(
@@ -153,6 +164,10 @@ function _unit_set(f::SetProg.Polytope)
         [SetProg.Sets.PolarPoint(h.a / h.β) for h in SetProg.halfspaces(f.piecewise)],
         f.piecewise,
     )
+end
+
+function _unit_set(f::SetProg.PolySet; scale = 1)
+    return SetProg.Sets.PolySet(f.degree, scale * sum(f.variables .^ 2)^div(f.degree, 2))
 end
 
 function _unit_set(f::_NormalizedFamily)
@@ -400,3 +415,6 @@ function _gauge(V::SetProg.Sets.PolarOf{<:_LinearPolytope}, x)
         (s, cone) in zip(inner.sets, inner.pieces) for r in SetProg.rays(cone)
     )
 end
+
+_gauge(V::Union{SetProg.Sets.PolySet, SetProg.Sets.ConvexPolySet}, x) =
+    SetProg.sublevel_eval(V, x)
