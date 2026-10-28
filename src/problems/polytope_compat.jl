@@ -32,8 +32,9 @@ The polyhedral functions ``V(x) = \\max_k |(G x)_k| / w_k``, whose faces come
 in parallel pairs, normal to the rows of ``G``, as one SetProg polytope per
 node: ``G`` is the identity, of size `dimension`, at each of `n_nodes` nodes,
 or one of the invertible `matrices` per node. The weights ``w`` are the variables. It
-applies to every system, for stability, and gives linear programs.
-`min_weight` normalizes the node functions: every weight is at least
+applies to every system. Stability gives linear programs; safety with an
+ellipsoidal initial region and an exterior-ellipsoid unsafe region gives
+second-order cone programs. `min_weight` normalizes the node functions: every weight is at least
 `min_weight`.
 """
 function ParallelFacesPolyhedralTemplate(
@@ -77,8 +78,9 @@ The polyhedral functions linear on each cone over the facets of a polytope, as
 one SetProg polytope per node, with the polytope of each node in
 `node_partitions`; each polytope must contain the origin in its interior, and
 [`planar_conic_partition`](@ref) builds one in the plane. It applies to every
-system, for stability, and gives linear programs. `min_scale` normalizes the
-node functions: each is at least `min_scale` times the function equal to one
+system. Stability gives linear programs; safety with an ellipsoidal initial
+region and an exterior-ellipsoid unsafe region gives second-order cone
+programs. `min_scale` normalizes the stability node functions: each is at least `min_scale` times the function equal to one
 on the boundary of its polytope.
 """
 function ConicPolyhedralTemplate(node_partitions; min_scale = 1)

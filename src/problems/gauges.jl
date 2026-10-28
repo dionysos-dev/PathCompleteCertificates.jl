@@ -208,7 +208,9 @@ function add_normalization!(
     conditioning_bound::Real = Inf,
 )
     conditioning_bound >= 1 || throw(ArgumentError("conditioning_bound must be at least 1"))
-    unit = _unit_set(S.set)
+    unit =
+        family isa _NormalizedFamily ? _unit_set(_with_dimension(family, S.set.dimension)) :
+        _unit_set(S.set)
     normalized = _with_superset(S.set, unit)
     if normalized !== nothing
         S.set = normalized

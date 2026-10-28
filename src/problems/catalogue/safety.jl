@@ -43,6 +43,9 @@ end
 A path-complete barrier function, its `margin` of separation between the
 initial and unsafe sets (positive when safety is certified), and the S-procedure
 multipliers `initial_multipliers` and `unsafe_multipliers`, one per node.
+Polyhedral certificates need no S-procedure multipliers; their entries are
+`nothing`. Their margin is measured in support/gauge or support/radius
+units, depending on the representation selected by SetProg.
 """
 struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     data::D
@@ -74,6 +77,13 @@ function _safety_family(f::SetProg.PolySet, n, variables)
         basis = f.basis,
     )
 end
+function _safety_family(f::SetProg.Polytope, n, variables)
+    return _with_dimension(f, n)
+end
+function _safety_family(f::_NormalizedFamily{<:SetProg.Polytope}, n, variables)
+    return _safety_family(f.set, n, variables)
+end
+
 function _safety_degree(::SetProg.Ellipsoid)
     return 2
 end
@@ -103,13 +113,34 @@ _safety_reference(f::SetProg.Ellipsoid, sign) = _safety_region(
     sign * Matrix{Float64}(LinearAlgebra.I, f.dimension + 1, f.dimension + 1),
 )
 
+function _safety_multiplier(f::Union{SetProg.Ellipsoid, SetProg.PolySet}, name)
+    return SetProg.SProcedureMultiplier(; degree = _safety_degree(f) - 2, base_name = name)
+end
+function _safety_multiplier(::SetProg.Polytope, name)
+    return nothing
+end
+function _safety_normalization!(model, f::Union{SetProg.Ellipsoid, SetProg.PolySet}, set)
+    # Fixed multipliers bound B between ±(1 + ‖x‖²)^d; for quadratics these
+    # are exactly I - P ⪰ 0 and P + I ⪰ 0.
+    upper = _safety_reference(f, 1)
+    lower = _safety_reference(f, -1)
+    JuMP.@constraint(model, upper ⊆ set, S_procedure_scaling = 1)
+    JuMP.@constraint(model, set ⊆ lower, S_procedure_scaling = 1)
+    return nothing
+end
+function _safety_normalization!(model, ::SetProg.Polytope, set)
+    # The safe ellipsoid bounds the set, and initial containment bounds the
+    # separation margin; no coefficient normalization is needed.
+    return nothing
+end
+
 """
     optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
-Build the barrier program with quadratic or polynomial SetProg families.
-Safety uses affine barriers without a positivity constraint. Two fixed-scale
-inclusions bound their coefficients; separation from the initial and unsafe
-sets uses nonnegative S-procedure multipliers.
+Build the barrier program with quadratic, polynomial, or polyhedral SetProg families.
+Quadratic and polynomial barriers use nonnegative S-procedure multipliers.
+Polyhedral barriers use linear and second-order cone containment certificates
+for an ellipsoidal initial region and an exterior-ellipsoid unsafe region.
 """
 function optimization_model(
     template::_SetFamily,
@@ -123,18 +154,8 @@ function optimization_model(
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
     sets = [JuMP.@variable(model, variable_type = f) for f in families]
-    gamma0 = [
-        SetProg.SProcedureMultiplier(;
-            degree = _safety_degree(f) - 2,
-            base_name = "gamma0_$i",
-        ) for (i, f) in enumerate(families)
-    ]
-    gammau = [
-        SetProg.SProcedureMultiplier(;
-            degree = _safety_degree(f) - 2,
-            base_name = "gammau_$i",
-        ) for (i, f) in enumerate(families)
-    ]
+    gamma0 = [_safety_multiplier(f, "gamma0_$i") for (i, f) in enumerate(families)]
+    gammau = [_safety_multiplier(f, "gammau_$i") for (i, f) in enumerate(families)]
     eps = JuMP.@variable(model, lower_bound = 0, base_name = "eps")
     initial = _safety_region(-problem.S0)
     unsafe = _safety_region(-problem.Su)
@@ -158,12 +179,11 @@ function optimization_model(
                 margin = eps
             )
         )
-        # Fixed multipliers bound B between ±(1 + ‖x‖²)^d. For quadratics,
-        # these are exactly I - P ⪰ 0 and P + I ⪰ 0.
-        upper = _safety_reference(families[i], 1)
-        lower = _safety_reference(families[i], -1)
-        JuMP.@constraint(model, upper ⊆ sets[i], S_procedure_scaling = 1)
-        JuMP.@constraint(model, sets[i] ⊆ lower, S_procedure_scaling = 1)
+        _safety_normalization!(model, families[i], sets[i])
+        original = template isa AbstractVector ? template[i] : template
+        if original isa _NormalizedFamily
+            add_normalization!(model, original, sets[i])
+        end
     end
     A = state_matrices(problem.system)
     for edge in edges(graph)
@@ -210,8 +230,8 @@ function certify(
     )
 
     Pval = JuMP.value.(model[:safety_sets])
-    gamma0_val = JuMP.value.(model[:safety_gamma0])
-    gammau_val = JuMP.value.(model[:safety_gammau])
+    gamma0_val = map(γ -> γ === nothing ? nothing : JuMP.value(γ), model[:safety_gamma0])
+    gammau_val = map(γ -> γ === nothing ? nothing : JuMP.value(γ), model[:safety_gammau])
     eps_val = JuMP.value(model[:safety_eps])
 
     # Re-check the returned PSD/SOS certificates, including their margin.
