@@ -20,5 +20,6 @@ jobs:
           using Pkg
           Pkg.add(PackageSpec(name="Aqua"))
           Pkg.develop(PackageSpec(path=pwd()))
+          Pkg.add(PackageSpec(url="https://github.com/blegat/SetProg.jl", rev="main"))
           using PathCompleteCertificates, Aqua
           Aqua.test_all(PathCompleteCertificates)
