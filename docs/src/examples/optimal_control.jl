@@ -212,3 +212,25 @@ polyhedral_certificate(x0)
 # `OptimalControlProblem(system, state_cost_polytope, input_cost_polytope; p = 1)`.
 # The objective minimizes the linear gauge integral, also when the control
 # value is its square. Gains remain fixed throughout this optimization.
+
+# ## Piecewise quadratic value bounds
+#
+# Piecewise ellipsoids keep a quadratic form on every cone of a fixed
+# partition. The Bellman inequalities are SDPs on the common refinement of
+# source cones and preimages of destination cones. The feedback gains remain
+# fixed; each piece is optimized, with SetProg enforcing continuity and
+# convexity across neighboring cones.
+
+piecewise_quadratic_family = SetProg.Ellipsoid(;
+    symmetric = true,
+    piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
+)
+piecewise_quadratic_certificate = PCC.certify(
+    piecewise_quadratic_family,
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(piecewise_quadratic_certificate)
+piecewise_quadratic_certificate(x0)

@@ -557,4 +557,84 @@ end
     @test PCC.is_feasible(initialized)
 end
 
+@testset "Piecewise quadratic optimal control" begin
+    P = SetProg.Polyhedra
+    library = P.DefaultLibrary{Float64}(HiGHS.Optimizer)
+    box = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4)), library)
+    diamond =
+        P.polyhedron(P.hrep([1.0 1.0; 1.0 -1.0; -1.0 1.0; -1.0 -1.0], ones(4)), library)
+    families = [
+        SetProg.Ellipsoid(symmetric = true, piecewise = partition) for
+        partition in (box, diamond)
+    ]
+    matrices = [[0.4 0.1; 0.0 0.3], [0.3 0.0; -0.1 0.4]]
+    inputs = [[1.0; 0.0;;], [0.0; 1.0;;]]
+    system = PCC.switched_system(matrices, inputs)
+    graph = PCC.de_bruijn(1, 2)
+    Q = [120.0 20.0; 20.0 90.0]
+    R = [70.0;;]
+    problem = PCC.OptimalControlProblem(system, Q, R)
+    gains = [[-0.05 -0.05] for _ in PCC.nodes(graph)]
+    margin = 0.01
+    for template in (families, first(families))
+        result = PCC.certify(template, graph, problem; optimizer = OPTIMIZER, gains, margin)
+        @test PCC.is_feasible(result)
+        @test result.gains == gains
+        @test all(
+            V -> V isa SetProg.Sets.Piecewise{<:Any, <:SetProg.Sets.Ellipsoid},
+            PCC.functions(result),
+        )
+        @test minimum(PCC.edge_slacks(result)) >= -1e-6
+        rng = Random.MersenneTwister(22)
+        for edge in PCC.edges(graph), _ in 1:50
+            x = Random.randn(rng, 2)
+            a, b = PCC.source(edge), PCC.dest(edge)
+            mode = only(PCC.letters(PCC.label(graph, edge)))
+            u = gains[a]*x
+            next = matrices[mode]*x + inputs[mode]*u
+            cost =
+                x'*Q*x +
+                u'*R*u +
+                margin * PCC._cost_scale(problem) * LinearAlgebra.dot(x, x)
+            @test PCC.node_value(problem, PCC.functions(result)[a], x) + 1e-5 >=
+                  cost + PCC.node_value(problem, PCC.functions(result)[b], next)
+        end
+        trajectory = PCC.simulate(result, [1.0, -2.0], 80; rng)
+        cost = sum(
+            x'*Q*x + u'*R*u for
+            (x, u) in zip(PCC.states(trajectory), PCC.inputs(trajectory))
+        )
+        @test cost <= result([1.0, -2.0]) + 1e-5
+        @test LinearAlgebra.norm(last(PCC.states(trajectory))) < 1e-8
+    end
+    initialized = PCC.certify(first(families), graph, problem; optimizer = OPTIMIZER)
+    @test PCC.is_feasible(initialized)
+    @test_throws ArgumentError PCC.optimization_model(
+        first(families),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+    )
+    @test_throws MethodError PCC.certify(
+        first(families),
+        graph,
+        PCC.OptimalControlProblem(system, Q, R; p = 4);
+        optimizer = OPTIMIZER,
+        gains,
+    )
+    interval = P.polyhedron(P.hrep([1.0; -1.0;;], ones(2)), library)
+    family = SetProg.Ellipsoid(symmetric = true, piecewise = interval)
+    scalar_system = PCC.switched_system([[0.5;;]], [[1.0;;]])
+    scalar_problem = PCC.OptimalControlProblem(scalar_system, [100.0;;], [100.0;;])
+    scalar = PCC.certify(
+        family,
+        PCC.common_graph(scalar_system),
+        scalar_problem;
+        optimizer = OPTIMIZER,
+        gains = [[-0.1;;]],
+    )
+    @test PCC.is_feasible(scalar)
+    @test scalar([2.0]) ≈ 100 * 1.01 / (1-0.4^2) * 4 rtol=1e-5
+end
+
 end
