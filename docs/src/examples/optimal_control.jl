@@ -174,3 +174,41 @@ quartic_certificate(x0)
 # Omitting `gains` asks PCC to initialize them with its quadratic solver.
 # In both cases, the quartic optimization keeps the gain matrices fixed;
 # the smallest fitted value at each state selects which gain is applied.
+
+# ## Polyhedral values and squared gauges
+#
+# A polytope family gives a piecewise-linear gauge. With `p = 2`, PCC
+# squares it to bound the same quadratic cost as above. The fixed-gain
+# problem is an SOCP; it keeps the normal fan of the supplied partition.
+
+import LinearAlgebra
+P = SetProg.Polyhedra
+# Sample each quadratic gauge to obtain a partition fine enough for these
+# nearly rotational dynamics. A coarse square partition can be infeasible.
+directions = [f(2pi * i / 32) for i in 0:31, f in (cos, sin)]
+polyhedral_families = [
+    SetProg.Polytope(;
+        symmetric = true,
+        piecewise = P.polyhedron(
+            P.hrep(
+                directions * LinearAlgebra.cholesky(LinearAlgebra.Symmetric(Matrix(V))).U,
+                ones(32),
+            ),
+        ),
+    ) for V in PCC.functions(certificate)
+]
+polyhedral_certificate = PCC.certify(
+    polyhedral_families,
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(polyhedral_certificate)
+polyhedral_certificate(x0)
+
+# For `p = 1`, the same family produces an LP for unsquared gauge costs.
+# Fixed polytopes may also be supplied as cost unit balls:
+# `OptimalControlProblem(system, state_cost_polytope, input_cost_polytope; p = 1)`.
+# The objective minimizes the linear gauge integral, also when the control
+# value is its square. Gains remain fixed throughout this optimization.

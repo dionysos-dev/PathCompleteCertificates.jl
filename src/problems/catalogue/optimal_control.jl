@@ -5,9 +5,13 @@ Optimal-control problem for a switched linear system with an input
 [ninite2026path](@cite). The stage cost is `(x'Q*x)^(p/2) + (u'R*u)^(p/2)`,
 with `Q` and `R` symmetric positive definite. The default `p = 2` gives the
 quadratic cost; `p = 4` gives a homogeneous quartic cost.
+
+Alternatively, supply fixed polytopes as `Q` and `R`, or fixed convex
+`SetProg.Sets.Piecewise` sets with linear pieces. The cost is the sum of
+their gauges raised to `p` (default one for this constructor). Polyhedral
+value families support exponents one and two.
 """
-struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix, P <: Real} <:
-       AbstractProblem
+struct OptimalControlProblem{S, MQ, MR, P <: Real} <: AbstractProblem
     system::S
     Q::MQ
     R::MR
@@ -37,15 +41,89 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix, P <:
         isfinite(p) && p >= 1 || throw(ArgumentError("p must be finite and at least one"))
         return new{S, MQ, MR, P}(system, Q, R, p)
     end
+    function OptimalControlProblem(
+        system::S,
+        Q::MQ,
+        R::MR;
+        p::P = 1,
+    ) where {S, MQ <: _LinearPolytope, MR <: _LinearPolytope, P <: Real}
+        has_input(system) ||
+            throw(ArgumentError("OptimalControlProblem requires a system with an input"))
+        n = _check_input_matrices(state_matrices(system), input_matrices(system))
+        m = size(first(input_matrices(system)), 2)
+        for (cost, dimension) in ((Q, n), (R, m))
+            SetProg.Sets.dimension(cost) == dimension || throw(DimensionMismatch())
+            partition = cost.polytope
+            _check_control_cost_partition(partition)
+            # Convexity and strict positivity make these fixed pieces a proper
+            # gauge. The partition is supplied explicitly, just as for values.
+            for (piece, cone) in zip(cost.sets, cost.pieces), ray in SetProg.rays(cone)
+                x = SetProg.Polyhedra.coord(ray)
+                value = LinearAlgebra.dot(piece.a, x)
+                value > 0 &&
+                all(other -> LinearAlgebra.dot(other.a, x) <= value + 1e-9, cost.sets) ||
+                    throw(ArgumentError("cost pieces must define a positive convex gauge"))
+            end
+        end
+        isfinite(p) && p >= 1 || throw(ArgumentError("p must be finite and at least one"))
+        return new{S, MQ, MR, P}(system, Q, R, p)
+    end
 end
+
+# A fixed polytope is the unit ball of its piecewise-linear gauge.
+function OptimalControlProblem(
+    system,
+    Q::SetProg.Polyhedra.Polyhedron,
+    R::SetProg.Polyhedra.Polyhedron;
+    p = 1,
+)
+    return OptimalControlProblem(
+        system,
+        _polyhedral_control_cost(Q),
+        _polyhedral_control_cost(R);
+        p,
+    )
+end
+function _polyhedral_control_cost(polytope)
+    _check_control_cost_partition(polytope)
+    return SetProg.Sets.Piecewise(
+        [
+            SetProg.Sets.PolarPoint(h.a / h.β) for
+            h in SetProg.Polyhedra.halfspaces(polytope)
+        ],
+        polytope,
+    )
+end
+
+function _check_control_cost_partition(partition)
+    P = SetProg.Polyhedra
+    isempty(P.rays(partition)) &&
+    isempty(P.lines(partition)) &&
+    isempty(P.hyperplanes(partition)) &&
+    all(h -> h.β > 0, P.halfspaces(partition)) || throw(
+        ArgumentError("cost partitions must be bounded and contain zero in their interior"),
+    )
+    return nothing
+end
+
+_control_cost_set(matrix::AbstractMatrix, scale) =
+    SetProg.Sets.Ellipsoid(LinearAlgebra.Symmetric(matrix / scale))
+_control_cost_set(set::_LinearPolytope, scale) = set
+_initialization_cost(matrix::AbstractMatrix) = matrix
+_initialization_cost(set::_LinearPolytope) = Matrix{Float64}(
+    LinearAlgebra.I,
+    SetProg.Sets.dimension(set),
+    SetProg.Sets.dimension(set),
+)
 
 """
     OptimalControlCertificate
 
 A value function `V_a` and a gain `K_a` at each node `a`. Joint quadratic
-synthesis optimizes both. Polynomial synthesis optimizes the value functions
-for supplied or quadratically initialized gains. Its `edge_certificates`
-field contains the fitted SOS Gram matrices in physical cost units.
+synthesis optimizes both. Polynomial and polyhedral synthesis optimize the
+value functions for supplied or quadratically initialized gains. Its `edge_certificates`
+field contains fitted SOS Gram matrices in physical cost units, or LP/SOC
+proof matrices in gauge units for polyhedral values.
 
 - The policy is `u = K_a x`, where `a` minimizes `V_a(x)`; [`simulate`](@ref)
   runs it.
@@ -216,8 +294,10 @@ end
 
 # The model uses Q / k and R / k. The powered stage cost is divided by
 # k^(p/2), so the fitted value is multiplied by this factor on readback.
-_cost_scale(problem::OptimalControlProblem) =
-    max(LinearAlgebra.opnorm(problem.Q), LinearAlgebra.opnorm(problem.R))
+_cost_scale(problem::OptimalControlProblem) = _control_cost_scale(problem.Q, problem.R)
+_control_cost_scale(Q::AbstractMatrix, R::AbstractMatrix) =
+    max(LinearAlgebra.opnorm(Q), LinearAlgebra.opnorm(R))
+_control_cost_scale(::_LinearPolytope, ::_LinearPolytope) = 1.0
 
 # Validate the data.
 function _check_optimal_control_data(graph, problem)
