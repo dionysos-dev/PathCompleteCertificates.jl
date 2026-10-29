@@ -146,3 +146,31 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 # the bound covers the worst switching sequence, which random runs rarely meet.
 
 maximum(last.(costs)), certificate(x0)
+
+# ## Quartic value bounds for fixed gains
+#
+# With `p = 4`, the stage cost is `(x'Qx)^2 + (u'Ru)^2`. A homogeneous
+# quartic PolySet can represent the corresponding value bound. Here the gain
+# matrices come from the quadratic certificate above; the polynomial SDP
+# optimizes its values by minimizing their integrals over the unit box.
+# Convexity and homogeneity ensure nonnegativity, so `psd = false` omits a
+# separate SOS constraint on the value polynomial.
+
+import SetProg
+using SumOfSquares
+
+quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
+quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
+quartic_certificate = PCC.certify(
+    quartic_family,
+    graph,
+    quartic_problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(quartic_certificate)
+quartic_certificate(x0)
+
+# Omitting `gains` asks PCC to initialize them with its quadratic solver.
+# In both cases, the quartic optimization keeps the gain matrices fixed;
+# the smallest fitted value at each state selects which gain is applied.

@@ -129,6 +129,7 @@ function _with_dimension(family::SetProg.PolySet, n, vars)
         degree = family.degree,
         dimension = n,
         convex = family.convex,
+        psd = family.psd,
         variables = x,
         basis = family.basis,
         superset = family.superset,

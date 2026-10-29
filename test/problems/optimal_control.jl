@@ -7,6 +7,8 @@ import Clarabel
 import JuMP
 import LinearAlgebra
 import Random
+import SetProg
+using SumOfSquares
 
 # Clarabel's chordal decomposition errors inside `psd_completion!` on the block
 # LMI this problem builds. The solves here are small, so switch it off.
@@ -287,6 +289,173 @@ end
 
     @test PCC.switching(trajectory) == [1, 2, 2]
     @test first(PCC.inputs(trajectory)) ≈ RESULT.gains[node] * x0
+end
+
+@testset "Quartic value bounds for supplied and initialized gains" begin
+    system = PCC.switched_system([[0.5;;]], [[1.0;;]])
+    graph = PCC.common_graph(system)
+    problem = PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p = 4)
+    family = SetProg.PolySet(symmetric = true, convex = true, psd = false, degree = 4)
+    gains = [[-0.1;;]]
+    model = PCC.optimization_model(family, graph, problem; optimizer = OPTIMIZER, gains)
+    @test !only(model[:optimal_control_sets]).set.psd
+    @test length(SetProg.data(model).constraints) == PCC.n_edges(graph)
+    result = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, gains)
+    @test PCC.is_feasible(result)
+    @test only(PCC.functions(result)) isa SetProg.Sets.ConvexPolySet
+    @test result.gains == gains
+    expected = (1 + 0.1^4) / (1 - 0.4^4)
+    @test result([1.0]) ≈ expected rtol = 1e-5
+    @test result([2.0]) ≈ 16expected rtol = 1e-5
+    @test all(>=(-1e-7), PCC.edge_slacks(result))
+    trajectory = PCC.simulate(result, [2.0], 100; rng = Random.MersenneTwister(7))
+    accumulated = sum(
+        (x[1]^2)^2 + (u[1]^2)^2 for
+        (x, u) in zip(PCC.states(trajectory), PCC.inputs(trajectory))
+    )
+    @test accumulated <= result([2.0]) + 1e-6
+    @test abs(only(last(PCC.states(trajectory)))) < 1e-6
+    for state in ([-2.0], [-0.25], [0.0], [1.0])
+        @test result(state) >= (state[1]^2)^2 + (0.1state[1])^4 + result(0.4state) - 1e-6
+    end
+    # The certificate owns its gain matrices.
+    gains[1][1] = 0.0
+    @test only(result.gains)[1] == -0.1
+    initialized = PCC.certify(family, graph, problem; optimizer = OPTIMIZER)
+    @test PCC.is_feasible(initialized)
+    @test all(>=(-1e-7), PCC.edge_slacks(initialized))
+
+    scaled_problem = PCC.OptimalControlProblem(system, [100.0;;], [100.0;;]; p = 4)
+    scaled = PCC.certify(
+        family,
+        graph,
+        scaled_problem;
+        optimizer = OPTIMIZER,
+        gains = result.gains,
+    )
+    @test PCC.is_feasible(scaled)
+    @test scaled([1.0]) ≈ 100^2 * result([1.0]) rtol = 1e-5
+    positive_margin = PCC.certify(
+        family,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains = result.gains,
+        margin = 1e-4,
+    )
+    @test PCC.is_feasible(positive_margin)
+    @test positive_margin([1.0]) > result([1.0])
+    unstable = PCC.OptimalControlProblem(
+        PCC.switched_system([[1.2;;]], [[1.0;;]]),
+        [1.0;;],
+        [1.0;;];
+        p = 4,
+    )
+    failed = PCC.certify(family, graph, unstable; optimizer = OPTIMIZER, gains = [[0.0;;]])
+    @test !PCC.is_feasible(failed)
+    @test_throws ArgumentError PCC.edge_slacks(failed)
+    @test_throws ArgumentError PCC.simulate(failed, [1.0], 1)
+    @test_throws ArgumentError PCC.optimization_model(
+        family,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains = [],
+    )
+    @test_throws DimensionMismatch PCC.optimization_model(
+        family,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains = [zeros(1, 2)],
+    )
+    @test_throws ArgumentError PCC.optimization_model(
+        family,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains = [[NaN;;]],
+    )
+    @test_throws ArgumentError PCC.optimization_model(
+        family,
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains = result.gains,
+        margin = -1,
+    )
+    @test_throws MethodError PCC.optimization_model(
+        family,
+        graph,
+        PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]);
+        optimizer = OPTIMIZER,
+        gains = result.gains,
+    )
+    @test_throws MethodError PCC.certify(
+        SetProg.PolySet(symmetric = true, degree = 4),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+    )
+    @test_throws MethodError PCC.certify(
+        SetProg.PolySet(symmetric = true, convex = true, degree = 0:4),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+    )
+    uncontrollable = PCC.OptimalControlProblem(
+        PCC.switched_system([[1.2;;]], [[0.0;;]]),
+        [1.0;;],
+        [1.0;;];
+        p = 4,
+    )
+    @test_throws ArgumentError PCC.certify(
+        family,
+        graph,
+        uncontrollable;
+        optimizer = OPTIMIZER,
+    )
+    @test_throws ArgumentError PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p = 0)
+end
+
+@testset "Quartic switching control in two dimensions" begin
+    for psd in (true, false)
+        matrices = [[0.5 0.1; 0.0 0.4], [0.3 0.0; -0.1 0.4]]
+        inputs = [[1.0; 0.2;;], [1.0; 0.2;;]]
+        system = PCC.switched_system(matrices, inputs)
+        graph = PCC.de_bruijn(1, 2)
+        problem = PCC.OptimalControlProblem(system, [2.0 0.25; 0.25 1.0], [1.0;;]; p = 4)
+        family = SetProg.PolySet(symmetric = true, convex = true, degree = 4, psd = psd)
+        gains = [zeros(1, 2), [-0.1 0.05]]
+        result = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, gains)
+        @test PCC.is_feasible(result)
+        @test length(PCC.functions(result)) == 2
+        @test all(V -> V isa SetProg.Sets.ConvexPolySet, PCC.functions(result))
+        @test all(>=(-1e-6), PCC.edge_slacks(result))
+        for edge in PCC.edges(graph), angle in range(0, 2pi; length = 17)
+            x = [cos(angle), sin(angle)]
+            a, b = PCC.source(edge), PCC.dest(edge)
+            mode = only(PCC.letters(PCC.label(graph, edge)))
+            u = gains[a] * x
+            lhs = PCC.node_value(problem, PCC.functions(result)[a], x)
+            next = matrices[mode] * x + inputs[mode] * u
+            rhs =
+                (x' * problem.Q * x)^2 +
+                (u' * problem.R * u)^2 +
+                PCC.node_value(problem, PCC.functions(result)[b], next)
+            @test lhs >= rhs - 1e-5
+        end
+        for seed in 1:3
+            trajectory =
+                PCC.simulate(result, [1.0, -0.5], 50; rng = Random.MersenneTwister(seed))
+            cost = sum(
+                (x' * problem.Q * x)^2 + (u' * problem.R * u)^2 for
+                (x, u) in zip(PCC.states(trajectory), PCC.inputs(trajectory))
+            )
+            @test cost <= result([1.0, -0.5]) + 1e-5
+            @test LinearAlgebra.norm(last(PCC.states(trajectory))) < 1e-6
+        end
+    end
 end
 
 end

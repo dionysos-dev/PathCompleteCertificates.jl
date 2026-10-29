@@ -100,6 +100,12 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
+Polynomial optimal control accepts a native
+`PolySet(symmetric = true, convex = true, degree = 4)` with
+`OptimalControlProblem(system, Q, R; p = 4)`. It optimizes value bounds for
+supplied gains or gains initialized by the quadratic solver; see
+[Design a controller robust to switching](@ref).
+
 **Templates are SetProg families.** Each constructor returns a
 [SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
 two polyhedral templates with data per node, a vector of families, one per

@@ -1,21 +1,24 @@
 """
-    OptimalControlProblem(system, Q, R)
+    OptimalControlProblem(system, Q, R; p = 2)
 
-Quadratic optimal-control problem for a switched linear system with an input
-[ninite2026path](@cite). The stage cost is `x'Q*x + u'R*u`, with `Q`
-and `R` symmetric positive definite.
+Optimal-control problem for a switched linear system with an input
+[ninite2026path](@cite). The stage cost is `(x'Q*x)^(p/2) + (u'R*u)^(p/2)`,
+with `Q` and `R` symmetric positive definite. The default `p = 2` gives the
+quadratic cost; `p = 4` gives a homogeneous quartic cost.
 """
-struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
+struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix, P <: Real} <:
        AbstractProblem
     system::S
     Q::MQ
     R::MR
+    p::P
 
     function OptimalControlProblem(
         system::S,
         Q::MQ,
-        R::MR,
-    ) where {S, MQ <: AbstractMatrix, MR <: AbstractMatrix}
+        R::MR;
+        p::P = 2,
+    ) where {S, MQ <: AbstractMatrix, MR <: AbstractMatrix, P <: Real}
         has_input(system) ||
             throw(ArgumentError("OptimalControlProblem requires a system with an input"))
 
@@ -31,30 +34,37 @@ struct OptimalControlProblem{S, MQ <: AbstractMatrix, MR <: AbstractMatrix} <:
         LinearAlgebra.isposdef(LinearAlgebra.Symmetric(R)) ||
             throw(ArgumentError("R must be positive definite"))
 
-        return new{S, MQ, MR}(system, Q, R)
+        isfinite(p) && p >= 1 || throw(ArgumentError("p must be finite and at least one"))
+        return new{S, MQ, MR, P}(system, Q, R, p)
     end
 end
 
 """
     OptimalControlCertificate
 
-A quadratic function `V_a` and a gain `K_a` at each node `a`.
+A value function `V_a` and a gain `K_a` at each node `a`. Joint quadratic
+synthesis optimizes both. Polynomial synthesis optimizes the value functions
+for supplied or quadratically initialized gains. Its `edge_certificates`
+field contains the fitted SOS Gram matrices in physical cost units.
 
 - The policy is `u = K_a x`, where `a` minimizes `V_a(x)`; [`simulate`](@ref)
   runs it.
 - Its worst-case cost from `x` is at most `min_a V_a(x)`, which calling the
   certificate at `x` returns.
 """
-struct OptimalControlCertificate{D <: CertificateData, K} <: AbstractCertificate
+struct OptimalControlCertificate{D <: CertificateData, K, E} <: AbstractCertificate
     data::D
     gains::K
+    edge_certificates::E
 end
+OptimalControlCertificate(data, gains) = OptimalControlCertificate(data, gains, nothing)
 
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build, without solving, the optimal-control program in `S = P⁻¹`, `Y = KS`. Only
-complete graphs and `QuadraticTemplate` are supported. Bellman inequalities
+Build the joint quadratic synthesis program in `S = P⁻¹`, `Y = KS`.
+This method uses complete graphs, `QuadraticTemplate`, and `p = 2`.
+Bellman inequalities
 use SetProg `PolarLpSum` inclusions with exponent two, producing block PSD
 certificates.
 """
@@ -65,8 +75,8 @@ function optimization_model(
     optimizer,
     psd_margin::Real = 1e-4,
 )
-    template == QuadraticTemplate() || throw(
-        ArgumentError("OptimalControlProblem currently supports only QuadraticTemplate()"),
+    template == QuadraticTemplate() && problem.p == 2 || throw(
+        ArgumentError("joint synthesis currently requires QuadraticTemplate() and p = 2"),
     )
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
@@ -136,8 +146,9 @@ end
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
 Synthesize a state-feedback policy and an upper bound on its worst-case cost,
-returned as an [`OptimalControlCertificate`](@ref). Only complete graphs and
-`QuadraticTemplate` are supported; the solver maximizes `Σₐ log det Pₐ⁻¹`.
+returned as an [`OptimalControlCertificate`](@ref). This joint synthesis
+method uses complete graphs, `QuadraticTemplate`, and `p = 2`; the solver
+maximizes `Σₐ log det Pₐ⁻¹`.
 """
 function certify(
     template::_SetFamily,
@@ -172,13 +183,19 @@ function certify(
     )
 end
 
-# The edge inequality read back in `P` and `K`, which `_add_edge_lmi!` imposes
+# The quadratic edge inequality read back in `P` and `K`, imposed by SetProg
 # in `S` and `Y`: the smallest eigenvalue of
 # `P_src − Q − K'RK − (A + BK)' P_dst (A + BK)`, with `K` the source's gain.
 function edge_slacks(certificate::OptimalControlCertificate)
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no functions to measure"))
 
+    if certificate.edge_certificates !== nothing
+        return [
+            minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(matrix))) for
+            matrix in certificate.edge_certificates
+        ]
+    end
     problem_ = problem(certificate)
     graph_ = graph(certificate)
     P = Matrix.(functions(certificate))
@@ -197,9 +214,8 @@ function edge_slacks(certificate::OptimalControlCertificate)
     end
 end
 
-# The model is solved for `Q / k` and `R / k`, with `k` this scale, so that
-# `psd_margin` does not depend on the units of the cost. Scaling the cost scales
-# the value function by the same factor and keeps the gains.
+# The model uses Q / k and R / k. The powered stage cost is divided by
+# k^(p/2), so the fitted value is multiplied by this factor on readback.
 _cost_scale(problem::OptimalControlProblem) =
     max(LinearAlgebra.opnorm(problem.Q), LinearAlgebra.opnorm(problem.R))
 
@@ -245,7 +261,8 @@ function simulate(
     _check_initial_state(system, x0)
 
     Vs = functions(certificate)
-    policy(_, x) = certificate.gains[argmin([V(x) for V in Vs])] * x
+    policy(_, x) =
+        certificate.gains[argmin([node_value(problem(certificate), V, x) for V in Vs])] * x
 
     return _run(system, x0, modes, policy)
 end
