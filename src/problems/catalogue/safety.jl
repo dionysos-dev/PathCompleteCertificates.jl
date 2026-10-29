@@ -3,9 +3,11 @@
 
 Safety problem for an input-free switched linear system [anand2024barrier](@cite),
 with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
-For a quadratic family, the barrier at node `a` is `[x; 1]' P_a [x; 1]`
+For a global quadratic family, the barrier at node `a` is `[x; 1]' P_a [x; 1]`
 with `P_a` symmetric, not necessarily positive semidefinite. Polynomial
 families construct affine polynomial barriers of the requested degree.
+Piecewise ellipsoid families use `x'Q_k*x - 1` on each cone of their fixed
+partition, with PSD quadratic pieces by default.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem
     system::S
@@ -60,8 +62,16 @@ _edge_decrease(::SafetyProblem, graph::CertificateGraph, edge, A) =
 
 function _safety_family(f::SetProg.Ellipsoid, n, variables)
     f.dimension === nothing || f.dimension == n || throw(DimensionMismatch())
-    f.point === nothing && f.piecewise === nothing && f.superset === nothing ||
-        throw(ArgumentError("safety does not support point, piecewise, or superset hints"))
+    f.point === nothing && f.superset === nothing ||
+        throw(ArgumentError("safety does not support point or superset hints"))
+    if f.piecewise !== nothing
+        return SetProg.Ellipsoid(;
+            symmetric = f.symmetric,
+            psd = f.psd,
+            dimension = n,
+            piecewise = f.piecewise,
+        )
+    end
     return SetProg.Ellipsoid(; symmetric = false, psd = false, dimension = n)
 end
 function _safety_family(f::SetProg.PolySet, n, variables)
@@ -113,13 +123,31 @@ _safety_reference(f::SetProg.Ellipsoid, sign) = _safety_region(
     sign * Matrix{Float64}(LinearAlgebra.I, f.dimension + 1, f.dimension + 1),
 )
 
-function _safety_multiplier(f::Union{SetProg.Ellipsoid, SetProg.PolySet}, name)
+function _safety_multiplier(f::SetProg.Ellipsoid, name)
+    if f.piecewise !== nothing
+        return [
+            SetProg.SProcedureMultiplier(; base_name = "$(name)_$k") for
+            k in 1:SetProg.nhalfspaces(f.piecewise)
+        ]
+    end
+    return SetProg.SProcedureMultiplier(; base_name = name)
+end
+function _safety_multiplier(f::SetProg.PolySet, name)
     return SetProg.SProcedureMultiplier(; degree = _safety_degree(f) - 2, base_name = name)
 end
+_safety_multiplier_value(::Nothing) = nothing
+_safety_multiplier_value(multiplier) = JuMP.value(multiplier)
+_safety_multiplier_value(multipliers::AbstractVector) =
+    _safety_multiplier_value.(multipliers)
 function _safety_multiplier(::SetProg.Polytope, name)
     return nothing
 end
 function _safety_normalization!(model, f::Union{SetProg.Ellipsoid, SetProg.PolySet}, set)
+    if f isa SetProg.Ellipsoid && f.piecewise !== nothing && f.psd
+        # B(x) = x'Q_k*x - 1 >= -1 already bounds the separation margin.
+        # Bounding Q_k would restrict the safe sets: their level is fixed.
+        return nothing
+    end
     # Fixed multipliers bound B between ±(1 + ‖x‖²)^d; for quadratics these
     # are exactly I - P ⪰ 0 and P + I ⪰ 0.
     upper = _safety_reference(f, 1)
@@ -137,8 +165,11 @@ end
 """
     optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
-Build the barrier program with quadratic, polynomial, or polyhedral SetProg families.
+Build the barrier program with quadratic, piecewise-quadratic, polynomial, or
+polyhedral SetProg families.
 Quadratic and polynomial barriers use nonnegative S-procedure multipliers.
+Piecewise-quadratic families keep their conic partition and use one multiplier
+per piece. Their barriers are `x'Q_k*x - 1`, with PSD pieces by default.
 Polyhedral barriers use linear and second-order cone containment certificates
 for an ellipsoidal initial region and an exterior-ellipsoid unsafe region.
 """
@@ -230,8 +261,8 @@ function certify(
     )
 
     Pval = JuMP.value.(model[:safety_sets])
-    gamma0_val = map(γ -> γ === nothing ? nothing : JuMP.value(γ), model[:safety_gamma0])
-    gammau_val = map(γ -> γ === nothing ? nothing : JuMP.value(γ), model[:safety_gammau])
+    gamma0_val = _safety_multiplier_value.(model[:safety_gamma0])
+    gammau_val = _safety_multiplier_value.(model[:safety_gammau])
     eps_val = JuMP.value(model[:safety_eps])
 
     # Re-check the returned PSD/SOS certificates, including their margin.

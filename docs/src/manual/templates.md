@@ -97,7 +97,7 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear for stability; second-order cone for safety | stability, safety |
 | [`ConicPolyhedralTemplate`](@ref)`(partitions)` | ``\max_i \lvert p_i^\top x \rvert`` | all | linear for stability; second-order cone for safety | stability, safety |
-| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
+| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability, safety |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
 **Templates are SetProg families.** Each constructor returns a
@@ -122,6 +122,18 @@ exterior-ellipsoid unsafe regions. Their separation constraints form a
 second-order cone program and need no S-procedure multipliers. The margin is
 representation-dependent, measured in support/gauge or support/radius units,
 rather than the coefficient margin of quadratic barriers.
+Piecewise-quadratic safety keeps the fixed partition and uses the barrier
+``B(x) = x^\top Q_k x - 1`` on each cone. Pieces are PSD by default, with
+continuity and convexity constraints across cone boundaries. Initial
+containment and unsafe separation use one scalar S-procedure multiplier per
+piece, restricted to that cone. Coefficient normalization is omitted for
+these PSD pieces: the unit level fixes their scale, and ``B(x) \ge -1``
+already bounds the separation margin on a nonempty initial set. This differs
+from the signed affine quadratic family used by `QuadraticTemplate()`.
+For example, pass `SetProg.Ellipsoid(symmetric = true, piecewise = partition)`
+to [`certify`](@ref) with a `SafetyProblem`. These piecewise certificates
+remain sufficient SDP conditions.
+
 Optimal control retains its quadratic matrix formulation.
 
 ## How to choose
