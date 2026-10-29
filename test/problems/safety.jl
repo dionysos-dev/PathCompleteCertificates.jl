@@ -258,4 +258,76 @@ end
     @test PCC.node_value(shifted, V, [-5.0, 0.0]) > 0
 end
 
+@testset "Piecewise quadratic safety" begin
+    lib = SetProg.Polyhedra.DefaultLibrary{Float64}(
+        JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
+    )
+    partition = SetProg.polyhedron(SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)), lib)
+    family = SetProg.Ellipsoid(symmetric = true, piecewise = partition)
+    system = PCC.switched_system([[0.5 0.0; 0.0 0.5]])
+    graph = PCC.common_graph(system)
+    problem = PCC.SafetyProblem(system, S0, SU)
+    result = PCC.certify(family, graph, problem; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(result)
+    @test result.margin ≈ 5 / 301 atol = 1e-6
+    @test only(PCC.functions(result)) isa SetProg.Sets.Piecewise
+    @test length(only(result.initial_multipliers)) == 4
+    @test length(only(result.unsafe_multipliers)) == 4
+    @test all(>=(-1e-7), only(result.initial_multipliers))
+    @test all(>=(-1e-7), only(result.unsafe_multipliers))
+    for piece in only(PCC.functions(result)).sets
+        @test LinearAlgebra.eigmin(piece.Q) >= -1e-7
+    end
+    for angle in range(0, 2pi; length = 25)
+        x = [cos(angle), sin(angle)]
+        @test PCC.node_value(problem, only(PCC.functions(result)), 4x) < 0
+        @test PCC.node_value(problem, only(PCC.functions(result)), 6x) > 0
+    end
+    @test PCC.node_value(problem, only(PCC.functions(result)), zeros(2)) == -1
+    # The unit level fixes the scale. A coefficient normalization Q_k <= I
+    # would incorrectly discard this rescaled version of the same problem.
+    small =
+        PCC.SafetyProblem(system, [-1.0 0 0; 0 -1 0; 0 0 0.16], [1.0 0 0; 0 1 0; 0 0 -0.36])
+    scaled = PCC.certify(family, graph, small; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(scaled)
+    @test scaled.margin ≈ 0.2 / 0.6352 atol = 1e-6
+    @test all(piece -> LinearAlgebra.eigmin(piece.Q) > 1, only(PCC.functions(scaled)).sets)
+    # Different node partitions require certificates on their mapped cone
+    # intersections; checking each whole-space quadratic would be stronger.
+    box = SetProg.polyhedron(SetProg.hrep([1.0 0; -1 0; 0 1; 0 -1], ones(4)), lib)
+    families = [family, SetProg.Ellipsoid(symmetric = true, piecewise = box)]
+    matrices = [[0.0 -0.7; 0.7 0.0], [0.6 0.1; -0.1 0.6]]
+    switched = PCC.switched_system(matrices)
+    graph = PCC.de_bruijn(1, 2)
+    problem = PCC.SafetyProblem(switched, S0, SU)
+    result = PCC.certify(families, graph, problem; optimizer = Clarabel.Optimizer)
+    @test PCC.is_feasible(result)
+    for edge in PCC.edges(graph), angle in range(0, 2pi; length = 25)
+        x = 4 * [cos(angle), sin(angle)]
+        mode = only(PCC.letters(PCC.label(graph, edge)))
+        source = PCC.functions(result)[PCC.source(edge)]
+        target = PCC.functions(result)[PCC.dest(edge)]
+        @test PCC.node_value(problem, target, matrices[mode]*x) <=
+              PCC.node_value(problem, source, x) + 1e-6
+    end
+    overlap = PCC.SafetyProblem(system, S0, [1.0 0 0; 0 1 0; 0 0 -1])
+    @test !PCC.is_feasible(
+        PCC.certify(
+            family,
+            PCC.common_graph(system),
+            overlap;
+            optimizer = Clarabel.Optimizer,
+        ),
+    )
+    unstable = PCC.switched_system([[1.2 0.0; 0.0 1.2]])
+    @test !PCC.is_feasible(
+        PCC.certify(
+            family,
+            PCC.common_graph(unstable),
+            PCC.SafetyProblem(unstable, S0, SU);
+            optimizer = Clarabel.Optimizer,
+        ),
+    )
+end
+
 end
