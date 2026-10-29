@@ -13,8 +13,9 @@ below is a place where research or a contribution can close it.
 ## Templates and problems
 
 Stability accepts every template, including SetProg families passed directly.
-Safety accepts quadratic and polynomial families; optimal control uses the
-quadratic template.
+Safety accepts quadratic and polynomial families. Optimal control jointly
+synthesizes quadratic values and gains; convex homogeneous PolySets support
+polynomial value optimization for fixed or initialized gains.
 
 |                                           | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
 | :---------------------------------------- | :-: | :-: | :-: |
@@ -24,9 +25,15 @@ quadratic template.
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | | |
 | [`ConicPolyhedralTemplate`](@ref)         | ✓ | | |
+| convex homogeneous SetProg PolySet       | ✓ | ✓ | ✓ ² |
 | piecewise SetProg ellipsoid or polytope   | ✓ | | |
 
 ¹ Positive systems only: matrices with nonnegative entries.
+
+² Set `OptimalControlProblem(...; p = degree)` with a matching homogeneous
+PolySet degree and `convex = true`. Supply node gains with `gains = ...`, or
+omit them to initialize with the quadratic solver. The polynomial SDP minimizes
+the integral of the value bounds and keeps the gain matrices fixed.
 
 Unsupported combinations report an error before anything is solved. Two more conditions on the graph:
 
@@ -77,8 +84,8 @@ template, problem, lift or refinement algorithm goes.
 
 **Open questions:**
 
-- **optimal control with other templates:** the edge inequality is convex in
-  the node function and the gain only after a change of variables, which the
-  quadratic template admits;
+- **joint optimal-control synthesis beyond quadratic templates:** polynomial
+  value optimization currently uses fixed gains. Joint gain/value search
+  requires a suitable convexification or a nonconvex algorithm;
 - **refinement for safety and optimal control:** the results that guide
   refinement, where to lift and when to stop, are proved for stability.
