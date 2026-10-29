@@ -78,6 +78,83 @@ end
     @test PCC.common(GRAPH, PROBLEM, PCC.functions(RESULT), [1.0, 1.0]) > 0
 end
 
+@testset "SetProg inclusions preserve the original optimal-control SDP" begin
+    cost_Q = [2.0 0.25; 0.25 1.5]
+    cost_R = [3.0;;]
+    problem = PCC.OptimalControlProblem(SYSTEM, cost_Q, cost_R)
+    model = PCC.optimization_model(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        problem;
+        optimizer = OPTIMIZER,
+    )
+    S = model[:optimal_control_S]
+    Y = model[:optimal_control_Y]
+    margin = 1e-4
+    scale = PCC._cost_scale(problem)
+    n, m = size(first(A), 1), size(first(B), 2)
+    expected = []
+    canonical(M) = vec(convert.(JuMP.AffExpr, M))
+    for matrix in S
+        push!(expected, canonical(matrix - margin * LinearAlgebra.I))
+    end
+    for edge in PCC.edges(GRAPH)
+        a, b = PCC.source(edge), PCC.dest(edge)
+        mode = only(PCC.letters(PCC.label(GRAPH, edge)))
+        M =
+            [
+                S[a] S[a]*A[mode]'+(B[mode]*Y[a])' S[a] Y[a]';
+                A[mode]*S[a]+B[mode]*Y[a] S[b] zeros(n, n) zeros(n, m);
+                S[a] zeros(n, n) inv(cost_Q / scale) zeros(n, m);
+                Y[a] zeros(m, n) zeros(m, n) inv(cost_R / scale)
+            ] - margin * LinearAlgebra.I
+        push!(expected, canonical(M))
+    end
+    actual = [
+        JuMP.constraint_object(c).func for c in JuMP.all_constraints(
+            model,
+            Vector{JuMP.AffExpr},
+            JuMP.MOI.PositiveSemidefiniteConeSquare,
+        )
+    ]
+    @test length(actual) == PCC.n_nodes(GRAPH) + PCC.n_edges(GRAPH)
+    for matrix in expected
+        index = findfirst(
+            candidate ->
+                length(candidate) == length(matrix) &&
+                all(JuMP.isequal_canonical.(candidate, matrix)),
+            actual,
+        )
+        @test index !== nothing
+        index === nothing || deleteat!(actual, index)
+    end
+    @test isempty(actual)
+    @test JuMP.num_variables(model) == PCC.n_nodes(GRAPH) * (div(n * (n + 1), 2) + m*n + 1)
+    @test JuMP.num_constraints(model; count_variable_in_set_constraints = true) ==
+          2PCC.n_nodes(GRAPH) + PCC.n_edges(GRAPH)
+    @test length(JuMP.list_of_constraint_types(model)) == 2
+    logs = JuMP.all_constraints(model, Vector{JuMP.AffExpr}, JuMP.MOI.LogDetConeTriangle)
+    @test length(logs) == PCC.n_nodes(GRAPH)
+    for (i, c) in enumerate(logs)
+        f = JuMP.constraint_object(c).func
+        @test JuMP.isequal_canonical(f[2], JuMP.AffExpr(1.0))
+        @test all(
+            JuMP.isequal_canonical.(
+                f[3:end],
+                [
+                    convert(JuMP.AffExpr, S[i][row, column]) for row in 1:n for
+                    column in 1:row
+                ],
+            ),
+        )
+    end
+    @test JuMP.objective_sense(model) == JuMP.MOI.MAX_SENSE
+    @test JuMP.isequal_canonical(
+        JuMP.objective_function(model),
+        sum(JuMP.constraint_object(c).func[1] for c in logs),
+    )
+end
+
 @testset "the units of the cost do not change the answer" begin
     # Scaling Q and R by c scales the value function by c and keeps the gains;
     # unnormalized, psd_margin = 1e-4 made Q = 1000 I infeasible.
