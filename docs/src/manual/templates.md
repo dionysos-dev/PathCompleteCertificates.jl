@@ -97,8 +97,15 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear | stability |
 | [`ConicPolyhedralTemplate`](@ref)`(partitions)` | ``\max_i \lvert p_i^\top x \rvert`` | all | linear | stability |
-| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
+| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability, optimal control (fixed gains) |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
+
+Piecewise quadratic optimal control accepts
+`SetProg.Ellipsoid(symmetric = true, piecewise = P)` with quadratic costs
+(`p = 2`). Gains are supplied or initialized by the quadratic solver and
+then kept fixed. Bellman inequalities use SDP positivity certificates on
+intersections of source cones and preimages of destination cones. A vector
+of families may supply a different partition at each node.
 
 Polynomial optimal control accepts a native
 `PolySet(symmetric = true, convex = true, degree = 4)` with
