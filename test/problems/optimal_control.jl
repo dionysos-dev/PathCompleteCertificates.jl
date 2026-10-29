@@ -3,6 +3,7 @@ module TestOptimalControl
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
+import HiGHS
 import Clarabel
 import JuMP
 import LinearAlgebra
@@ -456,6 +457,104 @@ end
             @test LinearAlgebra.norm(last(PCC.states(trajectory))) < 1e-6
         end
     end
+end
+
+@testset "Polyhedral control values" begin
+    P = SetProg.Polyhedra
+    library = P.DefaultLibrary{Float64}(HiGHS.Optimizer)
+    partition = P.polyhedron(P.hrep([1.0; -1.0;;], ones(2)), library)
+    family = SetProg.Polytope(symmetric = true, piecewise = partition)
+    system = PCC.switched_system([[0.5;;]], [[1.0;;]])
+    graph = PCC.common_graph(system)
+    gains = [[-0.1;;]]
+    for p in (1, 2), scale in (1.0, 100.0)
+        problem = PCC.OptimalControlProblem(system, [scale;;], [scale;;]; p)
+        result = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, gains)
+        @test PCC.is_feasible(result)
+        expected = scale^(p/2) * (1 + 0.1^p) / (1 - 0.4^p)
+        for x in ([-2.0], [-0.5], [0.0], [1.0])
+            @test result(x) ≈ expected * abs(x[1])^p rtol = 1e-5 atol = 1e-7
+            @test result(x) >= scale^(p/2) * (1 + 0.1^p) * abs(x[1])^p + result(0.4x) - 1e-5
+        end
+        @test all(>=(-1e-6), PCC.edge_slacks(result))
+        trajectory = PCC.simulate(result, [2.0], 100; rng = Random.MersenneTwister(3))
+        accumulated = sum(
+            scale^(p/2) * (abs(x[1])^p + abs(u[1])^p) for
+            (x, u) in zip(PCC.states(trajectory), PCC.inputs(trajectory))
+        )
+        @test accumulated <= result([2.0]) + 1e-5
+        model = PCC.optimization_model(family, graph, problem; optimizer = OPTIMIZER, gains)
+        JuMP.optimize!(model)
+        @test !any(
+            t ->
+                t[2] <: Union{
+                    JuMP.MOI.PositiveSemidefiniteConeTriangle,
+                    JuMP.MOI.PositiveSemidefiniteConeSquare,
+                },
+            JuMP.list_of_constraint_types(model),
+        )
+        @test JuMP.num_constraints(model, Vector{JuMP.AffExpr}, JuMP.MOI.SecondOrderCone) ==
+              (p == 2 ? 2 : 0)
+    end
+    for p in (1, 2)
+        problem = PCC.OptimalControlProblem(system, partition, partition; p)
+        result = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, gains)
+        @test PCC.is_feasible(result)
+        @test result([2.0]) ≈ 2^p * (1 + 0.1^p)/(1 - 0.4^p) rtol = 1e-5
+        initialized = PCC.certify(family, graph, problem; optimizer = OPTIMIZER)
+        @test PCC.is_feasible(initialized)
+    end
+end
+
+@testset "Switching polyhedral Bellman bounds" begin
+    P = SetProg.Polyhedra
+    library = P.DefaultLibrary{Float64}(HiGHS.Optimizer)
+    partition =
+        P.polyhedron(P.hrep([1.0 0.0; -1.0 0.0; 0.0 1.0; 0.0 -1.0], ones(4)), library)
+    input_cost = P.polyhedron(P.hrep([1.0; -1.0;;], ones(2)), library)
+    matrices = [[0.4 0.1; 0.0 0.3], [0.3 0.0; -0.1 0.4]]
+    inputs = [[1.0; 0.0;;], [0.0; 1.0;;]]
+    system = PCC.switched_system(matrices, inputs)
+    graph = PCC.de_bruijn(1, 2)
+    family = SetProg.Polytope(symmetric = true, piecewise = partition)
+    gains = [[-0.05 -0.05] for _ in PCC.nodes(graph)]
+    for p in (1, 2)
+        problem = PCC.OptimalControlProblem(system, partition, input_cost; p)
+        optimizer = p == 1 ? HiGHS.Optimizer : OPTIMIZER
+        result = PCC.certify(
+            [family for _ in PCC.nodes(graph)],
+            graph,
+            problem;
+            optimizer,
+            gains,
+        )
+        @test PCC.is_feasible(result)
+        @test minimum(PCC.edge_slacks(result)) >= -1e-6
+        rng = Random.MersenneTwister(22)
+        for edge in PCC.edges(graph), _ in 1:15
+            x = Random.randn(rng, 2)
+            a, b = PCC.source(edge), PCC.dest(edge)
+            mode = only(PCC.letters(PCC.label(graph, edge)))
+            next = (matrices[mode] + inputs[mode]*gains[a])*x
+            stage = maximum(abs, x)^p + abs(only(gains[a]*x))^p
+            @test PCC.node_value(problem, PCC.functions(result)[a], x) + 1e-6 >=
+                  stage + PCC.node_value(problem, PCC.functions(result)[b], next)
+        end
+        trajectory = PCC.simulate(result, [1.0, -2.0], 60; rng)
+        accumulated = sum(
+            maximum(abs, x)^p + abs(only(u))^p for
+            (x, u) in zip(PCC.states(trajectory), PCC.inputs(trajectory))
+        )
+        @test accumulated <= result([1.0, -2.0]) + 1e-5
+    end
+    initialized = PCC.certify(
+        family,
+        graph,
+        PCC.OptimalControlProblem(system, partition, input_cost);
+        optimizer = HiGHS.Optimizer,
+        initialization_optimizer = OPTIMIZER,
+    )
+    @test PCC.is_feasible(initialized)
 end
 
 end
