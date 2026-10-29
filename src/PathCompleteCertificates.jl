@@ -59,6 +59,7 @@ include("templates/catalogue/sum_of_squares.jl")
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")
 include("problems/catalogue/optimal_control.jl")
+include("problems/catalogue/polynomial_optimal_control.jl")
 
 include("refinements/abstract.jl")
 include("refinements/catalogue/tightest_node_splitting.jl")
