@@ -154,13 +154,21 @@ maximum(last.(costs)), certificate(x0)
 # matrices come from the quadratic certificate above; the polynomial SDP
 # optimizes its values by minimizing their integrals over the unit box.
 # Convexity and homogeneity ensure nonnegativity, so `psd = false` omits a
-# separate SOS constraint on the value polynomial.
+# separate SOS constraint on the value polynomial. The Gram representation
+# uses Chebyshev polynomials through SetProg's `basis` keyword; the value
+# itself remains homogeneous of degree four.
 
 import SetProg
 using SumOfSquares
 
 quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
-quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
+quartic_family = SetProg.PolySet(;
+    symmetric = true,
+    convex = true,
+    psd = false,
+    degree = 4,
+    basis = Chebyshev,
+)
 quartic_certificate = PCC.certify(
     quartic_family,
     graph,

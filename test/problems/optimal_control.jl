@@ -296,7 +296,13 @@ end
     system = PCC.switched_system([[0.5;;]], [[1.0;;]])
     graph = PCC.common_graph(system)
     problem = PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p = 4)
-    family = SetProg.PolySet(symmetric = true, convex = true, psd = false, degree = 4)
+    family = SetProg.PolySet(
+        symmetric = true,
+        convex = true,
+        psd = false,
+        degree = 4,
+        basis = Chebyshev,
+    )
     gains = [[-0.1;;]]
     model = PCC.optimization_model(family, graph, problem; optimizer = OPTIMIZER, gains)
     @test !only(model[:optimal_control_sets]).set.psd
@@ -420,18 +426,41 @@ end
 end
 
 @testset "Quartic switching control in two dimensions" begin
-    for psd in (true, false)
+    objectives = Dict{Bool, Float64}()
+    for basis in (Monomial, Chebyshev), psd in (true, false)
         matrices = [[0.5 0.1; 0.0 0.4], [0.3 0.0; -0.1 0.4]]
         inputs = [[1.0; 0.2;;], [1.0; 0.2;;]]
         system = PCC.switched_system(matrices, inputs)
         graph = PCC.de_bruijn(1, 2)
         problem = PCC.OptimalControlProblem(system, [2.0 0.25; 0.25 1.0], [1.0;;]; p = 4)
-        family = SetProg.PolySet(symmetric = true, convex = true, degree = 4, psd = psd)
+        family = SetProg.PolySet(
+            symmetric = true,
+            convex = true,
+            degree = 4,
+            psd = psd,
+            basis = basis,
+        )
         gains = [zeros(1, 2), [-0.1 0.05]]
         result = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, gains)
         @test PCC.is_feasible(result)
         @test length(PCC.functions(result)) == 2
         @test all(V -> V isa SetProg.Sets.ConvexPolySet, PCC.functions(result))
+        @test PCC._prepared_families(family, 2, 2)[1].basis == basis
+        integral = sum(V -> SetProg.l1_integral(V, ones(2)), PCC.functions(result))
+        if basis == Monomial
+            objectives[psd] = integral
+        else
+            @test integral ≈ objectives[psd] rtol = 1e-5
+        end
+        for V in PCC.functions(result)
+            p = SumOfSquares.MP.polynomial(V.p)
+            @test all(
+                t ->
+                    SumOfSquares.MP.degree(t) == 4 ||
+                    abs(SumOfSquares.MP.coefficient(t)) <= 1e-6,
+                SumOfSquares.MP.terms(p),
+            )
+        end
         @test all(>=(-1e-6), PCC.edge_slacks(result))
         for edge in PCC.edges(graph), angle in range(0, 2pi; length = 17)
             x = [cos(angle), sin(angle)]
