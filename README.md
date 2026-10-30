@@ -29,14 +29,15 @@ sequence of modes. You choose the graph, or let the package build it:
 
 <p align="center">
   <img src="docs/src/assets/architecture.png" width="480"
-       alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
+       alt="The two ways to use the package, for a user with a switched system to certify: the user gives the template, the graph and the problem, and certify computes a certificate; or, for stability, refine builds a graph adapted to the system, improving it step by step.">
 </p>
 
-## Example
+## A basic example
 
-The simplest case of the first way: a planar switched linear system with two modes, the
-quadratic template, and a graph with one node. Together they give a common quadratic Lyapunov
-function, whose rate is an upper bound on the joint spectral radius:
+We certify the stability of a planar switched linear system with two modes. We take the
+quadratic template and the simplest graph: one node, with a self-loop for each mode. Together
+they give a common quadratic Lyapunov function, whose rate is an upper bound on the joint
+spectral radius:
 
 ```julia
 import PathCompleteCertificates as PCC

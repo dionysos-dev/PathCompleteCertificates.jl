@@ -70,7 +70,7 @@ Any other JuMP solver for these programs works, such as the commercial solver
 MOSEK; JuMP keeps the
 [list of solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers).
 
-To check the installation, run [the example of the home page](@ref "An example").
+To check the installation, run [the example of the home page](@ref "A basic example").
 
 ## Optional packages
 
