@@ -287,7 +287,13 @@ end
         [0.5 0.2; 0.0 0.5],
     ) ≈ 0
     G = [2.0 0.0; 0.0 1.0]
-    parallelotope = PCC.ParallelFacesPolyhedralFunction(G, [1.0, 4.0])
+    partition = polyhedron(vrep([[2.0, 0.0], [0.0, 0.25], [-2.0, 0.0], [0.0, -0.25]]))
+    parallelotope = SetProg.polar(
+        SetProg.Sets.Piecewise(
+            [SetProg.Sets.PolarPoint(h.a / h.β) for h in halfspaces(partition)],
+            partition,
+        ),
+    )
     @test PCC._gauge(parallelotope, [3.0, 2.0]) ≈ 6
     @test !PCC._supports_dual(only(PCC.ParallelFacesPolyhedralTemplate([G])))
 end

@@ -155,24 +155,3 @@ function of [`DualCopositiveTemplate`](@ref), as a SetProg set; evaluate it
 with [`node_value`](@ref).
 """
 DualCopositiveFunction(v::AbstractVector) = _dual_value(LinearCopositiveFunction(v))
-"""
-    ParallelFacesPolyhedralFunction(G, w)
-
-The function ``V(x) = \\max_k |(G x)_k| / w_k``, a node function of
-[`ParallelFacesPolyhedralTemplate`](@ref), as a SetProg set; evaluate it with
-[`node_value`](@ref).
-"""
-function ParallelFacesPolyhedralFunction(
-    G::AbstractMatrix,
-    w::AbstractVector;
-    partition = _parallel_faces_partition(G),
-)
-    n = LinearAlgebra.checksquare(G)
-    length(w) == n || throw(DimensionMismatch())
-    all(>(0), w) || throw(ArgumentError("weights must be positive"))
-    pieces = [
-        SetProg.Sets.PolarPoint(G \ (w .* (G * (h.a / h.β)))) for
-        h in SetProg.halfspaces(partition)
-    ]
-    return SetProg.polar(SetProg.Sets.Piecewise(pieces, partition))
-end
