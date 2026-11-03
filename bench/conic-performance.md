@@ -6,8 +6,10 @@ Measured on 2026-11-03. This reproduces the stability case in
 `A₁ = [1.631 0.793; 0.112 1.554]`, De Bruijn order 3 (8 nodes, 16 edges),
 and `planar_conic_partition(3)` (32 cones over the full plane).
 
-The regression is real. The requested SetProg/Polyhedra changes improve it,
-but do not remove it. There is no PCC production-code change in this branch.
+The original regression is real. The dependency-only SetProg/Polyhedra
+changes improve it but do not remove it. The subsequent partition-generator
+certificate resolves it, as shown below. There is no PCC production-code
+change in this branch.
 
 ## Results
 
@@ -23,13 +25,17 @@ not be extrapolated to another machine.
 | Before SetProg migration | `37bac2e` | unused | unused | 2.45 s | 4.34 s |
 | Previous SetProg dependencies | `048301a` | `b9740b8` | 0.8.2 | 31.05 s | 80.17 s |
 | Requested fixes | `048301a` | `78a755f` (`bl/removeduplicates`) | 0.9.1 (`de1a2a8`) | 26.65 s | 70.75 s |
+| Partition-generator certificate | `048301a` | `55c0725` (`bl/piecewise-linear-inclusion`) | 0.9.1 | 0.368 s | 0.412 s |
 | Requested fixes, HiGHS for geometry | `048301a` | `78a755f` | 0.9.1 | not measured | 245.71 s |
 
 At `rtol=1e-6`, every implementation returns `1.8947057723999023`.
 At `rtol=1e-3`, every measured implementation returns `1.8955078125`.
 The requested dependency fixes save approximately 12% at the experiment's
 precision, but the result remains approximately 16 times slower than the
-pre-migration implementation on this machine.
+pre-migration implementation on this machine. The specialized ray
+certificate then reduces the full bisection to 0.412 s: approximately 172
+times faster than the dependency-only fixes and 10.5 times faster than the
+pre-migration implementation. All rates are unchanged.
 
 The old API defaulted to `rtol=1e-3`, whereas current `certify` defaults to
 `1e-6`. That matters when comparing defaults, but does not explain the
@@ -48,17 +54,19 @@ bounds; vector constraints count as objects rather than scalar components.
 | Before migration | 264 | 25,096 | 0.0140 s | none | 0.0997 s |
 | Previous dependencies | 95,488 | 119,808 | 0.0008 s | 0.7439 s | 1.4162 s |
 | Requested fixes | 95,488 | 119,808 | 0.0009 s | 0.4619 s | 1.3935 s |
+| Partition-generator certificate | 768 | 1,536 | 0.00085 s | 0.00484 s | 0.00775 s |
 | Requested fixes, HiGHS for geometry | 5,888 | 7,680 | 0.0008 s | 10.4362 s | 0.0478 s |
 
-The fixed-rate legacy solve reports `ALMOST_OPTIMAL`; the native SetProg
-solves report `OPTIMAL`. The benchmark does not silently change PCC's policy
-for accepting solver statuses.
+The fixed-rate legacy solve reports `ALMOST_OPTIMAL`; the generic SetProg
+solves report `OPTIMAL`. The new ray-certificate trials report `OPTIMAL` and
+`ALMOST_OPTIMAL`. The benchmark does not change PCC's existing policy for
+accepting solver statuses or relax any solver tolerance.
 
 ## Explanation
 
 The partition's adjacency graph reduces continuity/convexity constraints.
 That does **not** imply that the complete optimization model is smaller.
-`SetProg`'s generic piecewise inclusion compares every pair of pieces on the
+Before the specialization, `SetProg`'s generic piecewise inclusion compares every pair of pieces on the
 intersection of their cones. Each nontrivial domain receives Farkas
 multipliers and coefficient-matching constraints. Normalization also uses
 piecewise inclusion. Many more variables are introduced than the original
@@ -81,11 +89,21 @@ linearity and produces a much smaller LP. It instead solves many small
 geometry LPs during every model expansion, making the full computation
 slower still. This is not recommended as a performance workaround.
 
-The remaining optimization belongs in SetProg's piecewise-linear inclusion
-certificates: exploit the known partition/ray structure and avoid unnecessary
-pairwise domains and multipliers. The smaller continuity model alone is not
-sufficient evidence of an overall performance improvement. No specialized
-PCC modeling fallback has been added here.
+The follow-up SetProg commit `55c0725` exploits precisely this partition
+structure. For known convex piecewise-linear gauges and bounded source
+partitions, it checks the inclusion once at each source partition vertex.
+Source linearity and target convexity extend these inequalities across every
+source cone, including cones that cross destination-piece boundaries.
+Continuity permits shared generators to be checked just once. No pairwise
+domain preprocessing or inclusion multipliers are needed. This benchmark
+also produces no linearity-detection warnings with the ray certificate.
+
+Convexity is tracked from variable construction and checked for fixed
+numeric linear pieces. Preimages and extracted values preserve that
+guarantee. Sets without it and unbounded source partitions keep the generic
+certificate; the SetProg tests include a nonconvex target that would be
+incorrectly accepted without that safeguard. No specialized PCC modeling
+fallback has been added here.
 
 ## Reproduction
 
