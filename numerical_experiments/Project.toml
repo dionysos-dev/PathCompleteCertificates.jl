@@ -7,10 +7,13 @@ PathCompleteCertificates = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SetProg = "39881422-4b75-5582-a5c7-0feb14562a65"
 SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [sources]
 PathCompleteCertificates = {path = ".."}
+# The polyhedral safety templates need SetProg changes not yet released.
+SetProg = {url = "https://github.com/blegat/SetProg.jl", rev = "main"}
 
 [compat]
 Clarabel = "0.11"
