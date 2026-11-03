@@ -78,11 +78,11 @@ Two features need another package, installed with `Pkg.add` and loaded:
 
 | To use | Install and load |
 | :-- | :-- |
-| [`SumOfSquaresTemplate`](@ref) | `SumOfSquares`, and a polynomial package such as `DynamicPolynomials` |
+| [`SumOfSquaresTemplate`](@ref) | `SumOfSquares` |
 | plots of a [`Trajectory`](@ref) | `Plots` |
 
-For example, `Pkg.add(["SumOfSquares", "DynamicPolynomials"])`, then
-`using SumOfSquares, DynamicPolynomials`.
+For example, `Pkg.add("SumOfSquares")`, then
+`using SumOfSquares`.
 
 ## Common installation issues
 
