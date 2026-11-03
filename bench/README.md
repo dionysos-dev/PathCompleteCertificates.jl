@@ -14,3 +14,8 @@ julia --project=docs bench/athanasopoulos2019.jl
 | `athanasopoulos2019.jl` | Athanasopoulos & Jungers, CDC 2019, Example 2 | the four partial lifts at every tight edge, best candidate kept, prove stability of a two-mode 3-D system on the fixed-facet polyhedral template |
 
 Results go under `bench/results/`, which is ignored by git.
+
+The [conic-template migration comparison](conic-performance.md) records model
+sizes, separate expansion/solve timings, and a reproducible benchmark for
+`numerical_experiments/templates_jsr.jl` with SetProg `bl/removeduplicates` and
+Polyhedra v0.9.1.
