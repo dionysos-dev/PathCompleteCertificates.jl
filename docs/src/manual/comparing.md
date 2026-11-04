@@ -24,8 +24,8 @@ end
 ```
 
 Parts I and II judge a graph on one system, by solving. Comparing judges two
-graphs for every system at once, without solving anything. Given a template
-``\mathcal V``,
+graphs for every system at once, without computing any certificate. Given a
+template ``\mathcal V``,
 
 ```math
 G \le_{\mathcal V} H
@@ -34,12 +34,13 @@ G \le_{\mathcal V} H
 ```
 
 so that ``H`` is at least as good as ``G``, whatever the system
-([debauche2021comparison](@cite), Def. 4). The order depends on the two
-graphs and the template only: it tells, before any system is given, whether a
-larger graph can pay off, and it orders the graphs of the literature into
-hierarchies. Two tools prove it:
+[debauche2021comparison; Def. 4](@cite). For stability, scaling the matrices
+by ``1/\gamma`` shows that ``H`` then certifies every rate that ``G``
+certifies. The order depends on the two graphs and the template only: it
+tells, before any system is given, whether a larger graph can pay off, and it
+orders the graphs of the literature into hierarchies. Two tools prove it:
 
-- **a simulation**, which proves it for every template;
+- **a simulation**, which proves it for every template.
 - **a simulation after a lift**, which proves it for the templates closed
   under the lift's operation.
 
@@ -49,15 +50,15 @@ hierarchies. Two tools prove it:
 nodes of ``G`` keeps every edge:
 
 ```math
-(a, b, i) \text{ an edge of } H
-\implies (f(a), f(b), i) \text{ an edge of } G.
+(s, d, i) \text{ an edge of } H
+\implies (f(s), f(d), i) \text{ an edge of } G.
 ```
 
-Each node ``a`` of ``H`` then takes the function ``V_{f(a)}`` of its image,
+Each node ``s`` of ``H`` then takes the function ``V_{f(s)}`` of its image,
 and every edge inequality on ``H`` is one on ``G``: a certificate on ``G``
 gives one on ``H``, in any template. Conversely, ``G \le_{\mathcal V} H`` for
 every template only when ``G`` simulates ``H``
-([philippe2019complete](@cite), Thm. 3.5). [`simulation`](@ref)`(G, H)`
+[philippe2019complete; Thm. 3.5](@cite). [`simulation`](@ref)`(G, H)`
 returns ``f``, or `nothing`.
 
 On the De Bruijn hierarchy, order 1 simulates order 2. Each node of ``H`` is
@@ -73,9 +74,9 @@ simulation(de_bruijn(1, 2), de_bruijn(2, 2)),
 simulation(de_bruijn(2, 2), de_bruijn(1, 2))
 ```
 
-Order 2 is therefore at least as good as order 1 for every template; order 2
+Order 2 is therefore at least as good as order 1 for every template. Order 2
 does not simulate order 1, so the reverse fails for some template. The
-one-node graph simulates every graph: no graph gives a worse certificate than
+common graph simulates every graph: no graph gives a worse certificate than
 a common Lyapunov function.
 
 ## Simulation after a lift
@@ -92,27 +93,27 @@ makes ``G`` worse (see [Lifts](@ref)), so when the lifted ``G`` simulates
 | [`SumLift`](@ref)`()` | addition | a linear program, which needs an `optimizer` | the order fails for some such template |
 | [`CompositionLift`](@ref)`(T)`, [`BackwardCompositionLift`](@ref)`(T)` | composition with the matrices of a system, or with their inverses | building the lift and searching it | nothing is proved |
 
-The four rows are Theorems 8.1 and 8.5, Corollary 8.11, and Theorems 7.65
-and 7.66 of [debauche2024thesis](@cite).
+The rows come from [debauche2024thesis](@citet): Theorems 8.1 and 8.5 for
+the min and max lifts, Corollary 8.11 for the sum lift, and Theorems 7.65 and
+7.66 for the composition lifts.
 
-[`is_closed_under`](@ref) gives the closures of a template, and
-[`is_valid`](@ref) whether a lift is valid for a template on a system, which
-can also hold through the dual template (see [Duality](@ref)).
-[What works with what](@ref) lists the lifts valid for each template.
+[Lifts](@ref) says when a lift is valid for a template, and
+[What works with what](@ref) lists the lifts valid for each one.
 
 ## Comparing in one call
 
-[`compare`](@ref)`(G, H)` tries the lifts and returns those whose lifted ``G``
-simulates ``H``:
+[`compare`](@ref)`(G, H)` tries the lifts and returns a
+[`Comparison`](@ref): [`simulations`](@ref) lists the lifts whose lifted
+``G`` simulates ``H``, each with its simulation.
 
 ```@example graphs
 c = compare(de_bruijn(1, 2), common_graph(2))
 simulations(c)
 ```
 
-The min lift of the De Bruijn graph of order 1 simulates the one-node graph.
+The min lift of the De Bruijn graph of order 1 simulates the common graph.
 For every template for which the min lift is valid, such as the linear
 copositive template on a positive system, this De Bruijn graph therefore gives
-no better certificate than the one-node graph. Given `templates` and a `system`,
-[`compare`](@ref) also lists the templates for which the order is proved; see
-[Compare two graphs](@ref).
+no better certificate than the common graph. Given `templates` and a `system`,
+[`compare`](@ref) also lists the templates for which the order is proved
+(see [Compare two graphs](@ref)).
