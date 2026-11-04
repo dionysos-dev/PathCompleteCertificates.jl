@@ -15,9 +15,11 @@ supports.
 Modules = [PathCompleteCertificates]
 Pages = [
     "templates/catalogue/quadratic.jl",
-    "templates/catalogue/sum_of_squares.jl",
     "templates/catalogue/piecewise_quadratic.jl",
-    "problems/polytope_compat.jl",
+    "templates/catalogue/sum_of_squares.jl",
+    "templates/catalogue/piecewise_linear.jl",
+    "templates/catalogue/dual_piecewise_linear.jl",
+    "templates/catalogue/copositive.jl",
 ]
 ```
 

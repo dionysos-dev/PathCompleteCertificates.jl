@@ -31,7 +31,7 @@ export objective, optimality_gap, jsr_lower_bound, is_jsr_exact
 
 # Templates.
 export QuadraticTemplate, SumOfSquaresTemplate, PiecewiseQuadraticTemplate
-export ConicPolyhedralTemplate, ParallelFacesPolyhedralTemplate
+export PiecewiseLinearTemplate, DualPiecewiseLinearTemplate
 export LinearCopositiveTemplate, DualCopositiveTemplate, planar_conic_partition
 
 # Graphs.
@@ -84,13 +84,15 @@ include("templates/abstract.jl")
 include("problems/abstract.jl")
 include("problems/gauges.jl")
 include("problems/sets.jl")
-include("problems/polytope_compat.jl")
 include("problems/certificate.jl")
 include("problems/tight_edges.jl")
 
 include("templates/catalogue/quadratic.jl")
 include("templates/catalogue/sum_of_squares.jl")
 include("templates/catalogue/piecewise_quadratic.jl")
+include("templates/catalogue/piecewise_linear.jl")
+include("templates/catalogue/dual_piecewise_linear.jl")
+include("templates/catalogue/copositive.jl")
 
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")
