@@ -358,12 +358,12 @@ end
     @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2, 3]
 end
 
-@testset "every local lift at every tight edge, best candidate, parallel-faces template" begin
+@testset "every local lift at every tight edge, best candidate, dual piecewise linear template" begin
     # Athanasopoulos & Jungers, Example 2, on the plane: the four partial lifts
     # at every tight edge, each candidate solved, the best kept. The products
     # write words on the edges, so the graph gains edges rather than nodes.
     problem = SHEARED
-    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
+    template = PCC.DualPiecewiseLinearTemplate(1, 2)
 
     trace = PCC.refine(
         template,

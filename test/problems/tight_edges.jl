@@ -107,7 +107,7 @@ end
     @test PCC.edge_slacks(quadratic) isa Vector
 
     polyhedral = PCC.certify(
-        PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+        PCC.DualPiecewiseLinearTemplate(PCC.n_nodes(GRAPH), 2),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
@@ -116,7 +116,7 @@ end
     @test all(>=(-1e-7), PCC.edge_slacks(polyhedral))
 
     conic = PCC.certify(
-        PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(2)]),
+        PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(2)]),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,

@@ -204,12 +204,12 @@ end
     # of two different degrees, one answer.
     @test PCC.homogeneity_degree(PCC.QuadraticTemplate()) == 2
     @test PCC.homogeneity_degree(PCC.LinearCopositiveTemplate()) == 1
-    @test PCC.homogeneity_degree(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 1
+    @test PCC.homogeneity_degree(PCC.DualPiecewiseLinearTemplate(2, 2)) == 1
 
     bounds = map((
         PCC.QuadraticTemplate(),
         PCC.LinearCopositiveTemplate(),
-        PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(GRAPH), 2),
+        PCC.DualPiecewiseLinearTemplate(PCC.n_nodes(GRAPH), 2),
     )) do template
         PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rtol = 1e-3).rate
     end

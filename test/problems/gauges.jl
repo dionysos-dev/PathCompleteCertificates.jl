@@ -45,8 +45,8 @@ end
         Ellipsoid(symmetric = true),
         PCC.LinearCopositiveTemplate(),
         PCC.DualCopositiveTemplate(),
-        only(PCC.ParallelFacesPolyhedralTemplate(1, 2)),
-        only(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])),
+        only(PCC.DualPiecewiseLinearTemplate(1, 2)),
+        only(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)])),
     )
     x = SetProg.new_polyvars(2)
     families = (
@@ -163,11 +163,11 @@ end
     end
 end
 
-@testset "Conic and parallel-faces reference normalization" begin
+@testset "Piecewise linear and dual piecewise linear reference normalization" begin
     # A sheared matrix detects mixing up G, G', and their inverses.
     G = [2.0 1.0; 0.0 1.0]
     for min_weight in (0.25, 2.0)
-        parallel = only(PCC.ParallelFacesPolyhedralTemplate([G]; min_weight))
+        parallel = only(PCC.DualPiecewiseLinearTemplate([G]; min_weight))
         conic = parallel.set
         # The same partition gives a primal piecewise gauge or its polar.
         for (family, space) in ((conic, SetProg.PrimalSpace), (parallel, SetProg.DualSpace))
@@ -199,10 +199,10 @@ end
 
 @testset "Gauge data and duality" begin
     @test_throws ArgumentError PCC.DualCopositiveTemplate(min_weight = 0)
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])
-    @test_throws ArgumentError PCC.ConicPolyhedralTemplate([])
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate([zeros(2, 2)])
+    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([])
     @test_throws DimensionMismatch PCC._with_dimension(
-        only(PCC.ParallelFacesPolyhedralTemplate(1, 2)),
+        only(PCC.DualPiecewiseLinearTemplate(1, 2)),
         3,
     )
     @test PCC._supports_dual(Ellipsoid(symmetric = true))
@@ -235,8 +235,8 @@ end
         Ellipsoid(symmetric = true),
         PCC.DualCopositiveTemplate(),
     ])
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(0, 2)
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(1, 2; min_weight = 0)
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(0, 2)
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 2; min_weight = 0)
     model = Model(optimizer_with_attributes(Clarabel.Optimizer, MOI.Silent() => true))
     S = PCC.add_function_variables!(model, Ellipsoid(symmetric = true), 2, 1)
     PCC.add_normalization!(model, S.set, S; conditioning_bound = 10)
@@ -295,7 +295,7 @@ end
         ),
     )
     @test PCC._gauge(parallelotope, [3.0, 2.0]) ≈ 6
-    @test !PCC._supports_dual(only(PCC.ParallelFacesPolyhedralTemplate([G])))
+    @test !PCC._supports_dual(only(PCC.DualPiecewiseLinearTemplate([G])))
 end
 
 end

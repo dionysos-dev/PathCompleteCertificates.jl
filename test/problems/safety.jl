@@ -193,7 +193,7 @@ end
     system = PCC.switched_system([[0.5 0.0; 0.0 0.5]])
     graph = PCC.de_bruijn(1, 1)
     problem = PCC.SafetyProblem(system, S0, SU)
-    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
+    template = PCC.DualPiecewiseLinearTemplate(1, 2)
     model = PCC.optimization_model(template, graph, problem; optimizer = Clarabel.Optimizer)
     JuMP.optimize!(model)
     @test JuMP.is_solved_and_feasible(model)
@@ -237,7 +237,7 @@ end
         [2.0, -1],
     ]
     partition = SetProg.polyhedron(SetProg.vrep(vertices), lib)
-    conic = PCC.ConicPolyhedralTemplate([partition])
+    conic = PCC.PiecewiseLinearTemplate([partition])
     polygon = PCC.certify(conic, graph, tighter; optimizer = Clarabel.Optimizer)
     @test PCC.is_feasible(polygon)
     @test polygon.margin > 1e-6

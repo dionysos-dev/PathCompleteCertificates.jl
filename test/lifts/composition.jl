@@ -55,7 +55,7 @@ end
     @test PCC.is_valid(PCC.BackwardCompositionLift(1), PCC.QuadraticTemplate(), invertible)
     @test !PCC.is_valid(
         PCC.CompositionLift(1),
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+        PCC.DualPiecewiseLinearTemplate(1, 2),
         invertible,
     )
 end

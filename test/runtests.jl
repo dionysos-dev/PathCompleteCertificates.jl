@@ -27,7 +27,7 @@ const TEST_FILES = [
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
     ("./problems/sets.jl", :slow),
-    ("./problems/conic_polyhedral.jl", :slow),
+    ("./problems/piecewise_linear.jl", :slow),
     ("./problems/piecewise_quadratic.jl", :slow),
     ("./problems/copositive.jl", :slow),
     ("./problems/gauges.jl", :slow),

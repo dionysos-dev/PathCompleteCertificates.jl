@@ -90,13 +90,13 @@ const TEMPLATES = [
     ("Sum of squares, r = 3", n -> PCC.SumOfSquaresTemplate(3), OPTIMIZER, true),
     (
         "Piecewise linear, 32 cones",
-        n -> PCC.ConicPolyhedralTemplate(fill(CONES_32, n)),
+        n -> PCC.PiecewiseLinearTemplate(fill(CONES_32, n)),
         OPTIMIZER,
         true,
     ),
     (
         "Parallel faces, F_s = I",
-        n -> PCC.ParallelFacesPolyhedralTemplate(n, 2),
+        n -> PCC.DualPiecewiseLinearTemplate(n, 2),
         OPTIMIZER,
         true,
     ),

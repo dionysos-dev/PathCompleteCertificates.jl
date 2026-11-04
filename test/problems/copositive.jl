@@ -164,7 +164,7 @@ end
     for n in (2, 3)
         G = Matrix{Float64}(I, n, n)
         G[1, 2] = 0.5
-        family = only(PCC.ParallelFacesPolyhedralTemplate([G]; min_weight = 2))
+        family = only(PCC.DualPiecewiseLinearTemplate([G]; min_weight = 2))
         problem =
             PCC.StabilityProblem(PCC.switched_system([0.5 * Matrix{Float64}(I, n, n)]))
         graph = PCC.common_graph(1)
@@ -189,20 +189,17 @@ end
         end
     end
     matrices = [[1.0 0.5; 0.0 1.0], [2.0 0.0; 0.0 1.0]]
-    families = PCC.ParallelFacesPolyhedralTemplate(matrices)
+    families = PCC.DualPiecewiseLinearTemplate(matrices)
     graph = PCC.de_bruijn(1, 2)
     c = PCC.certify(families, graph, PROBLEM; optimizer = OPTIMIZER, rate = 0.9)
     @test PCC.is_feasible(c)
     @test all(>=(-1e-7), PCC.edge_slacks(c))
     @test !PCC.is_closed_under(families, PCC.Maximum(), SYSTEM)
     @test PCC.is_closed_under(fill(first(families), 2), PCC.Maximum(), SYSTEM)
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(1, 0)
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(1, 2; min_weight = 0)
-    @test_throws DimensionMismatch PCC.ParallelFacesPolyhedralTemplate([
-        ones(2, 2),
-        ones(3, 3),
-    ])
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate([zeros(2, 2)])
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 0)
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 2; min_weight = 0)
+    @test_throws DimensionMismatch PCC.DualPiecewiseLinearTemplate([ones(2, 2), ones(3, 3)])
 end
 
 @testset "Copositive templates say what they need" begin

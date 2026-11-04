@@ -147,12 +147,9 @@ end
     @test !PCC.is_valid(PCC.MinLift(), PCC.DualCopositiveTemplate(), POSITIVE)
 
     # A template without a dual is decided by its own closures only.
-    @test PCC.is_valid(
-        PCC.SumLift(2),
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
-        GENERAL,
-    ) == PCC.is_closed_under(
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
+    @test PCC.is_valid(PCC.SumLift(2), PCC.DualPiecewiseLinearTemplate(1, 2), GENERAL) ==
+          PCC.is_closed_under(
+        PCC.DualPiecewiseLinearTemplate(1, 2),
         PCC.Addition(),
         GENERAL,
     )
@@ -181,12 +178,12 @@ end
     @test PCC.has_dual(PCC.QuadraticTemplate())
     @test PCC.has_dual(PCC.LinearCopositiveTemplate())
     @test PCC.has_dual(PCC.DualCopositiveTemplate())
-    @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
+    @test !PCC.has_dual(PCC.DualPiecewiseLinearTemplate(1, 2))
 
-    @test_throws ArgumentError PCC.dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
+    @test_throws ArgumentError PCC.dual(PCC.DualPiecewiseLinearTemplate(1, 2))
 
     polyhedral =
-        bound(PCC.ParallelFacesPolyhedralTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
+        bound(PCC.DualPiecewiseLinearTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
     @test PCC.is_feasible(polyhedral)
     @test_throws ArgumentError PCC.dual(polyhedral)
 end
