@@ -16,7 +16,7 @@ OPTIMAL
 """
     EXHAUSTED
 
-The algorithm had no next graph before the gap closed.
+The strategy had no next graph before the gap closed.
 """
 EXHAUSTED
 
@@ -94,14 +94,14 @@ status(trace::RefinementTrace) = trace.status
 
 """
     refine(template, problem; optimizer, kwargs...)
-    refine(template, graph, problem; optimizer, algorithm = TightestNodeSplitting(),
+    refine(template, graph, problem; optimizer, strategy = TightestNodeSplitting(),
            stop = Returns(false), depth_max = 5, stall_max = 1, atol = 1e-4,
            gap_tol = 1e-6, rtol = 1e-6, check_path_complete = true, kwargs...)
 
-Refine `graph`, by default [`initial_graph`](@ref) of `algorithm` on the system
+Refine `graph`, by default [`initial_graph`](@ref) of `strategy` on the system
 of `problem`, until the [`optimality_gap`](@ref) of its certificate closes,
 and return a [`RefinementTrace`](@ref). At each step [`next_graph`](@ref) of
-`algorithm` gives the next graph, a lift of the current one.
+`strategy` gives the next graph, a lift of the current one.
 
 - The run stops when `stop(certificate)` holds, the gap is at most `gap_tol`,
   `stall_max` steps in a row fail to improve the objective by `rtol`,
@@ -117,11 +117,11 @@ function refine(
     template::_SetFamily,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
+    strategy::AbstractRefinementStrategy = TightestNodeSplitting(),
     kwargs...,
 )
-    start = initial_graph(algorithm, problem.system)
-    return refine(template, start, problem; optimizer, algorithm, kwargs...)
+    start = initial_graph(strategy, problem.system)
+    return refine(template, start, problem; optimizer, strategy, kwargs...)
 end
 
 function refine(
@@ -129,7 +129,7 @@ function refine(
     start::CertificateGraph,
     problem::AbstractProblem;
     optimizer,
-    algorithm::AbstractRefinementAlgorithm = TightestNodeSplitting(),
+    strategy::AbstractRefinementStrategy = TightestNodeSplitting(),
     stop = Returns(false),
     depth_max::Integer = 5,
     stall_max::Integer = 1,
@@ -213,7 +213,7 @@ function refine(
         solve_lifted = let template = template
             lifted -> solve(reindex(template, origins(lifted)), get_graph(lifted), false)
         end
-        result = next_graph(algorithm, certificate; atol, solve = solve_lifted)
+        result = next_graph(strategy, certificate; atol, solve = solve_lifted)
 
         if result === nothing
             outcome = EXHAUSTED

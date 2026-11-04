@@ -1,16 +1,17 @@
 """
-    AbstractRefinementAlgorithm
+    AbstractRefinementStrategy
 
-The supertype of the algorithms [`refine`](@ref) can run. A new algorithm
-subtypes it and implements [`next_graph`](@ref).
+The supertype of the strategies [`refine`](@ref) can follow: the rule that
+says where to lift the graph from its certificate. A new strategy subtypes it
+and implements [`next_graph`](@ref).
 """
-abstract type AbstractRefinementAlgorithm end
+abstract type AbstractRefinementStrategy end
 
 """
-    next_graph(algorithm, certificate; atol, solve)
+    next_graph(strategy, certificate; atol, solve)
 
 The next graph after `certificate`, as `(lifted, next)`, or `nothing` if there
-is none. `next` is the certificate on `lifted` if the algorithm already solved
+is none. `next` is the certificate on `lifted` if the strategy already solved
 it, `nothing` otherwise.
 
 Edges with slack at most `atol` are tight; `solve(lifted)` solves a candidate.
@@ -18,9 +19,9 @@ Edges with slack at most `atol` are tight; `solve(lifted)` solves a candidate.
 function next_graph end
 
 """
-    initial_graph(algorithm, system)
+    initial_graph(strategy, system)
 
 The graph `refine(template, problem)` starts from: [`common_graph`](@ref) of
-`system` unless `algorithm` says otherwise.
+`system` unless `strategy` says otherwise.
 """
-initial_graph(::AbstractRefinementAlgorithm, system) = common_graph(system)
+initial_graph(::AbstractRefinementStrategy, system) = common_graph(system)

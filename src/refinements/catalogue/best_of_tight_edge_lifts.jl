@@ -2,13 +2,13 @@
     BestOfTightEdgeLifts(lifts = (OutSplitLift(), InSplitLift(),
                                   ForwardProductLift(), BackwardProductLift()))
 
-The procedure of [athanasopoulos2019polyhedral; Ex. 2](@cite). At each step,
+The strategy of [athanasopoulos2019polyhedral; Ex. 2](@cite). At each step,
 every lift of `lifts` is applied at every tight edge, one edge at a time; by
 default these are its partial P\\*-, P-, T- and T\\*-lifts (Defs. 7, 6, 4
 and 5). Each candidate graph is solved, and the one with the lowest rate is
 kept.
 """
-struct BestOfTightEdgeLifts{L <: Tuple} <: AbstractRefinementAlgorithm
+struct BestOfTightEdgeLifts{L <: Tuple} <: AbstractRefinementStrategy
     lifts::L
 end
 
@@ -20,7 +20,7 @@ BestOfTightEdgeLifts() = BestOfTightEdgeLifts((
 ))
 
 function next_graph(
-    algorithm::BestOfTightEdgeLifts,
+    strategy::BestOfTightEdgeLifts,
     certificate::AbstractCertificate;
     atol::Real,
     solve,
@@ -28,7 +28,7 @@ function next_graph(
     graph = get_graph(certificate)
     candidates = Lifted[]
 
-    for edge in tight_edges(certificate; atol = atol), L in algorithm.lifts
+    for edge in tight_edges(certificate; atol = atol), L in strategy.lifts
         _changes(L, graph, edge) || continue
 
         push!(candidates, lift(L, graph, edge))

@@ -1,10 +1,10 @@
 """
     TightestNodeSplitting(; rng = nothing)
 
-Algorithm 1 of [ninite2026lifting](@cite), with [`OutSplitLift`](@ref) at a
-node, which refines their forward lift: split the node with the most tight
-outgoing edges, among those with at least two, into one copy per outgoing
-edge. When no node has two tight outgoing edges, there is no next graph.
+The strategy of Algorithm 1 of [ninite2026lifting](@cite), with
+[`OutSplitLift`](@ref) at a node, which refines their forward lift: split the
+node with the most tight outgoing edges, among those with at least two, into
+one copy per outgoing edge. When no node has two tight outgoing edges, there is no next graph.
 
 Several nodes can hold as many tight edges. Among them the one with the fewest
 outgoing edges is split, since its lift adds the fewest nodes; a tie that
@@ -16,14 +16,14 @@ From [`common_graph`](@ref), the first step gives the dual of
 [`de_bruijn`](@ref)`(1, n_modes)`.
 """
 struct TightestNodeSplitting{R <: Union{Nothing, Random.AbstractRNG}} <:
-       AbstractRefinementAlgorithm
+       AbstractRefinementStrategy
     rng::R
 end
 
 TightestNodeSplitting(; rng = nothing) = TightestNodeSplitting(rng)
 
 function next_graph(
-    algorithm::TightestNodeSplitting,
+    strategy::TightestNodeSplitting,
     certificate::AbstractCertificate;
     atol::Real,
     solve,
@@ -41,7 +41,7 @@ function next_graph(
     cheapest = minimum(outdegree(graph, node) for node in candidates)
     filter!(node -> outdegree(graph, node) == cheapest, candidates)
 
-    node = algorithm.rng === nothing ? first(candidates) : rand(algorithm.rng, candidates)
+    node = strategy.rng === nothing ? first(candidates) : rand(strategy.rng, candidates)
 
     return lift(OutSplitLift(), graph, node), nothing
 end

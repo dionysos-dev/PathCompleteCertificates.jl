@@ -48,7 +48,7 @@ export compare, Comparison, simulations, templates
 
 # Refinement.
 export refine, RefinementTrace, rates, graphs, certificates, steps
-export AbstractRefinementAlgorithm, TightestNodeSplitting, BestOfTightEdgeLifts
+export AbstractRefinementStrategy, TightestNodeSplitting, BestOfTightEdgeLifts
 export next_graph, initial_graph
 
 include("graphs/queries.jl")
