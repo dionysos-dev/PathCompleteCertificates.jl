@@ -26,7 +26,7 @@ nothing #hide
 
 # ## One call
 #
-# [`refine`](@ref) starts from the one-node graph and adds nodes where the
+# [`refine`](@ref) starts from the common graph and adds nodes where the
 # certificate is tight. For each graph it visits, its number of nodes, the
 # certified rate, and the lower bound read from the tight edges:
 

@@ -38,7 +38,7 @@ nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is one quadratic function and one
+# On the common graph, the certificate is one quadratic function and one
 # gain, a linear feedback. Its bound on the worst-case cost from ``x_0``:
 
 certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
@@ -60,12 +60,12 @@ certificate.gains
 
 # ## The certificate, drawn
 #
-# On the left, the set ``\{x : V_a(x) \le V(x_0)\}`` of each node function, and
+# On the left, the set ``\{x : V_s(x) \le V(x_0)\}`` of each node function, and
 # the set ``\{x : V(x) \le V(x_0)\}`` of their common function, here their
 # minimum, with 20 closed-loop runs from ``x_0`` under random switching: ``V``
 # decreases along every run, so none leaves the set. On the right, the cost
 # accumulated along 100 runs, below the bound of the certificate, itself below
-# the bound of the one-node graph.
+# the bound of the common graph.
 
 directions = [[cos(t), sin(t)] for t in range(0, 2pi; length = 400)]
 level_set(f, value) = [d .* sqrt(value / f(d)) for d in directions]

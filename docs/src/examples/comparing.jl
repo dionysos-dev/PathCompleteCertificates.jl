@@ -3,7 +3,7 @@
 # Before solving on a bigger graph, ask whether it can pay off at all.
 # [`compare`](@ref) answers for every system at once, without solving, and the
 # answer depends on the template: on the five graphs of
-# [debauche2023ordering](@cite), a five-node graph can beat the one-node graph
+# [debauche2023ordering](@cite), a five-node graph can beat the common graph
 # for quadratic forms, and never for the copositive templates.
 # [Comparing graphs](@ref) explains the method; this page runs it.
 
@@ -186,7 +186,7 @@ end
 
 # ## The template decides
 #
-# `G4` against the one-node graph: its min and max lifts simulate `G0`, its sum
+# `G4` against the common graph: its min and max lifts simulate `G0`, its sum
 # lift does not. So `G4` gives no better certificate than `G0` for the
 # templates for which the min or the max lift is valid, here the two copositive
 # ones, but may for the quadratic template:

@@ -26,7 +26,7 @@ nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is a common quadratic Lyapunov
+# On the common graph, the certificate is a common quadratic Lyapunov
 # function. Its best rate is above one, so it cannot prove stability:
 
 certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER).rate
@@ -48,7 +48,7 @@ certificate.rate
 
 # ## The certificate, drawn
 #
-# On the left, the set ``\{x : V_a(x) \le 1\}`` of each of the four node
+# On the left, the set ``\{x : V_s(x) \le 1\}`` of each of the four node
 # functions, and the set ``\{x : V(x) \le 1\}`` of their common function, here
 # their minimum: a union of ellipses, which no single quadratic function
 # describes. On the right, ``V`` along 100 random switching sequences and along

@@ -31,7 +31,7 @@ nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is a common barrier function. None
+# On the common graph, the certificate is a common barrier function. None
 # exists:
 
 is_feasible(certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER))

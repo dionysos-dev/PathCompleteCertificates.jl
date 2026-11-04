@@ -1,7 +1,7 @@
 # # Try a richer template
 #
 # [Bound the joint spectral radius of my system](@ref) proved stability with a
-# bigger graph. This page keeps the one-node graph and changes the template
+# bigger graph. This page keeps the common graph and changes the template
 # instead: a sum of squares of degree 4 proves stability where a quadratic form
 # cannot. [Choosing a template](@ref) lists the templates; here they are
 # compared on one system, including SetProg families passed directly.
@@ -18,7 +18,7 @@ nothing #hide
 # ## The system
 #
 # The rotation and the shear of
-# [Bound the joint spectral radius of my system](@ref), on the one-node graph:
+# [Bound the joint spectral radius of my system](@ref), on the common graph:
 # every difference below comes from the template.
 
 A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
