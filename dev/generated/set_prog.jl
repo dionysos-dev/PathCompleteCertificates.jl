@@ -42,7 +42,7 @@ left = plot(;
     title = "the sets V ≤ 1",
 )
 for (name, certificate) in certificates
-    p = PCC.homogeneity_degree(PCC.template(certificate))
+    p = PCC.homogeneity_degree(PCC.get_template(certificate))
     points = [d ./ certificate(d)^(1 / p) for d in directions]
     radius = maximum(LinearAlgebra.norm, points)
     plot!(left, first.(points) ./ radius, last.(points) ./ radius; lw = 2, label = name)
