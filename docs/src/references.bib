@@ -51,6 +51,7 @@
   volume  = {46},
   pages   = {101237},
   year    = {2022},
+  doi     = {10.1016/j.nahs.2022.101237},
   eprint  = {2110.13474},
   archivePrefix = {arXiv}
 }
@@ -63,7 +64,8 @@
   booktitle = {Proceedings of the 26th ACM International Conference on Hybrid
                Systems: Computation and Control (HSCC '23)},
   publisher = {Association for Computing Machinery},
-  year      = {2023}
+  year      = {2023},
+  doi       = {10.1145/3575870.3587114}
 }
 
 @inproceedings{anand2024barrier,
@@ -72,8 +74,10 @@
   author    = {Anand, Mahathi and Jungers, Rapha{\"e}l M. and Zamani, Majid
                and Allg{\"o}wer, Frank},
   booktitle = {2024 IEEE 63rd Conference on Decision and Control (CDC)},
+  pages     = {7423--7428},
   year      = {2024},
-  organization = {IEEE}
+  organization = {IEEE},
+  doi       = {10.1109/CDC56724.2024.10886799}
 }
 
 @misc{anand2025completeness,
@@ -87,22 +91,27 @@
   primaryClass  = {eess.SY}
 }
 
-@misc{jongeneel2025ordering,
-  title  = {Ordering and refining path-complete {L}yapunov functions through
-            composition lifts},
-  author = {Jongeneel, Wouter and Jungers, Rapha{\"e}l M.},
-  year   = {2025},
-  eprint = {2503.18189},
+@inproceedings{jongeneel2025ordering,
+  title     = {Ordering and refining path-complete {L}yapunov functions through
+               composition lifts},
+  author    = {Jongeneel, Wouter and Jungers, Rapha{\"e}l M.},
+  booktitle = {2025 IEEE 64th Conference on Decision and Control (CDC)},
+  pages     = {8304--8309},
+  year      = {2025},
+  doi       = {10.1109/CDC57313.2025.11312012},
+  eprint    = {2503.18189},
   archivePrefix = {arXiv},
   primaryClass  = {math.OC}
 }
 
-@misc{ninite2026path,
-  title  = {A Path-Complete Approach for Optimal Control of Switched Systems},
-  author = {Ninite, L{\'e}a and Banse, Adrien and Berger, Guillaume O. and
-            Jungers, Rapha{\"e}l M.},
-  year   = {2026},
-  eprint = {2602.04310},
+@inproceedings{ninite2026path,
+  title     = {A Path-Complete Approach for Optimal Control of Switched Systems},
+  author    = {Ninite, L{\'e}a and Banse, Adrien and Berger, Guillaume O. and
+               Jungers, Rapha{\"e}l M.},
+  booktitle = {Proceedings of the 29th ACM International Conference on Hybrid
+               Systems: Computation and Control (HSCC '26)},
+  year      = {2026},
+  eprint    = {2602.04310},
   archivePrefix = {arXiv},
   primaryClass  = {math.OC}
 }
@@ -168,8 +177,7 @@
   booktitle = {Proceedings of the 29th ACM International Conference on Hybrid
                Systems: Computation and Control (HSCC '26)},
   publisher = {Association for Computing Machinery},
-  year      = {2026},
-  doi       = {10.1145/3801146.3805662}
+  year      = {2026}
 }
 
 @inproceedings{wintenberg2026complete,
@@ -189,7 +197,8 @@
                Systems: Computation and Control (HSCC '19)},
   pages     = {138--146},
   publisher = {Association for Computing Machinery},
-  year      = {2019}
+  year      = {2019},
+  doi       = {10.1145/3302504.3311803}
 }
 
 @inproceedings{debauche2022necessary,
@@ -202,4 +211,136 @@
   publisher = {Association for Computing Machinery},
   year      = {2022},
   doi       = {10.1145/3501710.3519539}
+}
+
+@inproceedings{legat2019set,
+  title     = {Set Programming with {JuMP}},
+  author    = {Legat, Beno{\^\i}t and Jungers, Rapha{\"e}l M. and
+               Parrilo, Pablo A. and Tabuada, Paulo},
+  booktitle = {The Third Annual JuMP-dev Workshop},
+  year      = {2019}
+}
+
+@phdthesis{legat2020set,
+  title  = {Set Programming: Theory and Computation},
+  author = {Legat, Beno{\^\i}t},
+  school = {Universit{\'e} catholique de Louvain},
+  year   = {2020}
+}
+
+@incollection{legat2023computation,
+  title     = {Computation of invariant sets for complex systems},
+  author    = {Legat, Beno{\^\i}t and Jungers, Rapha{\"e}l M.},
+  booktitle = {Numerical Control: Part B},
+  series    = {Handbook of Numerical Analysis},
+  volume    = {24},
+  pages     = {131--182},
+  publisher = {Elsevier},
+  year      = {2023},
+  doi       = {10.1016/bs.hna.2022.12.001}
+}
+
+@inproceedings{weisser2019polynomial,
+  title     = {Polynomial and Moment Optimization in {J}ulia and {JuMP}},
+  author    = {Weisser, Tillmann and Legat, Beno{\^\i}t and Coey, Chris and
+               Kapelevich, Lea and Vielma, Juan Pablo},
+  booktitle = {JuliaCon},
+  year      = {2019},
+  url       = {https://pretalx.com/juliacon2019/talk/QZBKAU/}
+}
+
+@article{gardner2013operations,
+  title   = {Operations between sets in geometry},
+  author  = {Gardner, Richard J. and Hug, Daniel and Weil, Wolfgang},
+  journal = {Journal of the European Mathematical Society},
+  volume  = {15},
+  number  = {6},
+  pages   = {2297--2352},
+  year    = {2013},
+  doi     = {10.4171/JEMS/422}
+}
+
+@article{lubin2023jump,
+  title   = {{JuMP} 1.0: Recent improvements to a modeling language for
+             mathematical optimization},
+  author  = {Lubin, Miles and Dowson, Oscar and Dias Garcia, Joaquim and
+             Huchette, Joey and Legat, Beno{\^\i}t and Vielma, Juan Pablo},
+  journal = {Mathematical Programming Computation},
+  volume  = {15},
+  pages   = {581--589},
+  year    = {2023},
+  doi     = {10.1007/s12532-023-00239-3}
+}
+
+@misc{legat2025hybridsystems,
+  title     = {{HybridSystems.jl}, version 0.4.4},
+  author    = {Legat, Beno{\^\i}t and Forets, Marcelo and Schilling, Christian},
+  publisher = {Zenodo},
+  year      = {2025},
+  doi       = {10.5281/zenodo.16931536}
+}
+
+@article{goulart2026clarabel,
+  title   = {Clarabel: An interior-point solver for conic programs with
+             quadratic objectives},
+  author  = {Goulart, Paul J. and Chen, Yuwen},
+  journal = {Mathematical Programming Computation},
+  year    = {2026},
+  doi     = {10.1007/s12532-026-00320-7},
+  eprint  = {2405.12762},
+  archivePrefix = {arXiv},
+  primaryClass  = {math.OC}
+}
+
+@article{rakovic2021minkowski,
+  title   = {{Minkowski--Bellman} inequality and equation},
+  author  = {Rakovi{\'c}, Sa{\v{s}}a V.},
+  journal = {Automatica},
+  volume  = {125},
+  pages   = {109435},
+  year    = {2021},
+  doi     = {10.1016/j.automatica.2020.109435}
+}
+
+@article{rakovic2025robust,
+  title   = {Infinite horizon robust linear {M}inkowski regulator},
+  author  = {Rakovi{\'c}, Sa{\v{s}}a V.},
+  journal = {Communications in Optimization Theory},
+  volume  = {2025},
+  pages   = {21},
+  year    = {2025},
+  doi     = {10.23952/cot.2025.21}
+}
+
+@inproceedings{summers2013approximate,
+  title     = {Approximate dynamic programming via sum of squares programming},
+  author    = {Summers, Tyler H. and Kunz, Konstantin and Kariotoglou, Nikolaos and
+               Kamgarpour, Maryam and Summers, Sean and Lygeros, John},
+  booktitle = {2013 European Control Conference (ECC)},
+  pages     = {191--197},
+  year      = {2013},
+  doi       = {10.23919/ECC.2013.6669374}
+}
+
+@article{rantzer2000piecewise,
+  title   = {Piecewise linear quadratic optimal control},
+  author  = {Rantzer, Anders and Johansson, Mikael},
+  journal = {IEEE Transactions on Automatic Control},
+  volume  = {45},
+  number  = {4},
+  pages   = {629--637},
+  year    = {2000},
+  doi     = {10.1109/9.847100}
+}
+
+@article{legat2020certifying,
+  title   = {Certifying Unstability of Switched Systems Using Sum of Squares
+             Programming},
+  author  = {Legat, Beno{\^\i}t and Parrilo, Pablo A. and Jungers, Rapha{\"e}l M.},
+  journal = {SIAM Journal on Control and Optimization},
+  volume  = {58},
+  number  = {4},
+  pages   = {2616--2638},
+  year    = {2020},
+  doi     = {10.1137/18M1173460}
 }
