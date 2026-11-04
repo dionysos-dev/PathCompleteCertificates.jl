@@ -17,7 +17,7 @@ Use it when two conditions hold:
    ``x_{k+1} = A_{\sigma(k)} x_k + B_{\sigma(k)} u_k``, and any sequence of
    modes may occur.
 2. You want a proof rather than simulations: that the system is stable, that
-   it stays safe, or that a feedback policy keeps its cost bounded.
+   it stays safe, or that a feedback policy has a bounded worst-case cost.
 
 It fits best when, in addition:
 

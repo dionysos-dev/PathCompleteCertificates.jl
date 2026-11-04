@@ -13,7 +13,7 @@ paper, what the package takes from each.
 | :-- | :-- |
 | [ahmadi2014joint](@citet) | path-complete graphs, and the bound on the joint spectral radius: [`StabilityProblem`](@ref), [`is_path_complete`](@ref), [`expanded_form`](@ref) |
 | [philippe2019path](@citet) | complete and co-complete graphs, and the common function: [`common`](@ref) |
-| [anand2024barrier](@citet) | path-complete barrier functions: [`SafetyProblem`](@ref) |
+| [anand2024barrier](@citet) | path-complete barrier certificates: [`SafetyProblem`](@ref) |
 | [ninite2026path](@citet) | path-complete optimal control: [`OptimalControlProblem`](@ref) |
 | [abate2026succinct](@citet) | the characterization of path-completeness by the subset construction |
 
@@ -23,11 +23,11 @@ paper, what the package takes from each.
 | :-- | :-- |
 | [athanasopoulos2019polyhedral](@citet) | the two polyhedral parameterizations: by pairs of parallel faces, [`ParallelFacesPolyhedralTemplate`](@ref), and by pairs of opposite vertices, which [`ConicPolyhedralTemplate`](@ref) extends to any partition into cones |
 | [parrilo2008approximation](@citet) | [`SumOfSquaresTemplate`](@ref) |
-| [debauche2024thesis](@citet) | [`DualCopositiveTemplate`](@ref) |
+| [debauche2021comparison](@citet) | the primal and dual linear copositive norms: [`LinearCopositiveTemplate`](@ref) and [`DualCopositiveTemplate`](@ref) |
 
-[`QuadraticTemplate`](@ref) and [`LinearCopositiveTemplate`](@ref) are
-standard. [`PiecewiseQuadraticTemplate`](@ref) keeps the cones of
-[`ConicPolyhedralTemplate`](@ref), with a quadratic form on each.
+[`QuadraticTemplate`](@ref) is standard. [`PiecewiseQuadraticTemplate`](@ref)
+keeps the cones of [`ConicPolyhedralTemplate`](@ref), with a quadratic form on
+each.
 
 ## Set programming
 
