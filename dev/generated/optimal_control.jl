@@ -118,4 +118,43 @@ quartic_certificate = PCC.certify(
 PCC.is_feasible(quartic_certificate)
 quartic_certificate(x0)
 
+import LinearAlgebra
+P = SetProg.Polyhedra
+
+directions = [f(2pi * i / 32) for i in 0:31, f in (cos, sin)]
+polyhedral_families = [
+    SetProg.Polytope(;
+        symmetric = true,
+        piecewise = P.polyhedron(
+            P.hrep(
+                directions * LinearAlgebra.cholesky(LinearAlgebra.Symmetric(Matrix(V))).U,
+                ones(32),
+            ),
+        ),
+    ) for V in PCC.functions(certificate)
+]
+polyhedral_certificate = PCC.certify(
+    polyhedral_families,
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(polyhedral_certificate)
+polyhedral_certificate(x0)
+
+piecewise_quadratic_family = SetProg.Ellipsoid(;
+    symmetric = true,
+    piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
+)
+piecewise_quadratic_certificate = PCC.certify(
+    piecewise_quadratic_family,
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(piecewise_quadratic_certificate)
+piecewise_quadratic_certificate(x0)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

@@ -101,4 +101,18 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
 
+using SetProg, SumOfSquares
+import HiGHS, JuMP
+partition_library = SetProg.Polyhedra.DefaultLibrary{Float64}(
+    JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
+)
+partition = SetProg.polyhedron(
+    SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)),
+    partition_library,
+)
+piecewise_template = SetProg.Ellipsoid(; symmetric = true, piecewise = partition)
+piecewise_certificate =
+    PCC.certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
+PCC.is_feasible(piecewise_certificate), piecewise_certificate.margin
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
