@@ -38,8 +38,10 @@ family new to the package also needs its methods, in two files:
   `is_closed_under` (the lifts valid for it), `reindex` (per-node data), and
   `has_dual` and `dual` when it has a dual.
 
-Stability then accepts the new family without change; safety and optimal
-control are written for the quadratic template.
+Stability then accepts the new family without change. Safety accepts
+quadratic, polynomial and polyhedral families. Optimal control synthesizes the
+gains with the quadratic template only, and, for fixed gains, also accepts
+convex homogeneous polynomials.
 
 ## A problem
 

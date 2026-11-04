@@ -25,8 +25,8 @@ support polynomial value optimization for fixed or initialized gains.
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | ✓ ² | |
 | [`ConicPolyhedralTemplate`](@ref)         | ✓ | ✓ ² | |
+| [`PiecewiseQuadraticTemplate`](@ref)      | ✓ | | |
 | convex homogeneous SetProg PolySet       | ✓ | ✓ | ✓ ³ |
-| piecewise SetProg ellipsoid or polytope   | ✓ | | |
 
 ¹ Positive systems only: matrices with nonnegative entries.
 
@@ -56,7 +56,7 @@ Unsupported combinations report an error before anything is solved. Two more con
 | [`DualCopositiveTemplate`](@ref) | max; through its dual: sum, composition if the matrices are invertible with nonnegative inverses, backward composition if they are nonnegative with no zero row |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | max if every node has the same faces |
 | [`ConicPolyhedralTemplate`](@ref) | sum if every node has the same partition |
-| piecewise SetProg ellipsoid or polytope | sum if every node has the same partition |
+| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition |
 
 The lifts used by refinement, the splits and the products, are valid for every
 template. [`is_valid`](@ref) answers for a given template and system.
@@ -65,7 +65,7 @@ template. [`is_valid`](@ref) answers for a given template and system.
 
 [`refine`](@ref) runs on [`StabilityProblem`](@ref) only, with a template that
 measures its edge slacks: every template but [`SumOfSquaresTemplate`](@ref)
-and the piecewise SetProg ellipsoids. [`compare`](@ref) reads graphs with one
+and [`PiecewiseQuadraticTemplate`](@ref). [`compare`](@ref) reads graphs with one
 mode per edge.
 
 ## The gaps
@@ -80,7 +80,7 @@ template, problem, lift or refinement algorithm goes.
   separation from a bounded unsafe obstacle;
 - **optimal control on graphs that are not complete:** the convex program
   covers complete graphs only;
-- **refinement with sums of squares and piecewise ellipsoids:** their edge
+- **refinement with sums of squares and piecewise quadratic functions:** their edge
   slacks need an optimization of their own;
 - **constrained switching**, for instance by an automaton: planned, see
   [issue #45](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues/45);

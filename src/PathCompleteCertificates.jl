@@ -16,6 +16,39 @@ import SetProg
 const _HS = HybridSystems
 const _MS = MathematicalSystems
 
+# Systems.
+export switched_system, simulate, Trajectory
+
+# Problems and certificates.
+export StabilityProblem, SafetyProblem, OptimalControlProblem
+export certify, optimization_model
+export StabilityCertificate, SafetyCertificate, OptimalControlCertificate
+export is_feasible, functions, status, common
+export edge_slacks, tight_edges, tight_subgraph
+export objective, optimality_gap, jsr_lower_bound, is_jsr_exact
+
+# Templates.
+export QuadraticTemplate, SumOfSquaresTemplate, PiecewiseQuadraticTemplate
+export ConicPolyhedralTemplate, ParallelFacesPolyhedralTemplate
+export LinearCopositiveTemplate, DualCopositiveTemplate, planar_conic_partition
+
+# Graphs.
+export empty_graph, add_edge!, WordGraph, expanded_form
+export de_bruijn, common_graph, dual
+export is_path_complete, is_complete, is_co_complete, n_nodes, n_edges, n_modes
+
+# Lifts and comparison.
+export lift, Lifted, is_valid
+export IdentityLift, InSplitLift, OutSplitLift, ForwardProductLift, BackwardProductLift
+export PathDependentLift, ProductLift, MinLift, MaxLift, SumLift
+export CompositionLift, BackwardCompositionLift
+export compare, Comparison, simulations, templates
+
+# Refinement.
+export refine, RefinementTrace, rates, graphs, certificates
+export AbstractRefinementAlgorithm, TightestNodeSplitting, BestOfTightEdgeLifts
+export next_graph, initial_graph
+
 include("graphs/queries.jl")
 include("graphs/words.jl")
 include("graphs/path_completeness.jl")
@@ -55,6 +88,7 @@ include("problems/tight_edges.jl")
 
 include("templates/catalogue/quadratic.jl")
 include("templates/catalogue/sum_of_squares.jl")
+include("templates/catalogue/piecewise_quadratic.jl")
 
 include("problems/catalogue/stability.jl")
 include("problems/catalogue/safety.jl")

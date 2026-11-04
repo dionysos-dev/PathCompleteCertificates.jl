@@ -69,8 +69,8 @@ The build executes every code block of the manual and every tutorial under
 generated is dropped from the navigation, so run a full build before opening
 a pull request.
 
-Docstrings are checked twice. Nothing is exported, so `test/docstrings.jl` fails
-on any name reachable as `PathCompleteCertificates.name` without one. And the
+Docstrings are checked twice. `test/docstrings.jl` fails on any name reachable
+as `PathCompleteCertificates.name` without one, exported or not. And the
 build fails on a docstring that no `@autodocs` block under
 `docs/src/reference/` picks up, so a new file in `src/` needs a `Pages` entry
 there.
