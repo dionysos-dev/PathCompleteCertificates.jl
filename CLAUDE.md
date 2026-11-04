@@ -83,7 +83,8 @@ src/
 ├── graphs/       queries.jl is THE ADAPTER over HybridSystems; words, path_completeness,
 │                 dual (declares `dual` for everything), de_bruijn (common_graph is order 0),
 │                 observer (and the combination rule of `common`), cycles, simulation
-├── templates/    abstract.jl (the primitives) + catalogue/ (QuadraticTemplate, SumOfSquaresTemplate)
+├── templates/    abstract.jl (the primitives) + catalogue/ (QuadraticTemplate, SumOfSquaresTemplate,
+│                 PiecewiseQuadraticTemplate)
 ├── problems/     abstract.jl (the interface), certificate.jl (accessors, `common`),
 │                 tight_edges.jl, gauges.jl (the primitives for SetProg families), sets.jl
 │                 (applicability, closures, reindexing, duals), polytope_compat.jl (the

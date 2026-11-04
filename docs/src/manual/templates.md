@@ -96,7 +96,7 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear for stability; second-order cone for safety | stability, safety |
 | [`ConicPolyhedralTemplate`](@ref)`(partitions)` | ``\max_i \lvert p_i^\top x \rvert`` | all | linear for stability; second-order cone for safety | stability, safety |
-| `Ellipsoid(symmetric = true, piecewise = P)` | quadratic on each cone of ``P`` | all | semidefinite | stability |
+| [`PiecewiseQuadraticTemplate`](@ref)`(partitions)` | quadratic on each cone of a partition | all | semidefinite | stability |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
 Polynomial optimal control accepts a native
@@ -107,12 +107,12 @@ supplied gains or gains initialized by the quadratic solver; see
 
 **Templates are SetProg families.** Each constructor returns a
 [SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
-two polyhedral templates with data per node, a vector of families, one per
-node. A node function stands for its set ``\{x : V(x) \le 1\}``:
+templates with data per node, a vector of families, one per node. A node
+function stands for its set ``\{x : V(x) \le 1\}``:
 `QuadraticTemplate()`, for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
-these sets, which [`node_value`](@ref) evaluates. The last two rows are
-SetProg families passed directly, piecewise on the cones over the facets of a
-polytope ``P``. To write them, run `Pkg.add("SetProg")` and `using SetProg`:
+these sets, which [`node_value`](@ref) evaluates. The last row is a SetProg
+family passed directly, piecewise on the cones over the facets of a polytope
+``P``. To write it, run `Pkg.add("SetProg")` and `using SetProg`:
 the package depends on SetProg, so nothing new is downloaded, but your
 environment must list it for Julia to load it by name.
 
@@ -150,9 +150,11 @@ Joint optimal-control synthesis retains its quadratic matrix formulation.
   SumOfSquares package loaded (see [Installation](@ref)). Its functions have degree
   ``2d``: ``d = 1`` gives the quadratic forms, and each higher ``d`` adds
   variables.
-- **For a function piecewise on cones**, a SetProg family passed directly:
-  `Ellipsoid(symmetric = true, piecewise = P)`, quadratic on each cone, or
-  `Polytope(symmetric = true, piecewise = P)`, linear on each; see
+- **For a function quadratic on each cone** of a partition,
+  `PiecewiseQuadraticTemplate(partitions)`, with one polytope per node as for
+  `ConicPolyhedralTemplate`, and the SumOfSquares package loaded. A SetProg
+  family can also be passed directly, such as
+  `Polytope(symmetric = true, piecewise = P)`, linear on each cone. See
   [Try a richer template](@ref).
 
 Which template gives the lowest bound depends on the system, and a template
