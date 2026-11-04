@@ -16,13 +16,6 @@ import SetProg
 const _HS = HybridSystems
 const _MS = MathematicalSystems
 
-# The names a user calls. The primitives a new template or problem implements
-# (`add_decrease!`, `decrease_slack`, `is_closed_under`, ...) and the graph
-# queries stay unexported, reached as `PathCompleteCertificates.name`. So do
-# the accessors `graph`, `template` and `problem`: a script names its
-# variables so, as in `certify(template, graph, problem)`, and the variable
-# would shadow the exported function.
-
 # Systems.
 export switched_system, simulate, Trajectory
 
