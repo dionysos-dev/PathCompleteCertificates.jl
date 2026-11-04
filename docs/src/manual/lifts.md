@@ -48,7 +48,7 @@ check.
 [`lift`](@ref)`(L, graph)` applies the lift `L` to the whole graph,
 `lift(L, graph, edges)` at the given edges, and `lift(L, graph, node)` at one
 node; each lift has the forms its definition allows. The result is a
-[`Lifted`](@ref): the new graph, [`graph`](@ref), and the [`origins`](@ref) of
+[`Lifted`](@ref): the new graph, [`get_graph`](@ref), and the [`origins`](@ref) of
 its nodes, what each stands for in the old graph.
 
 Splitting the node of the one-node graph, one copy per outgoing edge, gives
@@ -57,7 +57,7 @@ the dual De Bruijn graph of order 1, drawn in [Choosing a graph](@ref):
 ```@example
 import PathCompleteCertificates as PCC
 lifted = PCC.lift(PCC.OutSplitLift(), PCC.common_graph(2), 1)
-PCC.n_nodes(PCC.graph(lifted)), PCC.origins(lifted)
+PCC.n_nodes(PCC.get_graph(lifted)), PCC.origins(lifted)
 ```
 
 Both new nodes are copies of node 1.

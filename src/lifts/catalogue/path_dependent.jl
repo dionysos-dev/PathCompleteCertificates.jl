@@ -23,7 +23,7 @@ function lift(L::PathDependentLift, g::CertificateGraph)
     for _ in 1:(L.order)
         step = lift(InSplitLift(), current)
         origin = [origin[o] for o in origins(step)]
-        current = graph(step)
+        current = get_graph(step)
     end
 
     return Lifted(current, origin)

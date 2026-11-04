@@ -22,14 +22,14 @@ const ONE = PCC.common_graph(2)
 
 @testset "the composition lift of the one-node graph, forward and backward" begin
     forward = PCC.lift(PCC.CompositionLift(1), ONE)
-    g = PCC.graph(forward)
+    g = PCC.get_graph(forward)
     @test PCC.n_nodes(g) == 2
     @test PCC.origins(forward) == [(1, [1]), (1, [2])]
     @test edgeset(g) == edgeset(JJ_G2)
     @test PCC.is_path_complete(g, 1:2)
 
     backward = PCC.lift(PCC.BackwardCompositionLift(1), ONE)
-    @test edgeset(PCC.graph(backward)) == edgeset(JJ_G1)
+    @test edgeset(PCC.get_graph(backward)) == edgeset(JJ_G1)
     @test PCC.BackwardCompositionLift(1) == PCC.dual(PCC.CompositionLift(1))
 
     @test PCC.requirements(PCC.CompositionLift(2)) == (PCC.Composition(),)
@@ -63,9 +63,9 @@ end
 @testset "a larger graph has |S|·M^T nodes" begin
     g = PCC.de_bruijn(1, 2)
     lifted = PCC.lift(PCC.CompositionLift(2), g)
-    @test PCC.n_nodes(PCC.graph(lifted)) == 2 * 4
-    @test PCC.n_edges(PCC.graph(lifted)) == PCC.n_edges(g) * 4
-    @test PCC.is_path_complete(PCC.graph(lifted), 1:2)
+    @test PCC.n_nodes(PCC.get_graph(lifted)) == 2 * 4
+    @test PCC.n_edges(PCC.get_graph(lifted)) == PCC.n_edges(g) * 4
+    @test PCC.is_path_complete(PCC.get_graph(lifted), 1:2)
 end
 
 end # module

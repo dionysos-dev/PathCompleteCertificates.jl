@@ -67,25 +67,25 @@ template on this graph, not that the property fails.
 is_feasible(certificate::AbstractCertificate) = _data(certificate).feasible
 
 """
-    problem(certificate)
+    get_problem(certificate)
 
 The problem the certificate was produced for.
 """
-problem(certificate::AbstractCertificate) = _data(certificate).problem
+get_problem(certificate::AbstractCertificate) = _data(certificate).problem
 
 """
-    template(certificate)
+    get_template(certificate)
 
 The template its node functions are drawn from.
 """
-template(certificate::AbstractCertificate) = _data(certificate).template
+get_template(certificate::AbstractCertificate) = _data(certificate).template
 
 """
-    graph(certificate)
+    get_graph(certificate)
 
 The path-complete graph the certificate is built on.
 """
-graph(certificate::AbstractCertificate) = _data(certificate).graph
+get_graph(certificate::AbstractCertificate) = _data(certificate).graph
 
 """
     common(graph, problem, Vs, x)
@@ -116,7 +116,12 @@ function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no common function"))
 
-    return common(graph(certificate), problem(certificate), functions(certificate), x)
+    return common(
+        get_graph(certificate),
+        get_problem(certificate),
+        functions(certificate),
+        x,
+    )
 end
 
 """
@@ -147,7 +152,7 @@ optimality_gap(::AbstractCertificate; kwargs...) = Inf
 """
     edge_slacks(certificate)
 
-The slack of every edge inequality, in `edges(graph(certificate))` order; zero
+The slack of every edge inequality, in `edges(get_graph(certificate))` order; zero
 means tight. For stability, slacks are relative to the scale of the node
 functions, so they do not depend on its normalization, and a tight edge has a
 slack of the order of `rtol`. Throws on an infeasible certificate.
@@ -161,16 +166,16 @@ function _edge_slacks(certificate::AbstractCertificate; kwargs...)
     is_feasible(certificate) ||
         throw(ArgumentError("an infeasible certificate has no functions to measure"))
 
-    problem_ = problem(certificate)
-    graph_ = graph(certificate)
-    template_ = template(certificate)
+    problem = get_problem(certificate)
+    graph = get_graph(certificate)
+    template = get_template(certificate)
     V = functions(certificate)
-    A = state_matrices(problem_.system)
+    A = state_matrices(problem.system)
 
-    return map(edges(graph_)) do edge
-        dynamics, scale = _edge_decrease(problem_, graph_, edge, A; kwargs...)
+    return map(edges(graph)) do edge
+        dynamics, scale = _edge_decrease(problem, graph, edge, A; kwargs...)
         return decrease_slack(
-            template_ isa AbstractVector ? template_[source(edge)] : template_,
+            template isa AbstractVector ? template[source(edge)] : template,
             V[source(edge)],
             V[dest(edge)],
             dynamics;

@@ -59,8 +59,8 @@ const STEPS = [
     ("max", PCC.MaxLift(), TWO, nothing),
     ("sum", PCC.SumLift(2), TWO, nothing),
 ]
-apply(L::PCC.AbstractLift, base, ::Nothing) = PCC.graph(PCC.lift(L, base))
-apply(L::PCC.AbstractLift, base, edge_list) = PCC.graph(PCC.lift(L, base, edge_list))
+apply(L::PCC.AbstractLift, base, ::Nothing) = PCC.get_graph(PCC.lift(L, base))
+apply(L::PCC.AbstractLift, base, edge_list) = PCC.get_graph(PCC.lift(L, base, edge_list))
 
 bound(template, g, problem) = PCC.certify(
     template,
@@ -94,9 +94,9 @@ const BASE_RATES = Dict(
     @test PCC.is_feasible(dualised)
     @test dualised.rate == primal.rate
     @test PCC.status(dualised) == PCC.status(primal)
-    @test PCC.template(dualised) == PCC.dual(template)
-    @test edgeset(PCC.graph(dualised)) == edgeset(PCC.dual(g))
-    @test PCC.state_matrices(PCC.problem(dualised).system) ==
+    @test PCC.get_template(dualised) == PCC.dual(template)
+    @test edgeset(PCC.get_graph(dualised)) == edgeset(PCC.dual(g))
+    @test PCC.state_matrices(PCC.get_problem(dualised).system) ==
           [collect(transpose(A)) for A in PCC.state_matrices(system)]
     @test length(PCC.functions(dualised)) == PCC.n_nodes(g)
 
@@ -106,8 +106,8 @@ const BASE_RATES = Dict(
 
     # Duality is an involution, down to the node functions.
     back = PCC.dual(dualised)
-    @test PCC.template(back) == template
-    @test edgeset(PCC.graph(back)) == edgeset(g)
+    @test PCC.get_template(back) == template
+    @test edgeset(PCC.get_graph(back)) == edgeset(g)
     @test all(
         isapprox(coefficients(V), coefficients(W); rtol = 1e-8) for
         (V, W) in zip(PCC.functions(back), PCC.functions(primal))
@@ -174,7 +174,7 @@ end
     @test PCC.status(dualised) == PCC.status(none)
     @test isempty(PCC.functions(dualised))
     @test dualised.rate == none.rate
-    @test PCC.template(dualised) == PCC.DualCopositiveTemplate()
+    @test PCC.get_template(dualised) == PCC.DualCopositiveTemplate()
 end
 
 @testset "a template without a dual says so" begin

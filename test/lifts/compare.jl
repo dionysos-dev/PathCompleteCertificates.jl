@@ -113,7 +113,7 @@ end
             PCC.BackwardCompositionLift(1),
         )
 
-        @test PCC.is_path_complete(PCC.graph(PCC.lift(L, g)), 1:2)
+        @test PCC.is_path_complete(PCC.get_graph(PCC.lift(L, g)), 1:2)
     end
 end
 
@@ -200,7 +200,7 @@ end
     @test all(m -> 1 in m, only(PCC.simulations(c)).second)
 
     @test_throws ArgumentError PCC.compare(G1, G2; templates = (QUADRATIC,))
-    words = PCC.graph(PCC.lift(PCC.ProductLift(2), G1))
+    words = PCC.get_graph(PCC.lift(PCC.ProductLift(2), G1))
     @test_throws ArgumentError PCC.compare(words, G2)
 
     # A word graph whose words are single modes is compared as the plain graph.

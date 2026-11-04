@@ -107,7 +107,9 @@ RecipesBase, for plots of a `Trajectory`. `test/` mirrors `src/`, with the templ
 
 The [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) is the authority.
 Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public names `_`-prefixed;
-mutating functions end in `!`; predicates are `is_*`; no `get_`/`compute_`/`build_` prefixes;
+mutating functions end in `!`; predicates are `is_*`; no `get_`/`compute_`/`build_` prefixes,
+except `get_graph`, `get_template` and `get_problem`, whose plain names are the variable names
+of `certify(template, graph, problem)`;
 no acronyms in public names; one word per concept, and **the papers' word** whenever one exists
 (`common`, `valid`, `simulation`, `tight`, `common_graph`). The template comes first in
 `certify(template, graph, problem)`, the style guide's argument order. Methods over field
@@ -203,8 +205,8 @@ Iterate in one long-lived `julia --project=test` session with Revise; run the co
 once at the end. For the docs, check a figure or a number with a short script, build without
 the tutorials while iterating, and run one full build before committing. The module exports
 the names a user calls, listed at the top of `src/PathCompleteCertificates.jl`. The
-primitives for a new template or problem, the graph queries and the accessors `graph`,
-`template` and `problem`, which scripts use as variable names, stay unexported. A new
+primitives for a new template or problem and the graph queries stay unexported, except
+`node_value`, which a user calls to evaluate a node function. A new
 user-facing name is added to that list. `test/docstrings.jl` checks every name reachable as
 `PathCompleteCertificates.name`, exported or not, and every docstring must land in an
 `@autodocs` block under `docs/src/reference/`. A stale `Manifest.toml` fails `Pkg.test()` before any test

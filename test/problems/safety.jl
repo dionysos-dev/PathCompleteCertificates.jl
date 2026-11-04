@@ -27,11 +27,11 @@ certificate(graph) = PCC.certify(
 @testset "the barrier is not the trivial one" begin
     res = certificate(PCC.de_bruijn(1, 2))
     @test PCC.is_feasible(res)
-    @test PCC.template(res) == PCC.QuadraticTemplate()
+    @test PCC.get_template(res) == PCC.QuadraticTemplate()
     @test all(>=(-1e-6), PCC.edge_slacks(res))
     for V in PCC.functions(res)
-        @test PCC.node_value(PCC.problem(res), V, [0.0, 0.0]) < 0
-        @test PCC.node_value(PCC.problem(res), V, [6.0, 0.0]) > 0
+        @test PCC.node_value(PCC.get_problem(res), V, [0.0, 0.0]) < 0
+        @test PCC.node_value(PCC.get_problem(res), V, [6.0, 0.0]) > 0
     end
 
     # A barrier is negative on the initial set and positive on the unsafe one,

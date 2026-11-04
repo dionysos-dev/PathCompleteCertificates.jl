@@ -57,9 +57,9 @@ graph. [`status`](@ref) gives the solver's termination status, for diagnosis.
 | Accessor | Returns |
 | :-- | :-- |
 | [`functions`](@ref)`(c)` | the node functions, one per node; for stability, fitted SetProg sets, evaluated with [`node_value`](@ref) |
-| [`graph`](@ref)`(c)` | the graph of the certificate |
-| [`template`](@ref)`(c)` | the template of its node functions |
-| [`problem`](@ref)`(c)` | the problem it certifies |
+| [`get_graph`](@ref)`(c)` | the graph of the certificate |
+| [`get_template`](@ref)`(c)` | the template of its node functions |
+| [`get_problem`](@ref)`(c)` | the problem it certifies |
 | [`status`](@ref)`(c)` | the termination status of the solver |
 
 Each certificate also holds what its problem certifies: `c.rate`, `c.margin`

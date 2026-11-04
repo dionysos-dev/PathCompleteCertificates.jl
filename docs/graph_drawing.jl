@@ -111,7 +111,7 @@ end
 
 # The graph of a certificate on a circle, its tight edges in bold.
 function draw_tight_edges(certificate; title = "the last graph, tight edges in bold")
-    graph = PCC.graph(certificate)
+    graph = PCC.get_graph(certificate)
     return draw_graph(
         graph,
         circle_positions(PCC.n_nodes(graph); radius = 2.4);

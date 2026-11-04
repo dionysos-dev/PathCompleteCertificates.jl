@@ -8,7 +8,7 @@ import PathCompleteCertificates as PCC
     fine = PCC.de_bruijn(2, 2)
     lifted = PCC.lift(PCC.IdentityLift(), fine)
 
-    @test PCC.graph(lifted) === fine
+    @test PCC.get_graph(lifted) === fine
     @test PCC.origins(lifted) == collect(PCC.nodes(fine))
     @test PCC.requirements(PCC.IdentityLift()) == ()
 
