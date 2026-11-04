@@ -1,7 +1,7 @@
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP
 import LinearAlgebra
-using SetProg, SumOfSquares, DynamicPolynomials
+using SetProg, SumOfSquares
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer
@@ -21,14 +21,13 @@ LIBRARY = Polyhedra.DefaultLibrary{Float64}(
 normals = [[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]]
 octagon = polyhedron(hrep([HalfSpace(a, LinearAlgebra.norm(a)) for a in normals]), LIBRARY)
 
-@polyvar x[1:2]
 templates = [
     "quadratic" => PCC.QuadraticTemplate(),
     "piecewise quadratic, octagon" =>
         Ellipsoid(; symmetric = true, piecewise = octagon),
     "piecewise linear, octagon" => Polytope(; symmetric = true, piecewise = octagon),
-    "sum of squares, degree 4" => PCC.SumOfSquaresTemplate(2, x),
-    "sum of squares, degree 6" => PCC.SumOfSquaresTemplate(3, x),
+    "sum of squares, degree 4" => PCC.SumOfSquaresTemplate(2),
+    "sum of squares, degree 6" => PCC.SumOfSquaresTemplate(3),
 ]
 certificates = [name => certified(template) for (name, template) in templates]
 

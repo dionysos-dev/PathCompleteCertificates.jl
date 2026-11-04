@@ -103,4 +103,19 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 maximum(last.(costs)), certificate(x0)
 
+import SetProg
+using SumOfSquares
+
+quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
+quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
+quartic_certificate = PCC.certify(
+    quartic_family,
+    graph,
+    quartic_problem;
+    optimizer = OPTIMIZER,
+    gains = certificate.gains,
+)
+PCC.is_feasible(quartic_certificate)
+quartic_certificate(x0)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
