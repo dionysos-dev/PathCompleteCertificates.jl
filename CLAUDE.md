@@ -205,7 +205,8 @@ Iterate in one long-lived `julia --project=test` session with Revise; run the co
 once at the end. For the docs, check a figure or a number with a short script, build without
 the tutorials while iterating, and run one full build before committing. The module exports
 the names a user calls, listed at the top of `src/PathCompleteCertificates.jl`. The
-primitives for a new template or problem and the graph queries stay unexported. A new
+primitives for a new template or problem and the graph queries stay unexported, except
+`node_value`, which a user calls to evaluate a node function. A new
 user-facing name is added to that list. `test/docstrings.jl` checks every name reachable as
 `PathCompleteCertificates.name`, exported or not, and every docstring must land in an
 `@autodocs` block under `docs/src/reference/`. A stale `Manifest.toml` fails `Pkg.test()` before any test

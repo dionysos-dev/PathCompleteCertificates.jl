@@ -23,7 +23,8 @@ export switched_system, simulate, Trajectory
 export StabilityProblem, SafetyProblem, OptimalControlProblem
 export certify, optimization_model
 export StabilityCertificate, SafetyCertificate, OptimalControlCertificate
-export is_feasible, functions, status, common, get_graph, get_template, get_problem
+export is_feasible, functions, node_value, status, common
+export get_graph, get_template, get_problem
 export edge_slacks, tight_edges, tight_subgraph
 export objective, optimality_gap, jsr_lower_bound, is_jsr_exact
 
