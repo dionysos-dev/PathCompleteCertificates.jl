@@ -27,7 +27,7 @@ nothing #hide
 certify(QuadraticTemplate(), de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer).rate
 ```
 
-- The `# # Title` line is the sidebar entry; `docs/make.jl` reads it from the
+- The `# # Title` line is the sidebar entry. `docs/make.jl` reads it from the
   file, so the filename stays lowercase.
 - `# ` starts prose, `##` a comment kept inside a code block, `#-` separates
   two code blocks, and a line ending in `#src` is dropped from the page.
@@ -52,7 +52,7 @@ notice.
 julia --project=docs docs/src/examples/stability.jl
 ```
 
-The docs environment carries the solvers and Plots; the package depends on
+The docs environment carries the solvers and Plots. The package depends on
 neither, and its tests on the solvers only. The tutorials use Clarabel, and a
 setting a solver needs is set in the tutorial: `optimal_control.jl` disables
 Clarabel's chordal decomposition, which fails on its model.

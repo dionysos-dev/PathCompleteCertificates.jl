@@ -6,7 +6,7 @@ CurrentModule = PathCompleteCertificates
 
 The code of a new problem, lift or refinement algorithm is one file in the
 `catalogue/` folder of its directory, and a new template is a SetProg family.
-The functions to implement are listed in [Conventions](@ref); this page says
+The functions to implement are listed in [Conventions](@ref). This page says
 where each piece goes, and what to wire in around it. Each extension closes a
 gap of [What works with what](@ref), the map of what the package covers.
 
@@ -33,15 +33,14 @@ family new to the package also needs its methods, in two files:
 
 - `src/problems/gauges.jl`: `add_function_variables!`, `add_normalization!`,
   `add_decrease!`, `homogeneity_degree` and `solution_value`, and
-  `decrease_slack` for [`refine`](@ref) to run on it;
+  `decrease_slack` for [`refine`](@ref) to run on it.
 - `src/problems/sets.jl`: `is_applicable` (the systems it applies to),
   `is_closed_under` (the lifts valid for it), `reindex` (per-node data), and
   `has_dual` and `dual` when it has a dual.
 
-Stability then accepts the new family without change. Safety accepts
-quadratic, polynomial and polyhedral families. Optimal control synthesizes the
-gains with the quadratic template only, and, for fixed gains, also accepts
-convex homogeneous polynomials.
+Stability then accepts the new family without change. Safety and optimal
+control accept it when SetProg.jl supports their inclusions for it (see
+[Conditions as set inclusions](@ref)).
 
 ## A problem
 
@@ -65,5 +64,5 @@ the lift at an edge changes the graph.
 ## A refinement algorithm
 
 A subtype of `AbstractRefinementAlgorithm` that implements `next_graph`, and
-`initial_graph` when it does not start from the one-node graph.
+`initial_graph` when it does not start from the common graph.
 [`refine`](@ref) runs the loop, the solves and the stopping rules.
