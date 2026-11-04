@@ -86,7 +86,7 @@ says how to close one, with a new template, problem, lift or refinement algorith
 
 ## Citing
 
-A paper describing the package is in preparation; until it is published, cite this
+A paper describing the package is in preparation. Until it is published, cite this
 repository. For the algorithms and theoretical results the package implements, cite the papers
 they come from, listed in the
 [Bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/).
