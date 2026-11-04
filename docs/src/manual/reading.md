@@ -5,13 +5,13 @@ CurrentModule = PathCompleteCertificates
 # Reading a certificate
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import JuMP
 A1 = [0.1552 0.0447; 0.7641 0.7472]
 A2 = [0.0475 0.9176; 0.1896 0.0185]
-system = PCC.switched_system([A1, A2])
-controlled = PCC.switched_system([A1, A2], [[1.0; 0.0;;], [1.0; 0.0;;]])
+system = switched_system([A1, A2])
+controlled = switched_system([A1, A2], [[1.0; 0.0;;], [1.0; 0.0;;]])
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 1.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -25.0]
 Q = [1.0 0.0; 0.0 1.0]
@@ -26,16 +26,16 @@ The code on this page uses the three certificates of
 [Systems and problems](@ref), named here after what they certify:
 
 ```@example running
-template = PCC.QuadraticTemplate()
-graph = PCC.common_graph(system)
+template = QuadraticTemplate()
+graph = common_graph(system)
 
-lyapunov = PCC.certify(template, graph, PCC.StabilityProblem(system);
+lyapunov = certify(template, graph, StabilityProblem(system);
                        optimizer = Clarabel.Optimizer)
-barrier = PCC.certify(template, graph, PCC.SafetyProblem(system, S0, Su);
+barrier = certify(template, graph, SafetyProblem(system, S0, Su);
                       optimizer = Clarabel.Optimizer)
 optimizer = JuMP.optimizer_with_attributes(Clarabel.Optimizer,
                                            "chordal_decomposition_enable" => false)
-controller = PCC.certify(template, graph, PCC.OptimalControlProblem(controlled, Q, R);
+controller = certify(template, graph, OptimalControlProblem(controlled, Q, R);
                          optimizer)
 nothing # hide
 ```
@@ -45,7 +45,7 @@ nothing # hide
 Check [`is_feasible`](@ref) first:
 
 ```@example running
-PCC.is_feasible(lyapunov), PCC.is_feasible(barrier), PCC.is_feasible(controller)
+is_feasible(lyapunov), is_feasible(barrier), is_feasible(controller)
 ```
 
 An infeasible result means that no certificate was found with this template on
@@ -88,7 +88,7 @@ An edge is **tight** when its edge inequality is active, with zero slack.
 those whose slack is at most `atol`, ``10^{-4}`` by default:
 
 ```@example running
-PCC.edge_slacks(lyapunov), PCC.edge_slacks(barrier), PCC.edge_slacks(controller)
+edge_slacks(lyapunov), edge_slacks(barrier), edge_slacks(controller)
 ```
 
 Both edges are tight for stability and for safety; for the controller, both
@@ -111,9 +111,9 @@ slacks exceed `atol`, so neither edge counts as tight. Tight edges are what
 whether it is certified:
 
 ```@example running
-at(rate) = PCC.certify(template, graph, PCC.StabilityProblem(system);
+at(rate) = certify(template, graph, StabilityProblem(system);
                        optimizer = Clarabel.Optimizer, rate)
-lyapunov.rate, PCC.is_feasible(at(0.95)), PCC.is_feasible(at(1.0))
+lyapunov.rate, is_feasible(at(0.95)), is_feasible(at(1.0))
 ```
 
 ### A lower bound, and exactness
@@ -125,7 +125,7 @@ which the rate equals the joint spectral radius; `false` means unknown.
 the lower bound otherwise:
 
 ```@example running
-PCC.jsr_lower_bound(lyapunov), PCC.is_jsr_exact(lyapunov), PCC.optimality_gap(lyapunov)
+jsr_lower_bound(lyapunov), is_jsr_exact(lyapunov), optimality_gap(lyapunov)
 ```
 
 The joint spectral radius of the running example therefore lies between
@@ -166,8 +166,8 @@ applies at each state the gain of the node whose function is smallest there.
 The inputs it applies along four modes:
 
 ```@example running
-trajectory = PCC.simulate(controller, [1.0, 1.0], [1, 2, 2, 1])
-PCC.inputs(trajectory)
+trajectory = simulate(controller, [1.0, 1.0], [1, 2, 2, 1])
+inputs(trajectory)
 ```
 
 A complete example: [Design a controller robust to switching](@ref).

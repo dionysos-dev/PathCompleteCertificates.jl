@@ -33,9 +33,9 @@ function draw_graph(
         xlims,
         ylims,
     )
-    for edge in PCC.edges(graph)
-        a, b = PCC.source(edge), PCC.dest(edge)
-        mode = only(PCC.letters(PCC.label(graph, edge)))
+    for edge in PathCompleteCertificates.edges(graph)
+        a, b = PathCompleteCertificates.source(edge), PathCompleteCertificates.dest(edge)
+        mode = only(PathCompleteCertificates.letters(PathCompleteCertificates.label(graph, edge)))
         color = MODE_COLORS[mode]
         bold = emphasized === nothing || edge in emphasized
         style = (; color, lw = bold ? 2 : 1, alpha = bold ? 1.0 : 0.25)
@@ -87,7 +87,7 @@ end
 # `node_label` and its edges by their colors alone.
 function draw_graphs(graphs, titles; node_label = string, columns = 3)
     panels = map(graphs, titles) do graph, title
-        n = PCC.n_nodes(graph)
+        n = n_nodes(graph)
         positions = n == 1 ? [(0.0, 0.0)] : circle_positions(n; radius = 2.0)
         return draw_graph(
             graph,
@@ -111,12 +111,12 @@ end
 
 # The graph of a certificate on a circle, its tight edges in bold.
 function draw_tight_edges(certificate; title = "the last graph, tight edges in bold")
-    graph = PCC.get_graph(certificate)
+    graph = get_graph(certificate)
     return draw_graph(
         graph,
-        circle_positions(PCC.n_nodes(graph); radius = 2.4);
+        circle_positions(n_nodes(graph); radius = 2.4);
         title,
-        emphasized = PCC.tight_edges(certificate),
+        emphasized = tight_edges(certificate),
         xlims = (-3.6, 3.6),
         ylims = (-3.6, 3.6),
     )

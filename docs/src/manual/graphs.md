@@ -5,11 +5,11 @@ CurrentModule = PathCompleteCertificates
 # Choosing a graph
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
+system = switched_system(A)
+problem = StabilityProblem(system)
 ```
 
 The graph gives the structure of the program that [`certify`](@ref) solves:
@@ -22,7 +22,7 @@ and how to build your own.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
-`problem = PCC.StabilityProblem(system)`, solved with Clarabel.
+`problem = StabilityProblem(system)`, solved with Clarabel.
 
 ## Classical graphs
 
@@ -47,13 +47,13 @@ mode; for stability, a common Lyapunov function. Start here.
 With two modes, the one-node graph and the two graphs of order 1:
 
 ```@setup running
-include(joinpath(pkgdir(PCC), "docs", "graph_drawing.jl"))
+include(joinpath(pkgdir(PathCompleteCertificates), "docs", "graph_drawing.jl"))
 
 function de_bruijn_figure()
     pair = [(-0.9, 0.0), (0.9, 0.0)]
-    return plot(draw_graph(PCC.de_bruijn(0, 2), [(0.0, 0.0)]; title = "one node"),
-                draw_graph(PCC.de_bruijn(1, 2), pair; title = "primal, order 1"),
-                draw_graph(PCC.dual(PCC.de_bruijn(1, 2)), pair; title = "dual, order 1");
+    return plot(draw_graph(de_bruijn(0, 2), [(0.0, 0.0)]; title = "one node"),
+                draw_graph(de_bruijn(1, 2), pair; title = "primal, order 1"),
+                draw_graph(dual(de_bruijn(1, 2)), pair; title = "dual, order 1");
                 layout = (1, 3), size = (900, 200))
 end
 ```
@@ -75,13 +75,13 @@ variables and the constraints of the program by ``M``. The bounds for the
 first orders:
 
 ```@example running
-template = PCC.QuadraticTemplate()
-rate(graph) = PCC.certify(template, graph, problem; optimizer = Clarabel.Optimizer).rate
+template = QuadraticTemplate()
+rate(graph) = certify(template, graph, problem; optimizer = Clarabel.Optimizer).rate
 
 for k in 0:4
-    primal = PCC.de_bruijn(k, 2)
-    println("order ", k, ": ", PCC.n_nodes(primal), " nodes, rates ",
-            round.((rate(primal), rate(PCC.dual(primal))); digits = 4))
+    primal = de_bruijn(k, 2)
+    println("order ", k, ": ", n_nodes(primal), " nodes, rates ",
+            round.((rate(primal), rate(dual(primal))); digits = 4))
 end
 ```
 
@@ -131,23 +131,23 @@ reading mode `i`. For instance, the primal De Bruijn graph of order 1, by
 hand:
 
 ```@example running
-graph = PCC.empty_graph(2)
-PCC.add_edge!(graph, 1, 1, 1)
-PCC.add_edge!(graph, 1, 2, 2)
-PCC.add_edge!(graph, 2, 1, 1)
-PCC.add_edge!(graph, 2, 2, 2)
-PCC.is_path_complete(graph, 1:PCC.n_modes(system))
+graph = empty_graph(2)
+add_edge!(graph, 1, 1, 1)
+add_edge!(graph, 1, 2, 2)
+add_edge!(graph, 2, 1, 1)
+add_edge!(graph, 2, 2, 2)
+is_path_complete(graph, 1:n_modes(system))
 ```
 
 Without the loop reading mode 2 at node 2, no path reads the sequence
 ``2, 2``, and the graph is no longer path-complete:
 
 ```@example running
-partial = PCC.empty_graph(2)
-PCC.add_edge!(partial, 1, 1, 1)
-PCC.add_edge!(partial, 1, 2, 2)
-PCC.add_edge!(partial, 2, 1, 1)
-PCC.is_path_complete(partial, 1:PCC.n_modes(system))
+partial = empty_graph(2)
+add_edge!(partial, 1, 1, 1)
+add_edge!(partial, 1, 2, 2)
+add_edge!(partial, 2, 1, 1)
+is_path_complete(partial, 1:n_modes(system))
 ```
 
 ### Words on the edges

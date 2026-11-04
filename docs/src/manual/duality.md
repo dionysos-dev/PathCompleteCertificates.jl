@@ -5,11 +5,11 @@ CurrentModule = PathCompleteCertificates
 # Duality
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
+system = switched_system(A)
+problem = StabilityProblem(system)
 ```
 
 Graphs, systems, lifts, and some templates and certificates have a dual:
@@ -27,7 +27,7 @@ numbers below refer to the same thesis.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
-`problem = PCC.StabilityProblem(system)`, solved with Clarabel.
+`problem = StabilityProblem(system)`, solved with Clarabel.
 
 ## The dual of each object
 
@@ -48,8 +48,8 @@ copositive templates are each other's. The other templates have no dual here.
 **A second certificate, without solving.** On the running example:
 
 ```@example running
-c = PCC.certify(PCC.QuadraticTemplate(), PCC.common_graph(system), problem; optimizer = Clarabel.Optimizer)
-d = PCC.dual(c)
+c = certify(QuadraticTemplate(), common_graph(system), problem; optimizer = Clarabel.Optimizer)
+d = dual(c)
 c.rate == d.rate
 ```
 

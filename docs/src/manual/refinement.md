@@ -5,11 +5,11 @@ CurrentModule = PathCompleteCertificates
 # Refining the graph
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
+system = switched_system(A)
+problem = StabilityProblem(system)
 ```
 
 The graph decides how good the certificate can be and how much it costs, and
@@ -23,15 +23,15 @@ the best certificate.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, and
-`problem = PCC.StabilityProblem(system)`, solved with Clarabel.
+`problem = StabilityProblem(system)`, solved with Clarabel.
 
 ## In one call
 
 [`refine`](@ref) starts from the one-node graph and runs the loop:
 
 ```@example running
-trace = PCC.refine(PCC.QuadraticTemplate(), problem; optimizer = Clarabel.Optimizer)
-PCC.rates(trace), PCC.n_nodes.(PCC.graphs(trace)), PCC.n_edges.(PCC.graphs(trace))
+trace = refine(QuadraticTemplate(), problem; optimizer = Clarabel.Optimizer)
+rates(trace), n_nodes.(graphs(trace)), n_edges.(graphs(trace))
 ```
 
 In two steps, the rate drops from about ``0.959`` to ``0.869`` with 3 nodes and
@@ -81,7 +81,7 @@ one with the lowest rate. A step costs one solve per candidate.
 | [`EXHAUSTED`](@ref) | the algorithm found no next graph |
 
 ```@example running
-PCC.status(trace)
+status(trace)
 ```
 
 On the running example, the run stops with `OPTIMAL`: on its three nodes, every

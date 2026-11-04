@@ -42,12 +42,13 @@ In every new Julia session, activate the environment again, as above, then
 load the package:
 
 ```julia
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 ```
 
-The package exports nothing, so its functions take the prefix, as in
-`PCC.certify`; this documentation does the same. Update the package with
-`Pkg.update("PathCompleteCertificates")`.
+The package exports what a user calls, such as `certify`,
+`QuadraticTemplate` or `de_bruijn`. The functions that extend it, for a new
+template or problem, are written `PathCompleteCertificates.name`. Update the
+package with `Pkg.update("PathCompleteCertificates")`.
 
 ## Install a solver
 

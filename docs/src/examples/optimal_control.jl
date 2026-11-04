@@ -6,13 +6,13 @@
 # the bound. [How a certificate works](@ref) explains the certificate; this page
 # runs it from start to end.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import JuMP
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,
@@ -31,8 +31,8 @@ B = [[1.0; 0.0;;], [1.0; 0.0;;]]
 Q = [1.0 0.0; 0.0 1.0]
 R = [1.0;;]
 
-system = PCC.switched_system(A, B)
-problem = PCC.OptimalControlProblem(system, Q, R)
+system = switched_system(A, B)
+problem = OptimalControlProblem(system, Q, R)
 x0 = [3.0, -2.0]
 nothing #hide
 
@@ -41,7 +41,7 @@ nothing #hide
 # On the one-node graph, the certificate is one quadratic function and one
 # gain, a linear feedback. Its bound on the worst-case cost from ``x_0``:
 
-PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(x0)
+certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 
 # ## A path-complete graph
 #
@@ -50,14 +50,14 @@ PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(
 # order:
 
 bounds = [
-    PCC.certify(TEMPLATE, PCC.de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for
+    certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for
     k in 0:2
 ]
 
 # Most of the gain comes at order 1, with two nodes and two gains:
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
 certificate.gains
 
 # ## The certificate, drawn
@@ -78,8 +78,8 @@ left = plot(;
     legend = :outerbottom,
     title = "the sets V ≤ V(x₀)",
 )
-for (a, V) in enumerate(PCC.functions(certificate))
-    points = level_set(x -> PCC.node_value(problem, V, x), certificate(x0))
+for (a, V) in enumerate(functions(certificate))
+    points = level_set(x -> node_value(problem, V, x), certificate(x0))
     plot!(
         left,
         first.(points),
@@ -96,8 +96,8 @@ plot!(left, first.(points), last.(points); color = :black, lw = 3, label = "comm
 rng = Random.MersenneTwister(1)
 costs = Vector{Float64}[]
 for run in 1:100
-    trajectory = PCC.simulate(certificate, x0, 30; rng)
-    visited, applied = PCC.states(trajectory), PCC.inputs(trajectory)
+    trajectory = simulate(certificate, x0, 30; rng)
+    visited, applied = states(trajectory), inputs(trajectory)
     stage = [x' * Q * x + u' * R * u for (x, u) in zip(visited, applied)]
     push!(costs, cumsum(stage))
     run <= 20 && plot!(
@@ -159,19 +159,19 @@ maximum(last.(costs)), certificate(x0)
 import SetProg
 using SumOfSquares
 
-quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
+quartic_problem = OptimalControlProblem(system, Q, R; p = 4)
 quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
-quartic_certificate = PCC.certify(
+quartic_certificate = certify(
     quartic_family,
     graph,
     quartic_problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(quartic_certificate)
+is_feasible(quartic_certificate)
 quartic_certificate(x0)
 
-# Omitting `gains` asks PCC to initialize them with its quadratic solver.
+# Omitting `gains` asks the package to initialize them with its quadratic solver.
 # In both cases, the quartic optimization keeps the gain matrices fixed;
 # the smallest fitted value at each state selects which gain is applied.
 

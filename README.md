@@ -39,17 +39,17 @@ quadratic template, and a graph with one node. Together they give a common quadr
 function, whose rate is an upper bound on the joint spectral radius:
 
 ```julia
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 
 A1 = [0.1552 0.0447; 0.7641 0.7472]     # mode 1
 A2 = [0.0475 0.9176; 0.1896 0.0185]     # mode 2
-system = PCC.switched_system([A1, A2])  # planar switched linear system, two modes
+system = switched_system([A1, A2])      # planar switched linear system, two modes
 
-certificate = PCC.certify(
-    PCC.QuadraticTemplate(),         # V(x) = xᵀPx at each node
-    PCC.common_graph(system),        # one node, one loop per mode
-    PCC.StabilityProblem(system);    # V(Aᵢx) ≤ γ² V(x) along each edge
+certificate = certify(
+    QuadraticTemplate(),             # V(x) = xᵀPx at each node
+    common_graph(system),            # one node, one loop per mode
+    StabilityProblem(system);        # V(Aᵢx) ≤ γ² V(x) along each edge
     optimizer = Clarabel.Optimizer,  # the solver of the semidefinite program
 )
 certificate.rate                     # 0.9587: below one, the system is stable

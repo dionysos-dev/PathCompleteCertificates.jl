@@ -5,14 +5,14 @@ CurrentModule = PathCompleteCertificates
 # Comparing graphs
 
 ```@setup graphs
-import PathCompleteCertificates as PCC
-include(joinpath(pkgdir(PCC), "docs", "graph_drawing.jl"))
+using PathCompleteCertificates
+include(joinpath(pkgdir(PathCompleteCertificates), "docs", "graph_drawing.jl"))
 
 const IMAGE_COLORS = [:palegreen, :lightpink]
 
 function simulation_figure()
-    G, H = PCC.de_bruijn(1, 2), PCC.de_bruijn(2, 2)
-    image = PCC.simulation(G, H)
+    G, H = de_bruijn(1, 2), de_bruijn(2, 2)
+    image = simulation(G, H)
     lims = (xlims = (-2.4, 2.4), ylims = (-1.15, 1.15))
     left = draw_graph(G, [(-0.9, 0.0), (0.9, 0.0)]; title = "G, De Bruijn of order 1",
                       node_colors = IMAGE_COLORS, lims...)
@@ -69,8 +69,8 @@ simulation_figure() # hide
 ```
 
 ```@example graphs
-PCC.simulation(PCC.de_bruijn(1, 2), PCC.de_bruijn(2, 2)),
-PCC.simulation(PCC.de_bruijn(2, 2), PCC.de_bruijn(1, 2))
+simulation(de_bruijn(1, 2), de_bruijn(2, 2)),
+simulation(de_bruijn(2, 2), de_bruijn(1, 2))
 ```
 
 Order 2 is therefore at least as good as order 1 for every template; order 2
@@ -106,8 +106,8 @@ can also hold through the dual template (see [Duality](@ref)).
 simulates ``H``:
 
 ```@example graphs
-c = PCC.compare(PCC.de_bruijn(1, 2), PCC.common_graph(2))
-PCC.simulations(c)
+c = compare(de_bruijn(1, 2), common_graph(2))
+simulations(c)
 ```
 
 The min lift of the De Bruijn graph of order 1 simulates the one-node graph.

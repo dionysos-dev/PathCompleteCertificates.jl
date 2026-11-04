@@ -25,12 +25,12 @@ with one matrix ``A_i \in \mathbb{R}^{n \times n}`` per mode.
 [`switched_system`](@ref) builds the system from its matrices:
 
 ```@example running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 
 A1 = [0.1552 0.0447; 0.7641 0.7472]
 A2 = [0.0475 0.9176; 0.1896 0.0185]
-system = PCC.switched_system([A1, A2])
-PCC.n_modes(system), PCC.has_input(system)
+system = switched_system([A1, A2])
+n_modes(system), has_input(system)
 ```
 
 ### Controlled systems
@@ -46,8 +46,8 @@ as a second argument:
 ```@example running
 B1 = [1.0; 0.0;;]
 B2 = [1.0; 0.0;;]
-controlled = PCC.switched_system([A1, A2], [B1, B2])
-PCC.n_modes(controlled), PCC.has_input(controlled)
+controlled = switched_system([A1, A2], [B1, B2])
+n_modes(controlled), has_input(controlled)
 ```
 
 [`state_matrices`](@ref) and [`input_matrices`](@ref) return the matrices.
@@ -69,16 +69,16 @@ modes ``1, 2, 2, 1``, and [`states`](@ref) returns the state trajectory,
 ``x_0`` to ``x_4``:
 
 ```@example running
-trajectory = PCC.simulate(system, [1.0, 1.0], [1, 2, 2, 1])
-PCC.states(trajectory)
+trajectory = simulate(system, [1.0, 1.0], [1, 2, 2, 1])
+states(trajectory)
 ```
 
 A controlled system also needs its inputs, as a vector of inputs or as a
 feedback law `u(x)`, here ``u(x) = -0.5 x_1``:
 
 ```@example running
-trajectory = PCC.simulate(controlled, [1.0, 1.0], [1, 2, 2, 1]; u = x -> [-0.5 * x[1]])
-PCC.states(trajectory)
+trajectory = simulate(controlled, [1.0, 1.0], [1, 2, 2, 1]; u = x -> [-0.5 * x[1]])
+states(trajectory)
 ```
 
 [`switching`](@ref) and [`inputs`](@ref) return the modes and the inputs of a
@@ -96,7 +96,7 @@ system that is fragile under switching:
 ```@example running
 M1 = [0.1 1.25; 0.0 0.1]
 M2 = [0.1 0.0; 1.25 0.1]
-fragile = PCC.switched_system([M1, M2])
+fragile = switched_system([M1, M2])
 nothing # hide
 ```
 
@@ -120,12 +120,12 @@ function stability_figure(system)
     figure = plot(; yscale = :log10, xlabel = "step k", ylabel = "‖xₖ‖",
                   legend = :bottomleft, size = (700, 420))
     for run in 1:RUNS
-        states = PCC.states(PCC.simulate(system, [1.0, 1.0], 50; rng))
-        plot!(figure, 0:50, LinearAlgebra.norm.(states); color = :gray, alpha = 0.3,
+        xs = states(simulate(system, [1.0, 1.0], 50; rng))
+        plot!(figure, 0:50, LinearAlgebra.norm.(xs); color = :gray, alpha = 0.3,
               label = random_label(run))
     end
-    states = PCC.states(PCC.simulate(system, [1.0, 1.0], repeat([1, 2], 25)))
-    plot!(figure, 0:50, LinearAlgebra.norm.(states); color = :red, lw = 2,
+    xs = states(simulate(system, [1.0, 1.0], repeat([1, 2], 25)))
+    plot!(figure, 0:50, LinearAlgebra.norm.(xs); color = :red, lw = 2,
           label = "1, 2, 1, 2, …")
     return figure
 end
@@ -144,12 +144,12 @@ function safety_figure(system)
     for run in 1:RUNS
         angle = 2pi * rand(rng)
         x0 = sqrt(rand(rng)) .* [cos(angle), sin(angle)]
-        states = PCC.states(PCC.simulate(system, x0, 50; rng))
-        plot!(figure, first.(states), last.(states); color = :gray, alpha = 0.4,
+        xs = states(simulate(system, x0, 50; rng))
+        plot!(figure, first.(xs), last.(xs); color = :gray, alpha = 0.4,
               label = random_label(run))
     end
-    states = PCC.states(PCC.simulate(system, [0.0, 1.0], repeat([1, 2], 4)))
-    plot!(figure, first.(states), last.(states); color = :red, lw = 2, marker = :circle,
+    xs = states(simulate(system, [0.0, 1.0], repeat([1, 2], 4)))
+    plot!(figure, first.(xs), last.(xs); color = :red, lw = 2, marker = :circle,
           label = "1, 2, 1, 2, …")
     return figure
 end
@@ -211,7 +211,7 @@ stability_figure(fragile) # hide
 For the running example:
 
 ```@example running
-stability = PCC.StabilityProblem(system)
+stability = StabilityProblem(system)
 nothing # hide
 ```
 
@@ -237,7 +237,7 @@ as ``\{x : [x; 1]^\top S [x; 1] \ge 0\}``:
 ```@example running
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 1.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -25.0]
-safety = PCC.SafetyProblem(system, S0, Su)
+safety = SafetyProblem(system, S0, Su)
 nothing # hide
 ```
 
@@ -268,7 +268,7 @@ For the running example:
 ```@example running
 Q = [1.0 0.0; 0.0 1.0]
 R = [1.0;;]
-control = PCC.OptimalControlProblem(controlled, Q, R)
+control = OptimalControlProblem(controlled, Q, R)
 nothing # hide
 ```
 

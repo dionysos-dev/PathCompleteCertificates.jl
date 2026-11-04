@@ -55,9 +55,9 @@ Splitting the node of the one-node graph, one copy per outgoing edge, gives
 the dual De Bruijn graph of order 1, drawn in [Choosing a graph](@ref):
 
 ```@example
-import PathCompleteCertificates as PCC
-lifted = PCC.lift(PCC.OutSplitLift(), PCC.common_graph(2), 1)
-PCC.n_nodes(PCC.get_graph(lifted)), PCC.origins(lifted)
+using PathCompleteCertificates
+lifted = lift(OutSplitLift(), common_graph(2), 1)
+n_nodes(get_graph(lifted)), origins(lifted)
 ```
 
 Both new nodes are copies of node 1.

@@ -12,19 +12,19 @@ tutorial solves one problem from start to end.
 #
 # A paragraph saying what this shows and why someone would read it.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 
 # Prose is a `# ` comment between code blocks.
 
 A = [[0.5 0.0; 0.0 0.25]]
-problem = PCC.StabilityProblem(PCC.switched_system(A))
+problem = StabilityProblem(switched_system(A))
 nothing #hide
 
 # The last expression of a block is what the page shows, so end a block with
 # the value worth seeing rather than printing it.
 
-PCC.certify(PCC.QuadraticTemplate(), PCC.de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer).rate
+certify(QuadraticTemplate(), de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer).rate
 ```
 
 - The `# # Title` line is the sidebar entry; `docs/make.jl` reads it from the

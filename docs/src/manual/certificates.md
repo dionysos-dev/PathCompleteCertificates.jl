@@ -5,13 +5,13 @@ CurrentModule = PathCompleteCertificates
 # How a certificate works
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import JuMP
 A1 = [0.1552 0.0447; 0.7641 0.7472]
 A2 = [0.0475 0.9176; 0.1896 0.0185]
-system = PCC.switched_system([A1, A2])
-controlled = PCC.switched_system([A1, A2], [[1.0; 0.0;;], [1.0; 0.0;;]])
+system = switched_system([A1, A2])
+controlled = switched_system([A1, A2], [[1.0; 0.0;;], [1.0; 0.0;;]])
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 1.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -25.0]
 Q = [1.0 0.0; 0.0 1.0]
@@ -51,8 +51,8 @@ some path of the graph. Here, [`common_graph`](@ref) has one node and a loop
 per mode, so the certificate is a single function.
 
 ```@example running
-template = PCC.QuadraticTemplate()
-graph = PCC.common_graph(system)
+template = QuadraticTemplate()
+graph = common_graph(system)
 nothing # hide
 ```
 
@@ -133,8 +133,8 @@ level_set(V, c) = [sqrt(c) .* d ./ sqrt(V(d))
                    for d in ([cos(t), sin(t)] for t in range(0, 2pi; length = 400))]
 
 function stability_figure(certificate, A)
-    fitted = only(PCC.functions(certificate))
-    V(x) = PCC.node_value(PCC.get_problem(certificate), fitted, x)
+    fitted = only(functions(certificate))
+    V(x) = node_value(get_problem(certificate), fitted, x)
     figure = plot(; aspect_ratio = :equal, framestyle = :box, legend = :outerbottom,
                   size = (520, 600))
     boundary = level_set(V, 1.0)
@@ -163,8 +163,8 @@ function safety_figure(certificate, system)
     plot!(figure, disk(1.0); color = :green, alpha = 0.4, label = "initial set, ‖x‖ ≤ 1")
     for run in 1:RUNS
         angle = 2pi * run / RUNS
-        states = PCC.states(PCC.simulate(system, [cos(angle), sin(angle)], 30; rng))
-        plot!(figure, first.(states), last.(states); color = :steelblue, alpha = 0.5,
+        xs = states(simulate(system, [cos(angle), sin(angle)], 30; rng))
+        plot!(figure, first.(xs), last.(xs); color = :steelblue, alpha = 0.5,
               label = run == 1 ? "$RUNS random runs from the boundary of the initial set" : "")
     end
     grid = range(-6, 6; length = 300)
@@ -180,8 +180,8 @@ function control_figure(certificate, Q, R, x0)
     figure = plot(; xlabel = "step k", ylabel = "cost up to step k",
                   legend = :right, size = (700, 420))
     for run in 1:RUNS
-        trajectory = PCC.simulate(certificate, x0, 50; rng)
-        steps = zip(PCC.states(trajectory), PCC.inputs(trajectory))
+        trajectory = simulate(certificate, x0, 50; rng)
+        steps = zip(states(trajectory), inputs(trajectory))
         plot!(figure, 1:50, cumsum([x' * Q * x + u' * R * u for (x, u) in steps]);
               color = :gray, alpha = 0.3,
               label = run == 1 ? "$RUNS random sequences" : "")
@@ -210,8 +210,8 @@ quadratic forms, 1 for norms. At a fixed rate the program is convex, so
 [`certify`](@ref) finds the smallest rate by bisection:
 
 ```@example running
-problem = PCC.StabilityProblem(system)
-certificate = PCC.certify(template, graph, problem; optimizer = Clarabel.Optimizer)
+problem = StabilityProblem(system)
+certificate = certify(template, graph, problem; optimizer = Clarabel.Optimizer)
 certificate.rate
 ```
 
@@ -262,8 +262,8 @@ dimension = 2)`. Their barriers need not be SOS; their separation certificates
 use SOS multipliers:
 
 ```@example running
-problem = PCC.SafetyProblem(system, S0, Su)
-certificate = PCC.certify(template, graph, problem; optimizer = Clarabel.Optimizer)
+problem = SafetyProblem(system, S0, Su)
+certificate = certify(template, graph, problem; optimizer = Clarabel.Optimizer)
 certificate.margin
 ```
 
@@ -308,10 +308,10 @@ whose function is smallest at ``x``. Calling the certificate at a state gives
 the bound on the cost of this policy from it:
 
 ```@example running
-problem = PCC.OptimalControlProblem(controlled, Q, R)
+problem = OptimalControlProblem(controlled, Q, R)
 optimizer = JuMP.optimizer_with_attributes(Clarabel.Optimizer,
                                            "chordal_decomposition_enable" => false)
-certificate = PCC.certify(template, graph, problem; optimizer)
+certificate = certify(template, graph, problem; optimizer)
 certificate([1.0, 1.0])
 ```
 

@@ -5,12 +5,12 @@ CurrentModule = PathCompleteCertificates
 # Choosing a template
 
 ```@setup running
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel, HiGHS
 A = [[0.1552 0.0447; 0.7641 0.7472], [0.0475 0.9176; 0.1896 0.0185]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
-graph = PCC.common_graph(system)
+system = switched_system(A)
+problem = StabilityProblem(system)
+graph = common_graph(system)
 ```
 
 The template is the family the node functions are drawn from. In the program
@@ -21,8 +21,8 @@ This page shows what a template changes, lists the templates, and helps you
 choose.
 
 The code on this page uses the running example of
-[Systems and problems](@ref): `system`, `problem = PCC.StabilityProblem(system)`
-and `graph = PCC.common_graph(system)`, solved with Clarabel and HiGHS.
+[Systems and problems](@ref): `system`, `problem = StabilityProblem(system)`
+and `graph = common_graph(system)`, solved with Clarabel and HiGHS.
 
 ## What a template changes
 
@@ -30,8 +30,8 @@ The template fixes the shape of the node functions. It changes the bound, and
 the kind of program, which decides the solver:
 
 ```@example running
-quadratic = PCC.certify(PCC.QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
-copositive = PCC.certify(PCC.LinearCopositiveTemplate(), graph, problem; optimizer = HiGHS.Optimizer)
+quadratic = certify(QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
+copositive = certify(LinearCopositiveTemplate(), graph, problem; optimizer = HiGHS.Optimizer)
 quadratic.rate, copositive.rate
 ```
 
@@ -48,20 +48,20 @@ using SumOfSquares
 
 function shapes_figure(system, problem, graph)
     templates = [
-        "quadratic" => (PCC.QuadraticTemplate(), Clarabel.Optimizer),
-        "sum of squares, degree 4" => (PCC.SumOfSquaresTemplate(2), Clarabel.Optimizer),
+        "quadratic" => (QuadraticTemplate(), Clarabel.Optimizer),
+        "sum of squares, degree 4" => (SumOfSquaresTemplate(2), Clarabel.Optimizer),
         "parallel faces" =>
-            (PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
+            (ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
         "conic polyhedral" =>
-            (PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(2)]), HiGHS.Optimizer),
+            (ConicPolyhedralTemplate([planar_conic_partition(2)]), HiGHS.Optimizer),
     ]
     figure = plot(; aspect_ratio = :equal, framestyle = :box, legend = :outerbottom,
                   size = (520, 640))
     for (name, (template, optimizer)) in templates
-        certificate = PCC.certify(template, graph, problem; optimizer)
-        fitted = only(PCC.functions(certificate))
-        V(x) = PCC.node_value(problem, fitted, x)
-        p = PCC.homogeneity_degree(template)
+        certificate = certify(template, graph, problem; optimizer)
+        fitted = only(functions(certificate))
+        V(x) = node_value(problem, fitted, x)
+        p = PathCompleteCertificates.homogeneity_degree(template)
         # V is homogeneous of degree p: scaling each direction d by V(d)^(-1/p)
         # lands on the level set V = 1.
         points = [d ./ V(d)^(1 / p)
@@ -81,9 +81,9 @@ the normals of the faces of its functions: the axes by default, or the rows
 of a matrix per node. With the axes, and with the diagonals of the figure:
 
 ```@example running
-on_axes = PCC.ParallelFacesPolyhedralTemplate(PCC.n_nodes(graph), 2)
-on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
-[PCC.certify(t, graph, problem; optimizer = HiGHS.Optimizer).rate for t in (on_axes, on_diagonals)]
+on_axes = ParallelFacesPolyhedralTemplate(n_nodes(graph), 2)
+on_diagonals = ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
+[certify(t, graph, problem; optimizer = HiGHS.Optimizer).rate for t in (on_axes, on_diagonals)]
 ```
 
 ## The templates
