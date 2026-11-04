@@ -3,8 +3,8 @@
 
 Safety problem for an input-free switched linear system [anand2024barrier](@cite),
 with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
-For a global quadratic family, the barrier at node `a` is `[x; 1]' P_a [x; 1]`
-with `P_a` symmetric, not necessarily positive semidefinite. Polynomial
+For a global quadratic family, the barrier at node `s` is `[x; 1]' P_s [x; 1]`
+with `P_s` symmetric, not necessarily positive semidefinite. Polynomial
 families construct affine polynomial barriers of the requested degree.
 Piecewise ellipsoid families use `x'Q_k*x - 1` on each cone of their fixed
 partition, with PSD quadratic pieces by default.

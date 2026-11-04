@@ -119,15 +119,15 @@ _initialization_cost(set::_LinearPolytope) = Matrix{Float64}(
 """
     OptimalControlCertificate
 
-A value function `V_a` and a gain `K_a` at each node `a`. Joint quadratic
+A value function `V_s` and a gain `K_s` at each node `s`. Joint quadratic
 synthesis optimizes both. Polynomial and polyhedral synthesis optimize the
-value functions for supplied or quadratically initialized gains. Its `edge_certificates`
-field contains fitted SOS Gram matrices in physical cost units, or LP/SOC
-proof matrices in gauge units for polyhedral values.
+value functions for supplied or quadratically initialized gains. Its
+`edge_certificates` field contains fitted SOS Gram matrices in physical cost
+units, or LP/SOC proof matrices in gauge units for polyhedral values.
 
-- The policy is `u = K_a x`, where `a` minimizes `V_a(x)`; [`simulate`](@ref)
+- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
   runs it.
-- Its worst-case cost from `x` is at most `min_a V_a(x)`, which calling the
+- Its worst-case cost from `x` is at most `min_s V_s(x)`, which calling the
   certificate at `x` returns.
 """
 struct OptimalControlCertificate{D <: CertificateData, K, E} <: AbstractCertificate
@@ -325,7 +325,7 @@ end
 Run the closed loop under the policy of `certificate` along `modes`, or along
 `horizon` modes drawn uniformly at random, and return a [`Trajectory`](@ref).
 At each state `x`, the policy applies the gain of the node whose function is
-smallest at `x`: `u = K_a x` with `a ∈ argmin V_a(x)` [ninite2026path](@cite).
+smallest at `x`: `u = K_s x` with `s ∈ argmin V_s(x)` [ninite2026path](@cite).
 """
 function simulate(
     certificate::OptimalControlCertificate,
