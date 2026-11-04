@@ -53,7 +53,8 @@ status(trace)
 # reads the slowest sequence ``2, 2, 2, 2, 1``.
 
 hierarchy = [
-    (2^k, certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for k in 0:3
+    (2^k, certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for
+    k in 0:3
 ]
 
 left = plot(;

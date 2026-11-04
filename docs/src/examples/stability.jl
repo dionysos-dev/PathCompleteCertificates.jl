@@ -36,10 +36,8 @@ certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER).rate
 # The De Bruijn graphs give one quadratic function per node. The rate drops
 # with the order, and goes below one at order 2:
 
-rates = [
-    certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for
-    k in 0:2
-]
+rates =
+    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for k in 0:2]
 
 # The certificate on the De Bruijn graph of order 2 proves that the system is
 # stable under arbitrary switching.

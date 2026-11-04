@@ -49,10 +49,8 @@ certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 # They give one function and one gain per node, and the bound drops with each
 # order:
 
-bounds = [
-    certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for
-    k in 0:2
-]
+bounds =
+    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for k in 0:2]
 
 # Most of the gain comes at order 1, with two nodes and two gains:
 

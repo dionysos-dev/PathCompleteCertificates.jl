@@ -35,7 +35,9 @@ function draw_graph(
     )
     for edge in PathCompleteCertificates.edges(graph)
         a, b = PathCompleteCertificates.source(edge), PathCompleteCertificates.dest(edge)
-        mode = only(PathCompleteCertificates.letters(PathCompleteCertificates.label(graph, edge)))
+        mode = only(
+            PathCompleteCertificates.letters(PathCompleteCertificates.label(graph, edge)),
+        )
         color = MODE_COLORS[mode]
         bold = emphasized === nothing || edge in emphasized
         style = (; color, lw = bold ? 2 : 1, alpha = bold ? 1.0 : 0.25)

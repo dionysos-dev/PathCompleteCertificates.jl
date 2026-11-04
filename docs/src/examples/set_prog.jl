@@ -25,8 +25,7 @@ A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
 problem = StabilityProblem(switched_system(A))
 graph = common_graph(problem.system)
 
-certified(template) =
-    certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)
+certified(template) = certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)
 nothing #hide
 
 # ## Five templates

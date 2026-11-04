@@ -133,12 +133,10 @@ nothing #hide
 # second, and the templates for which the order is proved. The max lift is the
 # dual of the min lift.
 
-compared(G, H) =
-    compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
+compared(G, H) = compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
 lift_name(lift) =
     lift isa MinLift ? "min" :
-    lift isa MaxLift ? "max" :
-    lift isa SumLift ? "sum" : string(nameof(typeof(lift)))
+    lift isa MaxLift ? "max" : lift isa SumLift ? "sum" : string(nameof(typeof(lift)))
 outcome(c) = (
     simulating = lift_name.(first.(simulations(c))),
     proved_for = [
@@ -173,8 +171,7 @@ bound(template, graph) =
 on_G1 = bound(QUADRATIC, G1)
 V = functions(on_G1)
 W = [
-    PathCompleteCertificates.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for
-    h in 1:n_nodes(G2)
+    PathCompleteCertificates.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for h in 1:n_nodes(G2)
 ]
 scale = on_G1.rate^PathCompleteCertificates.homogeneity_degree(QUADRATIC)
 all(PathCompleteCertificates.edges(G2)) do edge
