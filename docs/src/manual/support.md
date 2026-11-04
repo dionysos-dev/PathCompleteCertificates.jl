@@ -43,7 +43,10 @@ For optimal control, the exponent `p` of the cost (see
 [Systems and problems](@ref)) must match the template: 2 for the quadratic and
 piecewise quadratic templates, ``2r`` for
 `SumOfSquaresTemplate(r; convex = true)`, and 1 or 2 for the conic polyhedral
-template, whose node functions are then the gauges ``g_{\Omega_s}^p``.
+template, whose node functions are then the gauges ``g_{\Omega_s}^p``. A cost
+given by polytopes ``\mathcal Q`` and ``\mathcal R`` works with the conic
+polyhedral template only. The other templates need the matrices ``Q`` and
+``R``.
 
 Unsupported combinations report an error before anything is solved. Two more
 conditions are on the graph:

@@ -126,7 +126,7 @@ piecewise set keeps one set ``Z_k`` on each cone:
 
 On each cone, the piecewise quadratic template keeps an ellipsoid and the
 conic polyhedral template a half-space, so that ``V_s`` is quadratic or linear
-on each cone, and the pieces agree on the boundaries of the cones. The
+on each cone. Continuity and convexity are imposed across adjacent cones. The
 argument `P` gives the polytopes ``\mathcal{P}_s``, one per node, and
 [`planar_conic_partition`](@ref)`(q)` builds a planar one with
 ``8 \cdot 2^{q-1}`` facets.

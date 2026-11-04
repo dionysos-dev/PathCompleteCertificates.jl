@@ -287,7 +287,8 @@ The node functions form a **path-complete barrier certificate**
 A barrier changes sign, so it is not homogeneous. With the quadratic
 template, it is ``V_s(x) = [x; 1]^\top P_s [x; 1]``, with ``P_s`` symmetric,
 possibly indefinite. With `SumOfSquaresTemplate(r)`, it is a polynomial of
-degree at most ``2r``.
+degree at most ``2r``. With the piecewise quadratic template, it is
+``x^\top Q_k x - 1`` on each cone, with ``Q_k`` positive semidefinite.
 
 The margin ``\varepsilon`` measures how well the barriers separate ``X_0``
 from ``X_u``. Scaling the barriers would scale the margin, so the last

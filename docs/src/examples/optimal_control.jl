@@ -149,7 +149,7 @@ maximum(last.(costs)), certificate(x0)
 #
 # With `p = 4`, the stage cost is `(x'Qx)^2 + (u'Ru)^2`. A homogeneous
 # quartic PolySet can represent the corresponding value bound. Here the gain
-# matrices come from the quadratic certificate above; the polynomial SDP
+# matrices come from the quadratic certificate above, and the polynomial SDP
 # optimizes its values by minimizing their integrals over the unit box.
 # Convexity and homogeneity ensure nonnegativity, so `psd = false` omits a
 # separate SOS constraint on the value polynomial.
@@ -170,14 +170,14 @@ is_feasible(quartic_certificate)
 quartic_certificate(x0)
 
 # Omitting `gains` asks the package to initialize them with its quadratic solver.
-# In both cases, the quartic optimization keeps the gain matrices fixed;
+# In both cases, the quartic optimization keeps the gain matrices fixed, and
 # the smallest fitted value at each state selects which gain is applied.
 
 # ## Polyhedral values and squared gauges
 #
-# A polytope family gives a piecewise-linear gauge. With `p = 2`, PCC
+# A polytope family gives a piecewise-linear gauge. With `p = 2`, the package
 # squares it to bound the same quadratic cost as above. The fixed-gain
-# problem is an SOCP; it keeps the normal fan of the supplied partition.
+# problem is an SOCP, and keeps the normal fan of the supplied partition.
 
 import LinearAlgebra
 P = SetProg.Polyhedra
@@ -193,16 +193,16 @@ polyhedral_families = [
                 ones(32),
             ),
         ),
-    ) for V in PCC.functions(certificate)
+    ) for V in functions(certificate)
 ]
-polyhedral_certificate = PCC.certify(
+polyhedral_certificate = certify(
     polyhedral_families,
     graph,
     problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(polyhedral_certificate)
+is_feasible(polyhedral_certificate)
 polyhedral_certificate(x0)
 
 # For `p = 1`, the same family produces an LP for unsquared gauge costs.
@@ -216,19 +216,19 @@ polyhedral_certificate(x0)
 # Piecewise ellipsoids keep a quadratic form on every cone of a fixed
 # partition. The Bellman inequalities are SDPs on the common refinement of
 # source cones and preimages of destination cones. The feedback gains remain
-# fixed; each piece is optimized, with SetProg enforcing continuity and
+# fixed. Each piece is optimized, with SetProg enforcing continuity and
 # convexity across neighboring cones.
 
 piecewise_quadratic_family = SetProg.Ellipsoid(;
     symmetric = true,
     piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
 )
-piecewise_quadratic_certificate = PCC.certify(
+piecewise_quadratic_certificate = certify(
     piecewise_quadratic_family,
     graph,
     problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(piecewise_quadratic_certificate)
+is_feasible(piecewise_quadratic_certificate)
 piecewise_quadratic_certificate(x0)

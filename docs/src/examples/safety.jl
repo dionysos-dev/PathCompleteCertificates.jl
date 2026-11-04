@@ -141,14 +141,15 @@ certify(TEMPLATE, de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
 # Polynomial barriers are also available: pass
 # `SetProg.PolySet(degree = 0:4, dimension = 2)` after `using SumOfSquares`.
 # Safety uses affine polynomials without an SOS constraint on the barrier
-# itself; the separation certificates use SOS multipliers.
+# itself, and the separation certificates use SOS multipliers.
 
 # ## Piecewise-quadratic safe sets
 #
 # The same safety model accepts a fixed conic partition. Each piece has
-# barrier `x'Q_k*x - 1`, with PSD matrices and continuity/convexity constraints.
-# The initial and unsafe conditions are certified on each cone; transition
-# conditions use intersections of the source and mapped destination cones.
+# barrier `x'Q_k*x - 1`, with positive semidefinite matrices, continuous and
+# convex across the cones. The initial and unsafe conditions are certified on
+# each cone, and the edge conditions on the intersections of the source cones
+# with the preimages of the destination cones.
 
 using SetProg, SumOfSquares
 import HiGHS, JuMP
@@ -160,6 +161,5 @@ partition = SetProg.polyhedron(
     partition_library,
 )
 piecewise_template = SetProg.Ellipsoid(; symmetric = true, piecewise = partition)
-piecewise_certificate =
-    PCC.certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(piecewise_certificate), piecewise_certificate.margin
+piecewise_certificate = certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
+is_feasible(piecewise_certificate), piecewise_certificate.margin
