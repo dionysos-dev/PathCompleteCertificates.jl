@@ -6,13 +6,13 @@
 # the bound. [How a certificate works](@ref) explains the certificate; this page
 # runs it from start to end.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import JuMP
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,
@@ -31,17 +31,17 @@ B = [[1.0; 0.0;;], [1.0; 0.0;;]]
 Q = [1.0 0.0; 0.0 1.0]
 R = [1.0;;]
 
-system = PCC.switched_system(A, B)
-problem = PCC.OptimalControlProblem(system, Q, R)
+system = switched_system(A, B)
+problem = OptimalControlProblem(system, Q, R)
 x0 = [3.0, -2.0]
 nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is one quadratic function and one
+# On the common graph, the certificate is one quadratic function and one
 # gain, a linear feedback. Its bound on the worst-case cost from ``x_0``:
 
-PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(x0)
+certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 
 # ## A path-complete graph
 #
@@ -49,25 +49,23 @@ PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(
 # They give one function and one gain per node, and the bound drops with each
 # order:
 
-bounds = [
-    PCC.certify(TEMPLATE, PCC.de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for
-    k in 0:2
-]
+bounds =
+    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for k in 0:2]
 
 # Most of the gain comes at order 1, with two nodes and two gains:
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
 certificate.gains
 
 # ## The certificate, drawn
 #
-# On the left, the set ``\{x : V_a(x) \le V(x_0)\}`` of each node function, and
+# On the left, the set ``\{x : V_s(x) \le V(x_0)\}`` of each node function, and
 # the set ``\{x : V(x) \le V(x_0)\}`` of their common function, here their
 # minimum, with 20 closed-loop runs from ``x_0`` under random switching: ``V``
 # decreases along every run, so none leaves the set. On the right, the cost
 # accumulated along 100 runs, below the bound of the certificate, itself below
-# the bound of the one-node graph.
+# the bound of the common graph.
 
 directions = [[cos(t), sin(t)] for t in range(0, 2pi; length = 400)]
 level_set(f, value) = [d .* sqrt(value / f(d)) for d in directions]
@@ -78,8 +76,8 @@ left = plot(;
     legend = :outerbottom,
     title = "the sets V ≤ V(x₀)",
 )
-for (a, V) in enumerate(PCC.functions(certificate))
-    points = level_set(x -> PCC.node_value(problem, V, x), certificate(x0))
+for (a, V) in enumerate(functions(certificate))
+    points = level_set(x -> node_value(problem, V, x), certificate(x0))
     plot!(
         left,
         first.(points),
@@ -96,8 +94,8 @@ plot!(left, first.(points), last.(points); color = :black, lw = 3, label = "comm
 rng = Random.MersenneTwister(1)
 costs = Vector{Float64}[]
 for run in 1:100
-    trajectory = PCC.simulate(certificate, x0, 30; rng)
-    visited, applied = PCC.states(trajectory), PCC.inputs(trajectory)
+    trajectory = simulate(certificate, x0, 30; rng)
+    visited, applied = states(trajectory), inputs(trajectory)
     stage = [x' * Q * x + u' * R * u for (x, u) in zip(visited, applied)]
     push!(costs, cumsum(stage))
     run <= 20 && plot!(
@@ -151,7 +149,7 @@ maximum(last.(costs)), certificate(x0)
 #
 # With `p = 4`, the stage cost is `(x'Qx)^2 + (u'Ru)^2`. A homogeneous
 # quartic PolySet can represent the corresponding value bound. Here the gain
-# matrices come from the quadratic certificate above; the polynomial SDP
+# matrices come from the quadratic certificate above, and the polynomial SDP
 # optimizes its values by minimizing their integrals over the unit box.
 # Convexity and homogeneity ensure nonnegativity, so `psd = false` omits a
 # separate SOS constraint on the value polynomial.
@@ -159,27 +157,27 @@ maximum(last.(costs)), certificate(x0)
 import SetProg
 using SumOfSquares
 
-quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
+quartic_problem = OptimalControlProblem(system, Q, R; p = 4)
 quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
-quartic_certificate = PCC.certify(
+quartic_certificate = certify(
     quartic_family,
     graph,
     quartic_problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(quartic_certificate)
+is_feasible(quartic_certificate)
 quartic_certificate(x0)
 
-# Omitting `gains` asks PCC to initialize them with its quadratic solver.
-# In both cases, the quartic optimization keeps the gain matrices fixed;
+# Omitting `gains` asks the package to initialize them with its quadratic solver.
+# In both cases, the quartic optimization keeps the gain matrices fixed, and
 # the smallest fitted value at each state selects which gain is applied.
 
 # ## Polyhedral values and squared gauges
 #
-# A polytope family gives a piecewise-linear gauge. With `p = 2`, PCC
+# A polytope family gives a piecewise-linear gauge. With `p = 2`, the package
 # squares it to bound the same quadratic cost as above. The fixed-gain
-# problem is an SOCP; it keeps the normal fan of the supplied partition.
+# problem is an SOCP, and keeps the normal fan of the supplied partition.
 
 import LinearAlgebra
 P = SetProg.Polyhedra
@@ -195,16 +193,16 @@ polyhedral_families = [
                 ones(32),
             ),
         ),
-    ) for V in PCC.functions(certificate)
+    ) for V in functions(certificate)
 ]
-polyhedral_certificate = PCC.certify(
+polyhedral_certificate = certify(
     polyhedral_families,
     graph,
     problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(polyhedral_certificate)
+is_feasible(polyhedral_certificate)
 polyhedral_certificate(x0)
 
 # For `p = 1`, the same family produces an LP for unsquared gauge costs.
@@ -218,19 +216,19 @@ polyhedral_certificate(x0)
 # Piecewise ellipsoids keep a quadratic form on every cone of a fixed
 # partition. The Bellman inequalities are SDPs on the common refinement of
 # source cones and preimages of destination cones. The feedback gains remain
-# fixed; each piece is optimized, with SetProg enforcing continuity and
+# fixed. Each piece is optimized, with SetProg enforcing continuity and
 # convexity across neighboring cones.
 
 piecewise_quadratic_family = SetProg.Ellipsoid(;
     symmetric = true,
     piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
 )
-piecewise_quadratic_certificate = PCC.certify(
+piecewise_quadratic_certificate = certify(
     piecewise_quadratic_family,
     graph,
     problem;
     optimizer = OPTIMIZER,
     gains = certificate.gains,
 )
-PCC.is_feasible(piecewise_quadratic_certificate)
+is_feasible(piecewise_quadratic_certificate)
 piecewise_quadratic_certificate(x0)

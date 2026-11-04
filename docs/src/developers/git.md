@@ -1,6 +1,6 @@
 # Git workflow
 
-`master` moves only through pull requests; a direct push is rejected.
+`master` moves only through pull requests: a direct push is rejected.
 
 ## The loop
 
@@ -58,5 +58,5 @@ test.
 
 ## Never committed
 
-`Manifest.toml`, any file over 5 MB, and experiment output; `.gitignore` lists
+`Manifest.toml`, any file over 5 MB, and experiment output. `.gitignore` lists
 the usual kinds. A blob committed once stays in the history of every clone.

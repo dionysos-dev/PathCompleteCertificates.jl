@@ -12,25 +12,24 @@ of modes. This page helps you decide whether it fits your problem.
 
 Use it when two conditions hold:
 
-1. your system is a discrete-time switched linear system,
+1. Your system is a discrete-time switched linear system,
    ``x_{k+1} = A_{\sigma(k)} x_k`` or
    ``x_{k+1} = A_{\sigma(k)} x_k + B_{\sigma(k)} u_k``, and any sequence of
-   modes may occur;
-2. you want a proof rather than simulations: that the system is stable, that
-   it stays safe, or that a feedback policy keeps its cost bounded.
+   modes may occur.
+2. You want a proof rather than simulations: that the system is stable, that
+   it stays safe, or that a feedback policy has a bounded worst-case cost.
 
 It fits best when, in addition:
 
-- you want to choose the graph of the certificate, or let the package improve
-  it;
-- you want node functions beyond quadratic forms: sums of squares, copositive
-  functions for positive systems, polyhedral norms, or the piecewise quadratic
-  and piecewise linear functions of
-  [SetProg.jl](https://github.com/blegat/SetProg.jl);
-- you want to choose the solver: any JuMP solver for the kind of program the
-  template sets, semidefinite or linear, with a log-determinant for optimal
-  control;
-- you study the path-complete framework itself, and want to compare graphs,
+- You want to choose the graph of the certificate, or let the package improve
+  it.
+- You want node functions beyond quadratic forms: sums of squares, piecewise
+  quadratic functions, polyhedral norms, or copositive functions for positive
+  systems. Most of them also certify safety and optimal control, where
+  path-complete certificates have so far used quadratic functions only.
+- You want to choose the solver: any JuMP solver for the program that the
+  template and the problem set, linear, second-order cone or semidefinite.
+- You study the path-complete framework itself, and want to compare graphs,
   use duality, benchmark methods from different papers, or add a template, a
   problem or an algorithm.
 

@@ -17,7 +17,8 @@ const _HS = HybridSystems
 const _MS = MathematicalSystems
 
 # Systems.
-export switched_system, simulate, Trajectory
+export switched_system, has_input, state_matrices, input_matrices
+export simulate, Trajectory, states, inputs, switching
 
 # Problems and certificates.
 export StabilityProblem, SafetyProblem, OptimalControlProblem
@@ -39,14 +40,14 @@ export de_bruijn, common_graph, dual
 export is_path_complete, is_complete, is_co_complete, n_nodes, n_edges, n_modes
 
 # Lifts and comparison.
-export lift, Lifted, is_valid
+export lift, Lifted, origins, is_valid, simulation
 export IdentityLift, InSplitLift, OutSplitLift, ForwardProductLift, BackwardProductLift
 export PathDependentLift, ProductLift, MinLift, MaxLift, SumLift
 export CompositionLift, BackwardCompositionLift
 export compare, Comparison, simulations, templates
 
 # Refinement.
-export refine, RefinementTrace, rates, graphs, certificates
+export refine, RefinementTrace, rates, graphs, certificates, steps
 export AbstractRefinementAlgorithm, TightestNodeSplitting, BestOfTightEdgeLifts
 export next_graph, initial_graph
 

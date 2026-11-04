@@ -43,14 +43,14 @@ julia --project -e 'using Pkg; Pkg.test()'                           # everythin
 The `:slow` suites are the expensive ones, most of which solve programs. Most
 regressions surface there, so a change is not tested until they pass. A new
 test file goes in `TEST_FILES` in `test/runtests.jl`, tagged `:slow` if it
-takes long; the summary the suite prints, slowest first, shows which do.
+takes long. The summary the suite prints, slowest first, shows which do.
 
 While iterating, keep one Julia session open with Revise and `include` the
-file you are working on; a cold start costs about half a minute.
+file you are working on: a cold start costs about half a minute.
 
 ## Format
 
-Required before every commit; CI fails on any diff. The rules are in
+Required before every commit: CI fails on any diff. The rules are in
 `.JuliaFormatter.toml`.
 
 ```

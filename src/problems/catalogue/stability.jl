@@ -51,7 +51,7 @@ end
                        rate = 1, check_path_complete = true, conditioning_bound = Inf)
 
 Build, without solving, the SetProg model of the feasibility problem
-`V_b(A_w x) <= rate^(p |w|) * V_a(x)` for every edge `(a, b, w)`, with `p` the
+`V_d(A_w x) <= rate^(δ |w|) * V_s(x)` for every edge `(s, d, w)`, with `δ` the
 template's degree and `|w|` the length of the word; its set variables are
 expanded when it is optimized.
 """

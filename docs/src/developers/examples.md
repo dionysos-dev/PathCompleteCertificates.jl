@@ -12,22 +12,22 @@ tutorial solves one problem from start to end.
 #
 # A paragraph saying what this shows and why someone would read it.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 
 # Prose is a `# ` comment between code blocks.
 
 A = [[0.5 0.0; 0.0 0.25]]
-problem = PCC.StabilityProblem(PCC.switched_system(A))
+problem = StabilityProblem(switched_system(A))
 nothing #hide
 
 # The last expression of a block is what the page shows, so end a block with
 # the value worth seeing rather than printing it.
 
-PCC.certify(PCC.QuadraticTemplate(), PCC.de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer).rate
+certify(QuadraticTemplate(), de_bruijn(1, 1), problem; optimizer = Clarabel.Optimizer).rate
 ```
 
-- The `# # Title` line is the sidebar entry; `docs/make.jl` reads it from the
+- The `# # Title` line is the sidebar entry. `docs/make.jl` reads it from the
   file, so the filename stays lowercase.
 - `# ` starts prose, `##` a comment kept inside a code block, `#-` separates
   two code blocks, and a line ending in `#src` is dropped from the page.
@@ -52,7 +52,7 @@ notice.
 julia --project=docs docs/src/examples/stability.jl
 ```
 
-The docs environment carries the solvers and Plots; the package depends on
+The docs environment carries the solvers and Plots. The package depends on
 neither, and its tests on the solvers only. The tutorials use Clarabel, and a
 setting a solver needs is set in the tutorial: `optimal_control.jl` disables
 Clarabel's chordal decomposition, which fails on its model.

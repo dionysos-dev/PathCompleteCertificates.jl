@@ -12,11 +12,11 @@ Its installers also install juliaup, which keeps Julia up to date: run
 
 The package needs Julia 1.10 or later, so both releases offered work:
 
-- the **current stable release**, the newest, which most users should
-  install;
-- the **long-term support release**, older but still receiving bug fixes, for
+- The **current stable release**, the newest, which most users should
+  install.
+- The **long-term support release**, older but still receiving bug fixes, for
   machines that are rarely updated, such as computers managed by an IT
-  department; `juliaup add lts` installs it.
+  department. `juliaup add lts` installs it.
 
 New to Julia? Start with the
 [Getting started](https://docs.julialang.org/en/v1/manual/getting-started/)
@@ -42,43 +42,50 @@ In every new Julia session, activate the environment again, as above, then
 load the package:
 
 ```julia
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 ```
 
-The package exports nothing, so its functions take the prefix, as in
-`PCC.certify`; this documentation does the same. Update the package with
-`Pkg.update("PathCompleteCertificates")`.
+The package exports what a user calls, such as `certify`,
+`QuadraticTemplate` or `de_bruijn`. The functions that extend it, for a new
+template or problem, are written `PathCompleteCertificates.name`. Update the
+package with `Pkg.update("PathCompleteCertificates")`.
 
 ## Install a solver
 
 Every certificate is computed by a solver, through [JuMP](https://jump.dev/).
 Two open-source solvers cover all the templates:
 
-- [Clarabel](https://github.com/oxfordcontrol/Clarabel.jl), for semidefinite
-  programs: the quadratic, piecewise quadratic and sum-of-squares
-  templates, including the log-determinant objective of optimal control;
-- [HiGHS](https://github.com/jump-dev/HiGHS.jl), for linear programs: the
-  copositive and polyhedral templates, and piecewise polytopes.
+- [Clarabel](https://github.com/oxfordcontrol/Clarabel.jl) solves every
+  program the package builds: linear, second-order cone and semidefinite.
+- [HiGHS](https://github.com/jump-dev/HiGHS.jl) is faster on the linear
+  programs, such as stability with the copositive and polyhedral templates.
 
 ```julia
 Pkg.add(["Clarabel", "HiGHS"])
 ```
 
 Load the solver, `import Clarabel`, and pass it as
-`optimizer = Clarabel.Optimizer`.
+`optimizer = Clarabel.Optimizer`. For optimal control, turn off Clarabel's
+chordal decomposition, which fails on these programs:
+
+```julia
+optimizer = () -> Clarabel.Optimizer(chordal_decomposition_enable = false)
+```
+
 Any other JuMP solver for these programs works, such as the commercial solver
-MOSEK; JuMP keeps the
+MOSEK. JuMP keeps the
 [list of solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers).
 
 To check the installation, run [the example of the home page](@ref "An example").
 
 ## Optional packages
 
-Two features need another package, installed with `Pkg.add` and loaded:
+Some features need another package, installed with `Pkg.add` and loaded:
 
 | To use | Install and load |
 | :-- | :-- |
-| [`SumOfSquaresTemplate`](@ref) | `SumOfSquares` |
+| [`SumOfSquaresTemplate`](@ref) and [`PiecewiseQuadraticTemplate`](@ref) | `SumOfSquares` |
+| SetProg families passed directly, or polytopes of your own | `SetProg` |
 | plots of a [`Trajectory`](@ref) | `Plots` |
 
 For example, `Pkg.add("SumOfSquares")`, then

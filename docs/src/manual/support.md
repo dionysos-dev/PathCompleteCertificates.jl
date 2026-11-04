@@ -12,67 +12,71 @@ below is a place where research or a contribution can close it.
 
 ## Templates and problems
 
-Stability accepts every template, including SetProg families passed directly.
-Safety accepts quadratic, polynomial, polyhedral, and piecewise-quadratic
-families. Optimal control jointly synthesizes quadratic values and gains.
-Convex polynomial values, from
-`SumOfSquaresTemplate(r; convex = true)` or a convex homogeneous PolySet, are
-optimized for fixed or initialized gains.
+For each template, the program that each problem solves with it, linear (LP),
+second-order cone (SOCP) or semidefinite (SDP):
 
-|                                           | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
-| :---------------------------------------- | :-: | :-: | :-: |
-| [`QuadraticTemplate`](@ref)               | ✓ | ✓ | ✓ |
-| [`SumOfSquaresTemplate`](@ref)            | ✓ | ✓ | ✓ ³ |
-| [`LinearCopositiveTemplate`](@ref)        | ✓ ¹ | | |
-| [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
-| [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | ✓ ² | |
-| [`ConicPolyhedralTemplate`](@ref)         | ✓ | ✓ ² | |
-| [`PiecewiseQuadraticTemplate`](@ref)      | ✓ | ✓ | ✓ ⁴ |
-| convex homogeneous SetProg PolySet       | ✓ | ✓ | ✓ ³ |
+| Template | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
+| :-- | :-: | :-: | :-: |
+| [`QuadraticTemplate`](@ref)`()` | SDP | SDP | SDP |
+| [`PiecewiseQuadraticTemplate`](@ref)`(P)` † | SDP | SDP | SDP § |
+| [`SumOfSquaresTemplate`](@ref)`(r)` † | SDP | SDP | SDP § |
+| [`ConicPolyhedralTemplate`](@ref)`(P)` | LP | SOCP ‡ | LP or SOCP § |
+| [`ParallelFacesPolyhedralTemplate`](@ref)`(G)` | LP | SOCP ‡ | × |
+| [`LinearCopositiveTemplate`](@ref)`()` * | LP | × | × |
+| [`DualCopositiveTemplate`](@ref)`()` * | LP | × | × |
 
-¹ Positive systems only: matrices with nonnegative entries.
+\* For positive systems, whose matrices have nonnegative entries.
 
-² Polyhedral safety currently supports a bounded ellipsoidal initial region
-and an unsafe region equal to the exterior of a bounded ellipsoid. It uses
-linear and second-order cone constraints.
+† Not available to [`refine`](@ref): its edge slacks are not implemented.
 
-³ Set `OptimalControlProblem(...; p = degree)` with a matching homogeneous
-degree and convex node functions: `SumOfSquaresTemplate(r; convex = true)` with
-`p = 2r`, or a PolySet with `convex = true`. Supply node gains with `gains = ...`, or
-omit them to initialize with the quadratic solver. The polynomial SDP minimizes
-the integral of the value bounds and keeps the gain matrices fixed.
+‡ For an ellipsoidal initial set ``X_0`` and an unsafe set ``X_u`` outside an
+ellipsoid.
 
-⁴ Piecewise-quadratic optimal control uses quadratic costs (`p = 2`) and supplied
-or quadratically initialized gains, which stay fixed.
+§ With fixed gains, by default those of the quadratic certificate. Polynomial
+node functions must be convex, with `SumOfSquaresTemplate(r; convex = true)`.
+The conic polyhedral template solves a linear program for a piecewise linear
+cost, and a second-order cone program for a quadratic one.
 
-Unsupported combinations report an error before anything is solved. Two more conditions on the graph:
+× Not supported: see [The gaps](@ref).
 
-- optimal control needs a **complete** graph, not only a path-complete one;
-- a [`WordGraph`](@ref), with sequences of modes on its edges, is accepted by
-  stability only: for safety and optimal control, the states inside a word
-  would go unchecked.
+For optimal control, the exponent `p` of the cost (see
+[Systems and problems](@ref)) must match the template: 2 for the quadratic and
+piecewise quadratic templates, ``2r`` for
+`SumOfSquaresTemplate(r; convex = true)`, and 1 or 2 for the conic polyhedral
+template, whose node functions are then the gauges ``g_{\Omega_s}^p``. A cost
+given by polytopes ``\mathcal Q`` and ``\mathcal R`` works with the conic
+polyhedral template only. The other templates need the matrices ``Q`` and
+``R``.
+
+Unsupported combinations report an error before anything is solved. Two more
+conditions are on the graph:
+
+- **Optimal control** needs a **complete** graph, not only a path-complete
+  one.
+- **A [`WordGraph`](@ref)**, with sequences of modes on its edges, is
+  accepted by stability only. For safety and optimal control, the states
+  inside a word would go unchecked.
 
 ## Lifts and templates
 
 | Template | Lifts valid for it, beyond the identity |
 | :-- | :-- |
-| [`QuadraticTemplate`](@ref) | sum; composition and backward composition if the matrices are invertible |
-| [`SumOfSquaresTemplate`](@ref) | sum; composition and backward composition if the matrices are invertible |
-| [`LinearCopositiveTemplate`](@ref) | sum; composition if the matrices are nonnegative with no zero column; backward composition if they are invertible with nonnegative inverses; through its dual: min |
-| [`DualCopositiveTemplate`](@ref) | max; through its dual: sum, composition if the matrices are invertible with nonnegative inverses, backward composition if they are nonnegative with no zero row |
-| [`ParallelFacesPolyhedralTemplate`](@ref) | max if every node has the same faces |
-| [`ConicPolyhedralTemplate`](@ref) | sum if every node has the same partition |
-| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition |
+| [`QuadraticTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
+| [`SumOfSquaresTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
+| [`LinearCopositiveTemplate`](@ref) | sum. Composition if the matrices are nonnegative with no zero column. Backward composition if they are invertible with nonnegative inverses. Through its dual: min. |
+| [`DualCopositiveTemplate`](@ref) | max. Through its dual: sum, composition if the matrices are invertible with nonnegative inverses, and backward composition if they are nonnegative with no zero row. |
+| [`ParallelFacesPolyhedralTemplate`](@ref) | max if every node has the same faces. |
+| [`ConicPolyhedralTemplate`](@ref) | sum if every node has the same partition. |
+| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition. |
 
 The lifts used by refinement, the splits and the products, are valid for every
 template. [`is_valid`](@ref) answers for a given template and system.
 
 ## Refinement and comparison
 
-[`refine`](@ref) runs on [`StabilityProblem`](@ref) only, with a template that
-measures its edge slacks: every template but [`SumOfSquaresTemplate`](@ref)
-and [`PiecewiseQuadraticTemplate`](@ref). [`compare`](@ref) reads graphs with one
-mode per edge.
+[`refine`](@ref) runs on [`StabilityProblem`](@ref) only, with the templates
+without † in the table above. [`compare`](@ref) reads graphs with one mode per
+edge.
 
 ## The gaps
 
@@ -82,20 +86,25 @@ template, problem, lift or refinement algorithm goes.
 
 **Not implemented yet:**
 
-- **safety with copositive templates**, and polyhedral
-  separation from a bounded unsafe obstacle;
-- **optimal control on graphs that are not complete:** the convex program
-  covers complete graphs only;
-- **refinement with sums of squares and piecewise quadratic functions:** their edge
-  slacks need an optimization of their own;
-- **constrained switching**, for instance by an automaton: planned, see
-  [issue #45](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues/45);
-- **further problems** of the path-complete literature, such as stabilization.
+- **The × cells of the table:** safety and optimal control with the
+  copositive templates, and optimal control with the parallel-faces template.
+- **Polyhedral safety with other sets,** such as a bounded unsafe obstacle.
+- **Optimal control on graphs that are not complete:** the convex program
+  covers complete graphs only.
+- **Refinement with sums of squares and piecewise quadratic functions:**
+  their edge slacks need an optimization of their own.
+- **The dual of the polyhedral templates:** the conic polyhedral and
+  parallel-faces templates are polar to each other, but [`dual`](@ref) does
+  not map one to the other (see [Duality](@ref)).
+- **Constrained switching**, for instance by an automaton: planned, see
+  [issue #45](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues/45).
+- **Further problems** of the path-complete literature, such as
+  stabilization.
 
 **Open questions:**
 
-- **joint optimal-control synthesis beyond quadratic templates:** polynomial
-  value optimization currently uses fixed gains. Joint gain/value search
-  requires a suitable convexification or a nonconvex algorithm;
-- **refinement for safety and optimal control:** the results that guide
+- **Joint optimal-control synthesis beyond the quadratic template:** the
+  other templates use fixed gains. Computing the gains and the node functions
+  together needs a convex reformulation or a nonconvex algorithm.
+- **Refinement for safety and optimal control:** the results that guide
   refinement, where to lift and when to stop, are proved for stability.

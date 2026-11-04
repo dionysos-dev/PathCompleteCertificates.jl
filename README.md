@@ -28,8 +28,8 @@ bounded. Each certificate is built on a path-complete graph, a graph whose paths
 sequence of modes. You choose the graph, or let the package build it:
 
 <p align="center">
-  <img src="docs/src/assets/architecture.png" width="480"
-       alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
+  <img src="docs/src/assets/architecture.png" width="560"
+       alt="The two ways to use the package. In the first, the user gives the template, the graph and the problem, for stability, safety or optimal control, and certify(template, graph, problem) solves the convex programs on that graph. In the second, for stability only, the user leaves the graph out, and refine(template, problem) builds it: it computes a certificate, finds its tight edges, lifts the graph there, and the last certificate of its trace is the result.">
 </p>
 
 ## Example
@@ -39,17 +39,17 @@ quadratic template, and a graph with one node. Together they give a common quadr
 function, whose rate is an upper bound on the joint spectral radius:
 
 ```julia
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 
 A1 = [0.1552 0.0447; 0.7641 0.7472]     # mode 1
 A2 = [0.0475 0.9176; 0.1896 0.0185]     # mode 2
-system = PCC.switched_system([A1, A2])  # planar switched linear system, two modes
+system = switched_system([A1, A2])      # planar switched linear system, two modes
 
-certificate = PCC.certify(
-    PCC.QuadraticTemplate(),         # V(x) = xᵀPx at each node
-    PCC.common_graph(system),        # one node, one loop per mode
-    PCC.StabilityProblem(system);    # V(Aᵢx) ≤ γ² V(x) along each edge
+certificate = certify(
+    QuadraticTemplate(),             # V(x) = xᵀPx at each node
+    common_graph(system),            # one node, one loop per mode
+    StabilityProblem(system);        # V(Aᵢx) ≤ γ² V(x) along each edge
     optimizer = Clarabel.Optimizer,  # the solver of the semidefinite program
 )
 certificate.rate                     # 0.9587: below one, the system is stable
@@ -86,7 +86,7 @@ says how to close one, with a new template, problem, lift or refinement algorith
 
 ## Citing
 
-A paper describing the package is in preparation; until it is published, cite this
+A paper describing the package is in preparation. Until it is published, cite this
 repository. For the algorithms and theoretical results the package implements, cite the papers
 they come from, listed in the
 [Bibliography](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/bibliography/).

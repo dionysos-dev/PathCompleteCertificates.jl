@@ -1,8 +1,8 @@
 """
     simulation(G, H) -> Union{Nothing, Vector{Int}}
 
-A map `R` from the nodes of `H` to those of `G` such that `(R(a), R(b), i)` is
-an edge of `G` for every edge `(a, b, i)` of `H`, or `nothing` if none exists.
+A map `R` from the nodes of `H` to those of `G` such that `(R(s), R(d), i)` is
+an edge of `G` for every edge `(s, d, i)` of `H`, or `nothing` if none exists.
 """
 simulation(G::CertificateGraph, H::CertificateGraph) =
     simulation(_letter_graph(G, "simulation"), _letter_graph(H, "simulation"))

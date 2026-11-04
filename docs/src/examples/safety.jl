@@ -6,12 +6,12 @@
 # [How a certificate works](@ref) explains the certificate; this page runs it
 # from start to end.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
 
@@ -22,30 +22,28 @@ nothing #hide
 # are given in homogeneous coordinates, as ``\{x : [x; 1]^\top S [x; 1] \ge 0\}``.
 
 A = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
-system = PCC.switched_system(A)
+system = switched_system(A)
 
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
-problem = PCC.SafetyProblem(system, S0, Su)
+problem = SafetyProblem(system, S0, Su)
 nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is a common barrier function. None
+# On the common graph, the certificate is a common barrier function. None
 # exists:
 
-PCC.is_feasible(
-    PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER),
-)
+is_feasible(certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER))
 
 # ## A path-complete graph
 #
 # The De Bruijn graph of order 1 gives one barrier per node, and a positive
 # margin: the system is safe.
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(certificate), certificate.margin
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+is_feasible(certificate), certificate.margin
 
 # ## The certificate, drawn
 #
@@ -91,9 +89,9 @@ contour!(
 )
 ## `contour!` adds no legend entry of its own.
 plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
-for (a, V) in enumerate(PCC.functions(certificate))
+for (a, V) in enumerate(functions(certificate))
     color = (:darkorange, :purple)[a]
-    values = [PCC.node_value(problem, V, [x, y]) for y in grid, x in grid]
+    values = [node_value(problem, V, [x, y]) for y in grid, x in grid]
     contour!(
         left,
         grid,
@@ -117,7 +115,7 @@ right = plot(;
 )
 for run in 1:100
     angle = 2pi * run / 100
-    visited = PCC.states(PCC.simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
+    visited = states(simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
     plot!(
         right,
         0:30,
@@ -138,19 +136,20 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 # (see [How a certificate works](@ref)). A finer graph adds nothing here: the
 # De Bruijn graph of order 2 certifies the same margin.
 
-PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
+certify(TEMPLATE, de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
 
 # Polynomial barriers are also available: pass
 # `SetProg.PolySet(degree = 0:4, dimension = 2)` after `using SumOfSquares`.
 # Safety uses affine polynomials without an SOS constraint on the barrier
-# itself; the separation certificates use SOS multipliers.
+# itself, and the separation certificates use SOS multipliers.
 
 # ## Piecewise-quadratic safe sets
 #
 # The same safety model accepts a fixed conic partition. Each piece has
-# barrier `x'Q_k*x - 1`, with PSD matrices and continuity/convexity constraints.
-# The initial and unsafe conditions are certified on each cone; transition
-# conditions use intersections of the source and mapped destination cones.
+# barrier `x'Q_k*x - 1`, with positive semidefinite matrices, continuous and
+# convex across the cones. The initial and unsafe conditions are certified on
+# each cone, and the edge conditions on the intersections of the source cones
+# with the preimages of the destination cones.
 
 using SetProg, SumOfSquares
 import HiGHS, JuMP
@@ -162,6 +161,5 @@ partition = SetProg.polyhedron(
     partition_library,
 )
 piecewise_template = SetProg.Ellipsoid(; symmetric = true, piecewise = partition)
-piecewise_certificate =
-    PCC.certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(piecewise_certificate), piecewise_certificate.margin
+piecewise_certificate = certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
+is_feasible(piecewise_certificate), piecewise_certificate.margin
