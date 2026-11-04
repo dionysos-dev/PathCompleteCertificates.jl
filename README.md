@@ -28,8 +28,8 @@ bounded. Each certificate is built on a path-complete graph, a graph whose paths
 sequence of modes. You choose the graph, or let the package build it:
 
 <p align="center">
-  <img src="docs/src/assets/architecture.png" width="480"
-       alt="The two ways to use the package: the user gives the template, the graph, the system and the problem, and certify computes a certificate; or, for stability, the user leaves the graph out, and refine builds it, lifting the graph where the certificate is tight.">
+  <img src="docs/src/assets/architecture.png" width="560"
+       alt="The two ways to use the package. In the first, the user gives the template, the graph and the problem, for stability, safety or optimal control, and certify(template, graph, problem) solves the convex programs on that graph. In the second, for stability only, the user leaves the graph out, and refine(template, problem) builds it: it computes a certificate, finds its tight edges, lifts the graph there, and the last certificate of its trace is the result.">
 </p>
 
 ## Example
