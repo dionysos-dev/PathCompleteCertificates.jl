@@ -179,7 +179,7 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        algorithm = PCC.TightestNodeSplitting(; rng = MersenneTwister(1)),
+        strategy = PCC.TightestNodeSplitting(; rng = MersenneTwister(1)),
     )
 
     @test all(<(0), diff(PCC.rates(random)))
@@ -292,7 +292,7 @@ end
             SHEARED;
             optimizer = OPTIMIZER,
             depth_max = 2,
-            algorithm = PCC.TightestNodeSplitting(),
+            strategy = PCC.TightestNodeSplitting(),
         ),
     ) == PCC.DEPTH_REACHED
 
@@ -306,7 +306,7 @@ end
 
 @testset "check_path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings =
-        (optimizer = OPTIMIZER, depth_max = 3, algorithm = PCC.TightestNodeSplitting())
+        (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.TightestNodeSplitting())
     start = PCC.dual(PCC.de_bruijn(1, 2))
 
     # Waiving the check cannot change the answer on a graph that has the
@@ -370,7 +370,7 @@ end
         MEMORYLESS,
         problem;
         optimizer = OPTIMIZER,
-        algorithm = PCC.BestOfTightEdgeLifts(),
+        strategy = PCC.BestOfTightEdgeLifts(),
         depth_max = 4,
         atol = 1e-4,
     )

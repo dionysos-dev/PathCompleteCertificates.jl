@@ -15,7 +15,7 @@ julia --project=numerical_experiments numerical_experiments/refinement.jl
 | :-- | :-- |
 | `three_problems.jl` | Section 5.1, figure "One graph, one template, three problems": stability, safety and optimal control on the De Bruijn graph of order 1 with the quadratic template |
 | `templates_jsr.jl` | Section 5.1, table of templates and graphs: upper bounds on the JSR, and smallest certified unsafe radius for the pair scaled by 1/2, with six templates on the common graph and the De Bruijn graphs of order 1 and 3 |
-| `refinement.jl` | Section 5.2, figure "Automatic refinement": the two refinement algorithms against the De Bruijn hierarchy, and the last refined graph |
+| `refinement.jl` | Section 5.2, figure "Automatic refinement": the two refinement strategies against the De Bruijn hierarchy, and the last refined graph |
 
 The environment takes `SetProg.jl` at its `main` branch, which the polyhedral safety templates
 need until its next release.

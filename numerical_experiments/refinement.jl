@@ -1,5 +1,5 @@
 # Figure "Automatic refinement" of the HSCC'27 tool paper (Section 5.2): the two
-# refinement algorithms and the De Bruijn hierarchy on the same pair, with the
+# refinement strategies and the De Bruijn hierarchy on the same pair, with the
 # quadratic template.
 #
 # Run from the repository root:
@@ -65,14 +65,14 @@ atol = 1e-3
 # Wall-clock time at which each certificate of a run is reached: `stop` is
 # called on every certificate, after the solves that produced it, the candidate
 # solves of BestOfTightEdgeLifts included.
-function timed_refine(algorithm; kwargs...)
+function timed_refine(strategy; kwargs...)
     times = Float64[]
     t0 = time()
     trace = PCC.refine(
         TEMPLATE,
         problem;
         optimizer = OPTIMIZER,
-        algorithm,
+        strategy,
         atol,
         stop = c -> (push!(times, time() - t0); false),
         kwargs...,
