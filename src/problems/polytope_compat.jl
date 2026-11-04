@@ -34,8 +34,11 @@ node: ``G`` is the identity, of size `dimension`, at each of `n_nodes` nodes,
 or one of the invertible `matrices` per node. The weights ``w`` are the variables. It
 applies to every system. Stability gives linear programs; safety with an
 ellipsoidal initial region and an exterior-ellipsoid unsafe region gives
-second-order cone programs. `min_weight` normalizes the node functions: every weight is at least
-`min_weight`.
+second-order cone programs. `min_weight` normalizes the node functions: every
+weight is at least `min_weight`. The underlying family is
+[`ConicPolyhedralTemplate`](@ref) with partition `conv(±rows(G))`, using the
+polar reference-set inclusion and central symmetry. SetProg selects the dual
+representation.
 """
 function ParallelFacesPolyhedralTemplate(
     n_nodes::Integer,
@@ -60,9 +63,12 @@ function ParallelFacesPolyhedralTemplate(
     return map(matrices) do G
         LinearAlgebra.rank(G) == n ||
             throw(ArgumentError("node matrices must be invertible"))
-        partition = _parallel_faces_partition(G)
-        family = SetProg.Polytope(; symmetric = true, piecewise = partition)
-        reference = ParallelFacesPolyhedralFunction(G, fill(min_weight, n); partition)
+        family = only(
+            ConicPolyhedralTemplate([_parallel_faces_partition(G)]; min_scale = min_weight),
+        )
+        # Polarity reverses the conic normalization S ⊆ reference. SetProg
+        # selects dual modeling for polar(reference) ⊆ S.
+        reference = SetProg.polar(_unit_set(family))
         return _NormalizedFamily(family, reference; symmetric = true)
     end
 end
@@ -149,24 +155,3 @@ function of [`DualCopositiveTemplate`](@ref), as a SetProg set; evaluate it
 with [`node_value`](@ref).
 """
 DualCopositiveFunction(v::AbstractVector) = _dual_value(LinearCopositiveFunction(v))
-"""
-    ParallelFacesPolyhedralFunction(G, w)
-
-The function ``V(x) = \\max_k |(G x)_k| / w_k``, a node function of
-[`ParallelFacesPolyhedralTemplate`](@ref), as a SetProg set; evaluate it with
-[`node_value`](@ref).
-"""
-function ParallelFacesPolyhedralFunction(
-    G::AbstractMatrix,
-    w::AbstractVector;
-    partition = _parallel_faces_partition(G),
-)
-    n = LinearAlgebra.checksquare(G)
-    length(w) == n || throw(DimensionMismatch())
-    all(>(0), w) || throw(ArgumentError("weights must be positive"))
-    pieces = [
-        SetProg.Sets.PolarPoint(G \ (w .* (G * (h.a / h.β)))) for
-        h in SetProg.halfspaces(partition)
-    ]
-    return SetProg.polar(SetProg.Sets.Piecewise(pieces, partition))
-end
