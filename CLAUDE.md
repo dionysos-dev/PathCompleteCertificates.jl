@@ -8,7 +8,7 @@ changing anything under `src/` or `docs/`.
 
 Certificates for switched linear systems built on **path-complete graphs**. A certificate is
 three things: a **template**, the family the node functions are drawn from; a **labelled
-graph** whose labels are the modes, with one node function `V_a` per node; and one **edge
+graph** whose labels are the modes, with one node function `V_s` per node; and one **edge
 inequality** per edge, set by the problem. When the graph is path-complete, every switching
 sequence is read along a path, and the edge inequalities imply a property of the whole system.
 
@@ -35,7 +35,7 @@ add_function_variables!(model, family, dimension, node)    # the node function, 
 add_normalization!(model, family, V)                       # excludes V ≡ 0
 add_decrease!(model, family, V_src, V_dst, A; scale = 1)   # scale·V_src(x) ≥ V_dst(A x) for every x
 decrease_slack(family, V_src, V_dst, A; scale = 1)         # the same, read off a solution; 0 when tight
-homogeneity_degree(family)                                 # p: V(cx) = cᵖ V(x)
+homogeneity_degree(family)                                 # δ: V(cx) = c^δ V(x)
 solution_value(family, V)                                  # the fitted SetProg set
 is_applicable(family, system)                              # does the template apply at all?
 is_closed_under(family, ::Operation, system)               # default false; which lifts are valid
@@ -54,16 +54,17 @@ common(graph, problem, Vs, x)
 ```
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge inequality is one call
-with `scale = γᵖ`. Stability and safety write their edge inequality once, in a private
+with `scale = γ^δ`. Stability and safety write their edge inequality once, in a private
 `_edge_decrease`, which both builds the model and measures the slacks; optimal control builds
 its model in `S, Y` and measures its slacks in `P, K`. Each problem owns its certificate type;
 what it certifies is a typed field (`rate`, `margin`, `gains`), and the shared fields live once
 in `CertificateData`.
 
-Stability uses the families directly. Safety and optimal control still build their programs
-from quadratic matrices, behind the private `_legacy_quadratic` in
-`templates/catalogue/quadratic.jl`, and accept the quadratic template only. Optimal control is
-convex only after `S = P⁻¹`, `Y = KS`, and says so in place.
+Stability and safety use the families directly, as SetProg inclusions. Optimal control
+synthesizes the gains jointly with the quadratic template only, in `S = P⁻¹`, `Y = KS`, where it
+is convex, and says so in place. With the other templates it keeps the gains fixed and imposes
+the Bellman inequality as a SetProg inclusion through the polar `L_δ` sum, in
+`problems/catalogue/polynomial_optimal_control.jl`.
 
 **A new problem, lift or refinement algorithm is one file in the `catalogue/` of its
 directory, and changes no other code**; its wiring (the include, a test, a reference page,
@@ -130,6 +131,10 @@ The documentation is part of the package; write it with the same care as the cod
 - **One word per concept, the code's word**: node function, edge inequality, common function,
   tight edge, lift, valid, simulation, "at least as good". "Certificate" in general; "bound"
   and "rate" for stability only.
+- **The paper's notation**: a graph `G = (S, E)` with edges `(s, d, i)` from `s` to `d`
+  labelled by mode `i`, node functions `V_s`, the rate `γ`, the degree `δ` of the node functions
+  (`p` is the exponent of the cost), the sets `X_0` and `X_u`, the stage cost `ℓ`, the
+  worst-case cost `J_φ` and the robust value function `J^⋆`.
 - **Every number in the prose is the output of an example on the page.** Check them again when
   the code changes.
 - **What works with what** is the single reference for the supported combinations and the
@@ -137,7 +142,7 @@ The documentation is part of the package; write it with the same care as the cod
 - **Style.** A page opens with what it is for; definitions in math when shorter; lists for
   parallel items; graph drawings from `docs/graph_drawing.jl`. No em dashes. No claim that one
   template is more or less conservative than another.
-- **Citations.** Cite a result where the manual uses it, as `([key](@cite), Thm. N)`, and keep
+- **Citations.** Cite a result where the manual uses it, as `[key; Thm. N](@cite)`, and keep
   the Bibliography's table of what the package takes from each paper current. Read every
   definition and theorem number in the PDF in `sources/` before writing it; no citation
   without its entry in `docs/src/references.bib`.
@@ -181,7 +186,7 @@ The documentation is part of the package; write it with the same care as the cod
   `rtol = 1e-6`, the default of `refine`, and keeps the certificate of its last feasible solve:
   solving again at the final rate, within solver tolerance of the boundary, may fail.
 - **Stability slacks are relative.** The normalization bounds the node functions from below
-  only, so their scale is arbitrary; `edge_slacks` for stability divides by `rate^p` times
+  only, so their scale is arbitrary; `edge_slacks` for stability divides by `rate^δ` times
   the largest node value on the unit vectors. A tight edge then has a slack of the order of
   `rtol`, and `atol = 1e-4`, at least ten times it, sees it. Absolute slacks once hid the tight
   edges of the running example, and `refine` stopped `EXHAUSTED` instead of `OPTIMAL`.
