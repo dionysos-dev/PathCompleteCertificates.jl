@@ -163,6 +163,40 @@ end
     end
 end
 
+@testset "Conic and parallel-faces reference normalization" begin
+    # A sheared matrix detects mixing up G, G', and their inverses.
+    G = [2.0 1.0; 0.0 1.0]
+    for min_weight in (0.25, 2.0)
+        parallel = only(PCC.ParallelFacesPolyhedralTemplate([G]; min_weight))
+        conic = parallel.set
+        # The same partition gives a primal piecewise gauge or its polar.
+        for (family, space) in ((conic, SetProg.PrimalSpace), (parallel, SetProg.DualSpace))
+            model = Model(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
+            S = PCC.add_function_variables!(model, family, 2, 1)
+            PCC.add_normalization!(model, S.set, S)
+            objective = SetProg.L1_heuristic(SetProg.volume(S))
+            if space == SetProg.PrimalSpace
+                @objective(model, Max, objective)
+            else
+                @objective(model, Min, objective)
+            end
+            optimize!(model)
+            @test termination_status(model) == MOI.OPTIMAL
+            @test SetProg.data(model).space == space
+            fitted = value(S)
+            for x in ([1.0, 0.0], [0.0, 1.0], [1.0, -2.0], [-3.0, 1.0])
+                expected = if space == SetProg.PrimalSpace
+                    min_weight * norm(G' \ x, 1)
+                else
+                    norm(G * x, Inf) / min_weight
+                end
+                @test PCC._gauge(fitted, x) ≈ expected
+                @test PCC._gauge(fitted, -x) ≈ expected
+            end
+        end
+    end
+end
+
 @testset "Gauge data and duality" begin
     @test_throws ArgumentError PCC.DualCopositiveTemplate(min_weight = 0)
     @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate([zeros(2, 2)])
@@ -253,7 +287,13 @@ end
         [0.5 0.2; 0.0 0.5],
     ) ≈ 0
     G = [2.0 0.0; 0.0 1.0]
-    parallelotope = PCC.ParallelFacesPolyhedralFunction(G, [1.0, 4.0])
+    partition = polyhedron(vrep([[2.0, 0.0], [0.0, 0.25], [-2.0, 0.0], [0.0, -0.25]]))
+    parallelotope = SetProg.polar(
+        SetProg.Sets.Piecewise(
+            [SetProg.Sets.PolarPoint(h.a / h.β) for h in halfspaces(partition)],
+            partition,
+        ),
+    )
     @test PCC._gauge(parallelotope, [3.0, 2.0]) ≈ 6
     @test !PCC._supports_dual(only(PCC.ParallelFacesPolyhedralTemplate([G])))
 end
