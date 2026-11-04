@@ -15,10 +15,10 @@ graph = common_graph(system)
 
 The template is the family the node functions are drawn from. In the program
 that [`certify`](@ref) solves, it gives the variables and decides the kind of
-program, semidefinite or linear; with the graph, it decides how good the
-certificate can be and how much it costs (see [How a certificate works](@ref)).
-This page shows what a template changes, lists the templates, and helps you
-choose.
+program: semidefinite, linear or second-order cone. With the graph, it
+influences how good the certificate can be and how much it costs (see
+[How a certificate works](@ref)). This page shows what a template changes,
+lists the templates, and helps you choose.
 
 The code on this page uses the running example of
 [Systems and problems](@ref): `system`, `problem = StabilityProblem(system)`
@@ -35,12 +35,13 @@ copositive = certify(LinearCopositiveTemplate(), graph, problem; optimizer = HiG
 quadratic.rate, copositive.rate
 ```
 
-The quadratic template solves a semidefinite program, with Clarabel; the
+The quadratic template solves a semidefinite program, with Clarabel, and the
 linear copositive template a linear program, with HiGHS. The latter applies
-here because the matrices have nonnegative entries.
+here because the matrices have nonnegative entries (see
+[What works with what](@ref)).
 
-The level set ``V(x) = 1`` of the certificate that four templates find on the
-running example shows their shapes:
+The unit set ``\{x : V(x) \le 1\}`` of the certificate that four templates
+find on the running example shows their shapes:
 
 ```@setup running
 using Plots
@@ -77,8 +78,8 @@ shapes_figure(system, problem, graph) # hide
 ```
 
 The data of a template matter too. `ParallelFacesPolyhedralTemplate` fixes
-the normals of the faces of its functions: the axes by default, or the rows
-of a matrix per node. With the axes, and with the diagonals of the figure:
+the normals of the faces of its functions: the axes, or the rows of a matrix
+per node. With the axes, and with the diagonals of the figure:
 
 ```@example running
 on_axes = ParallelFacesPolyhedralTemplate(n_nodes(graph), 2)
@@ -88,100 +89,92 @@ on_diagonals = ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 
 ## The templates
 
-| Template | Node function | Systems | Program | Problems |
-| :-- | :-- | :-- | :-- | :-- |
-| [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
-| [`SumOfSquaresTemplate`](@ref)`(d)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety, optimal control |
-| [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
-| [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
-| [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear for stability; second-order cone for safety | stability, safety |
-| [`ConicPolyhedralTemplate`](@ref)`(partitions)` | ``\max_i \lvert p_i^\top x \rvert`` | all | linear for stability; second-order cone for safety | stability, safety |
-| [`PiecewiseQuadraticTemplate`](@ref)`(partitions)` | quadratic on each cone of a partition | all | semidefinite | stability, safety, optimal control (fixed gains) |
-| `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
+| Constructor | Node function ``V_s(x)`` | Variables | ``\delta`` | Unit set ``\Omega_s`` |
+| :-- | :-- | :-- | :-: | :-- |
+| [`QuadraticTemplate`](@ref)`()` | ``x^\top P_s x`` | ``P_s`` | 2 | ``\mathcal{E}(P_s)`` |
+| [`PiecewiseQuadraticTemplate`](@ref)`(P)` | ``x^\top P_{s,k} x`` on ``\mathcal{C}_{s,k}`` | ``P_{s,k}``, all ``k`` | 2 | ``\operatorname{Pw}_s\big((\mathcal{E}(P_{s,k}))_k\big)`` |
+| [`SumOfSquaresTemplate`](@ref)`(r)` | ``b_r(x)^\top Q_s \, b_r(x)`` | ``Q_s \succeq 0`` | ``2r`` | ``\{x : V_s(x) \le 1\}`` |
+| [`ConicPolyhedralTemplate`](@ref)`(P)` | ``a_{s,k}^\top x`` on ``\mathcal{C}_{s,k}`` | ``a_{s,k}``, all ``k`` | 1 | ``\operatorname{Pw}_s\big((\mathcal{H}(a_{s,k}))_k\big)`` |
+| [`ParallelFacesPolyhedralTemplate`](@ref)`(G)` | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | ``w_s`` | 1 | ``\{x : \lvert (G_s x)_k \rvert \le w_{s,k} \text{ for all } k\}`` |
+| [`LinearCopositiveTemplate`](@ref)`()` | ``c_s^\top x``, on ``\mathbb{R}^n_+`` | ``c_s \ge 0`` | 1 | ``\mathcal{H}(c_s) \cap \mathbb{R}^n_+`` |
+| [`DualCopositiveTemplate`](@ref)`()` | ``\max_j x_j / v_{s,j}``, on ``\mathbb{R}^n_+`` | ``v_s > 0`` | 1 | ``\prod_j \, [0, v_{s,j}]`` |
 
-Piecewise quadratic optimal control accepts
-`PiecewiseQuadraticTemplate(partitions)` or
-`SetProg.Ellipsoid(symmetric = true, piecewise = P)` with quadratic costs
-(`p = 2`). Gains are supplied or initialized by the quadratic solver and
-then kept fixed. Bellman inequalities use SDP positivity certificates on
-intersections of source cones and preimages of destination cones. A vector
-of families may supply a different partition at each node.
+The table writes ``\mathcal{E}(P) = \{x : x^\top P x \le 1\}`` for an
+ellipsoid and ``\mathcal{H}(a) = \{x : a^\top x \le 1\}`` for a half-space,
+and ``\delta`` is the degree of the node functions. The constructors also
+make the node functions symmetric, and normalize them to exclude
+``V_s \equiv 0``, which the table does not show.
+[What works with what](@ref) gives the systems and problems each template
+supports, the program it gives for each, and where [`refine`](@ref) applies.
+The templates fall into four groups.
 
-Polynomial optimal control accepts `SumOfSquaresTemplate(2; convex = true)`, or
-a native `PolySet(symmetric = true, convex = true, degree = 4)`, with
-`OptimalControlProblem(system, Q, R; p = 4)`. It optimizes value bounds for
-supplied gains or gains initialized by the quadratic solver; see
-[Design a controller robust to switching](@ref).
+**Quadratic and polynomial.** The quadratic template gives ellipsoids. For
+`SumOfSquaresTemplate(r)`, ``b_r(x)`` is the vector of the monomials of degree
+``r``, and ``Q_s \succeq 0`` makes ``V_s`` a sum of squares
+[parrilo2008approximation](@cite): ``r = 1`` gives the quadratic forms, and
+each higher ``r`` adds variables. `convex = true` also makes each node
+function convex, which optimal control requires.
+
+**Piecewise.** A polytope ``\mathcal{P}_s`` containing the origin in its
+interior defines a cone on each of its facets ``\mathcal{F}_{s,k}``, and a
+piecewise set keeps one set ``Z_k`` on each cone:
+
+```math
+\mathcal{C}_{s,k} = \{t y : t \ge 0,\ y \in \mathcal{F}_{s,k}\}, \qquad
+\operatorname{Pw}_s\big((Z_k)_k\big) = \textstyle\bigcup_k \big(Z_k \cap \mathcal{C}_{s,k}\big).
+```
+
+On each cone, the piecewise quadratic template keeps an ellipsoid and the
+conic polyhedral template a half-space, so that ``V_s`` is quadratic or linear
+on each cone, and the pieces agree on the boundaries of the cones. The
+argument `P` gives the polytopes ``\mathcal{P}_s``, one per node, and
+[`planar_conic_partition`](@ref)`(q)` builds a planar one with
+``8 \cdot 2^{q-1}`` facets.
+
+**Parallel faces.** The unit sets are parallelotopes, whose faces come in
+parallel pairs, normal to the rows of a matrix ``G_s``. The argument `G` gives
+one invertible matrix per node, and
+`ParallelFacesPolyhedralTemplate(n_nodes, n)` takes the identity, which gives
+boxes. Its polar is the conic polyhedral template on the polytope whose
+vertices are the rows of ``G_s`` and their opposites. Fixing the directions
+of the vertices of one fixes the normals of the faces of the other: these are
+the two polyhedral parameterizations of
+[athanasopoulos2019polyhedral](@citet).
+
+**Copositive.** For positive systems, the nonnegative orthant is invariant,
+and the copositive templates restrict the node functions to it
+[debauche2021comparison; Def. 11](@cite). The linear copositive template has
+unit set ``\mathcal{H}(c_s) \cap \mathbb{R}^n_+``. The dual copositive
+template takes its polar within the orthant, the box ``\prod_j [0, v_{s,j}]``.
+
+The sum-of-squares and piecewise quadratic templates need the SumOfSquares
+package loaded (see [Installation](@ref)).
 
 **Templates are SetProg families.** Each constructor returns a
 [SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
-templates with data per node, a vector of families, one per node. A node
-function stands for its set ``\{x : V(x) \le 1\}``:
-`QuadraticTemplate()`, for instance, is `Ellipsoid(symmetric = true)`. A stability certificate holds
-these sets, which [`node_value`](@ref) evaluates. The last row is a SetProg
-family passed directly, piecewise on the cones over the facets of a polytope
-``P``. To write it, run `Pkg.add("SetProg")` and `using SetProg`:
-the package depends on SetProg, so nothing new is downloaded, but your
-environment must list it for Julia to load it by name.
-
-For safety, quadratic and polynomial families give affine barriers without a
-positivity constraint on the barrier itself. Polynomial variables use an
-explicit degree range, such as `SetProg.PolySet(degree = 0:4, dimension = 2)`.
-The initial and unsafe separation certificates use nonnegative scalar
-multipliers for quadratics and SOS multipliers for higher-degree barriers.
-Polyhedral safety uses `ParallelFacesPolyhedralTemplate` or
-`ConicPolyhedralTemplate`, with ellipsoidal initial regions and
-exterior-ellipsoid unsafe regions. Their separation constraints form a
-second-order cone program and need no S-procedure multipliers. The margin is
-representation-dependent, measured in support/gauge or support/radius units,
-rather than the coefficient margin of quadratic barriers.
-Piecewise-quadratic safety keeps the fixed partition and uses the barrier
-``B(x) = x^\top Q_k x - 1`` on each cone. Pieces are PSD by default, with
-continuity and convexity constraints across cone boundaries. Initial
-containment and unsafe separation use one scalar S-procedure multiplier per
-piece, restricted to that cone. Coefficient normalization is omitted for
-these PSD pieces: the unit level fixes their scale, and ``B(x) \ge -1``
-already bounds the separation margin on a nonempty initial set. This differs
-from the signed affine quadratic family used by `QuadraticTemplate()`.
-For example, pass `PiecewiseQuadraticTemplate(partitions)` or
-`SetProg.Ellipsoid(symmetric = true, piecewise = partition)` to [`certify`](@ref)
-with a `SafetyProblem`. These piecewise certificates
-remain sufficient SDP conditions.
-
-Joint optimal-control synthesis retains its quadratic matrix formulation.
+templates with data per node, a vector of families, one per node:
+`QuadraticTemplate()` is `Ellipsoid(symmetric = true)`, and
+`ConicPolyhedralTemplate([P])` is `[Polytope(symmetric = true, piecewise = P)]`.
+A SetProg family can also be passed directly, without a constructor (see
+[Try a richer template](@ref)). To write one, run
+`Pkg.add("SetProg")` and `using SetProg`: the package depends on SetProg, so
+nothing new is downloaded, but your environment must list it for Julia to
+load it by name.
 
 ## How to choose
 
 - **Start with** `QuadraticTemplate()`. It applies to every system and every
   problem.
-- **For a positive system**, whose matrices have nonnegative entries, so that
-  trajectories that start in the nonnegative orthant stay there:
-  `LinearCopositiveTemplate()` and `DualCopositiveTemplate()`, defined on that
-  orthant, solve linear programs.
-- **For a polyhedral function on any system**, two templates solve linear
-  programs:
-  - `ParallelFacesPolyhedralTemplate(n_nodes(graph), n)` fixes the normals of
-    the faces: the axes by default, or the rows of a matrix ``G`` per node,
-    given instead; the normals change the bound, as above;
-  - `ConicPolyhedralTemplate(partitions)` fixes, at each node, a partition of
-    the space into the cones over the facets of a polytope, on each of which
-    the function is linear; in the plane, [`planar_conic_partition`](@ref)
-    builds one.
-- **For a polynomial function**, `SumOfSquaresTemplate(d)`, with the
-  SumOfSquares package loaded (see [Installation](@ref)). Its functions have degree
-  ``2d``: ``d = 1`` gives the quadratic forms, and each higher ``d`` adds
-  variables.
-- **For a function quadratic on each cone** of a partition,
-  `PiecewiseQuadraticTemplate(partitions)`, with one polytope per node as for
-  `ConicPolyhedralTemplate`, and the SumOfSquares package loaded. A SetProg
-  family can also be passed directly, such as
-  `Polytope(symmetric = true, piecewise = P)`, linear on each cone. See
-  [Try a richer template](@ref).
+- **For the stability of a positive system**, `LinearCopositiveTemplate()`
+  and `DualCopositiveTemplate()` solve linear programs.
+- **For a polyhedral function on any system**, `ConicPolyhedralTemplate(P)`
+  or `ParallelFacesPolyhedralTemplate(G)`, whose data change the bound, as
+  above.
+- **For a polynomial function**, `SumOfSquaresTemplate(r)`, of degree ``2r``.
+- **For a function quadratic on each cone**, `PiecewiseQuadraticTemplate(P)`.
 
 Which template gives the lowest bound depends on the system, and a template
 with more variables builds a larger program: try several.
-[What works with what](@ref) lists the problems and methods each template
-supports.
 
 ## Adding a template
 
