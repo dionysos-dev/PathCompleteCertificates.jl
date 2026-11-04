@@ -31,7 +31,7 @@ It fits best when, in addition:
   template and the problem set, linear, second-order cone or semidefinite.
 - You study the path-complete framework itself, and want to compare graphs,
   use duality, benchmark methods from different papers, or add a template, a
-  problem or an algorithm.
+  problem or a refinement strategy.
 
 Not every combination of problem, template and method is supported yet:
 [What works with what](@ref) lists them.

@@ -35,10 +35,10 @@ path-complete graph ``G_0``, by default the common graph, step ``t``:
 1. computes the best rate ``\gamma_t`` on ``G_t``, with the template.
 2. stops if ``\gamma_t`` is proved optimal, or no longer improves.
 3. reads the tight edges of the certificate on ``G_t``.
-4. lifts ``G_t`` where the algorithm chooses from them, into ``G_{t+1}``, and
-   stops if the algorithm finds nowhere to lift.
+4. lifts ``G_t`` where the strategy chooses from them, into ``G_{t+1}``, and
+   stops if the strategy finds nowhere to lift.
 
-With the two algorithms of the package, every step is a split or a product,
+With the two strategies of the package, every step is a split or a product,
 valid for every template (see [Lifts](@ref)), so the rate never increases, up
 to the bisection tolerance. A lifted graph is path-complete without a new
 check: path-completeness is checked on the first graph only.
@@ -64,9 +64,9 @@ rate = certify(QuadraticTemplate(), order_2, problem; optimizer = Clarabel.Optim
 rate, n_nodes(order_2), n_edges(order_2)
 ```
 
-## The algorithms
+## The strategies
 
-The keyword `algorithm` chooses where to lift.
+The keyword `strategy` chooses where to lift.
 
 ### Tightest node splitting, the default
 
@@ -80,7 +80,7 @@ The keyword `algorithm` chooses where to lift.
   Splitting it cannot lower the rate [ninite2026lifting; Prop. 3](@cite), and
   a node with two or more may.
 
-So the algorithm splits the node with the most tight outgoing edges, among
+So the strategy splits the node with the most tight outgoing edges, among
 those with at least two, into one copy per outgoing edge, with
 [`OutSplitLift`](@ref). Among nodes with as many tight edges, it splits the
 one with the fewest outgoing edges, which adds the fewest nodes. The split is
@@ -98,18 +98,18 @@ of [Lifts](@ref), the splits and the products, at every tight edge, one edge
 at a time, solves every candidate graph, and keeps the one with the lowest
 rate. A step costs one bisection per candidate, so up to four per tight edge.
 
-### Your own algorithm
+### Your own strategy
 
-A new algorithm subtypes [`AbstractRefinementAlgorithm`](@ref) and
+A new strategy subtypes [`AbstractRefinementStrategy`](@ref) and
 implements [`next_graph`](@ref). From the current certificate, it returns the
 next graph, or `nothing` when it finds nowhere to lift, which stops the run:
 
 ```julia
 import PathCompleteCertificates: next_graph
 
-struct MyAlgorithm <: AbstractRefinementAlgorithm end
+struct MyStrategy <: AbstractRefinementStrategy end
 
-function next_graph(::MyAlgorithm, certificate; atol, solve)
+function next_graph(::MyStrategy, certificate; atol, solve)
     tight = tight_subgraph(certificate; atol)
     L = ...     # a lift, such as OutSplitLift()
     node = ...  # where to apply it, such as a node of `tight`
@@ -119,7 +119,7 @@ end
 
 Edges with slack at most `atol` are tight. The next graph comes as a pair.
 The first element is the [`Lifted`](@ref) graph. The second is its
-certificate, if the algorithm already solved it with `solve`, as
+certificate, if the strategy already solved it with `solve`, as
 `BestOfTightEdgeLifts` does, or `nothing`, in which case `refine` solves it.
 [Extending the package](@ref) says where the file goes.
 
@@ -133,7 +133,7 @@ certificate, if the algorithm already solved it with `solve`, as
 | [`STALLED`](@ref) | `stall_max` steps in a row did not lower the rate by `rtol` |
 | [`DEPTH_REACHED`](@ref) | `depth_max` graphs were visited |
 | [`STOPPED`](@ref) | the `stop` predicate held, for example `c -> c.rate < 1` |
-| [`EXHAUSTED`](@ref) | the algorithm found no next graph |
+| [`EXHAUSTED`](@ref) | the strategy found no next graph |
 
 ```@example running
 status(trace)

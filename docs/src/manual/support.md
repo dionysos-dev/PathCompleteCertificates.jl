@@ -82,7 +82,7 @@ edge.
 
 Each gap is either a method the package does not implement yet, or a question
 the literature leaves open. [Extending the package](@ref) says where a new
-template, problem, lift or refinement algorithm goes.
+template, problem, lift or refinement strategy goes.
 
 **Not implemented yet:**
 

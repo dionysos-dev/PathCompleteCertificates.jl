@@ -66,7 +66,7 @@ is convex, and says so in place. With the other templates it keeps the gains fix
 the Bellman inequality as a SetProg inclusion through the polar `L_δ` sum, in
 `problems/catalogue/polynomial_optimal_control.jl`.
 
-**A new problem, lift or refinement algorithm is one file in the `catalogue/` of its
+**A new problem, lift or refinement strategy is one file in the `catalogue/` of its
 directory, and changes no other code**; its wiring (the include, a test, a reference page,
 What works with what) is listed in `docs/src/developers/extending.md`. A new template is a
 SetProg family: its constructor goes in `templates/catalogue/`, and a family new to the

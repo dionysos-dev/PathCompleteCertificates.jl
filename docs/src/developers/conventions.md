@@ -31,7 +31,7 @@ type: the shared fields
 live once in `CertificateData`, and what the problem certifies is a typed
 field of its own, `rate`, `margin` or `gains`.
 
-**A new problem, lift or refinement algorithm is one file in the `catalogue/`
+**A new problem, lift or refinement strategy is one file in the `catalogue/`
 of its directory, and changes no other code**: the rest is wiring, listed in
 [Extending the package](@ref). Every directory with an interface has that
 shape: the interface at the top, one file per inhabitant under `catalogue/`,
@@ -73,13 +73,13 @@ inclusion and the unsafe-set disjointness, without positivity constraints on
 the barriers. Optimal control computes the gains jointly with the quadratic
 template only, and keeps them fixed with the other templates.
 
-## Lifts and refinement algorithms
+## Lifts and refinement strategies
 
 **A lift is an operation on a graph, and `refine` an algorithm that applies
 lifts.** A lift maps a path-complete graph to a path-complete graph at least
 as good for every template the lift is valid for: closed under its
 `requirements`, or with a dual closed under the dual operations. The same
-lift can be a step of a refinement algorithm and a test of `compare`, where a
+lift can be a step of a refinement strategy and a test of `compare`, where a
 simulation of ``H`` by the lifted ``G`` proves ``G \le_V H``.
 
 ```julia
@@ -96,10 +96,10 @@ is_valid(L, template, system)                    # written once against the two
 dual(L)                                          # a DualLift, applied on the dual graph
 compare(G, H; templates, system, optimizer)      # the entry point of comparison
 
-# A refinement algorithm, src/refinements/catalogue/: one method to write.
-next_graph(algorithm, certificate; atol, solve)  # (lifted, its certificate or nothing), or nothing
-initial_graph(algorithm, system)                 # where it starts; common_graph by default
-refine(template, graph, problem; algorithm)      # the entry point: the loop
+# A refinement strategy, src/refinements/catalogue/: one method to write.
+next_graph(strategy, certificate; atol, solve)   # (lifted, its certificate or nothing), or nothing
+initial_graph(strategy, system)                  # where it starts; common_graph by default
+refine(template, graph, problem; strategy)       # the entry point: the loop
 ```
 
 - What a lift supports is the methods it has, never a flag.
@@ -111,7 +111,7 @@ refine(template, graph, problem; algorithm)      # the entry point: the loop
   never override `is_valid`.
 - The min, max and sum lifts are never built to decide an order: a relation
   decides the first two, and a linear program the third.
-- An algorithm chooses its candidates and how to select among them. The loop
+- A strategy chooses its candidates and how to select among them. The loop
   owns the solves, the stopping rules and the trace.
 
 ## The graph layer

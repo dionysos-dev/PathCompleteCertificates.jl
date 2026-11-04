@@ -4,7 +4,7 @@
 # with four nodes proved stability, and left the joint spectral radius between
 # ``0.976`` and ``0.984``. Here the package designs the graph: it proves
 # stability with three nodes, and finds the exact joint spectral radius with
-# ten. [Refining the graph](@ref) explains the algorithm; this page runs it.
+# ten. [Refining the graph](@ref) explains refinement, and this page runs it.
 
 using PathCompleteCertificates
 import Clarabel

@@ -14,7 +14,7 @@ Modules = [PathCompleteCertificates]
 Pages   = ["refinements/abstract.jl"]
 ```
 
-## The algorithms
+## The strategies
 
 ```@autodocs
 Modules = [PathCompleteCertificates]

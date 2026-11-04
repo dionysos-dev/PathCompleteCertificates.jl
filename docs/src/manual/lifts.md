@@ -60,7 +60,7 @@ stability supports (see [What works with what](@ref)).
 
 | Lift | What it does | Used by |
 | :-- | :-- | :-- |
-| [`OutSplitLift`](@ref) | out-splits a node at each of its outgoing edges, or at the given edges | both refinement algorithms |
+| [`OutSplitLift`](@ref) | out-splits a node at each of its outgoing edges, or at the given edges | both refinement strategies |
 | [`InSplitLift`](@ref) | in-splits a node at each of its incoming edges, or at the given edges | [`BestOfTightEdgeLifts`](@ref) |
 | [`ForwardProductLift`](@ref) | the forward product at the given edges | [`BestOfTightEdgeLifts`](@ref) |
 | [`BackwardProductLift`](@ref) | the backward product at the given edges | [`BestOfTightEdgeLifts`](@ref) |

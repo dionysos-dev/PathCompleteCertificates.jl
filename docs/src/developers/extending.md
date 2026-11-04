@@ -4,7 +4,7 @@ CurrentModule = PathCompleteCertificates
 
 # Extending the package
 
-The code of a new problem, lift or refinement algorithm is one file in the
+The code of a new problem, lift or refinement strategy is one file in the
 `catalogue/` folder of its directory, and a new template is a SetProg family.
 The functions to implement are listed in [Conventions](@ref). This page says
 where each piece goes, and what to wire in around it. Each extension closes a
@@ -61,8 +61,8 @@ operations a template must be closed under for the lift to be valid. For
 [`BestOfTightEdgeLifts`](@ref) to use it, define `_changes`, which says whether
 the lift at an edge changes the graph.
 
-## A refinement algorithm
+## A refinement strategy
 
-A subtype of `AbstractRefinementAlgorithm` that implements `next_graph`, and
+A subtype of `AbstractRefinementStrategy` that implements `next_graph`, and
 `initial_graph` when it does not start from the common graph.
 [`refine`](@ref) runs the loop, the solves and the stopping rules.
