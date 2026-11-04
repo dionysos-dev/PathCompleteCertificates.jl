@@ -180,6 +180,39 @@ function certify(
     )
 end
 
+# SumOfSquaresTemplate is a normalized PolySet. The stage cost bounds every value
+# function from below, so optimal control uses the PolySet alone, and the
+# certificate keeps the template it was given.
+function optimization_model(
+    template::_NormalizedFamily{<:SetProg.PolySet},
+    graph::CertificateGraph,
+    problem::OptimalControlProblem;
+    kwargs...,
+)
+    return optimization_model(template.set, graph, problem; kwargs...)
+end
+function certify(
+    template::_NormalizedFamily{<:SetProg.PolySet},
+    graph::CertificateGraph,
+    problem::OptimalControlProblem;
+    kwargs...,
+)
+    certificate = certify(template.set, graph, problem; kwargs...)
+    data = _data(certificate)
+    return OptimalControlCertificate(
+        CertificateData(
+            problem,
+            template,
+            graph,
+            data.functions,
+            data.status,
+            data.feasible,
+        ),
+        certificate.gains,
+        certificate.edge_certificates,
+    )
+end
+
 node_value(
     ::OptimalControlProblem,
     V::SetProg.Sets.AbstractSet,

@@ -418,6 +418,43 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p = 0)
 end
 
+@testset "SumOfSquaresTemplate for fixed-gain control" begin
+    system = PCC.switched_system([[0.5;;]], [[1.0;;]])
+    graph = PCC.common_graph(system)
+    problem = PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p = 4)
+    gains = [[-0.1;;]]
+    template = PCC.SumOfSquaresTemplate(2; convex = true)
+    model = PCC.optimization_model(template, graph, problem; optimizer = OPTIMIZER, gains)
+    @test model isa JuMP.Model
+    result = PCC.certify(template, graph, problem; optimizer = OPTIMIZER, gains)
+    @test PCC.is_feasible(result)
+    @test PCC.get_template(result) == template
+    @test result([1.0]) ≈ (1 + 0.1^4) / (1 - 0.4^4) rtol = 1e-5
+    # Node functions that are not convex, or whose degree is not p.
+    message = "convex node functions whose degree is the exponent p"
+    @test_throws message PCC.certify(
+        PCC.SumOfSquaresTemplate(2),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains,
+    )
+    @test_throws message PCC.certify(
+        PCC.SumOfSquaresTemplate(1; convex = true),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains,
+    )
+    @test_throws message PCC.optimization_model(
+        PCC.SumOfSquaresTemplate(2),
+        graph,
+        problem;
+        optimizer = OPTIMIZER,
+        gains,
+    )
+end
+
 @testset "Quartic switching control in two dimensions" begin
     for psd in (true, false)
         matrices = [[0.5 0.1; 0.0 0.4], [0.3 0.0; -0.1 0.4]]
