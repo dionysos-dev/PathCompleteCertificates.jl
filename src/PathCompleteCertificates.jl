@@ -17,7 +17,8 @@ const _HS = HybridSystems
 const _MS = MathematicalSystems
 
 # Systems.
-export switched_system, has_input, simulate, Trajectory, states, inputs
+export switched_system, has_input, state_matrices, input_matrices
+export simulate, Trajectory, states, inputs, switching
 
 # Problems and certificates.
 export StabilityProblem, SafetyProblem, OptimalControlProblem
@@ -46,7 +47,7 @@ export CompositionLift, BackwardCompositionLift
 export compare, Comparison, simulations, templates
 
 # Refinement.
-export refine, RefinementTrace, rates, graphs, certificates
+export refine, RefinementTrace, rates, graphs, certificates, steps
 export AbstractRefinementAlgorithm, TightestNodeSplitting, BestOfTightEdgeLifts
 export next_graph, initial_graph
 
