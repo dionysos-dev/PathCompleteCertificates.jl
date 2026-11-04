@@ -174,14 +174,14 @@ const TWO_NODES = PCC.de_bruijn(1, 2)
 
     subgraph = PCC.tight_subgraph(certificate; atol = 1e-4)
 
-    @test PCC.n_nodes(subgraph) == PCC.n_nodes(PCC.graph(certificate))
+    @test PCC.n_nodes(subgraph) == PCC.n_nodes(PCC.get_graph(certificate))
     @test PCC.n_edges(subgraph) == length(PCC.tight_edges(certificate; atol = 1e-4))
-    @test PCC.n_edges(subgraph) <= PCC.n_edges(PCC.graph(certificate))
+    @test PCC.n_edges(subgraph) <= PCC.n_edges(PCC.get_graph(certificate))
 
     # Nothing is tight at a huge tolerance... and everything is.
     @test PCC.n_edges(PCC.tight_subgraph(certificate; atol = -1.0)) == 0
     @test PCC.n_edges(PCC.tight_subgraph(certificate; atol = 1e3)) ==
-          PCC.n_edges(PCC.graph(certificate))
+          PCC.n_edges(PCC.get_graph(certificate))
 end
 
 @testset "a cycle bounds the JSR from below, whatever atol was" begin

@@ -134,7 +134,7 @@ level_set(V, c) = [sqrt(c) .* d ./ sqrt(V(d))
 
 function stability_figure(certificate, A)
     fitted = only(PCC.functions(certificate))
-    V(x) = PCC.node_value(PCC.problem(certificate), fitted, x)
+    V(x) = PCC.node_value(PCC.get_problem(certificate), fitted, x)
     figure = plot(; aspect_ratio = :equal, framestyle = :box, legend = :outerbottom,
                   size = (520, 600))
     boundary = level_set(V, 1.0)

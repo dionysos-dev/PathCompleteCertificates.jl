@@ -23,11 +23,11 @@ struct Lifted{G <: CertificateGraph, O}
 end
 
 """
-    graph(lifted)
+    get_graph(lifted)
 
 The lifted graph of a [`Lifted`](@ref).
 """
-graph(lifted::Lifted) = lifted.graph
+get_graph(lifted::Lifted) = lifted.graph
 
 """
     origins(lifted)
@@ -77,7 +77,7 @@ function simulation(
     optimizer = nothing,
 )
     lifted = lift(L, G)
-    assignment = simulation(graph(lifted), H)
+    assignment = simulation(get_graph(lifted), H)
     assignment === nothing && return nothing
     return origins(lifted)[assignment]
 end

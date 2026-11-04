@@ -52,7 +52,7 @@ const G4 = graph(
     g = PCC.de_bruijn(1, 2)
     edge = first(PCC.outgoing_edges(g, 1, 1))     # the self-loop of node 1 reading 1
     lifted = PCC.lift(PCC.ForwardProductLift(), g, edge)
-    w = PCC.graph(lifted)
+    w = PCC.get_graph(lifted)
 
     @test w isa PCC.WordGraph
     @test PCC.n_nodes(w) == 2
@@ -68,9 +68,9 @@ end
 @testset "forward and backward products at every edge are the 2-product lift" begin
     for g in (G1, G4)
         everywhere = collect(PCC.edges(g))
-        forward = PCC.graph(PCC.lift(PCC.ForwardProductLift(), g, everywhere))
-        backward = PCC.graph(PCC.lift(PCC.BackwardProductLift(), g, everywhere))
-        product = PCC.graph(PCC.lift(PCC.ProductLift(2), g))
+        forward = PCC.get_graph(PCC.lift(PCC.ForwardProductLift(), g, everywhere))
+        backward = PCC.get_graph(PCC.lift(PCC.BackwardProductLift(), g, everywhere))
+        product = PCC.get_graph(PCC.lift(PCC.ProductLift(2), g))
 
         @test edgeset(forward) == edgeset(backward) == edgeset(product)
         @test all(e -> PCC._word_length(product, e) == 2, PCC.edges(product))
@@ -78,18 +78,18 @@ end
 
         # Self-dual.
         @test edgeset(PCC.dual(product)) ==
-              edgeset(PCC.graph(PCC.lift(PCC.ProductLift(2), PCC.dual(g))))
+              edgeset(PCC.get_graph(PCC.lift(PCC.ProductLift(2), PCC.dual(g))))
     end
 
-    @test PCC.n_edges(PCC.graph(PCC.lift(PCC.ProductLift(2), G1))) == 20
-    @test PCC.n_edges(PCC.graph(PCC.lift(PCC.ProductLift(2), G4))) == 29
+    @test PCC.n_edges(PCC.get_graph(PCC.lift(PCC.ProductLift(2), G1))) == 20
+    @test PCC.n_edges(PCC.get_graph(PCC.lift(PCC.ProductLift(2), G4))) == 29
 end
 
 @testset "the product lift of length T reads every path of length T" begin
     one = PCC.common_graph(2)
     for T in 1:3
         lifted = PCC.lift(PCC.ProductLift(T), one)
-        w = PCC.graph(lifted)
+        w = PCC.get_graph(lifted)
         @test PCC.n_nodes(w) == 1
         @test PCC.n_edges(w) == 2^T
         @test all(e -> PCC._word_length(w, e) == T, PCC.edges(w))
@@ -114,7 +114,7 @@ end
     problem = PCC.StabilityProblem(PCC.switched_system(A))
     one = PCC.common_graph(2)
     lifted = PCC.lift(PCC.ProductLift(2), one)
-    w = PCC.graph(lifted)
+    w = PCC.get_graph(lifted)
     expanded = PCC.expanded_form(w)
 
     on_words = PCC.certify(

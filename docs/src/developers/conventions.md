@@ -146,7 +146,10 @@ refine(template, graph, problem; algorithm)      # the entry point: the loop
   names `_`-prefixed.
 - Mutating functions end in `!`; predicates are `is_*`.
 - No `get_`, `compute_`, `build_` or `generate_` prefixes; name a function
-  after what it returns.
+  after what it returns. The exceptions are `get_graph`, `get_template` and
+  `get_problem`. Their plain names are the variable names of
+  `certify(template, graph, problem)`, and a script that assigns `graph` would
+  hide the function.
 - No acronyms in public names.
 - One word per concept, and the papers' word when one exists: `common`,
   `valid`, `simulation`, `tight`, `common_graph`, `alphabet`.

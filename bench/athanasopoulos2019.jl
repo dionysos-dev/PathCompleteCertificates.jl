@@ -34,7 +34,7 @@ elapsed = @elapsed trace = PCC.refine(
 )
 
 for (k, certificate) in enumerate(PCC.certificates(trace))
-    g = PCC.graph(certificate)
+    g = PCC.get_graph(certificate)
     println(
         "step ",
         lpad(k, 2),

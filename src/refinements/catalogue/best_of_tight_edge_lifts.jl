@@ -25,13 +25,13 @@ function next_graph(
     atol::Real,
     solve,
 )
-    graph_ = graph(certificate)
+    graph = get_graph(certificate)
     candidates = Lifted[]
 
     for edge in tight_edges(certificate; atol = atol), L in algorithm.lifts
-        _changes(L, graph_, edge) || continue
+        _changes(L, graph, edge) || continue
 
-        push!(candidates, lift(L, graph_, edge))
+        push!(candidates, lift(L, graph, edge))
     end
 
     isempty(candidates) && return nothing

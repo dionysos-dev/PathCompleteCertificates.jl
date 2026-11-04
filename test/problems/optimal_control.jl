@@ -29,7 +29,7 @@ const GRAPH = PCC.de_bruijn(1, 2)
 const RESULT = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
 @testset "a certificate is produced" begin
-    @test PCC.template(RESULT) == PCC.QuadraticTemplate()
+    @test PCC.get_template(RESULT) == PCC.QuadraticTemplate()
     @test PCC.is_feasible(RESULT)
     @test length(PCC.functions(RESULT)) == PCC.n_nodes(GRAPH)
     @test length(RESULT.gains) == PCC.n_nodes(GRAPH)

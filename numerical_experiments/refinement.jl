@@ -94,7 +94,7 @@ runs = Dict(
 for (name, (run, times)) in runs
     println("refine, $name: status = ", PCC.status(run))
     for (c, t) in zip(PCC.certificates(run), times)
-        g = PCC.graph(c)
+        g = PCC.get_graph(c)
         println(
             "  ",
             round(t; digits = 2),
@@ -178,7 +178,7 @@ savefig(fig2, joinpath(OUT, "refinement.pdf"))
 
 # Edges of the last refined graph, tight ones marked, for the TikZ drawing.
 last_certificate = last(PCC.certificates(trace))
-g_last = PCC.graph(last_certificate)
+g_last = PCC.get_graph(last_certificate)
 tight = PCC.tight_edges(last_certificate; atol)
 println("$(PCC.n_nodes(g_last))-node refined graph (tight edges marked *):")
 for e in PCC.edges(g_last)

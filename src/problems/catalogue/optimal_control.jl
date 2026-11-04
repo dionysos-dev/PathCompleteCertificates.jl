@@ -196,18 +196,18 @@ function edge_slacks(certificate::OptimalControlCertificate)
             matrix in certificate.edge_certificates
         ]
     end
-    problem_ = problem(certificate)
-    graph_ = graph(certificate)
+    problem = get_problem(certificate)
+    graph = get_graph(certificate)
     P = Matrix.(functions(certificate))
-    A = state_matrices(problem_.system)
-    B = input_matrices(problem_.system)
+    A = state_matrices(problem.system)
+    B = input_matrices(problem.system)
 
-    return map(edges(graph_)) do edge
-        mode = only(letters(label(graph_, edge)))
+    return map(edges(graph)) do edge
+        mode = only(letters(label(graph, edge)))
         K = certificate.gains[source(edge)]
         closed_loop = A[mode] + B[mode] * K
         residual =
-            P[source(edge)] - problem_.Q - transpose(K) * problem_.R * K -
+            P[source(edge)] - problem.Q - transpose(K) * problem.R * K -
             transpose(closed_loop) * P[dest(edge)] * closed_loop
 
         return minimum(LinearAlgebra.eigvals(LinearAlgebra.Symmetric(residual)))
@@ -257,12 +257,14 @@ function simulate(
         ),
     )
 
-    system = problem(certificate).system
+    system = get_problem(certificate).system
     _check_initial_state(system, x0)
 
     Vs = functions(certificate)
     policy(_, x) =
-        certificate.gains[argmin([node_value(problem(certificate), V, x) for V in Vs])] * x
+        certificate.gains[argmin([
+            node_value(get_problem(certificate), V, x) for V in Vs
+        ])] * x
 
     return _run(system, x0, modes, policy)
 end
@@ -273,6 +275,6 @@ function simulate(
     horizon::Integer;
     rng::Random.AbstractRNG = Random.default_rng(),
 )
-    modes = _random_modes(rng, problem(certificate).system, horizon)
+    modes = _random_modes(rng, get_problem(certificate).system, horizon)
     return simulate(certificate, x0, modes)
 end

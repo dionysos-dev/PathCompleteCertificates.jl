@@ -66,7 +66,8 @@ certificates(trace::RefinementTrace) = trace.certificates
 
 The graphs visited by a [`refine`](@ref) run, the starting graph first.
 """
-graphs(trace::RefinementTrace) = [graph(certificate) for certificate in trace.certificates]
+graphs(trace::RefinementTrace) =
+    [get_graph(certificate) for certificate in trace.certificates]
 
 """
     steps(trace)
@@ -210,7 +211,7 @@ function refine(
         depth == depth_max && break
 
         solve_lifted = let template = template
-            lifted -> solve(reindex(template, origins(lifted)), graph(lifted), false)
+            lifted -> solve(reindex(template, origins(lifted)), get_graph(lifted), false)
         end
         result = next_graph(algorithm, certificate; atol, solve = solve_lifted)
 
@@ -222,7 +223,7 @@ function refine(
         chosen, pending = result
 
         push!(taken, chosen)
-        current = graph(chosen)
+        current = get_graph(chosen)
         template = reindex(template, origins(chosen))
     end
 

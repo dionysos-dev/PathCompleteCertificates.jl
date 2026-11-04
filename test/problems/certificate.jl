@@ -30,8 +30,8 @@ const STABILITY =
     @test length(PCC.functions(STABILITY)) == PCC.n_nodes(GRAPH)
     @test PCC.status(STABILITY) isa JuMP.MOI.TerminationStatusCode
     @test STABILITY.rate > 0
-    @test PCC.problem(STABILITY) === PROBLEM
-    @test PCC.graph(STABILITY) === GRAPH
+    @test PCC.get_problem(STABILITY) === PROBLEM
+    @test PCC.get_graph(STABILITY) === GRAPH
 end
 
 @testset "a certificate is callable, and is the common function" begin
@@ -89,7 +89,7 @@ end
 
     @test STABILITY.rate > 0
     @test safety.margin > 0
-    @test length(control.gains) == PCC.n_nodes(PCC.graph(control))
+    @test length(control.gains) == PCC.n_nodes(PCC.get_graph(control))
 end
 
 @testset "an infeasible solve still returns a certificate" begin

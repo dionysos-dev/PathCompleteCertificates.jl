@@ -28,20 +28,20 @@ function next_graph(
     atol::Real,
     solve,
 )
-    graph_ = graph(certificate)
+    graph = get_graph(certificate)
     subgraph = tight_subgraph(certificate; atol = atol)
 
-    held = [outdegree(subgraph, node) for node in nodes(graph_)]
-    candidates = [node for node in nodes(graph_) if held[node] >= 2]
+    held = [outdegree(subgraph, node) for node in nodes(graph)]
+    candidates = [node for node in nodes(graph) if held[node] >= 2]
     isempty(candidates) && return nothing
 
     most = maximum(held[node] for node in candidates)
     filter!(node -> held[node] == most, candidates)
 
-    cheapest = minimum(outdegree(graph_, node) for node in candidates)
-    filter!(node -> outdegree(graph_, node) == cheapest, candidates)
+    cheapest = minimum(outdegree(graph, node) for node in candidates)
+    filter!(node -> outdegree(graph, node) == cheapest, candidates)
 
     node = algorithm.rng === nothing ? first(candidates) : rand(algorithm.rng, candidates)
 
-    return lift(OutSplitLift(), graph_, node), nothing
+    return lift(OutSplitLift(), graph, node), nothing
 end

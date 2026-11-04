@@ -29,7 +29,7 @@ end
 lift(L::DualLift, g::CertificateGraph, node::Integer) =
     _undual(lift(L.primal, dual(g), node))
 
-_undual(lifted::Lifted) = Lifted(dual(graph(lifted)), origins(lifted))
+_undual(lifted::Lifted) = Lifted(dual(get_graph(lifted)), origins(lifted))
 
 simulation(L::DualLift, G::CertificateGraph, H::CertificateGraph; optimizer = nothing) =
     simulation(L.primal, dual(G), dual(H); optimizer)

@@ -87,7 +87,7 @@ const G4 = graph(
 @testset "the T-sum lift by perfect matching" begin
     g = PCC.de_bruijn(1, 2)
     lifted = PCC.lift(PCC.SumLift(2), g)
-    s = PCC.graph(lifted)
+    s = PCC.get_graph(lifted)
 
     @test PCC.origins(lifted) == [[1, 1], [1, 2], [2, 2]]
     @test PCC.is_path_complete(s, 1:2)
@@ -101,7 +101,8 @@ const G4 = graph(
     @test (1, 3, 2) in edgeset(s)
 
     # Self-dual (Debauche, Prop. 7.13).
-    @test edgeset(PCC.dual(s)) == edgeset(PCC.graph(PCC.lift(PCC.SumLift(2), PCC.dual(g))))
+    @test edgeset(PCC.dual(s)) ==
+          edgeset(PCC.get_graph(PCC.lift(PCC.SumLift(2), PCC.dual(g))))
     @test_throws ArgumentError PCC.SumLift(0)
 
     # The guard is on the lifted graph: eight nodes have 6435 multisets of eight.
@@ -123,7 +124,7 @@ end
     lifted = PCC.lift(PCC.SumLift(2), G1)
     index = Dict(m => k for (k, m) in enumerate(PCC.origins(lifted)))
     capsule = [[1, 3], [1, 2], [1, 5], [1, 4]]
-    lifted_edges = edgeset(PCC.graph(lifted))
+    lifted_edges = edgeset(PCC.get_graph(lifted))
     for e in PCC.edges(G2)
         @test (
             index[capsule[PCC.source(e)]],

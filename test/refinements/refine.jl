@@ -54,7 +54,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
         depth_max = 3,
     )
 
-    @test PCC.template(first(PCC.certificates(trace))) isa SetProg.Ellipsoid
+    @test PCC.get_template(first(PCC.certificates(trace))) isa SetProg.Ellipsoid
     @test PCC.status(trace) == PCC.OPTIMAL
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
@@ -383,18 +383,18 @@ end
     # Each step is recorded with its provenance, and the template followed it.
     @test length(PCC.steps(trace)) == length(bounds) - 1
     @test all(
-        step -> length(PCC.origins(step)) == PCC.n_nodes(PCC.graph(step)),
+        step -> length(PCC.origins(step)) == PCC.n_nodes(PCC.get_graph(step)),
         PCC.steps(trace),
     )
     @test all(
-        c -> length(PCC.functions(c)) == PCC.n_nodes(PCC.graph(c)),
+        c -> length(PCC.functions(c)) == PCC.n_nodes(PCC.get_graph(c)),
         PCC.certificates(trace),
     )
 
     # The final certificate stands on its own, on whatever graph was reached.
     final = PCC.certificates(trace)[end]
     @test PCC.is_feasible(final)
-    @test PCC.is_path_complete(PCC.graph(final), 1:2)
+    @test PCC.is_path_complete(PCC.get_graph(final), 1:2)
 end
 
 @testset "the loop refuses a safety problem" begin

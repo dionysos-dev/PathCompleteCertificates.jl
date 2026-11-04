@@ -147,7 +147,7 @@ end
     @test PCC.is_feasible(c)
     @test all(>=(-1e-7), PCC.edge_slacks(c))
     @test all(>=(-1e-7), PCC.edge_slacks(PCC.dual(c)))
-    @test PCC.template(PCC.dual(PCC.dual(c))) == families
+    @test PCC.get_template(PCC.dual(PCC.dual(c))) == families
     @test PCC.dual(PCC.LinearCopositiveTemplate()) == PCC.DualCopositiveTemplate()
     for family in (PCC.LinearCopositiveTemplate(), PCC.DualCopositiveTemplate())
         c = PCC.certify(family, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.8)
@@ -155,7 +155,7 @@ end
         dual = PCC.dual(c)
         @test all(>=(-1e-7), PCC.edge_slacks(dual))
         back = PCC.dual(dual)
-        @test PCC.template(back) == family
+        @test PCC.get_template(back) == family
         @test back([1.0, 1.0]) ≈ c([1.0, 1.0])
     end
 end

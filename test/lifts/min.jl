@@ -64,7 +64,7 @@ const GRAPHS = (G0, G1, G2, G4)
 @testset "the min lift, the max lift as its dual, and their subsets" begin
     g = PCC.de_bruijn(1, 2)
     lifted = PCC.lift(PCC.MinLift(), g)
-    m = PCC.graph(lifted)
+    m = PCC.get_graph(lifted)
 
     @test PCC.n_nodes(m) == 3
     @test PCC.origins(lifted) == [[1], [2], [1, 2]]
@@ -80,7 +80,7 @@ const GRAPHS = (G0, G1, G2, G4)
     @test (3, 3, 1) in edgeset(m) && (3, 3, 2) in edgeset(m)
 
     # Max lift written out against the definition: ∀ b ∈ B ∃ a ∈ A (a, b, i).
-    x = PCC.graph(PCC.lift(PCC.MaxLift(), g))
+    x = PCC.get_graph(PCC.lift(PCC.MaxLift(), g))
     index = PCC._successors(g)
     subsets = PCC.origins(lifted)
     for (a, A) in enumerate(subsets), (b, B) in enumerate(subsets), i in 1:2
@@ -98,14 +98,14 @@ end
 
         relation = PCC.simulation(L, G, H)
         lifted = PCC.lift(L, G)
-        map = PCC.simulation(PCC.graph(lifted), H)
+        map = PCC.simulation(PCC.get_graph(lifted), H)
 
         @test (relation === nothing) == (map === nothing)
         relation === nothing && continue
 
         # The relation is a map into the subsets, and it preserves the edges.
         index = Dict(subset => k for (k, subset) in enumerate(PCC.origins(lifted)))
-        lifted_edges = edgeset(PCC.graph(lifted))
+        lifted_edges = edgeset(PCC.get_graph(lifted))
         for e in PCC.edges(H)
             @test (
                 index[relation[PCC.source(e)]],

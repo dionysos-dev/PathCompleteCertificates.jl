@@ -238,17 +238,17 @@ The certificate on the dual graph made of the dual norms of the node functions,
 at the same rate. Requires a template that [`has_dual`](@ref).
 """
 function dual(certificate::StabilityCertificate)
-    template_ = template(certificate)
-    dual_problem = dual(problem(certificate))
-    dual_template = dual(template_)
-    dual_graph = dual(graph(certificate))
+    template = get_template(certificate)
+    dual_problem = dual(get_problem(certificate))
+    dual_template = dual(template)
+    dual_graph = dual(get_graph(certificate))
 
     is_feasible(certificate) || return StabilityCertificate(
         _failed(dual_problem, dual_template, dual_graph, status(certificate)),
         certificate.rate,
     )
 
-    V = [dual(template_, v) for v in functions(certificate)]
+    V = [dual(template, v) for v in functions(certificate)]
 
     return StabilityCertificate(
         CertificateData(
@@ -300,7 +300,7 @@ function optimality_gap(
     atol::Real = _TIGHT_ATOL,
     max_length::Union{Nothing, Integer} = nothing,
 )
-    !has_words(graph(certificate)) &&
+    !has_words(get_graph(certificate)) &&
         is_jsr_exact(certificate; atol = atol) &&
         return zero(certificate.rate)
 
@@ -314,7 +314,7 @@ end
 # from below only: a certificate scaled by any constant is the same certificate,
 # and its relative slacks are the same, of the order of `rtol` when tight.
 function edge_slacks(certificate::StabilityCertificate)
-    degree = homogeneity_degree(template(certificate))
+    degree = homogeneity_degree(get_template(certificate))
     slacks = _edge_slacks(certificate; rate = certificate.rate, degree)
     scale = iszero(certificate.rate) ? one(certificate.rate) : certificate.rate^degree
     return slacks ./ (scale * _function_scale(certificate))
@@ -322,12 +322,12 @@ end
 
 # The largest value of a node function on the unit vectors.
 function _function_scale(certificate::StabilityCertificate)
-    problem_ = problem(certificate)
-    n = _state_dimension(problem_.system)
+    problem = get_problem(certificate)
+    n = _state_dimension(problem.system)
     units = [[i == j ? 1.0 : 0.0 for j in 1:n] for i in 1:n]
 
     return maximum(
-        node_value(problem_, V, unit) for V in functions(certificate) for unit in units
+        node_value(problem, V, unit) for V in functions(certificate) for unit in units
     )
 end
 
@@ -342,7 +342,7 @@ contains a cycle; without one, `atol` was too small to see the active edges and
 the answer is `false`. Throws on a graph with words; use `expanded_form`.
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = _TIGHT_ATOL)
-    _require_one_mode_per_edge(graph(certificate), "is_jsr_exact")
+    _require_one_mode_per_edge(get_graph(certificate), "is_jsr_exact")
 
     subgraph = tight_subgraph(certificate; atol = atol)
 
@@ -364,7 +364,7 @@ function jsr_lower_bound(
     max_length::Union{Nothing, Integer} = nothing,
 )
     subgraph = tight_subgraph(certificate; atol = atol)
-    A = state_matrices(problem(certificate).system)
+    A = state_matrices(get_problem(certificate).system)
 
     length_bound = something(max_length, n_nodes(subgraph))
     best = zero(float(eltype(first(A))))

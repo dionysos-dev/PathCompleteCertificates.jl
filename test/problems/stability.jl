@@ -146,7 +146,7 @@ end
     @test PCC.is_feasible(result)
     @test length(PCC.functions(result)) == 2
     @test all(V -> V isa SetProg.Sets.Ellipsoid, PCC.functions(result))
-    @test PCC.template(result) == PCC.QuadraticTemplate()
+    @test PCC.get_template(result) == PCC.QuadraticTemplate()
 end
 
 @testset "linear copositive stability" begin
