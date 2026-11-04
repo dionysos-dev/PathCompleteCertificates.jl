@@ -297,7 +297,9 @@ end
 _cost_scale(problem::OptimalControlProblem) = _control_cost_scale(problem.Q, problem.R)
 _control_cost_scale(Q::AbstractMatrix, R::AbstractMatrix) =
     max(LinearAlgebra.opnorm(Q), LinearAlgebra.opnorm(R))
-_control_cost_scale(::_LinearPolytope, ::_LinearPolytope) = 1.0
+function _control_cost_scale(::_LinearPolytope, ::_LinearPolytope)
+    return 1.0
+end
 
 # Validate the data.
 function _check_optimal_control_data(graph, problem)
