@@ -1,46 +1,53 @@
 """
-    DualPiecewiseLinearTemplate(n_nodes, dimension; min_weight = 1)
+    DualPiecewiseLinearTemplate(node_partitions; min_weight = 1)
     DualPiecewiseLinearTemplate(matrices; min_weight = 1)
+    DualPiecewiseLinearTemplate(n_nodes, dimension; min_weight = 1)
 
-The polyhedral functions ``V(x) = \\max_k |(G x)_k| / w_k``, whose faces come
-in parallel pairs, normal to the rows of ``G``, as one SetProg polytope per
-node: ``G`` is the identity, of size `dimension`, at each of `n_nodes` nodes,
-or one of the invertible `matrices` per node. The weights ``w`` are the variables. It
-applies to every system. Stability gives linear programs; safety with an
+The duals of the functions of [`PiecewiseLinearTemplate`](@ref): at each node,
+the gauge of the polar of a set linear on each cone over the facets of the
+polytope in `node_partitions`. It is
+[`dual`](@ref)`(PiecewiseLinearTemplate(node_partitions; min_scale = min_weight))`,
+and `min_weight` normalizes the node functions through that polar.
+
+With one invertible matrix ``G`` per node in `matrices`, the polytope has the
+rows of ``G`` and their opposites as vertices, and the node functions are
+``V(x) = \\max_k |(G x)_k| / w_k``, whose faces come in parallel pairs, normal
+to the rows of ``G``, with every weight ``w_k`` at least `min_weight`.
+`(n_nodes, dimension)` takes the identity at each of `n_nodes` nodes, which
+gives boxes.
+
+It applies to every system. Stability gives linear programs; safety with an
 ellipsoidal initial region and an exterior-ellipsoid unsafe region gives
-second-order cone programs. `min_weight` normalizes the node functions: every
-weight is at least `min_weight`. The underlying family is
-[`PiecewiseLinearTemplate`](@ref) with partition `conv(±rows(G))`, using the
-polar reference-set inclusion and central symmetry. SetProg selects the dual
-representation.
+second-order cone programs.
 """
-function DualPiecewiseLinearTemplate(n_nodes::Integer, dimension::Integer; min_weight = 1)
-    n_nodes > 0 || throw(ArgumentError("at least one node is required"))
-    dimension > 0 || throw(ArgumentError("the dimension must be positive"))
-    identity = Matrix{Float64}(LinearAlgebra.I, dimension, dimension)
-    return DualPiecewiseLinearTemplate(fill(identity, n_nodes); min_weight)
+function DualPiecewiseLinearTemplate(
+    node_partitions::AbstractVector{<:SetProg.Polyhedra.Polyhedron};
+    min_weight = 1,
+)
+    isfinite(min_weight) && min_weight > 0 ||
+        throw(ArgumentError("min_weight must be finite and positive"))
+    return dual(PiecewiseLinearTemplate(node_partitions; min_scale = min_weight))
 end
 function DualPiecewiseLinearTemplate(
     matrices::AbstractVector{<:AbstractMatrix};
     min_weight = 1,
 )
     isempty(matrices) && throw(ArgumentError("at least one matrix is required"))
-    isfinite(min_weight) && min_weight > 0 ||
-        throw(ArgumentError("min_weight must be finite and positive"))
     n = LinearAlgebra.checksquare(first(matrices))
     n > 0 || throw(ArgumentError("the dimension must be positive"))
     all(G -> size(G) == (n, n), matrices) || throw(DimensionMismatch())
-    return map(matrices) do G
+    partitions = map(matrices) do G
         LinearAlgebra.rank(G) == n ||
             throw(ArgumentError("node matrices must be invertible"))
-        family = only(
-            PiecewiseLinearTemplate([_parallel_faces_partition(G)]; min_scale = min_weight),
-        )
-        # Polarity reverses the conic normalization S ⊆ reference. SetProg
-        # selects dual modeling for polar(reference) ⊆ S.
-        reference = SetProg.polar(_unit_set(family))
-        return _NormalizedFamily(family, reference; symmetric = true)
+        return _parallel_faces_partition(G)
     end
+    return DualPiecewiseLinearTemplate(partitions; min_weight)
+end
+function DualPiecewiseLinearTemplate(n_nodes::Integer, dimension::Integer; min_weight = 1)
+    n_nodes > 0 || throw(ArgumentError("at least one node is required"))
+    dimension > 0 || throw(ArgumentError("the dimension must be positive"))
+    identity = Matrix{Float64}(LinearAlgebra.I, dimension, dimension)
+    return DualPiecewiseLinearTemplate(fill(identity, n_nodes); min_weight)
 end
 
 # The cross-polytope with the rows of `G` and their opposites as vertices: its

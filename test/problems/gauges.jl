@@ -295,7 +295,7 @@ end
         ),
     )
     @test PCC._gauge(parallelotope, [3.0, 2.0]) ≈ 6
-    @test !PCC._supports_dual(only(PCC.DualPiecewiseLinearTemplate([G])))
+    @test PCC._supports_dual(only(PCC.DualPiecewiseLinearTemplate([G])))
 end
 
 end

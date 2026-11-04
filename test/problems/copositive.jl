@@ -170,7 +170,8 @@ end
         graph = PCC.common_graph(1)
         @test family.set isa SetProg.Polytope
         @test family.set.piecewise isa Polyhedra.Polyhedron
-        @test !PCC.has_dual(family)
+        @test PCC.has_dual(family)
+        @test PCC.dual(family) === family.set
         for (rate, feasible) in ((0.6, true), (0.4, false))
             c = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, rate)
             @test PCC.is_feasible(c) == feasible

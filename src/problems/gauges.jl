@@ -18,13 +18,16 @@ struct _NormalizedFamily{S <: SetProg.AbstractVariable, R} <: SetProg.AbstractVa
 end
 _NormalizedFamily(set, reference; contains_reference = true, symmetric = false) =
     _NormalizedFamily(set, reference, contains_reference, symmetric, set.dimension)
+# The reference of a dual piecewise linear family is the polar of the unit set
+# of its piecewise linear family, so the family alone decides equality.
+_compared_reference(f) = _is_dual_piecewise_linear(f) ? nothing : f.reference
 Base.:(==)(a::_NormalizedFamily, b::_NormalizedFamily) =
     a.set == b.set &&
-    a.reference == b.reference &&
+    _compared_reference(a) == _compared_reference(b) &&
     a.contains_reference == b.contains_reference &&
     a.symmetric == b.symmetric
 Base.hash(f::_NormalizedFamily, h::UInt) =
-    hash((f.set, f.reference, f.contains_reference, f.symmetric), h)
+    hash((f.set, _compared_reference(f), f.contains_reference, f.symmetric), h)
 SetProg.Sets.space_variables(f::_NormalizedFamily) = SetProg.Sets.space_variables(f.set)
 SetProg.variable_polyvars(
     f::_NormalizedFamily,
@@ -41,7 +44,17 @@ function SetProg.variable_set(
     return SetProg.variable_set(model, f.set, space, n, x)
 end
 
-_is_parallelotope(f) = f isa _NormalizedFamily && f.symmetric && f.set isa SetProg.Polytope
+# The family of `DualPiecewiseLinearTemplate`: a piecewise linear family used
+# through its polar.
+_is_dual_piecewise_linear(f) =
+    f isa _NormalizedFamily &&
+    f.symmetric &&
+    f.contains_reference &&
+    f.set isa SetProg.Polytope
+# A cross-polytope partition: the dual functions are then the parallelotope
+# gauges `max_k |(G x)_k| / w_k`, whose maximum keeps the same faces.
+_has_parallel_faces(f::SetProg.Polytope) =
+    SetProg.Polyhedra.npoints(f.piecewise) == 2 * SetProg.Polyhedra.fulldim(f.piecewise)
 
 # The template primitives for SetProg families; the functions are documented in
 # templates/abstract.jl.
@@ -300,6 +313,7 @@ function _supports_dual(::SetProg.AbstractVariable)
 end
 _supports_dual(f::SetProg.Ellipsoid) = f.symmetric && f.piecewise === nothing
 _supports_dual(f::SetProg.Domain) = _is_linear_copositive(f)
+_supports_dual(f::SetProg.Polytope) = f.symmetric && f.piecewise !== nothing
 _supports_dual(f::_NormalizedFamily) = _supports_dual(f.set)
 
 # The family of dual homogeneous gauges. On the positive orthant this uses
@@ -308,10 +322,16 @@ _dual_family(f::SetProg.Ellipsoid) =
     _supports_dual(f) ? f :
     throw(ArgumentError("piecewise ellipsoid duals are not implemented"))
 _dual_family(f::SetProg.Domain) = _NormalizedFamily(f, 1)
+# A piecewise linear family and its dual share the partition. Polarity reverses
+# the normalization `S ⊆ unit` into `polar(unit) ⊆ S`, for which SetProg
+# selects the dual modeling.
+_dual_family(f::SetProg.Polytope) =
+    _NormalizedFamily(f, SetProg.polar(_unit_set(f)); symmetric = true)
 function _dual_family(f::_NormalizedFamily)
     if f.contains_reference && f.reference == 1
         return f.set
     end
+    _is_dual_piecewise_linear(f) && return f.set
     return _NormalizedFamily(
         f.set,
         f.reference;

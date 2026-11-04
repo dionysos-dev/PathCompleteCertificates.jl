@@ -263,7 +263,11 @@ end
     @test PCC.has_dual(boxes)
     @test PCC.dual(PCC.dual(boxes)) == boxes
     @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(certificate)))
-    @test_throws ArgumentError PCC.dual(families)
+    polyhedral =
+        PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
+    @test PCC.has_dual(families)
+    @test PCC.dual(PCC.dual(families)) == families
+    @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(polyhedral)))
     @test !PCC.is_closed_under(
         Ellipsoid(symmetric = true, piecewise = SQUARE),
         PCC.Composition(),

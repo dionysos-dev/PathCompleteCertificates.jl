@@ -39,7 +39,8 @@ function is_closed_under(::SetProg.Polytope, ::Addition, system)
 end
 is_closed_under(f::_NormalizedFamily, ::Addition, system) =
     !f.contains_reference && is_closed_under(f.set, Addition(), system)
-is_closed_under(f::_NormalizedFamily, ::Maximum, system) = f.contains_reference
+is_closed_under(f::_NormalizedFamily, ::Maximum, system) =
+    f.contains_reference && (!(f.set isa SetProg.Polytope) || _has_parallel_faces(f.set))
 is_closed_under(f::_NormalizedFamily, ::Composition, system) =
     !f.contains_reference && is_closed_under(f.set, Composition(), system)
 is_closed_under(f::_NormalizedFamily, ::InverseComposition, system) =
@@ -57,7 +58,8 @@ function is_closed_under(
     operation::Operation,
     system,
 )
-    if operation isa Maximum && all(_is_parallelotope, families)
+    if operation isa Maximum && all(_is_dual_piecewise_linear, families)
+        all(f -> _has_parallel_faces(f.set), families) || return false
         return allequal([
             Set(Tuple(SetProg.Polyhedra.coord(p)) for p in SetProg.points(f.set.piecewise))
             for f in families
