@@ -13,8 +13,9 @@ below is a place where research or a contribution can close it.
 ## Templates and problems
 
 Stability accepts every template, including SetProg families passed directly.
-Safety accepts quadratic, polynomial, and polyhedral families. Optimal control
-jointly synthesizes quadratic values and gains. Convex polynomial values, from
+Safety accepts quadratic, polynomial, polyhedral, and piecewise-quadratic
+families. Optimal control jointly synthesizes quadratic values and gains.
+Convex polynomial values, from
 `SumOfSquaresTemplate(r; convex = true)` or a convex homogeneous PolySet, are
 optimized for fixed or initialized gains.
 
@@ -26,7 +27,7 @@ optimized for fixed or initialized gains.
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | ✓ ² | |
 | [`ConicPolyhedralTemplate`](@ref)         | ✓ | ✓ ² | |
-| [`PiecewiseQuadraticTemplate`](@ref)      | ✓ | | |
+| [`PiecewiseQuadraticTemplate`](@ref)      | ✓ | ✓ | ✓ ⁴ |
 | convex homogeneous SetProg PolySet       | ✓ | ✓ | ✓ ³ |
 
 ¹ Positive systems only: matrices with nonnegative entries.
@@ -40,6 +41,9 @@ degree and convex node functions: `SumOfSquaresTemplate(r; convex = true)` with
 `p = 2r`, or a PolySet with `convex = true`. Supply node gains with `gains = ...`, or
 omit them to initialize with the quadratic solver. The polynomial SDP minimizes
 the integral of the value bounds and keeps the gain matrices fixed.
+
+⁴ Piecewise-quadratic optimal control uses quadratic costs (`p = 2`) and supplied
+or quadratically initialized gains, which stay fixed.
 
 Unsupported combinations report an error before anything is solved. Two more conditions on the graph:
 
@@ -78,7 +82,7 @@ template, problem, lift or refinement algorithm goes.
 
 **Not implemented yet:**
 
-- **safety with copositive or piecewise-quadratic templates**, and polyhedral
+- **safety with copositive templates**, and polyhedral
   separation from a bounded unsafe obstacle;
 - **optimal control on graphs that are not complete:** the convex program
   covers complete graphs only;
