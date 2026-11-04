@@ -201,9 +201,13 @@ PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl             # skips the
 
 Iterate in one long-lived `julia --project=test` session with Revise; run the cold `Pkg.test()`
 once at the end. For the docs, check a figure or a number with a short script, build without
-the tutorials while iterating, and run one full build before committing. Nothing is exported,
-so `test/docstrings.jl` is the docstring gate, and every docstring must land in an `@autodocs`
-block under `docs/src/reference/`. A stale `Manifest.toml` fails `Pkg.test()` before any test
+the tutorials while iterating, and run one full build before committing. The module exports
+the names a user calls, listed at the top of `src/PathCompleteCertificates.jl`. The
+primitives for a new template or problem, the graph queries and the accessors `graph`,
+`template` and `problem`, which scripts use as variable names, stay unexported. A new
+user-facing name is added to that list. `test/docstrings.jl` checks every name reachable as
+`PathCompleteCertificates.name`, exported or not, and every docstring must land in an
+`@autodocs` block under `docs/src/reference/`. A stale `Manifest.toml` fails `Pkg.test()` before any test
 runs: delete it and `Pkg.resolve()` in the environment that failed.
 
 ## 8. Git

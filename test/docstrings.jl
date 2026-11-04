@@ -35,6 +35,14 @@ documented = Set(
     @test isempty(undocumented)
 end
 
+@testset "every exported name is defined and documented" begin
+    exported = filter(!=(:PathCompleteCertificates), names(PCC))
+
+    @test !isempty(exported)
+    @test all(name -> isdefined(PCC, name), exported)
+    @test all(name -> string(name) in documented, exported)
+end
+
 @testset "docstrings actually attach" begin
     # `raw"""..."""` is a macro call, not a string literal, so Julia does not
     # treat it as a docstring and the binding silently ends up undocumented.

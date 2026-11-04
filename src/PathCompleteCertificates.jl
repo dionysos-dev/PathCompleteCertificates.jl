@@ -16,6 +16,46 @@ import SetProg
 const _HS = HybridSystems
 const _MS = MathematicalSystems
 
+# The names a user calls. The primitives a new template or problem implements
+# (`add_decrease!`, `decrease_slack`, `is_closed_under`, ...) and the graph
+# queries stay unexported, reached as `PathCompleteCertificates.name`. So do
+# the accessors `graph`, `template` and `problem`: a script names its
+# variables so, as in `certify(template, graph, problem)`, and the variable
+# would shadow the exported function.
+
+# Systems.
+export switched_system, simulate, Trajectory
+
+# Problems and certificates.
+export StabilityProblem, SafetyProblem, OptimalControlProblem
+export certify, optimization_model
+export StabilityCertificate, SafetyCertificate, OptimalControlCertificate
+export is_feasible, functions, status, common
+export edge_slacks, tight_edges, tight_subgraph
+export objective, optimality_gap, jsr_lower_bound, is_jsr_exact
+
+# Templates.
+export QuadraticTemplate, SumOfSquaresTemplate, PiecewiseQuadraticTemplate
+export ConicPolyhedralTemplate, ParallelFacesPolyhedralTemplate
+export LinearCopositiveTemplate, DualCopositiveTemplate, planar_conic_partition
+
+# Graphs.
+export empty_graph, add_edge!, WordGraph, expanded_form
+export de_bruijn, common_graph, dual
+export is_path_complete, is_complete, is_co_complete, n_nodes, n_edges, n_modes
+
+# Lifts and comparison.
+export lift, Lifted, is_valid
+export IdentityLift, InSplitLift, OutSplitLift, ForwardProductLift, BackwardProductLift
+export PathDependentLift, ProductLift, MinLift, MaxLift, SumLift
+export CompositionLift, BackwardCompositionLift
+export compare, Comparison, simulations, templates
+
+# Refinement.
+export refine, RefinementTrace, rates, graphs, certificates
+export AbstractRefinementAlgorithm, TightestNodeSplitting, BestOfTightEdgeLifts
+export next_graph, initial_graph
+
 include("graphs/queries.jl")
 include("graphs/words.jl")
 include("graphs/path_completeness.jl")
