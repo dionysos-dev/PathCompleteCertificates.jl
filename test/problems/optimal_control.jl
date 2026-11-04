@@ -384,20 +384,20 @@ end
         gains = result.gains,
         margin = -1,
     )
-    @test_throws MethodError PCC.optimization_model(
+    @test_throws ArgumentError PCC.optimization_model(
         family,
         graph,
         PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]);
         optimizer = OPTIMIZER,
         gains = result.gains,
     )
-    @test_throws MethodError PCC.certify(
+    @test_throws ArgumentError PCC.certify(
         SetProg.PolySet(symmetric = true, degree = 4),
         graph,
         problem;
         optimizer = OPTIMIZER,
     )
-    @test_throws MethodError PCC.certify(
+    @test_throws ArgumentError PCC.certify(
         SetProg.PolySet(symmetric = true, convex = true, degree = 0:4),
         graph,
         problem;

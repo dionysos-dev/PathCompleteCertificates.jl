@@ -7,6 +7,15 @@ _polynomial_control_case(template, problem) = Val(
 function _check_polynomial_control_case(::Val{true})
     return nothing
 end
+function _check_polynomial_control_case(::Val{false})
+    return throw(
+        ArgumentError(
+            "polynomial optimal control needs symmetric, convex node functions whose " *
+            "degree is the exponent p of the cost, such as " *
+            "SumOfSquaresTemplate(r; convex = true) with p = 2r",
+        ),
+    )
+end
 
 """
     optimization_model(template::SetProg.PolySet, graph, problem::OptimalControlProblem;
@@ -41,6 +50,9 @@ function optimization_model(
     )
 end
 
+function _polynomial_control_model(::Val{false}, ::Any, ::Any, ::Any; kwargs...)
+    return _check_polynomial_control_case(Val(false))
+end
 function _polynomial_control_model(
     ::Val{true},
     template,
