@@ -20,8 +20,8 @@ second-order cone (SOCP) or semidefinite (SDP):
 | [`QuadraticTemplate`](@ref)`()` | SDP | SDP | SDP |
 | [`PiecewiseQuadraticTemplate`](@ref)`(P)` † | SDP | SDP | SDP § |
 | [`SumOfSquaresTemplate`](@ref)`(r)` † | SDP | SDP | SDP § |
-| [`ConicPolyhedralTemplate`](@ref)`(P)` | LP | SOCP ‡ | LP or SOCP § |
-| [`ParallelFacesPolyhedralTemplate`](@ref)`(G)` | LP | SOCP ‡ | × |
+| [`PiecewiseLinearTemplate`](@ref)`(P)` | LP | SOCP ‡ | LP or SOCP § |
+| [`DualPiecewiseLinearTemplate`](@ref)`(P)` | LP | SOCP ‡ | × |
 | [`LinearCopositiveTemplate`](@ref)`()` * | LP | × | × |
 | [`DualCopositiveTemplate`](@ref)`()` * | LP | × | × |
 
@@ -34,7 +34,7 @@ ellipsoid.
 
 § With fixed gains, by default those of the quadratic certificate. Polynomial
 node functions must be convex, with `SumOfSquaresTemplate(r; convex = true)`.
-The conic polyhedral template solves a linear program for a piecewise linear
+The piecewise linear template solves a linear program for a piecewise linear
 cost, and a second-order cone program for a quadratic one.
 
 × Not supported: see [The gaps](@ref).
@@ -42,11 +42,10 @@ cost, and a second-order cone program for a quadratic one.
 For optimal control, the exponent `p` of the cost (see
 [Systems and problems](@ref)) must match the template: 2 for the quadratic and
 piecewise quadratic templates, ``2r`` for
-`SumOfSquaresTemplate(r; convex = true)`, and 1 or 2 for the conic polyhedral
+`SumOfSquaresTemplate(r; convex = true)`, and 1 or 2 for the piecewise linear
 template, whose node functions are then the gauges ``g_{\Omega_s}^p``. A cost
-given by polytopes ``\mathcal Q`` and ``\mathcal R`` works with the conic
-polyhedral template only. The other templates need the matrices ``Q`` and
-``R``.
+given by polytopes ``\mathcal Q`` and ``\mathcal R`` works with the piecewise
+linear template only. The other templates need the matrices ``Q`` and ``R``.
 
 Unsupported combinations report an error before anything is solved. Two more
 conditions are on the graph:
@@ -62,12 +61,12 @@ conditions are on the graph:
 | Template | Lifts valid for it, beyond the identity |
 | :-- | :-- |
 | [`QuadraticTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
+| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition. |
 | [`SumOfSquaresTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
+| [`PiecewiseLinearTemplate`](@ref) | sum if every node has the same partition. Through its dual: min, if that partition is a cross-polytope. |
+| [`DualPiecewiseLinearTemplate`](@ref) | max if every node has the same faces, on a cross-polytope. Through its dual: sum if every node has the same partition. |
 | [`LinearCopositiveTemplate`](@ref) | sum. Composition if the matrices are nonnegative with no zero column. Backward composition if they are invertible with nonnegative inverses. Through its dual: min. |
 | [`DualCopositiveTemplate`](@ref) | max. Through its dual: sum, composition if the matrices are invertible with nonnegative inverses, and backward composition if they are nonnegative with no zero row. |
-| [`ParallelFacesPolyhedralTemplate`](@ref) | max if every node has the same faces. |
-| [`ConicPolyhedralTemplate`](@ref) | sum if every node has the same partition. |
-| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition. |
 
 The lifts used by refinement, the splits and the products, are valid for every
 template. [`is_valid`](@ref) answers for a given template and system.
@@ -87,15 +86,13 @@ template, problem, lift or refinement strategy goes.
 **Not implemented yet:**
 
 - **The × cells of the table:** safety and optimal control with the
-  copositive templates, and optimal control with the parallel-faces template.
+  copositive templates, and optimal control with the dual piecewise linear
+  template.
 - **Polyhedral safety with other sets,** such as a bounded unsafe obstacle.
 - **Optimal control on graphs that are not complete:** the convex program
   covers complete graphs only.
 - **Refinement with sums of squares and piecewise quadratic functions:**
   their edge slacks need an optimization of their own.
-- **The dual of the polyhedral templates:** the conic polyhedral and
-  parallel-faces templates are polar to each other, but [`dual`](@ref) does
-  not map one to the other (see [Duality](@ref)).
 - **Constrained switching**, for instance by an automaton: planned, see
   [issue #45](https://github.com/dionysos-dev/PathCompleteCertificates.jl/issues/45).
 - **Further problems** of the path-complete literature, such as

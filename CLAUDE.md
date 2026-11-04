@@ -85,12 +85,12 @@ src/
 │                 dual (declares `dual` for everything), de_bruijn (common_graph is order 0),
 │                 observer (and the combination rule of `common`), cycles, simulation
 ├── templates/    abstract.jl (the primitives) + catalogue/ (QuadraticTemplate, SumOfSquaresTemplate,
-│                 PiecewiseQuadraticTemplate)
+│                 PiecewiseQuadraticTemplate, PiecewiseLinearTemplate,
+│                 DualPiecewiseLinearTemplate, the copositive pair in copositive.jl)
 ├── problems/     abstract.jl (the interface), certificate.jl (accessors, `common`),
 │                 tight_edges.jl, gauges.jl (the primitives for SetProg families), sets.jl
-│                 (applicability, closures, reindexing, duals), polytope_compat.jl (the
-│                 copositive and polyhedral constructors) + catalogue/ (stability, safety,
-│                 optimal_control)
+│                 (applicability, closures, reindexing, duals) + catalogue/ (stability,
+│                 safety, optimal_control)
 ├── lifts/        operations.jl (Addition, Maximum, Minimum, Composition, InverseComposition:
 │                 what a lift requires of a template), abstract.jl, dual.jl, compare.jl
 │                 + catalogue/ (twelve lifts)

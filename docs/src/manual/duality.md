@@ -36,11 +36,10 @@ The numbers in parentheses refer to [debauche2024thesis](@citet).
 | a stability certificate | the dual functions on the dual graph, for the dual system, at the same rate |
 | a lift ``L`` | the lift that applies ``L`` to the dual graph and reverses the result: ``\operatorname{dual}(L)(G) = \operatorname{dual}(L(\operatorname{dual}(G)))`` |
 
-Quadratic forms are their own duals, and the linear copositive and dual
-copositive templates are each other's. The parallel-faces template is the
-polar of the conic polyhedral one (see [Choosing a template](@ref)), but
-`dual` does not map one to the other yet. The other templates have no dual
-here.
+Quadratic forms are their own duals. The linear copositive and dual copositive
+templates are each other's, and so are the piecewise linear and dual
+piecewise linear templates, on the same partition (see
+[Choosing a template](@ref)). The other templates have no dual here.
 
 **Why a dual certificate is a certificate.** For a template of norms, node
 functions form a certificate on a graph for a system exactly when their dual

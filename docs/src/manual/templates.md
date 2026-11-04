@@ -51,10 +51,10 @@ function shapes_figure(system, problem, graph)
     templates = [
         "quadratic" => (QuadraticTemplate(), Clarabel.Optimizer),
         "sum of squares, degree 4" => (SumOfSquaresTemplate(2), Clarabel.Optimizer),
-        "parallel faces" =>
-            (ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
-        "conic polyhedral" =>
-            (ConicPolyhedralTemplate([planar_conic_partition(2)]), HiGHS.Optimizer),
+        "dual piecewise linear, on the diagonals" =>
+            (DualPiecewiseLinearTemplate([[1.0 1.0; -1.0 1.0]]), HiGHS.Optimizer),
+        "piecewise linear" =>
+            (PiecewiseLinearTemplate([planar_conic_partition(2)]), HiGHS.Optimizer),
     ]
     figure = plot(; aspect_ratio = :equal, framestyle = :box, legend = :outerbottom,
                   size = (520, 640))
@@ -77,13 +77,14 @@ end
 shapes_figure(system, problem, graph) # hide
 ```
 
-The data of a template matter too. `ParallelFacesPolyhedralTemplate` fixes
-the normals of the faces of its functions: the axes, or the rows of a matrix
-per node. With the axes, and with the diagonals of the figure:
+The data of a template matter too. Given a matrix per node,
+`DualPiecewiseLinearTemplate` fixes the normals of the faces of its functions
+to the rows of the matrix. With the axes, and with the diagonals of the
+figure:
 
 ```@example running
-on_axes = ParallelFacesPolyhedralTemplate(n_nodes(graph), 2)
-on_diagonals = ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
+on_axes = DualPiecewiseLinearTemplate(n_nodes(graph), 2)
+on_diagonals = DualPiecewiseLinearTemplate([[1.0 1.0; -1.0 1.0]])
 [certify(t, graph, problem; optimizer = HiGHS.Optimizer).rate for t in (on_axes, on_diagonals)]
 ```
 
@@ -94,8 +95,8 @@ on_diagonals = ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | [`QuadraticTemplate`](@ref)`()` | ``x^\top P_s x`` | ``P_s`` | 2 | ``\mathcal{E}(P_s)`` |
 | [`PiecewiseQuadraticTemplate`](@ref)`(P)` | ``x^\top P_{s,k} x`` on ``\mathcal{C}_{s,k}`` | ``P_{s,k}``, all ``k`` | 2 | ``\operatorname{Pw}_s\big((\mathcal{E}(P_{s,k}))_k\big)`` |
 | [`SumOfSquaresTemplate`](@ref)`(r)` | ``b_r(x)^\top Q_s \, b_r(x)`` | ``Q_s \succeq 0`` | ``2r`` | ``\{x : V_s(x) \le 1\}`` |
-| [`ConicPolyhedralTemplate`](@ref)`(P)` | ``a_{s,k}^\top x`` on ``\mathcal{C}_{s,k}`` | ``a_{s,k}``, all ``k`` | 1 | ``\operatorname{Pw}_s\big((\mathcal{H}(a_{s,k}))_k\big)`` |
-| [`ParallelFacesPolyhedralTemplate`](@ref)`(G)` | ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}`` | ``w_s`` | 1 | ``\{x : \lvert (G_s x)_k \rvert \le w_{s,k} \text{ for all } k\}`` |
+| [`PiecewiseLinearTemplate`](@ref)`(P)` | ``a_{s,k}^\top x`` on ``\mathcal{C}_{s,k}`` | ``a_{s,k}``, all ``k`` | 1 | ``\operatorname{Pw}_s\big((\mathcal{H}(a_{s,k}))_k\big)`` |
+| [`DualPiecewiseLinearTemplate`](@ref)`(P)` | ``g_{\Omega_s}(x)`` | ``a_{s,k}``, all ``k`` | 1 | ``\operatorname{Pw}_s\big((\mathcal{H}(a_{s,k}))_k\big)^\circ`` |
 | [`LinearCopositiveTemplate`](@ref)`()` | ``c_s^\top x``, on ``\mathbb{R}^n_+`` | ``c_s \ge 0`` | 1 | ``\mathcal{H}(c_s) \cap \mathbb{R}^n_+`` |
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_j x_j / v_{s,j}``, on ``\mathbb{R}^n_+`` | ``v_s > 0`` | 1 | ``\prod_j \, [0, v_{s,j}]`` |
 
@@ -125,21 +126,23 @@ piecewise set keeps one set ``Z_k`` on each cone:
 ```
 
 On each cone, the piecewise quadratic template keeps an ellipsoid and the
-conic polyhedral template a half-space, so that ``V_s`` is quadratic or linear
+piecewise linear template a half-space, so that ``V_s`` is quadratic or linear
 on each cone. Continuity and convexity are imposed across adjacent cones. The
 argument `P` gives the polytopes ``\mathcal{P}_s``, one per node, and
 [`planar_conic_partition`](@ref)`(q)` builds a planar one with
 ``8 \cdot 2^{q-1}`` facets.
 
-**Parallel faces.** The unit sets are parallelotopes, whose faces come in
-parallel pairs, normal to the rows of a matrix ``G_s``. The argument `G` gives
-one invertible matrix per node, and
-`ParallelFacesPolyhedralTemplate(n_nodes, n)` takes the identity, which gives
-boxes. Its polar is the conic polyhedral template on the polytope whose
-vertices are the rows of ``G_s`` and their opposites. Fixing the directions
-of the vertices of one fixes the normals of the faces of the other: these are
-the two polyhedral parameterizations of
-[athanasopoulos2019polyhedral](@citet).
+**Dual piecewise linear.** The dual piecewise linear template is the polar of
+the piecewise linear one, on the same partition, and [`dual`](@ref) maps each
+to the other (see [Duality](@ref)). Fixing the directions of the vertices of
+one fixes the normals of the faces of the other: these are the two polyhedral
+parameterizations of [athanasopoulos2019polyhedral](@citet). Given one
+invertible matrix ``G_s`` per node, the partition is the polytope whose
+vertices are the rows of ``G_s`` and their opposites, and the node functions
+are ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}``. Their unit sets are
+parallelotopes, whose faces come in parallel pairs, normal to the rows of
+``G_s``. `DualPiecewiseLinearTemplate(n_nodes, n)` takes the identity, which
+gives boxes.
 
 **Copositive.** For positive systems, the nonnegative orthant is invariant,
 and the copositive templates restrict the node functions to it
@@ -154,7 +157,7 @@ package loaded (see [Installation](@ref)).
 [SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
 templates with data per node, a vector of families, one per node:
 `QuadraticTemplate()` is `Ellipsoid(symmetric = true)`, and
-`ConicPolyhedralTemplate([P])` is `[Polytope(symmetric = true, piecewise = P)]`.
+`PiecewiseLinearTemplate([P])` is `[Polytope(symmetric = true, piecewise = P)]`.
 A SetProg family can also be passed directly, without a constructor (see
 [Try a richer template](@ref)). To write one, run
 `Pkg.add("SetProg")` and `using SetProg`: the package depends on SetProg, so
@@ -167,9 +170,8 @@ load it by name.
   problem.
 - **For the stability of a positive system**, `LinearCopositiveTemplate()`
   and `DualCopositiveTemplate()` solve linear programs.
-- **For a polyhedral function on any system**, `ConicPolyhedralTemplate(P)`
-  or `ParallelFacesPolyhedralTemplate(G)`, whose data change the bound, as
-  above.
+- **For a polyhedral function on any system**, `PiecewiseLinearTemplate(P)`
+  or `DualPiecewiseLinearTemplate(P)`, whose data change the bound, as above.
 - **For a polynomial function**, `SumOfSquaresTemplate(r)`, of degree ``2r``.
 - **For a function quadratic on each cone**, `PiecewiseQuadraticTemplate(P)`.
 

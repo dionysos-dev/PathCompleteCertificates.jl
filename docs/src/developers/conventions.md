@@ -35,9 +35,7 @@ field of its own, `rate`, `margin` or `gains`.
 of its directory, and changes no other code**: the rest is wiring, listed in
 [Extending the package](@ref). Every directory with an interface has that
 shape: the interface at the top, one file per inhabitant under `catalogue/`,
-named after the type without the directory's suffix. The exception is the
-templates, whose copositive and polyhedral constructors live in
-`src/problems/polytope_compat.jl`.
+named after the type without the directory's suffix.
 
 ## Templates are SetProg families
 
@@ -60,9 +58,9 @@ The package adds what a certificate needs:
 
 - what the package needs to know about a family, in `src/problems/sets.jl`:
   `is_applicable`, `is_closed_under`, `reindex`, `has_dual` and `dual`.
-- the constructors: `QuadraticTemplate`, `SumOfSquaresTemplate` and
-  `PiecewiseQuadraticTemplate` in `src/templates/catalogue/`, the copositive
-  and polyhedral ones in `src/problems/polytope_compat.jl`.
+- the constructors, one file per template pair in `src/templates/catalogue/`:
+  the quadratic, piecewise quadratic, sum-of-squares, piecewise linear and
+  dual piecewise linear templates, and the two copositive ones.
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge
 inequality is one call with `scale = γ^δ`. A fitted node function is evaluated

@@ -21,12 +21,12 @@ paper, what the package takes from each.
 
 | Paper | What the package takes from it |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@citet) | the two polyhedral parameterizations: by pairs of parallel faces, [`ParallelFacesPolyhedralTemplate`](@ref), and by pairs of opposite vertices, which [`ConicPolyhedralTemplate`](@ref) extends to any partition into cones |
+| [athanasopoulos2019polyhedral](@citet) | the two polyhedral parameterizations, by pairs of opposite vertices and by pairs of parallel faces, which [`PiecewiseLinearTemplate`](@ref) and its polar [`DualPiecewiseLinearTemplate`](@ref) extend to any partition into cones |
 | [parrilo2008approximation](@citet) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2021comparison](@citet) | the primal and dual linear copositive norms: [`LinearCopositiveTemplate`](@ref) and [`DualCopositiveTemplate`](@ref) |
 
 [`QuadraticTemplate`](@ref) is standard. [`PiecewiseQuadraticTemplate`](@ref)
-keeps the cones of [`ConicPolyhedralTemplate`](@ref), with a quadratic form on
+keeps the cones of [`PiecewiseLinearTemplate`](@ref), with a quadratic form on
 each.
 
 ## Set programming
