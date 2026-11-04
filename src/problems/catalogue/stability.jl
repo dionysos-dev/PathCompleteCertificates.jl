@@ -277,8 +277,8 @@ function _check_stability_data(
 
     is_applicable(template, problem.system) || throw(
         ArgumentError(
-            "$(nameof(typeof(template))) does not apply to this system's dynamics; " *
-            "see its docstring",
+            "the template does not apply to this system's dynamics: " *
+            _inapplicability(template, problem.system),
         ),
     )
 

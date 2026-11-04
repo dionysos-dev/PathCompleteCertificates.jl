@@ -14,13 +14,14 @@ below is a place where research or a contribution can close it.
 
 Stability accepts every template, including SetProg families passed directly.
 Safety accepts quadratic, polynomial, and polyhedral families. Optimal control
-jointly synthesizes quadratic values and gains; convex homogeneous PolySets
-support polynomial value optimization for fixed or initialized gains.
+jointly synthesizes quadratic values and gains. Convex polynomial values, from
+`SumOfSquaresTemplate(r; convex = true)` or a convex homogeneous PolySet, are
+optimized for fixed or initialized gains.
 
 |                                           | [`StabilityProblem`](@ref) | [`SafetyProblem`](@ref) | [`OptimalControlProblem`](@ref) |
 | :---------------------------------------- | :-: | :-: | :-: |
 | [`QuadraticTemplate`](@ref)               | ✓ | ✓ | ✓ |
-| [`SumOfSquaresTemplate`](@ref)            | ✓ | ✓ | |
+| [`SumOfSquaresTemplate`](@ref)            | ✓ | ✓ | ✓ ³ |
 | [`LinearCopositiveTemplate`](@ref)        | ✓ ¹ | | |
 | [`DualCopositiveTemplate`](@ref)          | ✓ ¹ | | |
 | [`ParallelFacesPolyhedralTemplate`](@ref) | ✓ | ✓ ² | |
@@ -35,7 +36,8 @@ and an unsafe region equal to the exterior of a bounded ellipsoid. It uses
 linear and second-order cone constraints.
 
 ³ Set `OptimalControlProblem(...; p = degree)` with a matching homogeneous
-PolySet degree and `convex = true`. Supply node gains with `gains = ...`, or
+degree and convex node functions: `SumOfSquaresTemplate(r; convex = true)` with
+`p = 2r`, or a PolySet with `convex = true`. Supply node gains with `gains = ...`, or
 omit them to initialize with the quadratic solver. The polynomial SDP minimizes
 the integral of the value bounds and keeps the gain matrices fixed.
 

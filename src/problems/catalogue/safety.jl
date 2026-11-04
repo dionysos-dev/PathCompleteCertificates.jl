@@ -158,6 +158,7 @@ function optimization_model(
 )
     _check_safety_data(graph, problem; check_path_complete)
     families = _safety_families(template, _state_dimension(problem.system), n_nodes(graph))
+    any(f -> f isa SetProg.Polytope, families) && _check_polyhedral_safety_sets(problem)
     model = JuMP.Model(optimizer)
     JuMP.set_silent(model)
     sets = [JuMP.@variable(model, variable_type = f) for f in families]
@@ -274,6 +275,21 @@ function _homogeneous_dynamics(A::AbstractMatrix)
         A zeros(n, 1)
         zeros(1, n) 1.0
     ]
+end
+
+# The containment certificates of the polyhedral families need a bounded
+# ellipsoidal initial set and an unsafe set outside a bounded ellipsoid.
+function _check_polyhedral_safety_sets(problem::SafetyProblem)
+    n = size(problem.S0, 1) - 1
+    initial = LinearAlgebra.Symmetric(-problem.S0[1:n, 1:n])
+    unsafe = LinearAlgebra.Symmetric(problem.Su[1:n, 1:n])
+    LinearAlgebra.isposdef(initial) && LinearAlgebra.isposdef(unsafe) || throw(
+        ArgumentError(
+            "polyhedral templates need an ellipsoidal initial set and an unsafe set " *
+            "outside an ellipsoid: -S0[1:n, 1:n] and Su[1:n, 1:n] positive definite",
+        ),
+    )
+    return nothing
 end
 
 # Validate the data.

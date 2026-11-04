@@ -254,6 +254,14 @@ end
     V = only(PCC.functions(translated))
     @test PCC.node_value(shifted, V, [1.0, 0.0]) < 0
     @test PCC.node_value(shifted, V, [-5.0, 0.0]) > 0
+    # A half-plane is not the outside of an ellipsoid: refused before any solve.
+    halfplane = PCC.SafetyProblem(system, S0, [0.0 0 0.5; 0 0 0; 0.5 0 -5])
+    @test_throws "outside an ellipsoid" PCC.certify(
+        template,
+        graph,
+        halfplane;
+        optimizer = Clarabel.Optimizer,
+    )
 end
 
 end

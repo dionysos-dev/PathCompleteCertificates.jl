@@ -91,7 +91,7 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | Template | Node function | Systems | Program | Problems |
 | :-- | :-- | :-- | :-- | :-- |
 | [`QuadraticTemplate`](@ref)`()` | ``x^\top P x`` | all | semidefinite | stability, safety, optimal control |
-| [`SumOfSquaresTemplate`](@ref)`(d)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety |
+| [`SumOfSquaresTemplate`](@ref)`(d)` | ``\sum_j q_j(x)^2``, each ``q_j`` of degree ``d`` | all | semidefinite | stability, safety, optimal control |
 | [`LinearCopositiveTemplate`](@ref)`()` | ``c^\top x`` | positive | linear | stability |
 | [`DualCopositiveTemplate`](@ref)`()` | ``\max_i x_i / v_i`` | positive | linear | stability |
 | [`ParallelFacesPolyhedralTemplate`](@ref)`(n_nodes, n)` | ``\max_k \lvert (G x)_k \rvert / w_k`` | all | linear for stability; second-order cone for safety | stability, safety |
@@ -99,8 +99,8 @@ on_diagonals = PCC.ParallelFacesPolyhedralTemplate([[1.0 1.0; -1.0 1.0]])
 | [`PiecewiseQuadraticTemplate`](@ref)`(partitions)` | quadratic on each cone of a partition | all | semidefinite | stability |
 | `Polytope(symmetric = true, piecewise = P)` | linear on each cone of ``P`` | all | linear | stability |
 
-Polynomial optimal control accepts a native
-`PolySet(symmetric = true, convex = true, degree = 4)` with
+Polynomial optimal control accepts `SumOfSquaresTemplate(2; convex = true)`, or
+a native `PolySet(symmetric = true, convex = true, degree = 4)`, with
 `OptimalControlProblem(system, Q, R; p = 4)`. It optimizes value bounds for
 supplied gains or gains initialized by the quadratic solver; see
 [Design a controller robust to switching](@ref).

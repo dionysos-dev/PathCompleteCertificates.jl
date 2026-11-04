@@ -10,6 +10,18 @@ is_applicable(f::_NormalizedFamily, system) = is_applicable(f.set, system)
 is_applicable(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
     all(f -> is_applicable(f, system), families)
 
+# Why `is_applicable` refuses a family, for the error message.
+function _inapplicability(::SetProg.AbstractVariable, system)
+    return "see its docstring"
+end
+_inapplicability(f::SetProg.Domain, system) =
+    _is_linear_copositive(f) ?
+    "the copositive templates need entrywise nonnegative mode matrices" :
+    "see its docstring"
+_inapplicability(f::_NormalizedFamily, system) = _inapplicability(f.set, system)
+_inapplicability(families::AbstractVector{<:SetProg.AbstractVariable}, system) =
+    _inapplicability(first(f for f in families if !is_applicable(f, system)), system)
+
 function is_closed_under(::SetProg.AbstractVariable, ::Operation, system)
     return false
 end

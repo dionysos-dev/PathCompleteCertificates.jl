@@ -7,6 +7,15 @@ _polynomial_control_case(template, problem) = Val(
 function _check_polynomial_control_case(::Val{true})
     return nothing
 end
+function _check_polynomial_control_case(::Val{false})
+    return throw(
+        ArgumentError(
+            "polynomial optimal control needs symmetric, convex node functions whose " *
+            "degree is the exponent p of the cost, such as " *
+            "SumOfSquaresTemplate(r; convex = true) with p = 2r",
+        ),
+    )
+end
 
 """
     optimization_model(template::SetProg.PolySet, graph, problem::OptimalControlProblem;
@@ -41,6 +50,9 @@ function optimization_model(
     )
 end
 
+function _polynomial_control_model(::Val{false}, ::Any, ::Any, ::Any; kwargs...)
+    return _check_polynomial_control_case(Val(false))
+end
 function _polynomial_control_model(
     ::Val{true},
     template,
@@ -165,6 +177,39 @@ function certify(
         CertificateData(problem, template, graph, functions, termination, feasible),
         model[:optimal_control_gains],
         proofs,
+    )
+end
+
+# SumOfSquaresTemplate is a normalized PolySet. The stage cost bounds every value
+# function from below, so optimal control uses the PolySet alone, and the
+# certificate keeps the template it was given.
+function optimization_model(
+    template::_NormalizedFamily{<:SetProg.PolySet},
+    graph::CertificateGraph,
+    problem::OptimalControlProblem;
+    kwargs...,
+)
+    return optimization_model(template.set, graph, problem; kwargs...)
+end
+function certify(
+    template::_NormalizedFamily{<:SetProg.PolySet},
+    graph::CertificateGraph,
+    problem::OptimalControlProblem;
+    kwargs...,
+)
+    certificate = certify(template.set, graph, problem; kwargs...)
+    data = _data(certificate)
+    return OptimalControlCertificate(
+        CertificateData(
+            problem,
+            template,
+            graph,
+            data.functions,
+            data.status,
+            data.feasible,
+        ),
+        certificate.gains,
+        certificate.edge_certificates,
     )
 end
 

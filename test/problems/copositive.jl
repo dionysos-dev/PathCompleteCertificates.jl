@@ -205,4 +205,16 @@ end
     ])
 end
 
+@testset "Copositive templates say what they need" begin
+    signed = PCC.StabilityProblem(PCC.switched_system([[0.5 -0.1; 0.1 0.4], A[2]]))
+    for template in (FAMILY, PCC.DualCopositiveTemplate(), [FAMILY])
+        @test_throws "entrywise nonnegative" PCC.certify(
+            template,
+            GRAPH,
+            signed;
+            optimizer = OPTIMIZER,
+        )
+    end
+end
+
 end
