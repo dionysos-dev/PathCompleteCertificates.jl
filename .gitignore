@@ -26,6 +26,7 @@ docs/src/generated
 *.bundle
 outputs/
 bench/results/
+numerical_experiments/results/
 
 # Claude Code: track shared commands, ignore personal/local config
 .claude/*
