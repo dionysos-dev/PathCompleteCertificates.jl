@@ -1,15 +1,16 @@
 """
     OptimalControlProblem(system, Q, R; p = 2)
 
-Optimal-control problem for a switched linear system with an input
-[ninite2026path](@cite). The stage cost is `(x'Q*x)^(p/2) + (u'R*u)^(p/2)`,
-with `Q` and `R` symmetric positive definite. The default `p = 2` gives the
-quadratic cost; `p = 4` gives a homogeneous quartic cost.
+The optimal-control problem of a switched linear system with an input
+[ninite2026path](@cite), with the stage cost
+``\\ell(x, u) = (x^\\top Q x)^{p/2} + (u^\\top R u)^{p/2}``, for `Q` and `R`
+symmetric positive definite. The default `p = 2` gives the quadratic cost, and
+`p = 4` a quartic one.
 
-Alternatively, supply fixed polytopes as `Q` and `R`, or fixed convex
-`SetProg.Sets.Piecewise` sets with linear pieces. The cost is the sum of
-their gauges raised to `p` (default one for this constructor). Polyhedral
-value families support exponents one and two.
+`Q` and `R` may instead be polytopes ``\\mathcal Q`` and ``\\mathcal R``, or
+convex `SetProg.Sets.Piecewise` sets with linear pieces. The stage cost is then
+``\\ell(x, u) = g_{\\mathcal Q}(x)^p + g_{\\mathcal R}(u)^p``, with `p = 1` by
+default. [What works with what](@ref) says which templates each cost accepts.
 """
 struct OptimalControlProblem{S, MQ, MR, P <: Real} <: AbstractProblem
     system::S
@@ -119,16 +120,15 @@ _initialization_cost(set::_LinearPolytope) = Matrix{Float64}(
 """
     OptimalControlCertificate
 
-A value function `V_s` and a gain `K_s` at each node `s`. Joint quadratic
-synthesis optimizes both. Polynomial and polyhedral synthesis optimize the
-value functions for supplied or quadratically initialized gains. Its
-`edge_certificates` field contains fitted SOS Gram matrices in physical cost
-units, or LP/SOC proof matrices in gauge units for polyhedral values.
+A node function ``V_s`` and a gain ``K_s`` at each node ``s``. With
+`QuadraticTemplate()` and no `gains`, [`certify`](@ref) computes both.
+Otherwise the gains are fixed.
 
-- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
-  runs it.
-- Its worst-case cost from `x` is at most `min_s V_s(x)`, which calling the
-  certificate at `x` returns.
+- The policy applies ``u = K_s x``, where ``s`` minimizes ``V_s(x)``.
+  [`simulate`](@ref) runs it.
+- Its worst-case cost ``J_\\phi(x)``, and so the robust value function
+  ``J^\\star(x)``, is at most ``\\min_s V_s(x)``, which calling the certificate
+  at `x` returns.
 """
 struct OptimalControlCertificate{D <: CertificateData, K, E} <: AbstractCertificate
     data::D
@@ -140,11 +140,10 @@ OptimalControlCertificate(data, gains) = OptimalControlCertificate(data, gains, 
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build the joint quadratic synthesis program in `S = P⁻¹`, `Y = KS`.
-This method uses complete graphs, `QuadraticTemplate`, and `p = 2`.
-Bellman inequalities
-use SetProg `PolarLpSum` inclusions with exponent two, producing block PSD
-certificates.
+Build, without solving, the program that computes the node functions and the
+gains together, for `QuadraticTemplate()` and `p = 2`. The edge inequality is
+convex in the variables `S = P⁻¹` and `Y = KS`, and is imposed as a SetProg
+inclusion through the polar ``L_2`` sum.
 """
 function optimization_model(
     template::_SetFamily,
@@ -223,10 +222,10 @@ end
 """
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Synthesize a state-feedback policy and an upper bound on its worst-case cost,
-returned as an [`OptimalControlCertificate`](@ref). This joint synthesis
-method uses complete graphs, `QuadraticTemplate`, and `p = 2`; the solver
-maximizes `Σₐ log det Pₐ⁻¹`.
+A state-feedback policy and an upper bound on its worst-case cost, as an
+[`OptimalControlCertificate`](@ref). With `QuadraticTemplate()` and `p = 2`,
+the node functions ``V_s(x) = x^\\top P_s x`` and the gains are computed
+together, and the program maximizes ``\\sum_s \\log\\det P_s^{-1}``.
 """
 function certify(
     template::_SetFamily,

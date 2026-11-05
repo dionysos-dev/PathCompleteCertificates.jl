@@ -28,7 +28,7 @@ end
     LinearCopositiveFunction(c)
 
 The function ``V(x) = c^\\top x`` on the nonnegative orthant, a node function
-of [`LinearCopositiveTemplate`](@ref), as a SetProg set; evaluate it with
+of [`LinearCopositiveTemplate`](@ref), as a SetProg set. Evaluate it with
 [`node_value`](@ref).
 """
 function LinearCopositiveFunction(c::AbstractVector)
@@ -42,7 +42,7 @@ end
     DualCopositiveFunction(v)
 
 The function ``V(x) = \\max_i x_i / v_i`` on the nonnegative orthant, a node
-function of [`DualCopositiveTemplate`](@ref), as a SetProg set; evaluate it
+function of [`DualCopositiveTemplate`](@ref), as a SetProg set. Evaluate it
 with [`node_value`](@ref).
 """
 DualCopositiveFunction(v::AbstractVector) = _dual_value(LinearCopositiveFunction(v))

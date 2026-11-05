@@ -3,11 +3,10 @@
 
 The polyhedral functions linear on each cone over the facets of a polytope, as
 one SetProg polytope per node, with the polytope of each node in
-`node_partitions`; each polytope must contain the origin in its interior, and
+`node_partitions`. Each polytope must contain the origin in its interior, and
 [`planar_conic_partition`](@ref) builds one in the plane. It applies to every
-system. Stability gives linear programs; safety with an ellipsoidal initial
-region and an exterior-ellipsoid unsafe region gives second-order cone
-programs. `min_scale` normalizes the stability node functions: each is at
+system. Stability gives linear programs, and safety, with an ellipsoidal
+``X_0`` and an ``X_u`` outside an ellipsoid, second-order cone programs. `min_scale` normalizes the stability node functions: each is at
 least `min_scale` times the function equal to one on the boundary of its
 polytope. Its dual is [`DualPiecewiseLinearTemplate`](@ref).
 """

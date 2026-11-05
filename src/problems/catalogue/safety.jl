@@ -1,13 +1,16 @@
 """
     SafetyProblem(system, S0, Su)
 
-Safety problem for an input-free switched linear system [anand2024barrier](@cite),
-with initial and unsafe sets `{x : [x; 1]' S [x; 1] ≥ 0}` for `S = S0, Su`.
-For a global quadratic family, the barrier at node `s` is `[x; 1]' P_s [x; 1]`
-with `P_s` symmetric, not necessarily positive semidefinite. Polynomial
-families construct affine polynomial barriers of the requested degree.
-Piecewise ellipsoid families use `x'Q_k*x - 1` on each cone of their fixed
-partition, with PSD quadratic pieces by default.
+The safety problem of an input-free switched linear system
+[anand2024barrier](@cite): no trajectory from the initial set ``X_0`` reaches
+the unsafe set ``X_u``. Each set is ``\\{x : [x; 1]^\\top S [x; 1] \\ge 0\\}``,
+for `S = S0` and `S = Su`.
+
+With the quadratic template, the barrier at node ``s`` is
+``V_s(x) = [x; 1]^\\top P_s [x; 1]``, with ``P_s`` symmetric, possibly
+indefinite. With `SumOfSquaresTemplate(r)`, it is a polynomial of degree at
+most ``2r``. With the piecewise quadratic template, it is
+``x^\\top P_{s,k} x - 1`` on each cone, with ``P_{s,k}`` positive semidefinite.
 """
 struct SafetyProblem{S, M0 <: AbstractMatrix, Mu <: AbstractMatrix} <: AbstractProblem
     system::S
@@ -42,12 +45,12 @@ end
 """
     SafetyCertificate
 
-A path-complete barrier function, its `margin` of separation between the
-initial and unsafe sets (positive when safety is certified), and the S-procedure
-multipliers `initial_multipliers` and `unsafe_multipliers`, one per node.
-Polyhedral certificates need no S-procedure multipliers; their entries are
-`nothing`. Their margin is measured in support/gauge or support/radius
-units, depending on the representation selected by SetProg.
+A path-complete barrier certificate, its `margin` of separation between
+``X_0`` and ``X_u``, positive when safety is certified, and the multipliers of
+the S-procedure, `initial_multipliers` and `unsafe_multipliers`, one per node.
+With the piecewise quadratic template, each entry holds one multiplier per
+cone. The polyhedral templates need no multipliers, so their entries are
+`nothing`, and their margin is in the units of their gauges.
 """
 struct SafetyCertificate{D <: CertificateData, T, M} <: AbstractCertificate
     data::D
@@ -169,13 +172,11 @@ end
 """
     optimization_model(template, graph, problem; optimizer, check_path_complete = true)
 
-Build the barrier program with quadratic, piecewise-quadratic, polynomial, or
-polyhedral SetProg families.
-Quadratic and polynomial barriers use nonnegative S-procedure multipliers.
-Piecewise-quadratic families keep their conic partition and use one multiplier
-per piece. Their barriers are `x'Q_k*x - 1`, with PSD pieces by default.
-Polyhedral barriers use linear and second-order cone containment certificates
-for an ellipsoidal initial region and an exterior-ellipsoid unsafe region.
+Build, without solving, the barrier program. The quadratic, sum-of-squares and
+piecewise quadratic templates impose the node conditions by the S-procedure,
+with one multiplier per cone for the piecewise quadratic template. The
+polyhedral templates impose them with linear and second-order cone
+constraints, for an ellipsoidal ``X_0`` and an ``X_u`` outside an ellipsoid.
 """
 function optimization_model(
     template::_SetFamily,

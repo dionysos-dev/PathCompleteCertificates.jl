@@ -1,14 +1,15 @@
 """
     TightestNodeSplitting(; rng = nothing)
 
-The strategy of Algorithm 1 of [ninite2026lifting](@cite), with
+The strategy of [ninite2026lifting; Alg. 1](@cite), with
 [`OutSplitLift`](@ref) at a node, which refines their forward lift: split the
 node with the most tight outgoing edges, among those with at least two, into
-one copy per outgoing edge. When no node has two tight outgoing edges, there is no next graph.
+one copy per outgoing edge. When no node has two tight outgoing edges, there
+is no next graph.
 
-Several nodes can hold as many tight edges. Among them the one with the fewest
-outgoing edges is split, since its lift adds the fewest nodes; a tie that
-remains goes to the lowest index, so a run is deterministic but depends on how
+When several nodes have that many, the one with the fewest outgoing edges is
+split, since its lift adds the fewest nodes. A tie that remains goes to the
+lowest index, so a run is deterministic but depends on how
 the nodes are numbered. With `rng`, for example `rng = MersenneTwister(1)`,
 that last tie is drawn at random instead.
 

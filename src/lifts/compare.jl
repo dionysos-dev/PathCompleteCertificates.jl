@@ -28,8 +28,8 @@ simulations(comparison::Comparison) = comparison.simulations
 """
     templates(comparison)
 
-The given templates for which the second graph is proved no worse than the
-first.
+The given templates for which the second graph is proved at least as good as
+the first.
 """
 templates(comparison::Comparison) = comparison.templates
 
@@ -47,7 +47,8 @@ const _LIFTS = (
             lifts = (IdentityLift(), MinLift(), MaxLift(), SumLift(),
                      CompositionLift(1), BackwardCompositionLift(1)))
 
-Whether ``G ≤_V H``, and for which of `templates`, as a [`Comparison`](@ref).
+Whether `H` is at least as good as `G`, and for which of `templates`, as a
+[`Comparison`](@ref).
 The lifts are tried in order, and the identity lift's simulation ends the
 search. The sum lift is tried only with an `optimizer`, and `system` is
 required when `templates` is nonempty. Both graphs need one mode per edge.

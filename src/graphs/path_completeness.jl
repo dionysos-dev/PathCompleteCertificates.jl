@@ -32,8 +32,8 @@ end
     is_complete(graph)
     is_complete(graph, alphabet)
 
-Whether every node has an outgoing edge for every letter of `alphabet`;
-sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
+Whether every node has an outgoing edge for every letter of `alphabet`, which
+is sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
 argument the alphabet is the modes `graph` uses. `false` on a graph with a word
 of several modes.
 """
@@ -49,8 +49,8 @@ is_complete(graph::WordGraph, alphabet::AbstractVector) =
     is_co_complete(graph)
     is_co_complete(graph, alphabet)
 
-Whether every node has an incoming edge for every letter of `alphabet`;
-sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
+Whether every node has an incoming edge for every letter of `alphabet`, which
+is sufficient, not necessary, for [`is_path_complete`](@ref). Without a second
 argument the alphabet is the modes `graph` uses. `false` on a graph with a word
 of several modes.
 """

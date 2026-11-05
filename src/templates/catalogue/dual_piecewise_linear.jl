@@ -16,9 +16,9 @@ to the rows of ``G``, with every weight ``w_k`` at least `min_weight`.
 `(n_nodes, dimension)` takes the identity at each of `n_nodes` nodes, which
 gives boxes.
 
-It applies to every system. Stability gives linear programs; safety with an
-ellipsoidal initial region and an exterior-ellipsoid unsafe region gives
-second-order cone programs.
+It applies to every system. Stability gives linear programs, and safety, with
+an ellipsoidal ``X_0`` and an ``X_u`` outside an ellipsoid, second-order cone
+programs.
 """
 function DualPiecewiseLinearTemplate(
     node_partitions::AbstractVector{<:SetProg.Polyhedra.Polyhedron};

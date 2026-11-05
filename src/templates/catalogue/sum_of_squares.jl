@@ -3,9 +3,9 @@
 
 The sums of squares ``V(x) = \\sum_j q_j(x)^2``, each ``q_j`` a homogeneous
 polynomial of degree `degree`, so that ``V`` has degree `2degree`,
-as a normalized SetProg `PolySet` family; `degree = 1` gives the quadratic
+as a normalized SetProg `PolySet` family. `degree = 1` gives the quadratic
 forms. It applies to every system, for stability, safety and optimal control,
-gives semidefinite programs, and needs `using SumOfSquares`. Polynomial
+gives semidefinite programs, and needs `import SumOfSquares`. Polynomial
 coordinates are created automatically from the system dimension.
 
 Each node function is `min_scale * sum(x .^ 2)^degree` plus a sum of squares,

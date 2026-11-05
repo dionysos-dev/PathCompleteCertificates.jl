@@ -3,7 +3,7 @@
                                   ForwardProductLift(), BackwardProductLift()))
 
 The strategy of [athanasopoulos2019polyhedral; Ex. 2](@cite). At each step,
-every lift of `lifts` is applied at every tight edge, one edge at a time; by
+every lift of `lifts` is applied at every tight edge, one edge at a time. By
 default these are its partial P\\*-, P-, T- and T\\*-lifts (Defs. 7, 6, 4
 and 5). Each candidate graph is solved, and the one with the lowest rate is
 kept.

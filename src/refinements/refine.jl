@@ -8,7 +8,7 @@ Why a [`refine`](@ref) run stopped.
 """
     OPTIMAL
 
-The [`optimality_gap`](@ref) closed; for stability, the last rate is the joint
+The [`optimality_gap`](@ref) closed. For stability, the last rate is the joint
 spectral radius.
 """
 OPTIMAL

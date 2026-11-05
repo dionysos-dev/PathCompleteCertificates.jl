@@ -1,8 +1,8 @@
 """
     IdentityLift()
 
-The lift that returns the graph; its simulation decides `G ≤_V H` for every
-template [philippe2019complete; Thm. 3.5](@cite).
+The lift that returns the graph. Its simulation proves that `H` is at least as
+good as `G` for every template [philippe2019complete; Thm. 3.5](@cite).
 """
 struct IdentityLift <: AbstractLift end
 
