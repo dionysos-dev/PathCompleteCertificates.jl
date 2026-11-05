@@ -336,4 +336,17 @@ end
     )
 end
 
+@testset "unsupported templates say what is supported" begin
+    system = PCC.switched_system([[0.5 0.0; 0.0 0.5]])
+    problem = PCC.SafetyProblem(system, S0, SU)
+    for template in (PCC.LinearCopositiveTemplate(), PCC.DualCopositiveTemplate())
+        @test_throws "safety supports QuadraticTemplate()" PCC.certify(
+            template,
+            PCC.common_graph(system),
+            problem;
+            optimizer = HiGHS.Optimizer,
+        )
+    end
+end
+
 end

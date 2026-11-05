@@ -43,10 +43,10 @@ function _check_fixed_gain_control_case(::Val{false})
     return throw(
         ArgumentError(
             "fixed-gain optimal control needs symmetric, convex node functions whose " *
-            "degree is the exponent p of the cost, such as " *
-            "SumOfSquaresTemplate(r; convex = true) with p = 2r, or a nonempty " *
-            "polytope family with p = 1 or p = 2, or symmetric PSD piecewise " *
-            "ellipsoids with p = 2",
+            "degree is the exponent p of the cost: " *
+            "SumOfSquaresTemplate(r; convex = true) with p = 2r, " *
+            "PiecewiseQuadraticTemplate with p = 2, or PiecewiseLinearTemplate " *
+            "with p = 1 or p = 2",
         ),
     )
 end
@@ -81,10 +81,8 @@ function optimization_model(
     margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
-    if template isa SetProg.Ellipsoid &&
-       template.piecewise === nothing &&
-       gains === nothing &&
-       iszero(margin)
+    if template isa SetProg.Ellipsoid && template.piecewise === nothing
+        _check_joint_control_inputs(gains, margin)
         return invoke(
             optimization_model,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -95,6 +93,7 @@ function optimization_model(
             psd_margin,
         )
     end
+    _check_control_cost(template, problem)
     return _fixed_gain_control_model(
         _fixed_gain_control_case(template, problem),
         template,
@@ -199,10 +198,8 @@ function certify(
     initialization_optimizer = optimizer,
     psd_margin::Real = 1e-4,
 )
-    if template isa SetProg.Ellipsoid &&
-       template.piecewise === nothing &&
-       gains === nothing &&
-       iszero(margin)
+    if template isa SetProg.Ellipsoid && template.piecewise === nothing
+        _check_joint_control_inputs(gains, margin)
         return invoke(
             certify,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -213,6 +210,7 @@ function certify(
             psd_margin,
         )
     end
+    _check_control_cost(template, problem)
     _check_fixed_gain_control_case(_fixed_gain_control_case(template, problem))
     if gains === nothing
         seed = certify(

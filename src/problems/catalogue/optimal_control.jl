@@ -121,8 +121,8 @@ _initialization_cost(set::_LinearPolytope) = Matrix{Float64}(
     OptimalControlCertificate
 
 A node function ``V_s`` and a gain ``K_s`` at each node ``s``. With
-`QuadraticTemplate()` and no `gains`, [`certify`](@ref) computes both.
-Otherwise the gains are fixed.
+`QuadraticTemplate()`, [`certify`](@ref) computes both. With the other
+templates, the gains are fixed.
 
 - The policy applies ``u = K_s x``, where ``s`` minimizes ``V_s(x)``.
   [`simulate`](@ref) runs it.
@@ -152,9 +152,7 @@ function optimization_model(
     optimizer,
     psd_margin::Real = 1e-4,
 )
-    template == QuadraticTemplate() && problem.p == 2 || throw(
-        ArgumentError("joint synthesis currently requires QuadraticTemplate() and p = 2"),
-    )
+    _check_joint_control_case(template, problem)
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     _check_optimal_control_data(graph, problem)
@@ -311,6 +309,56 @@ function _check_optimal_control_data(graph, problem)
     is_complete(graph, 1:n_modes(problem.system)) ||
         throw(ArgumentError("optimal control requires a complete graph"))
 
+    return nothing
+end
+
+# The joint synthesis is the method for every template without a fixed-gain
+# method, so it names the templates that optimal control accepts.
+function _check_joint_control_case(template, problem)
+    template == QuadraticTemplate() || throw(
+        ArgumentError(
+            "optimal control supports QuadraticTemplate(), PiecewiseQuadraticTemplate, " *
+            "SumOfSquaresTemplate(r; convex = true) and PiecewiseLinearTemplate, see " *
+            "What works with what in the manual",
+        ),
+    )
+    _check_control_cost(template, problem)
+    problem.p == 2 || throw(
+        ArgumentError(
+            "QuadraticTemplate() needs p = 2, and SumOfSquaresTemplate(r; convex = true) " *
+            "takes p = 2r",
+        ),
+    )
+    return nothing
+end
+
+# The quadratic template computes the gains with the node functions.
+function _check_joint_control_inputs(gains, margin)
+    gains === nothing && iszero(margin) || throw(
+        ArgumentError(
+            "QuadraticTemplate() computes the gains, and takes neither gains nor a " *
+            "margin. SumOfSquaresTemplate(1; convex = true) has the same node " *
+            "functions and takes both",
+        ),
+    )
+    return nothing
+end
+
+# A cost given by polytopes is a sum of gauges, which only the node functions
+# of the piecewise linear template match.
+function _check_control_cost(
+    ::Union{SetProg.Polytope, AbstractVector{<:SetProg.Polytope}},
+    _,
+)
+    return nothing
+end
+function _check_control_cost(_, problem)
+    problem.Q isa AbstractMatrix || throw(
+        ArgumentError(
+            "a cost given by polytopes needs PiecewiseLinearTemplate, and the other " *
+            "templates need the matrices Q and R",
+        ),
+    )
     return nothing
 end
 

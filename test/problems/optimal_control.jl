@@ -507,7 +507,7 @@ end
     for (template, p) in ((family, 4), ([family], 4), (SetProg.Polytope[], 2))
         problem = PCC.OptimalControlProblem(system, [1.0;;], [1.0;;]; p)
         for build in (PCC.optimization_model, PCC.certify)
-            @test_throws "polytope family with p = 1 or p = 2" build(
+            @test_throws "PiecewiseLinearTemplate with p = 1 or p = 2" build(
                 template,
                 graph,
                 problem;
@@ -681,6 +681,51 @@ end
     )
     @test PCC.is_feasible(scalar)
     @test scalar([2.0]) ≈ 100 * 1.01 / (1-0.4^2) * 4 rtol=1e-5
+end
+
+@testset "unsupported combinations say what is supported" begin
+    P = SetProg.Polyhedra
+    supported = "optimal control supports QuadraticTemplate()"
+    for template in (
+        PCC.DualPiecewiseLinearTemplate(2, 2),
+        PCC.LinearCopositiveTemplate(),
+        PCC.DualCopositiveTemplate(),
+    )
+        @test_throws supported PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER)
+    end
+    @test_throws "QuadraticTemplate() needs p = 2" PCC.certify(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PCC.OptimalControlProblem(SYSTEM, Q, R; p = 4);
+        optimizer = OPTIMIZER,
+    )
+    @test_throws "takes neither gains nor a margin" PCC.certify(
+        PCC.QuadraticTemplate(),
+        GRAPH,
+        PROBLEM;
+        optimizer = OPTIMIZER,
+        gains = RESULT.gains,
+    )
+    # Without a library, Polyhedra builds the input cost as an interval.
+    box = P.polyhedron(P.vrep([[1.0, 1.0], [1.0, -1.0], [-1.0, 1.0], [-1.0, -1.0]]))
+    interval = P.polyhedron(P.vrep([[1.0], [-1.0]]))
+    @test interval isa P.Interval
+    partitions = fill(PCC.planar_conic_partition(1), 2)
+    for p in (1, 2)
+        problem = PCC.OptimalControlProblem(SYSTEM, box, interval; p)
+        for template in (
+            PCC.QuadraticTemplate(),
+            PCC.SumOfSquaresTemplate(1; convex = true),
+            PCC.PiecewiseQuadraticTemplate(partitions),
+        )
+            @test_throws "a cost given by polytopes needs PiecewiseLinearTemplate" PCC.certify(
+                template,
+                GRAPH,
+                problem;
+                optimizer = OPTIMIZER,
+            )
+        end
+    end
 end
 
 end

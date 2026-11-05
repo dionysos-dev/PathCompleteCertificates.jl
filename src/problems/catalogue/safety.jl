@@ -98,6 +98,13 @@ function _safety_family(f::_NormalizedFamily{<:SetProg.Polytope}, n, variables)
 end
 _safety_family(f::_NormalizedFamily{<:SetProg.PolySet}, n, variables) =
     _safety_family(f.set, n, variables)
+_safety_family(_, _, _) = throw(
+    ArgumentError(
+        "safety supports QuadraticTemplate(), SumOfSquaresTemplate, " *
+        "PiecewiseQuadraticTemplate, PiecewiseLinearTemplate and " *
+        "DualPiecewiseLinearTemplate, see What works with what in the manual",
+    ),
+)
 
 _safety_degree(f::SetProg.PolySet) = maximum(f.degree)
 
