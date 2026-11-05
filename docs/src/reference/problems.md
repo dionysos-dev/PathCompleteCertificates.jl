@@ -50,6 +50,6 @@ Pages   = ["problems/catalogue/safety.jl"]
 Modules = [PathCompleteCertificates]
 Pages   = [
     "problems/catalogue/optimal_control.jl",
-    "problems/catalogue/polynomial_optimal_control.jl",
+    "problems/catalogue/fixed_gain_optimal_control.jl",
 ]
 ```

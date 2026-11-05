@@ -64,7 +64,7 @@ Stability and safety use the families directly, as SetProg inclusions. Optimal c
 synthesizes the gains jointly with the quadratic template only, in `S = P⁻¹`, `Y = KS`, where it
 is convex, and says so in place. With the other templates it keeps the gains fixed and imposes
 the Bellman inequality as a SetProg inclusion through the polar `L_δ` sum, in
-`problems/catalogue/polynomial_optimal_control.jl`.
+`problems/catalogue/fixed_gain_optimal_control.jl`.
 
 **A new problem, lift or refinement strategy is one file in the `catalogue/` of its
 directory, and changes no other code**; its wiring (the include, a test, a reference page,
@@ -91,7 +91,7 @@ src/
 ├── problems/     abstract.jl (the interface), certificate.jl (accessors, `common`),
 │                 tight_edges.jl, gauges.jl (the primitives for SetProg families), sets.jl
 │                 (applicability, closures, reindexing, duals) + catalogue/ (stability,
-│                 safety, optimal_control, polynomial_optimal_control)
+│                 safety, optimal_control, fixed_gain_optimal_control)
 ├── lifts/        operations.jl (Addition, Maximum, Minimum, Composition, InverseComposition:
 │                 what a lift requires of a template), abstract.jl, dual.jl, compare.jl
 │                 + catalogue/ (twelve lifts)

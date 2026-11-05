@@ -43,7 +43,7 @@ methods of `_safety_family`, `_safety_multiplier` and `_safety_normalization!`,
 in `src/problems/catalogue/safety.jl`. Optimal control with fixed gains needs
 the family in `_FixedGainControlFamily` and a method of
 `_fixed_gain_control_case`, in
-`src/problems/catalogue/polynomial_optimal_control.jl`. Both write their
+`src/problems/catalogue/fixed_gain_optimal_control.jl`. Both write their
 conditions as SetProg inclusions (see [Conditions as set inclusions](@ref)).
 
 ## A problem
