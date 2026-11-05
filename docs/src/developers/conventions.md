@@ -58,8 +58,7 @@ The package adds what a certificate needs:
 
 - what the package needs to know about a family, in `src/problems/sets.jl`:
   `is_applicable`, `is_closed_under`, `reindex`, `has_dual` and `dual`.
-- the constructors, one file per template in `src/templates/catalogue/`, the
-  two copositive ones sharing `copositive.jl`.
+- the constructors, one file per template in `src/templates/catalogue/`.
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge
 inequality is one call with `scale = γ^δ`. A fitted node function is evaluated

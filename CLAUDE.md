@@ -87,7 +87,8 @@ src/
 │                 observer (and the combination rule of `common`), cycles, simulation
 ├── templates/    abstract.jl (the primitives) + catalogue/ (QuadraticTemplate, SumOfSquaresTemplate,
 │                 PiecewiseQuadraticTemplate, PiecewiseLinearTemplate,
-│                 DualPiecewiseLinearTemplate, the copositive pair in copositive.jl)
+│                 DualPiecewiseLinearTemplate, LinearCopositiveTemplate,
+│                 DualCopositiveTemplate)
 ├── problems/     abstract.jl (the interface), certificate.jl (accessors, `common`),
 │                 tight_edges.jl, gauges.jl (the primitives for SetProg families), sets.jl
 │                 (applicability, closures, reindexing, duals) + catalogue/ (stability,

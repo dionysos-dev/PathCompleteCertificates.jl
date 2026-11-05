@@ -18,7 +18,8 @@ Pages = [
     "templates/catalogue/sum_of_squares.jl",
     "templates/catalogue/piecewise_linear.jl",
     "templates/catalogue/dual_piecewise_linear.jl",
-    "templates/catalogue/copositive.jl",
+    "templates/catalogue/linear_copositive.jl",
+    "templates/catalogue/dual_copositive.jl",
 ]
 ```
 
