@@ -23,11 +23,11 @@ Commit the current changes following this project's commit convention.
 
 The subsystem the change belongs to, inferred from the touched paths:
 
-- `src/graphs/` → `graphs`, `src/lifts/` → `lifts`, `src/templates/` → `templates`,
-  `src/objectives/` → `objectives`, `src/synthesis/` → `synthesis`,
-  `src/verification/` → `verification`, `src/sets/` → `sets`.
-- `test/` → `test`, `docs/` → `docs`, `bench/` → `bench`,
-  `repeatability/` → `repeatability`.
+- `src/graphs/` → `graphs`, `src/templates/` → `templates`, `src/problems/` →
+  `problems`, `src/systems/` → `systems`, `src/lifts/` → `lifts`,
+  `src/refinements/` → `refinements`, the common certificate → `common`.
+- `test/` → `test`, `docs/` → `docs`, `docs/src/examples/` and `experiments/` →
+  `examples`.
 - Repo config / CI / tooling → `meta`.
 
 Example: `ADD graphs: indexed path-completeness predicate`
