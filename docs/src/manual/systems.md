@@ -280,8 +280,8 @@ On the small example with the input matrix ``B = (-0.6, 0.8)`` in both
 modes, and the cost ``\ell(x, u) = \|x\|^2 + u^2``, take the policy
 ``u = K x``, with ``K`` the gain of the linear-quadratic regulator designed for
 mode 1. The closed loop of each mode is stable, and every random run has a
-small cost, yet along the alternating sequence the closed loop grows by about
-``1.23`` per step, and the cost grows without bound.
+small cost, yet along the alternating sequence the state, and so the cost,
+grows without bound.
 
 ```@example running
 control_figure([M1, M2], [-0.6; 0.8;;], [1.0 0.0; 0.0 1.0], [1.0;;]) # hide

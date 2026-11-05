@@ -29,10 +29,10 @@ nothing #hide
 # [`refine`](@ref) starts from the common graph and adds nodes where the
 # certificate is tight. By default it splits the node with the most tight
 # outgoing edges ([`TightestNodeSplitting`](@ref)), and the keyword `strategy`
-# chooses another (see [Refining the graph](@ref)). `depth_max` raises the
-# number of graphs it may visit, 5 by default. For each graph it visits, its
-# number of nodes, the certified rate, and the lower bound read from the tight
-# edges:
+# chooses another (see [Refining the graph](@ref)). `depth_max = 10` raises the
+# number of graphs it may visit from its default, 5. For each graph it visits,
+# its number of nodes, the certified rate, and the lower bound read from the
+# tight edges:
 
 trace = refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 10)
 

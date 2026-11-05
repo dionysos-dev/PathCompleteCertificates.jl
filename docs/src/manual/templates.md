@@ -26,8 +26,8 @@ and `graph = common_graph(system)`, solved with Clarabel and HiGHS.
 
 ## What a template changes
 
-The template fixes the shape of the node functions. It changes the bound, and
-the kind of program, so the solver:
+The template fixes the shape of the node functions. It changes the bound and
+the kind of program, and so the solver:
 
 ```@example running
 quadratic = certify(QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
@@ -40,8 +40,8 @@ linear copositive template a linear program, with HiGHS. The latter applies
 here because the matrices have nonnegative entries (see
 [What works with what](@ref)).
 
-The unit set ``\{x : V(x) \le 1\}`` of the certificate that four templates
-find on the running example shows their shapes:
+The unit sets ``\{x : V(x) \le 1\}`` of the certificates that four templates
+find on the running example show their shapes:
 
 ```@setup running
 using Plots
@@ -139,10 +139,12 @@ the piecewise linear one, on the same polytopes, and [`dual`](@ref) maps each
 to the other (see [Duality](@ref)). Fixing the directions of the vertices of
 one fixes the normals of the faces of the other: these are the two polyhedral
 parameterizations of [athanasopoulos2019polyhedral](@citet). Two other
-constructors build the polytopes. `DualPiecewiseLinearTemplate(matrices)`,
-with one invertible matrix ``G_s`` per node, gives parallelotopes with faces
-normal to the rows of ``G_s``, and `DualPiecewiseLinearTemplate(n_nodes, n)`
-sets ``G_s = I`` and gives boxes.
+constructors build the polytopes from matrices.
+`DualPiecewiseLinearTemplate(matrices)`, with one invertible matrix ``G_s``
+per node, takes the rows of ``G_s`` and their opposites as the vertices of
+``\mathcal{P}_s``, so that the unit sets are parallelotopes with faces normal
+to the rows of ``G_s``. `DualPiecewiseLinearTemplate(n_nodes, n)` sets
+``G_s = I``, which gives boxes.
 
 **Copositive.** For positive systems, the nonnegative orthant is invariant,
 and the copositive templates restrict the node functions to it

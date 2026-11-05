@@ -28,8 +28,8 @@ end
     common_graph(system)
     common_graph(n_modes)
 
-The graph of a common Lyapunov function, one node with a loop per mode: the De
-Bruijn graph of order `0`.
+One node with a loop per mode, the De Bruijn graph of order `0`. Its
+certificate is a single function, for stability a common Lyapunov function.
 """
 common_graph(system::_HS.HybridSystem) = common_graph(n_modes(system))
 

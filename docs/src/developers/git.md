@@ -41,7 +41,8 @@ line.
 
 The module is the directory touched: `graphs`, `systems`, `templates`,
 `problems`, `lifts`, `refinements`, `common`, `test`, `docs`, `examples` for
-`docs/src/examples/`, and `meta` for configuration, CI and tooling.
+`docs/src/examples/` and `experiments/`, and `meta` for configuration, CI and
+tooling.
 
 ```
 ADD problems: optimal control edge inequality

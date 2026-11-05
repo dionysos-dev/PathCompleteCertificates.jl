@@ -1,16 +1,20 @@
 # CLAUDE.md
 
-Operating guide for AI coding agents working in **PathCompleteCertificates.jl**. The developer
-pages of the manual, `docs/src/developers/`, say the same for a human reader. Read this before
-changing anything under `src/` or `docs/`.
+Operating guide for AI coding agents working in **PathCompleteCertificates.jl**. The Developers
+pages of the documentation, `docs/src/developers/`, say the same for a human reader. Read this
+before changing anything under `src/` or `docs/`.
 
 ## 1. What this package is
 
 Certificates for switched linear systems built on **path-complete graphs**. A certificate is
-three things: a **template**, the family the node functions are drawn from; a **labelled
-graph** whose labels are the modes, with one node function `V_s` per node; and one **edge
-inequality** per edge, set by the problem. When the graph is path-complete, every switching
-sequence is read along a path, and the edge inequalities imply a property of the whole system.
+three things:
+
+- a **template**, the family the node functions are drawn from,
+- a **labelled graph** whose labels are the modes, with one node function `V_s` per node,
+- one **edge inequality** per edge, set by the problem.
+
+When the graph is path-complete, every switching sequence is read along a path, and the edge
+inequalities imply a property of the whole system.
 
 The graph is the object of study: built, compared with another, and refined against its own
 certificate. A change that makes the graph less manipulable works against the package.
@@ -21,7 +25,7 @@ Only the edge inequality changes between problems, so there are **two independen
 one type hierarchy: the **template** says what the node functions are, the **problem** says
 what the edge inequality is. A template supplies primitives, a problem composes them, and
 neither names the other. A template is an **instance**, never a type, because some carry
-per-node data; a vector gives one template per node.
+per-node data. A vector gives one template per node.
 
 **Templates are SetProg families.** A template is a subtype of `SetProg.AbstractVariable`, and
 [SetProg.jl](https://github.com/blegat/SetProg.jl), a direct dependency, provides its set
@@ -34,11 +38,11 @@ metadata, in `problems/sets.jl`. Every primitive is public, since a contributor 
 add_function_variables!(model, family, dimension, node)    # the node function, a set variable
 add_normalization!(model, family, V)                       # excludes V ≡ 0
 add_decrease!(model, family, V_src, V_dst, A; scale = 1)   # scale·V_src(x) ≥ V_dst(A x) for every x
-decrease_slack(family, V_src, V_dst, A; scale = 1)         # the same, read off a solution; 0 when tight
+decrease_slack(family, V_src, V_dst, A; scale = 1)         # the same, read off a solution, 0 when tight
 homogeneity_degree(family)                                 # δ: V(cx) = c^δ V(x)
 solution_value(family, V)                                  # the fitted SetProg set
 is_applicable(family, system)                              # does the template apply at all?
-is_closed_under(family, ::Operation, system)               # default false; which lifts are valid
+is_closed_under(family, ::Operation, system)               # which lifts are valid, false by default
 reindex(family, origins)                                   # per-node data follows a refined graph
 has_dual(family), dual(family), dual(family, set)          # the dual norms, when they exist
 
@@ -49,15 +53,15 @@ certify(template, graph, problem; optimizer, ...)          # the best certificat
 objective, optimality_gap, edge_slacks                     # what refine reads
 
 # The common certificate: each node value from the problem, their combination from the graph
-# alone (graphs/observer.jl); the public method is in problems/certificate.jl.
+# alone (graphs/observer.jl). The public method is in problems/certificate.jl.
 common(graph, problem, Vs, x)
 ```
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge inequality is one call
 with `scale = γ^δ`. Stability and safety write their edge inequality once, in a private
-`_edge_decrease`, which both builds the model and measures the slacks; optimal control builds
-its model in `S, Y` and measures its slacks in `P, K`. Each problem owns its certificate type;
-what it certifies is a typed field (`rate`, `margin`, `gains`), and the shared fields live once
+`_edge_decrease`, which both builds the model and measures the slacks. Optimal control builds
+its model in `S, Y` and measures its slacks in `P, K`. Each problem owns its certificate type.
+What it certifies is a typed field (`rate`, `margin`, `gains`), and the shared fields live once
 in `CertificateData`.
 
 Stability and safety use the families directly, as SetProg inclusions. Optimal control
@@ -67,7 +71,7 @@ the Bellman inequality as a SetProg inclusion through the polar `L_δ` sum, in
 `problems/catalogue/fixed_gain_optimal_control.jl`.
 
 **A new problem, lift or refinement strategy is one file in the `catalogue/` of its
-directory, and changes no other code**; its wiring (the include, a test, a reference page,
+directory, and changes no other code.** Its wiring (the include, a test, a reference page,
 What works with what) is listed in `docs/src/developers/extending.md`. A new template is a
 SetProg family: its constructor goes in `templates/catalogue/`, and a family new to the
 package needs its methods in `problems/gauges.jl` and `problems/sets.jl`, and for safety and
@@ -100,66 +104,72 @@ src/
                   BestOfTightEdgeLifts)
 ```
 
-`ext/` holds one extension, for RecipesBase: plots of a `Trajectory`. The sum-of-squares and
-piecewise quadratic templates need SumOfSquares loaded, through SetProg's own extension. `test/` mirrors `src/`, with the template tests in
-`test/problems/`; every file is standalone-runnable and listed in `TEST_FILES`. `docs/` holds
-`make.jl`, `graph_drawing.jl` (the drawings of graphs shared by the pages) and `src/`. No
-`utils.jl`.
+- `ext/` holds one extension, for RecipesBase: plots of a `Trajectory`. The sum-of-squares and
+  piecewise quadratic templates need SumOfSquares loaded, through SetProg's own extension.
+- `test/` mirrors `src/`, with the template tests in `test/problems/`. Every test file is
+  standalone-runnable and listed in `TEST_FILES`.
+- `docs/` holds `make.jl`, `graph_drawing.jl` (the drawings of graphs shared by the pages) and
+  `src/`.
+- `experiments/` holds the numerical experiments, in their own environment. They write to
+  `experiments/results/`, which is ignored.
+
+No `utils.jl`.
 
 ## 4. Code conventions
 
 The [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/) is the authority.
-Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public names `_`-prefixed;
-mutating functions end in `!`; predicates are `is_*`; no `get_`/`compute_`/`build_` prefixes,
-except `get_graph`, `get_template` and `get_problem`, whose plain names are the variable names
-of `certify(template, graph, problem)`;
-no acronyms in public names; one word per concept, and **the papers' word** whenever one exists
-(`common`, `valid`, `simulation`, `tight`, `common_graph`). The template comes first in
-`certify(template, graph, problem)`, the style guide's argument order. Methods over field
-access. Never hard-code `Float64` in a signature. No `Base.show`.
+
+- Types CamelCase, functions snake_case, constants `UPPER_CASE`, non-public names `_`-prefixed.
+- Mutating functions end in `!`, and predicates are `is_*`.
+- No `get_`, `compute_` or `build_` prefixes, except `get_graph`, `get_template` and
+  `get_problem`, whose plain names are the variable names of `certify(template, graph, problem)`.
+- No acronyms in public names. One word per concept, and **the papers' word** whenever one
+  exists (`common`, `valid`, `simulation`, `tight`, `common_graph`).
+- The template comes first in `certify(template, graph, problem)`, the style guide's argument
+  order.
+- Methods over field access. Never hard-code `Float64` in a signature. No `Base.show`.
 
 ## 5. Documentation conventions
 
-The documentation is part of the package; write it with the same care as the code.
+The documentation is part of the package. Write it with the same care as the code.
 
-- **Structure.** Introduction (index, should you use it, installation); Manual, Part I (systems
-  and problems, how a certificate works, choosing a template, choosing a graph, reading a
-  certificate), Part II (refining the graph, lifts), Part III (comparing graphs, duality),
-  then What works with what; Tutorials (`docs/src/examples/`, Literate); Bibliography; API
-  Reference; Developers. There is no separate theory section: the manual explains each result
+- **Structure.** The page tree is in `docs/make.jl`: Introduction, Manual (three parts, then
+  What works with what), Tutorials (`docs/src/examples/`, Literate), Bibliography, API
+  Reference, Developers. There is no separate theory section: the manual explains each result
   where it is used.
 - **One running example**, defined in Systems and problems. A page keeps its data in a hidden
   `@setup` block and says which names its code uses.
 - **One word per concept, the code's word**: node function, edge inequality, common certificate,
-  tight edge, lift, valid, simulation, "at least as good". "Certificate" in general; "bound"
+  tight edge, lift, valid, simulation, "at least as good". "Certificate" in general, "bound"
   and "rate" for stability only.
-- **The paper's notation**: a graph `G = (S, E)` with edges `(s, d, i)` from `s` to `d`
+- **One notation**: a graph `G = (S, E)` with edges `(s, d, i)` from `s` to `d`
   labelled by mode `i`, node functions `V_s`, the rate `γ`, the degree `δ` of the node functions
   (`p` is the exponent of the cost), the sets `X_0` and `X_u`, the stage cost `ℓ`, the
   worst-case cost `J_φ` and the robust value function `J^⋆`.
 - **Every number in the prose is the output of an example on the page.** Check them again when
   the code changes.
 - **What works with what** is the single reference for the supported combinations and the
-  gaps; update it with every extension.
-- **Style.** A page opens with what it is for; definitions in math when shorter; lists for
-  parallel items; graph drawings from `docs/graph_drawing.jl`. No em dashes. No claim that one
-  template is more or less conservative than another.
+  gaps. Update it with every extension.
+- **Style.** A page opens with what it is for. Definitions go in math when shorter, parallel
+  items in lists, and graph drawings come from `docs/graph_drawing.jl`. No em dashes, and no
+  semicolons between clauses: write two sentences. No claim that one template is more or less
+  conservative than another.
 - **Citations.** Cite a result where the manual uses it, as `[key; Thm. N](@cite)`, and keep
   the Bibliography's table of what the package takes from each paper current. Read every
-  definition and theorem number in the PDF in `sources/` before writing it; no citation
-  without its entry in `docs/src/references.bib`.
+  definition and theorem number in the paper it is attributed to before writing it. No
+  citation without its entry in `docs/src/references.bib`.
 
 ## 6. Gotchas
 
-- **A lift is an operation on a graph; `refine` is an algorithm that applies lifts.** Every
+- **A lift is an operation on a graph, and `refine` an algorithm that applies lifts.** Every
   lift preserves path-completeness. A lift copies node functions (splits), chains edge
   inequalities (products), combines them (min, max, sum) or composes them with the dynamics
-  (compositions); the first two require nothing. What a lift supports is the methods it has
+  (compositions). The first two require nothing. What a lift supports is the methods it has
   (`lift` on the whole graph, at edges, at a node), never a flag. `compare` keeps the lifts that
-  require an operation; the splits add nothing there, since `G` simulates its split through the
+  require an operation. The splits add nothing there, since `G` simulates its split through the
   origins.
 - **`TightestNodeSplitting` follows Ninite & Jungers' Algorithm 1, with a finer split.** Their
-  Def. 3 makes one copy per out-neighbour; `OutSplitLift` makes one copy per outgoing edge. Their
+  Def. 3 makes one copy per out-neighbour, and `OutSplitLift` one copy per outgoing edge. Their
   Prop. 3 still holds for it. From `common_graph`, the first step gives the dual De Bruijn graph
   of order 1, where their lift would leave the one-node graph unchanged.
 - **Min, max and sum lifts are never built to decide.** A relation decides min, the relation on
@@ -170,31 +180,32 @@ The documentation is part of the package; write it with the same care as the cod
   closure, never an override.
 - **Duality is an involution on everything**: graphs, systems, templates, certificates, lifts,
   operations. Every backward lift is `dual` of a forward one.
-- **A word graph is sound for stability only.** Safety, optimal control and `common` throw on a
-  `WordGraph` and name `expanded_form`.
+- **A word graph is sound for stability only.** Safety, optimal control, `common`, `compare`
+  and `simulation` throw on an edge that reads two or more modes, and name `expanded_form`.
 - **The adapter invariant.** Nothing outside `graphs/queries.jl` touches HybridSystems' graph
-  internals; `grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries` is
+  internals: `grep -rn "_HS\.\(GraphAutomaton\|add_transition!\|Σ\)" src | grep -v queries` is
   empty. Build graphs with `empty_graph`, `WordGraph` or `_empty_like`, which chooses the kind
   by dispatch, never by keyword, so the constructors stay type-stable.
 - **Three predicates.** `is_path_complete` is the soundness question, decided by the subset
-  construction; `is_complete` and `is_co_complete` are sufficient only, and decide the form of
+  construction. `is_complete` and `is_co_complete` are sufficient only, and decide the form of
   `common`. Always pass the system's modes, `1:n_modes(system)`: `is_path_complete(graph)` alone
-  asks about the modes the graph happens to use. Constrained switching is not supported;
-  `n_modes` refuses a system whose automaton is not a `OneStateAutomaton`.
-- **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once;
+  asks about the modes the graph happens to use. Optimal control requires a complete graph.
+  Constrained switching is not supported: `n_modes` refuses a system whose automaton is not a
+  `OneStateAutomaton`.
+- **Index adjacency before scanning it.** `_successors` and `_predecessors` are built once, and
   the star queries cost the degree. Path-completeness is PSPACE-complete, checked once per
-  solve; `check_path_complete = false` waives it and must never become the default.
+  solve. `check_path_complete = false` waives it and must never become the default.
 - **`certify` is the single entry point.** For stability without a `rate`, it bisects to
   `rtol = 1e-6`, the default of `refine`, and keeps the certificate of its last feasible solve:
   solving again at the final rate, within solver tolerance of the boundary, may fail.
 - **Stability slacks are relative.** The normalization bounds the node functions from below
-  only, so their scale is arbitrary; `edge_slacks` for stability divides by `rate^δ` times
-  the largest node value on the unit vectors. A tight edge then has a slack of the order of
-  `rtol`, and `atol = 1e-4`, at least ten times it, sees it. Absolute slacks once hid the tight
-  edges of the running example, and `refine` stopped `EXHAUSTED` instead of `OPTIMAL`.
+  only, so their scale is arbitrary. `edge_slacks` for stability divides by `rate^δ` times the
+  largest node value on the unit vectors. A tight edge then has a slack of the order of `rtol`,
+  and `atol = 1e-4`, at least ten times it, sees it. Absolute slacks once hid the tight edges
+  of the running example, and `refine` stopped `EXHAUSTED` instead of `OPTIMAL`.
 - **A fitted node function is a SetProg set, not a callable.** Evaluate it with
-  `node_value(problem, V, x)`; `certificate(x)` evaluates the common certificate.
-- **Clarabel's chordal decomposition crashes on optimal-control programs.** Pass
+  `node_value(problem, V, x)`. `certificate(x)` evaluates the common certificate.
+- **Clarabel's chordal decomposition fails on optimal-control programs.** Pass
   `JuMP.optimizer_with_attributes(Clarabel.Optimizer, "chordal_decomposition_enable" => false)`.
 
 ## 7. Commands
@@ -204,27 +215,32 @@ julia --project=test test/graphs/path_completeness.jl                # one file
 julia --project -e 'using Pkg; Pkg.test(; test_args = ["--fast"])'   # skips :slow suites
 julia --project -e 'using Pkg; Pkg.test()'                           # the gate, before committing
 julia -e 'using JuliaFormatter; format(".")'                         # required before every commit
-julia --project=docs docs/make.jl                                    # everything; minutes
+julia --project=docs docs/make.jl                                    # everything, in minutes
 PCC_SKIP_LITERATE=true julia --project=docs docs/make.jl             # skips the tutorials
 ```
 
-Iterate in one long-lived `julia --project=test` session with Revise; run the cold `Pkg.test()`
-once at the end. For the docs, check a figure or a number with a short script, build without
-the tutorials while iterating, and run one full build before committing. The module exports
-the names a user calls, listed at the top of `src/PathCompleteCertificates.jl`. The
+Iterate in one long-lived `julia --project=test` session with Revise, and run the cold
+`Pkg.test()` once at the end. For the docs, check a figure or a number with a short script,
+build without the tutorials while iterating, and run one full build before committing.
+
+The module exports the names a user calls, listed at the top of
+`src/PathCompleteCertificates.jl`, and a new user-facing name is added to that list. The
 primitives for a new template or problem and the graph queries stay unexported, except
-`node_value`, which a user calls to evaluate a node function. A new
-user-facing name is added to that list. `test/docstrings.jl` checks every name reachable as
-`PathCompleteCertificates.name`, exported or not, and every docstring must land in an
-`@autodocs` block under `docs/src/reference/`. A stale `Manifest.toml` fails `Pkg.test()` before any test
-runs: delete it and `Pkg.resolve()` in the environment that failed.
+`node_value`, which a user calls to evaluate a node function. `test/docstrings.jl` checks that
+every name reachable as `PathCompleteCertificates.name`, exported or not, has a docstring, and
+the docs build checks that every docstring lands in an `@autodocs` block under
+`docs/src/reference/`.
+
+A stale `Manifest.toml` fails `Pkg.test()` before any test runs: delete it and `Pkg.resolve()`
+in the environment that failed.
 
 ## 8. Git
 
-Never commit to `master`; branch per change; format before committing; commit or push only when
-the user asks; the user opens the PR. Commit message: `ACTION module: description`, lowercase,
-no trailing period, ≤ 60 chars, with `ACTION` one of `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`,
-`REV` and the module the touched subsystem (`graphs`, `templates`, `problems`, `systems`,
-`lifts`, `refinements`, `common`, `test`, `docs`, `examples`, `meta`). Do **not** add a
-`Co-Authored-By` line. `plan.md`, `benchmarking.md`, the `sources/` folder (the papers and
-reviewers' documents) and the paper drafts stay untracked.
+- Never commit to `master`. Branch per change.
+- Format before committing. Commit or push only when the user asks, and the user opens the PR.
+- Commit message: `ACTION module: description`, lowercase, no trailing period, at most 60
+  characters. `ACTION` is one of `ADD`, `IMP`, `FIX`, `REF`, `REM`, `MOV`, `REV`. The module is
+  the touched subsystem: `graphs`, `templates`, `problems`, `systems`, `lifts`, `refinements`,
+  `common`, `test`, `docs`, `examples` (`docs/src/examples/` and `experiments/`) or `meta`
+  (configuration, CI and tooling).
+- Do **not** add a `Co-Authored-By` line.

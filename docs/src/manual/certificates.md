@@ -333,8 +333,9 @@ gain ``K_s`` [ninite2026path](@cite). The program:
 \end{aligned}
 ```
 
-where ``\mu(V_s)`` measures the size of ``V_s``, which keeps the bound small,
-such as ``\log\det P_s`` for a quadratic form ``V_s(x) = x^\top P_s x``.
+where ``\mu(V_s)`` measures the size of ``V_s``, such as ``\log\det P_s`` for
+a quadratic form ``V_s(x) = x^\top P_s x``: minimizing it keeps the bound
+small.
 
 The edge inequality is not convex in ``V_s`` and ``K_s`` together. With the
 quadratic template, the change of variables to ``P_s^{-1}`` and

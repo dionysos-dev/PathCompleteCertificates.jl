@@ -1,8 +1,9 @@
 """
     PathCompleteCertificates
 
-Certificates for switched systems built on path-complete graphs: a labelled
-graph, a function from a template at each node, and one inequality per edge.
+Certificates for switched linear systems built on path-complete graphs: a
+labelled graph, a node function from a template at each node, and one edge
+inequality per edge.
 """
 module PathCompleteCertificates
 

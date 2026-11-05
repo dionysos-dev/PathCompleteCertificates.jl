@@ -1,8 +1,9 @@
 """
     StabilityProblem(system)
 
-Stability problem for an input-free switched linear system, certified by
-[`certify`](@ref) at the smallest rate, or at a given one.
+The stability problem of an input-free switched linear system: bound its joint
+spectral radius. [`certify`](@ref) finds the smallest rate, or checks a given
+one.
 """
 struct StabilityProblem{S} <: AbstractProblem
     system::S
@@ -51,8 +52,9 @@ end
                        rate = 1, check_path_complete = true, conditioning_bound = Inf)
 
 Build, without solving, the SetProg model of the feasibility problem
-`V_d(A_w x) <= rate^(δ |w|) * V_s(x)` for every edge `(s, d, w)`, with `δ` the
-template's degree and `|w|` the length of the word.
+``V_d(A_w x) \\le \\gamma^{\\delta |w|} V_s(x)`` for every edge ``(s, d, w)``, with
+``\\gamma`` the `rate`, ``\\delta`` the degree of the template and ``|w|`` the
+length of the word.
 """
 function optimization_model(
     template::_SetFamily,
@@ -333,12 +335,13 @@ end
 """
     is_jsr_exact(certificate; atol = 1e-4) -> Bool
 
-Whether every node has at most one outgoing edge in the
-[`tight_subgraph`](@ref), which proves the rate is the joint spectral radius
-[ninite2026lifting; Thm. 4](@cite). `false` means unknown. At the optimal rate
-the tight subgraph keeps the rate [ninite2026lifting; Prop. 1](@cite), so it
-contains a cycle. Without one, `atol` was too small to see the active edges,
-and the answer is `false`. Throws on a graph with words: use `expanded_form`.
+Whether the [`tight_subgraph`](@ref) proves that the rate is the joint spectral
+radius: every node has at most one outgoing tight edge
+[ninite2026lifting; Thm. 4](@cite), and the tight edges contain a cycle.
+`false` means unknown. At the optimal rate the tight subgraph keeps the rate
+[ninite2026lifting; Prop. 1](@cite), so it contains a cycle, and a tight
+subgraph without one means that `atol` was too small to see the active edges.
+Throws on a graph with words: use [`expanded_form`](@ref).
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = _TIGHT_ATOL)
     _require_one_mode_per_edge(get_graph(certificate), "is_jsr_exact")
@@ -354,7 +357,7 @@ end
     jsr_lower_bound(certificate; atol = 1e-4, max_length = nothing)
 
 A lower bound on the joint spectral radius, valid for any `atol`: the largest
-`ρ(A_w)^{1/|w|}` over the words `w` read along the simple cycles of at most
+``\\rho(A_w)^{1/|w|}`` over the words ``w`` read along the simple cycles of at most
 `max_length` edges of the [`tight_subgraph`](@ref), or `0` if there are none.
 """
 function jsr_lower_bound(

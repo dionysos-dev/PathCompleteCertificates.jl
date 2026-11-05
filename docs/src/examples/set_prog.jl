@@ -111,7 +111,8 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 # ## What it proves
 #
-# The rate of degree 6 is about 0.3% above the joint spectral radius:
+# The rate of the sum of squares of degree 6 is about 0.3% above the joint
+# spectral radius:
 
 last(bounds) / jsr
 
