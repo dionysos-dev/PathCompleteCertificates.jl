@@ -59,23 +59,46 @@ conditions are on the graph:
 
 ## Lifts and templates
 
-| Template | Lifts valid for it, beyond the identity |
-| :-- | :-- |
-| [`QuadraticTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
-| [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition. |
-| [`SumOfSquaresTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
-| [`PiecewiseLinearTemplate`](@ref) | sum if every node has the same partition. Through its dual: min, if that partition is a cross-polytope. |
-| [`DualPiecewiseLinearTemplate`](@ref) | max if every node has the same partition, a cross-polytope. Through its dual: sum if every node has the same partition. |
-| [`LinearCopositiveTemplate`](@ref) | sum. Composition if the matrices are nonnegative with no zero column. Backward composition if they are invertible with nonnegative inverses. Through its dual: min. |
-| [`DualCopositiveTemplate`](@ref) | max. Through its dual: sum, composition if the matrices are invertible with nonnegative inverses, and backward composition if they are nonnegative with no zero row. |
+The identity and the lifts used by refinement, the splits and the products,
+are valid for every template. For the lifts that combine the node functions or
+compose them with the dynamics:
 
-The lifts used by refinement, the splits and the products, are valid for every
-template. [`is_valid`](@ref) answers for a given template and system.
+| Template | [`MinLift`](@ref) | [`MaxLift`](@ref) | [`SumLift`](@ref) | [`CompositionLift`](@ref) | [`BackwardCompositionLift`](@ref) |
+| :-- | :-: | :-: | :-: | :-: | :-: |
+| [`QuadraticTemplate`](@ref) | × | × | ✓ | ✓ ¹ | ✓ ¹ |
+| [`PiecewiseQuadraticTemplate`](@ref) | × | × | ✓ ² | × | × |
+| [`SumOfSquaresTemplate`](@ref) | × | × | ✓ | ✓ ¹ | ✓ ¹ |
+| [`PiecewiseLinearTemplate`](@ref) | ✓ ³ | × | ✓ ² | × | × |
+| [`DualPiecewiseLinearTemplate`](@ref) | × | ✓ ³ | ✓ ² | × | × |
+| [`LinearCopositiveTemplate`](@ref) * | ✓ | × | ✓ | ✓ ⁴ | ✓ ⁵ |
+| [`DualCopositiveTemplate`](@ref) * | × | ✓ | ✓ | ✓ ⁵ | ✓ ⁶ |
+
+\* For positive systems, as in the table above.
+
+¹ If the matrices are invertible.
+
+² If every node has the same partition.
+
+³ If every node has the same partition, and it is a cross-polytope.
+
+⁴ If no matrix has a zero column.
+
+⁵ If the matrices are invertible with nonnegative inverses.
+
+⁶ If no matrix has a zero row.
+
+× Not valid: the template is not closed under the operation of the lift, nor
+its dual under the dual operation.
+
+Some of these lifts are valid through the dual template, which is closed under
+the dual operation (see [Combinations and compositions](@ref)).
+[`is_valid`](@ref)`(L, template, system)` answers for a given template and
+system.
 
 ## Refinement and comparison
 
 [`refine`](@ref) runs on [`StabilityProblem`](@ref) only, with the templates
-without † in the table above. [`compare`](@ref) reads graphs with one mode per
+without † in the table of templates and problems. [`compare`](@ref) reads graphs with one mode per
 edge.
 
 ## Duals
