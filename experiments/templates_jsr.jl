@@ -4,8 +4,8 @@
 #
 # Run from the repository root:
 #
-#     julia --project=numerical_experiments -e 'using Pkg; Pkg.instantiate()'
-#     julia --project=numerical_experiments numerical_experiments/templates_jsr.jl
+#     julia --project=experiments -e 'using Pkg; Pkg.instantiate()'
+#     julia --project=experiments experiments/templates_jsr.jl
 #
 # Stability: the upper bound on the JSR. The lower bound rho(A_1) is the JSR on
 # this pair; a bound below it signals a solver tolerance too loose.
@@ -18,7 +18,7 @@
 # The polyhedral templates need SetProg.jl at its main branch, see the README.
 #
 # Prints both tables, with the time of each solve, and writes them to
-# numerical_experiments/results/templates_jsr.csv and templates_safety.csv.
+# experiments/results/templates_jsr.csv and templates_safety.csv.
 
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP, SetProg

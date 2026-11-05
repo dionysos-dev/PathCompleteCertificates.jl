@@ -5,10 +5,10 @@ environment, which adds the solvers, the sum-of-squares packages and Plots to th
 repository:
 
 ```
-julia --project=numerical_experiments -e 'using Pkg; Pkg.instantiate()'
-julia --project=numerical_experiments numerical_experiments/three_problems.jl
-julia --project=numerical_experiments numerical_experiments/templates_jsr.jl
-julia --project=numerical_experiments numerical_experiments/refinement.jl
+julia --project=experiments -e 'using Pkg; Pkg.instantiate()'
+julia --project=experiments experiments/three_problems.jl
+julia --project=experiments experiments/templates_jsr.jl
+julia --project=experiments experiments/refinement.jl
 ```
 
 | Script | Result |
@@ -21,5 +21,5 @@ The environment takes `SetProg.jl` at its `main` branch, which the polyhedral sa
 need until its next release.
 
 Times depend on the machine and the solver version; the bounds should match the paper to the
-digits shown. Results, figures included, go under `numerical_experiments/results/`, which is
+digits shown. Results, figures included, go under `experiments/results/`, which is
 ignored by git.

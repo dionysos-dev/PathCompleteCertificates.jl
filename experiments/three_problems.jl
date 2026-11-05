@@ -4,10 +4,10 @@
 #
 # Run from the repository root:
 #
-#     julia --project=numerical_experiments numerical_experiments/three_problems.jl
+#     julia --project=experiments experiments/three_problems.jl
 #
 # Prints the numbers quoted in the text (rate, margin, cost bound V(x0) and the
-# largest simulated cost) and writes numerical_experiments/results/three_problems.pdf.
+# largest simulated cost) and writes experiments/results/three_problems.pdf.
 
 import PathCompleteCertificates as PCC
 import Clarabel, JuMP

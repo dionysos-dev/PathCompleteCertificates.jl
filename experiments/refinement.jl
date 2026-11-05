@@ -4,10 +4,10 @@
 #
 # Run from the repository root:
 #
-#     julia --project=numerical_experiments numerical_experiments/refinement.jl
+#     julia --project=experiments experiments/refinement.jl
 #
 # Prints, for each run, the time, size and bound of every graph visited, and the
-# edges of the last refined graph; writes numerical_experiments/results/refinement.pdf.
+# edges of the last refined graph; writes experiments/results/refinement.pdf.
 
 import PathCompleteCertificates as PCC
 import Clarabel, JuMP
