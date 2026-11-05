@@ -124,7 +124,7 @@ problem = StabilityProblem(system)
 QUADRATIC = QuadraticTemplate()
 TEMPLATES = [
     "quadratic" => QUADRATIC,
-    "copositive" => LinearCopositiveTemplate(),
+    "linear copositive" => LinearCopositiveTemplate(),
     "dual copositive" => DualCopositiveTemplate(),
 ]
 nothing #hide
@@ -161,7 +161,7 @@ combination(row) = join(
 )
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:n_nodes(G2)]
 
-# ## The template decides
+# ## The answer depends on the template
 #
 # `G4` against the common graph: its min and max lifts simulate `G0`, its sum
 # lift does not. So `G4` gives no better certificate than `G0` for the
@@ -171,10 +171,10 @@ combination(row) = join(
 c40 = compared(G4, G0)
 outcome(c40)
 
-# `G3`, with as many nodes and edges, is no better than `G0` for any template
-# for which the sum lift is valid: its sum lift simulates `G0`, with a single
-# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``: a certificate on `G0` built from any
-# certificate on `G3`.
+# `G3`, with as many nodes and edges as `G4`, is no better than `G0` for any
+# template for which the sum lift is valid. Its sum lift simulates `G0` with a
+# single row, ``2V_a + V_b + V_c + 2V_d + 2V_e``, which builds a certificate on
+# `G0` from any certificate on `G3`.
 
 c30 = compared(G3, G0)
 Dict(simulations(c30))[SumLift()]

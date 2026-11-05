@@ -16,8 +16,8 @@ The graph influences how good the certificate can be and how much it costs,
 and a generic graph pays for nodes everywhere: the De Bruijn graph of order
 ``k`` has ``M^k`` nodes whatever the system, and on the running example,
 orders 3 and 4 double the nodes for no better bound (see
-[Choosing a graph](@ref)). [Comparing graphs](@ref) tells that a graph is
-never worse than another, not which graph suits the system at hand.
+[Choosing a graph](@ref)). [Comparing graphs](@ref) tells whether a graph is
+at least as good as another, not which graph suits the system at hand.
 Refinement builds the graph for the system, from its own certificate
 [athanasopoulos2019polyhedral, ninite2026lifting](@cite). It runs on stability
 only.
@@ -82,8 +82,9 @@ The keyword `strategy` chooses where to lift.
 
 So the strategy splits the node with the most tight outgoing edges, among
 those with at least two, into one copy per outgoing edge, with
-[`OutSplitLift`](@ref). Among nodes with as many tight edges, it splits the
-one with the fewest outgoing edges, which adds the fewest nodes. This split,
+[`OutSplitLift`](@ref). Among nodes with the same number of tight outgoing
+edges, it splits the one with the fewest outgoing edges, which adds the fewest
+nodes. This split,
 one copy per outgoing edge, is finer than the paper's, and Prop. 3 still
 holds for it. From the common graph, the first step gives the dual De Bruijn
 graph of order 1. When no node has two tight outgoing edges,

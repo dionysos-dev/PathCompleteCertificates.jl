@@ -4,9 +4,9 @@ CurrentModule = PathCompleteCertificates
 
 # Lift reference
 
-A **lift** is an operation on a path-complete graph whose result is at least
-as good for every template the lift is valid for. [`refine`](@ref) applies
-lifts, and [`compare`](@ref) uses them to order two graphs. See
+A **lift** maps a path-complete graph to another one, and is valid for a
+template when the lifted graph is at least as good for it. [`refine`](@ref)
+applies lifts, and [`compare`](@ref) uses them to order two graphs. See
 [Lifts](@ref).
 
 ## The interface

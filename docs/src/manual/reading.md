@@ -66,8 +66,8 @@ for diagnosis.
 | [`status`](@ref)`(c)` | the termination status of the solver |
 
 [`node_value`](@ref)`(get_problem(c), V, x)` evaluates a node function `V` at
-the state `x`, whatever the problem: a node function may be a SetProg set
-rather than a callable. Calling the certificate at a state evaluates its common certificate (see
+the state `x`, whatever the problem: a node function is a SetProg set, not a
+callable. Calling the certificate at a state evaluates its common certificate (see
 [How a certificate works](@ref)):
 
 | Certificate | ``V(x)`` |
