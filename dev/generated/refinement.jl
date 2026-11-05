@@ -14,7 +14,7 @@ nothing #hide
 
 trace = refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 10)
 
-steps = [
+progress = [
     (n_nodes(graph), certificate.rate, jsr_lower_bound(certificate)) for
     (graph, certificate) in zip(graphs(trace), certificates(trace))
 ]
@@ -35,8 +35,8 @@ left = plot(;
 )
 plot!(
     left,
-    first.(steps),
-    getindex.(steps, 2);
+    first.(progress),
+    getindex.(progress, 2);
     marker = :circle,
     lw = 2,
     color = :black,
@@ -44,8 +44,8 @@ plot!(
 )
 plot!(
     left,
-    first.(steps),
-    last.(steps);
+    first.(progress),
+    last.(progress);
     marker = :circle,
     lw = 2,
     ls = :dash,

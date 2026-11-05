@@ -8,8 +8,9 @@ const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
 
 A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
-problem = StabilityProblem(switched_system(A))
-graph = common_graph(problem.system)
+system = switched_system(A)
+problem = StabilityProblem(system)
+graph = common_graph(system)
 
 certified(template) = certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)
 nothing #hide
@@ -32,9 +33,9 @@ templates = [
     "sum of squares, degree 4" => SumOfSquaresTemplate(2),
     "sum of squares, degree 6" => SumOfSquaresTemplate(3),
 ]
-certificates = [name => certified(template) for (name, template) in templates]
+fits = [name => certified(template) for (name, template) in templates]
 
-[name => certificate.rate for (name, certificate) in certificates]
+[name => certificate.rate for (name, certificate) in fits]
 
 jsr = maximum(abs, LinearAlgebra.eigvals(A[1] * A[2]^4))^(1 / 5)
 
@@ -46,17 +47,17 @@ left = plot(;
     legend = :outerbottom,
     title = "the sets V ≤ 1",
 )
-for (name, certificate) in certificates
+for (name, certificate) in fits
     δ = PathCompleteCertificates.homogeneity_degree(get_template(certificate))
     points = [d ./ certificate(d)^(1 / δ) for d in directions]
     radius = maximum(LinearAlgebra.norm, points)
     plot!(left, first.(points) ./ radius, last.(points) ./ radius; lw = 2, label = name)
 end
 
-rates = [certificate.rate for (_, certificate) in certificates]
+bounds = [certificate.rate for (_, certificate) in fits]
 right = bar(
     1:5,
-    rates;
+    bounds;
     color = 1:5,
     label = "",
     legend = :topright,
@@ -70,6 +71,6 @@ hline!(right, [jsr]; color = :black, ls = :dash, lw = 2, label = "joint spectral
 
 plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
-last(rates) / jsr
+last(bounds) / jsr
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

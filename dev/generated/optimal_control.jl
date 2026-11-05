@@ -5,6 +5,7 @@ import Random
 using Plots
 
 const TEMPLATE = QuadraticTemplate()
+# Clarabel's chordal decomposition fails on optimal-control programs.
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,

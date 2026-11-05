@@ -6,8 +6,9 @@ import SetProg, SumOfSquares
 using Plots
 
 const OPTIMIZER = Clarabel.Optimizer</code></pre><h2 id="The-system"><a class="docs-heading-anchor" href="#The-system">The system</a><a id="The-system-1"></a><a class="docs-heading-anchor-permalink" href="#The-system" title="Permalink"></a></h2><p>The rotation and the shear of <a href="../stability/#Bound-the-joint-spectral-radius-of-my-system">Bound the joint spectral radius of my system</a>, on the common graph: every difference below comes from the template.</p><pre><code class="language-julia hljs">A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
-problem = StabilityProblem(switched_system(A))
-graph = common_graph(problem.system)
+system = switched_system(A)
+problem = StabilityProblem(system)
+graph = common_graph(system)
 
 certified(template) = certify(template, graph, problem; optimizer = OPTIMIZER, rtol = 1e-4)</code></pre><h2 id="Five-templates"><a class="docs-heading-anchor" href="#Five-templates">Five templates</a><a id="Five-templates-1"></a><a class="docs-heading-anchor-permalink" href="#Five-templates" title="Permalink"></a></h2><p>The quadratic forms, the sums of squares of degree 4 and 6, and two SetProg families passed directly: a function quadratic on each cone of a partition, and one linear on each. <a href="../../reference/templates/#PathCompleteCertificates.PiecewiseQuadraticTemplate-Tuple{Any}"><code>PiecewiseQuadraticTemplate</code></a> and <a href="../../reference/templates/#PathCompleteCertificates.PiecewiseLinearTemplate-Tuple{Any}"><code>PiecewiseLinearTemplate</code></a> build the same families. The partition is given by an octagon, whose cones are those over its facets. The octagon is built with Polyhedra, on a linear programming solver.</p><pre><code class="language-julia hljs">LIBRARY = SetProg.Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() =&gt; true),
@@ -27,9 +28,9 @@ templates = [
     &quot;sum of squares, degree 4&quot; =&gt; SumOfSquaresTemplate(2),
     &quot;sum of squares, degree 6&quot; =&gt; SumOfSquaresTemplate(3),
 ]
-certificates = [name =&gt; certified(template) for (name, template) in templates]
+fits = [name =&gt; certified(template) for (name, template) in templates]
 
-[name =&gt; certificate.rate for (name, certificate) in certificates]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Pair{String, Float64}}:
+[name =&gt; certificate.rate for (name, certificate) in fits]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Pair{String, Float64}}:
                     &quot;quadratic&quot; =&gt; 1.0606689453125
  &quot;piecewise quadratic, octagon&quot; =&gt; 1.01763916015625
     &quot;piecewise linear, octagon&quot; =&gt; 1.09918212890625
@@ -42,17 +43,17 @@ left = plot(;
     legend = :outerbottom,
     title = &quot;the sets V ≤ 1&quot;,
 )
-for (name, certificate) in certificates
+for (name, certificate) in fits
     δ = PathCompleteCertificates.homogeneity_degree(get_template(certificate))
     points = [d ./ certificate(d)^(1 / δ) for d in directions]
     radius = maximum(LinearAlgebra.norm, points)
     plot!(left, first.(points) ./ radius, last.(points) ./ radius; lw = 2, label = name)
 end
 
-rates = [certificate.rate for (_, certificate) in certificates]
+bounds = [certificate.rate for (_, certificate) in fits]
 right = bar(
     1:5,
-    rates;
+    bounds;
     color = 1:5,
     label = &quot;&quot;,
     legend = :topright,
@@ -64,4 +65,4 @@ right = bar(
 hline!(right, [1.0]; color = :red, ls = :dot, lw = 2, label = &quot;stability threshold&quot;)
 hline!(right, [jsr]; color = :black, ls = :dash, lw = 2, label = &quot;joint spectral radius&quot;)
 
-plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)</code></pre><img src="f1acc63b.svg" alt="Example block output"/><h2 id="What-it-proves"><a class="docs-heading-anchor" href="#What-it-proves">What it proves</a><a id="What-it-proves-1"></a><a class="docs-heading-anchor-permalink" href="#What-it-proves" title="Permalink"></a></h2><p>The sum of squares of degree 4 proves stability on a single node, and the rate of degree 6 is about 0.3% above the joint spectral radius:</p><pre><code class="language-julia hljs">last(rates) / jsr</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0031381024109625</code></pre><p>The graph and the template are the two choices of a certificate (see <a href="../../manual/certificates/#How-a-certificate-works">How a certificate works</a>): a bigger graph, a richer template, or both.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../refinement/">« Improve my bound</a><a class="docs-footer-nextpage" href="../comparing/">Compare two graphs »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 5 November 2026 09:25">Thursday 5 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)</code></pre><img src="2cae7c4d.svg" alt="Example block output"/><h2 id="What-it-proves"><a class="docs-heading-anchor" href="#What-it-proves">What it proves</a><a id="What-it-proves-1"></a><a class="docs-heading-anchor-permalink" href="#What-it-proves" title="Permalink"></a></h2><p>The rate of degree 6 is about 0.3% above the joint spectral radius:</p><pre><code class="language-julia hljs">last(bounds) / jsr</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0031381024109625</code></pre><p>The graph and the template are the two choices of a certificate (see <a href="../../manual/certificates/#How-a-certificate-works">How a certificate works</a>): a bigger graph, a richer template, or both.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../refinement/">« Improve my bound</a><a class="docs-footer-nextpage" href="../comparing/">Compare two graphs »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Thursday 5 November 2026 11:47">Thursday 5 November 2026</span>. Using Julia version 1.13.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

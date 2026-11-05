@@ -1,8 +1,8 @@
 # # Improve my bound
 #
 # In [Bound the joint spectral radius of my system](@ref), a De Bruijn graph
-# with four nodes proved stability, and left the joint spectral radius between
-# ``0.976`` and ``0.984``. Here the package designs the graph: it proves
+# with four nodes proved stability, and left a gap between its rate and the
+# joint spectral radius. Here the package designs the graph: it proves
 # stability with three nodes, and finds the exact joint spectral radius with
 # ten. [Refining the graph](@ref) explains refinement, and this page runs it.
 
@@ -27,21 +27,33 @@ nothing #hide
 # ## One call
 #
 # [`refine`](@ref) starts from the common graph and adds nodes where the
-# certificate is tight. For each graph it visits, its number of nodes, the
-# certified rate, and the lower bound read from the tight edges:
+# certificate is tight. By default it splits the node with the most tight
+# outgoing edges ([`TightestNodeSplitting`](@ref)), and the keyword `strategy`
+# chooses another (see [Refining the graph](@ref)). `depth_max` raises the
+# number of graphs it may visit, 5 by default. For each graph it visits, its
+# number of nodes, the certified rate, and the lower bound read from the tight
+# edges:
 
 trace = refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 10)
 
-steps = [
+progress = [
     (n_nodes(graph), certificate.rate, jsr_lower_bound(certificate)) for
     (graph, certificate) in zip(graphs(trace), certificates(trace))
 ]
 
-# The rate goes below one at three nodes, one fewer than the De Bruijn graph of
-# order 2 needed. The lower bound then rises to meet the rate, and the run
-# stops at ten nodes with a proof that the rate is the joint spectral radius:
+# The rate goes below one at three nodes. The lower bound then rises to meet
+# the rate, and the run stops at ten nodes with a proof that the rate is the
+# joint spectral radius:
 
 status(trace)
+
+# The De Bruijn graphs, for comparison, go below one only at order 2, with four
+# nodes:
+
+hierarchy = [
+    (2^k, certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for
+    k in 0:3
+]
 
 # ## The bounds, drawn
 #
@@ -52,11 +64,6 @@ status(trace)
 # edge, which proves the rate exact, and the tight edges form one cycle, which
 # reads the slowest sequence ``2, 2, 2, 2, 1``.
 
-hierarchy = [
-    (2^k, certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for
-    k in 0:3
-]
-
 left = plot(;
     xlabel = "number of nodes",
     ylabel = "bound on the joint spectral radius",
@@ -66,8 +73,8 @@ left = plot(;
 )
 plot!(
     left,
-    first.(steps),
-    getindex.(steps, 2);
+    first.(progress),
+    getindex.(progress, 2);
     marker = :circle,
     lw = 2,
     color = :black,
@@ -75,8 +82,8 @@ plot!(
 )
 plot!(
     left,
-    first.(steps),
-    last.(steps);
+    first.(progress),
+    last.(progress);
     marker = :circle,
     lw = 2,
     ls = :dash,

@@ -15,8 +15,7 @@ nothing #hide
 
 certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER).rate
 
-rates =
-    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for k in 0:2]
+[certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for k in 0:2]
 
 graph = de_bruijn(2, 2)
 certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
@@ -84,6 +83,6 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 jsr_lower_bound(certificate)
 
 lower = maximum(abs, LinearAlgebra.eigvals(A[1] * A[2]^4))^(1 / 5)
-lower, certificate.rate
+lower, certificate.rate, certificate.rate / lower
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

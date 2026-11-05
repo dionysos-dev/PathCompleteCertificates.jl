@@ -122,32 +122,17 @@ combination(row) = join(
 )
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:n_nodes(G2)]
 
-bound(template, graph) =
-    certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
-
-on_G1 = bound(QUADRATIC, G1)
-V = functions(on_G1)
-W = [
-    PathCompleteCertificates.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for h in 1:n_nodes(G2)
-]
-scale = on_G1.rate^PathCompleteCertificates.homogeneity_degree(QUADRATIC)
-all(PathCompleteCertificates.edges(G2)) do edge
-    return PathCompleteCertificates.decrease_slack(
-        QUADRATIC,
-        W[PathCompleteCertificates.source(edge)],
-        W[PathCompleteCertificates.dest(edge)],
-        A[PathCompleteCertificates.label(G2, edge)];
-        scale,
-    ) >= -1e-6
-end
-
 c40 = compared(G4, G0)
 outcome(c40)
 
 c30 = compared(G3, G0)
 Dict(simulations(c30))[SumLift()]
 
-rates = Dict(
+# The rates are near 9, so the bisection starts from 100 instead of doubling from 1.
+bound(template, graph) =
+    certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
+
+certified = Dict(
     name => [bound(template, g).rate for g in GRAPHS] for (name, template) in TEMPLATES
 )
 
@@ -159,7 +144,15 @@ figure = plot(;
     title = "five graphs, three templates",
 )
 for (name, _) in TEMPLATES
-    plot!(figure, 1:5, rates[name]; marker = :circle, markersize = 6, lw = 2, label = name)
+    plot!(
+        figure,
+        1:5,
+        certified[name];
+        marker = :circle,
+        markersize = 6,
+        lw = 2,
+        label = name,
+    )
 end
 figure
 
