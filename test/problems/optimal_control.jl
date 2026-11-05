@@ -692,6 +692,13 @@ end
         PCC.DualCopositiveTemplate(),
     )
         @test_throws supported PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER)
+        @test_throws supported PCC.optimization_model(
+            template,
+            GRAPH,
+            PROBLEM;
+            optimizer = OPTIMIZER,
+            gains = RESULT.gains,
+        )
     end
     @test_throws "QuadraticTemplate() needs p = 2" PCC.certify(
         PCC.QuadraticTemplate(),

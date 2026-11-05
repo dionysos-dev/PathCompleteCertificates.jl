@@ -82,7 +82,6 @@ function optimization_model(
     psd_margin::Real = 1e-4,
 )
     if template isa SetProg.Ellipsoid && template.piecewise === nothing
-        _check_joint_control_inputs(gains, margin)
         return invoke(
             optimization_model,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -90,6 +89,8 @@ function optimization_model(
             graph,
             problem;
             optimizer,
+            gains,
+            margin,
             psd_margin,
         )
     end
@@ -199,7 +200,6 @@ function certify(
     psd_margin::Real = 1e-4,
 )
     if template isa SetProg.Ellipsoid && template.piecewise === nothing
-        _check_joint_control_inputs(gains, margin)
         return invoke(
             certify,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -207,6 +207,8 @@ function certify(
             graph,
             problem;
             optimizer,
+            gains,
+            margin,
             psd_margin,
         )
     end

@@ -150,9 +150,12 @@ function optimization_model(
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
+    gains = nothing,
+    margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
     _check_joint_control_case(template, problem)
+    _check_joint_control_inputs(gains, margin)
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     _check_optimal_control_data(graph, problem)
@@ -230,9 +233,12 @@ function certify(
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
+    gains = nothing,
+    margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
-    model = optimization_model(template, graph, problem; optimizer, psd_margin)
+    model =
+        optimization_model(template, graph, problem; optimizer, gains, margin, psd_margin)
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
