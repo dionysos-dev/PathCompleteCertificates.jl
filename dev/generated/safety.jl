@@ -1,27 +1,25 @@
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
 
 A = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
-system = PCC.switched_system(A)
+system = switched_system(A)
 
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
-problem = PCC.SafetyProblem(system, S0, Su)
+problem = SafetyProblem(system, S0, Su)
 nothing #hide
 
-PCC.is_feasible(
-    PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER),
-)
+is_feasible(certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER))
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(certificate), certificate.margin
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+is_feasible(certificate), certificate.margin
 
 grid = range(-7, 7; length = 300)
 disk(radius) = Shape(
@@ -35,7 +33,7 @@ left = plot(;
     xlims = (-7, 7),
     ylims = (-7, 7),
     legend = :outerbottom,
-    title = "the zero sets B = 0",
+    title = "the zero sets V = 0",
 )
 plot!(
     left,
@@ -59,9 +57,9 @@ contour!(
 )
 # `contour!` adds no legend entry of its own.
 plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
-for (a, V) in enumerate(PCC.functions(certificate))
+for (a, V) in enumerate(functions(certificate))
     color = (:darkorange, :purple)[a]
-    values = [PCC.node_value(problem, V, [x, y]) for y in grid, x in grid]
+    values = [node_value(problem, V, [x, y]) for y in grid, x in grid]
     contour!(
         left,
         grid,
@@ -79,13 +77,13 @@ end
 rng = Random.MersenneTwister(1)
 right = plot(;
     xlabel = "step k",
-    ylabel = "B(xₖ)",
+    ylabel = "V(xₖ)",
     legend = :bottomright,
-    title = "B along switching sequences",
+    title = "V along switching sequences",
 )
 for run in 1:100
     angle = 2pi * run / 100
-    visited = PCC.states(PCC.simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
+    visited = states(simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
     plot!(
         right,
         0:30,
@@ -95,24 +93,30 @@ for run in 1:100
         label = run == 1 ? "100 random runs" : "",
     )
 end
-hline!(right, [0.0]; color = :black, lw = 3, ls = :dash, label = "B = 0")
+hline!(right, [0.0]; color = :black, lw = 3, ls = :dash, label = "V = 0")
 
 plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
-PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
+certify(TEMPLATE, de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
 
-using SetProg, SumOfSquares
-import HiGHS, JuMP
-partition_library = SetProg.Polyhedra.DefaultLibrary{Float64}(
+import SumOfSquares
+
+polynomial =
+    certify(SumOfSquaresTemplate(2), common_graph(system), problem; optimizer = OPTIMIZER)
+is_feasible(polynomial), polynomial.margin
+
+import HiGHS, JuMP, SetProg
+
+library = SetProg.Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
-partition = SetProg.polyhedron(
-    SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)),
-    partition_library,
+square = SetProg.polyhedron(SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)), library)
+piecewise = certify(
+    PiecewiseQuadraticTemplate(fill(square, 2)),
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
 )
-piecewise_template = SetProg.Ellipsoid(; symmetric = true, piecewise = partition)
-piecewise_certificate =
-    PCC.certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(piecewise_certificate), piecewise_certificate.margin
+is_feasible(piecewise), piecewise.margin
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

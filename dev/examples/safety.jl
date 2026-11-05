@@ -1,59 +1,58 @@
 # # Prove my system safe
 #
 # A switched system that starts in a disk and must never reach the outside of a
-# larger one. No single barrier function proves it; a path-complete barrier on
-# two nodes does, as in [anand2024barrier](@cite).
-# [How a certificate works](@ref) explains the certificate; this page runs it
+# larger one. No single quadratic barrier function proves it. A path-complete
+# barrier certificate on two nodes does, as in [anand2024barrier](@cite).
+# [How a certificate works](@ref) explains the certificate, and this page runs it
 # from start to end.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
 
 # ## The system
 #
 # Two modes on the plane, from [anand2024barrier](@cite). The trajectories
-# start in the disk ``\|x\| \le 4`` and must avoid ``\|x\| \ge 6``; both sets
-# are given in homogeneous coordinates, as ``\{x : [x; 1]^\top S [x; 1] \ge 0\}``.
+# start in the disk ``X_0 = \{x : \|x\| \le 4\}`` and must avoid
+# ``X_u = \{x : \|x\| \ge 6\}``. Both sets are given in homogeneous
+# coordinates, as ``\{x : [x; 1]^\top S [x; 1] \ge 0\}``.
 
 A = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]
-system = PCC.switched_system(A)
+system = switched_system(A)
 
 S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
 Su = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -36.0]
-problem = PCC.SafetyProblem(system, S0, Su)
+problem = SafetyProblem(system, S0, Su)
 nothing #hide
 
 # ## A single function
 #
-# On the one-node graph, the certificate is a common barrier function. None
-# exists:
+# On the common graph, the certificate is a common barrier function. The
+# quadratic template finds none:
 
-PCC.is_feasible(
-    PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER),
-)
+is_feasible(certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER))
 
 # ## A path-complete graph
 #
 # The De Bruijn graph of order 1 gives one barrier per node, and a positive
 # margin: the system is safe.
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(certificate), certificate.margin
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+is_feasible(certificate), certificate.margin
 
 # ## The certificate, drawn
 #
-# On the left, the zero set of each node barrier, and that of their common
-# barrier ``B``, here their minimum: the region where ``B < 0`` contains the
-# initial set and does not meet the unsafe set. On the right, ``B`` along 100
-# random switching sequences from the boundary of the initial set: it never
-# increases, so it stays negative and no run reaches the unsafe set.
+# On the left, the zero set of each node function, and that of their common
+# function ``V``, here their minimum: the set where ``V \le 0`` contains
+# ``X_0`` and does not meet ``X_u``. On the right, ``V`` along 100 random
+# switching sequences from the boundary of ``X_0``: it never increases, so it
+# stays negative and no run reaches ``X_u``.
 
 grid = range(-7, 7; length = 300)
 disk(radius) = Shape(
@@ -67,7 +66,7 @@ left = plot(;
     xlims = (-7, 7),
     ylims = (-7, 7),
     legend = :outerbottom,
-    title = "the zero sets B = 0",
+    title = "the zero sets V = 0",
 )
 plot!(
     left,
@@ -91,9 +90,9 @@ contour!(
 )
 ## `contour!` adds no legend entry of its own.
 plot!(left, [NaN], [NaN]; color = :black, lw = 4, label = "common")
-for (a, V) in enumerate(PCC.functions(certificate))
+for (a, V) in enumerate(functions(certificate))
     color = (:darkorange, :purple)[a]
-    values = [PCC.node_value(problem, V, [x, y]) for y in grid, x in grid]
+    values = [node_value(problem, V, [x, y]) for y in grid, x in grid]
     contour!(
         left,
         grid,
@@ -111,13 +110,13 @@ end
 rng = Random.MersenneTwister(1)
 right = plot(;
     xlabel = "step k",
-    ylabel = "B(xₖ)",
+    ylabel = "V(xₖ)",
     legend = :bottomright,
-    title = "B along switching sequences",
+    title = "V along switching sequences",
 )
 for run in 1:100
     angle = 2pi * run / 100
-    visited = PCC.states(PCC.simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
+    visited = states(simulate(system, 4 .* [cos(angle), sin(angle)], 30; rng))
     plot!(
         right,
         0:30,
@@ -127,41 +126,47 @@ for run in 1:100
         label = run == 1 ? "100 random runs" : "",
     )
 end
-hline!(right, [0.0]; color = :black, lw = 3, ls = :dash, label = "B = 0")
+hline!(right, [0.0]; color = :black, lw = 3, ls = :dash, label = "V = 0")
 
 plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 # ## What it proves
 #
-# The margin is positive, so the region where ``B < 0`` contains the initial
-# set, is invariant under every switching sequence, and avoids the unsafe set
-# (see [How a certificate works](@ref)). A finer graph adds nothing here: the
+# The margin is positive, so the set where ``V \le 0`` contains ``X_0``, is
+# invariant under every switching sequence, and avoids ``X_u`` (see
+# [How a certificate works](@ref)). A finer graph adds nothing here: the
 # De Bruijn graph of order 2 certifies the same margin.
 
-PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
+certify(TEMPLATE, de_bruijn(2, 2), problem; optimizer = OPTIMIZER).margin
 
-# Polynomial barriers are also available: pass
-# `SetProg.PolySet(degree = 0:4, dimension = 2)` after `using SumOfSquares`.
-# Safety uses affine polynomials without an SOS constraint on the barrier
-# itself; the separation certificates use SOS multipliers.
-
-# ## Piecewise-quadratic safe sets
+# ## Other templates
 #
-# The same safety model accepts a fixed conic partition. Each piece has
-# barrier `x'Q_k*x - 1`, with PSD matrices and continuity/convexity constraints.
-# The initial and unsafe conditions are certified on each cone; transition
-# conditions use intersections of the source and mapped destination cones.
+# The template is the other choice. A polynomial barrier of degree 4, from
+# `SumOfSquaresTemplate(2)`, proves safety on the common graph, where the
+# quadratic one does not:
 
-using SetProg, SumOfSquares
-import HiGHS, JuMP
-partition_library = SetProg.Polyhedra.DefaultLibrary{Float64}(
+import SumOfSquares
+
+polynomial =
+    certify(SumOfSquaresTemplate(2), common_graph(system), problem; optimizer = OPTIMIZER)
+is_feasible(polynomial), polynomial.margin
+
+# A piecewise quadratic barrier, ``x^\top P_{s,k} x - 1`` on each cone of a
+# partition, also proves it on the De Bruijn graph of order 1. The partition
+# here is the square with vertices ``(\pm 1, 0)`` and ``(0, \pm 1)``, whose
+# cones are the four quadrants, built with Polyhedra on a linear programming
+# solver:
+
+import HiGHS, JuMP, SetProg
+
+library = SetProg.Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
-partition = SetProg.polyhedron(
-    SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)),
-    partition_library,
+square = SetProg.polyhedron(SetProg.hrep([1.0 1.0; 1 -1; -1 1; -1 -1], ones(4)), library)
+piecewise = certify(
+    PiecewiseQuadraticTemplate(fill(square, 2)),
+    graph,
+    problem;
+    optimizer = OPTIMIZER,
 )
-piecewise_template = SetProg.Ellipsoid(; symmetric = true, piecewise = partition)
-piecewise_certificate =
-    PCC.certify(piecewise_template, graph, problem; optimizer = OPTIMIZER)
-PCC.is_feasible(piecewise_certificate), piecewise_certificate.margin
+is_feasible(piecewise), piecewise.margin

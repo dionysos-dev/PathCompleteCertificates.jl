@@ -3,14 +3,14 @@
 # Before solving on a bigger graph, ask whether it can pay off at all.
 # [`compare`](@ref) answers for every system at once, without solving, and the
 # answer depends on the template: on the five graphs of
-# [debauche2023ordering](@cite), a five-node graph can beat the one-node graph
+# [debauche2023ordering](@cite), a five-node graph can beat the common graph
 # for quadratic forms, and never for the copositive templates.
-# [Comparing graphs](@ref) explains the method; this page runs it.
+# [Comparing graphs](@ref) explains the method, and this page runs it.
 
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 using Plots
-include(joinpath(pkgdir(PCC), "docs", "graph_drawing.jl")) #hide
+include(joinpath(pkgdir(PathCompleteCertificates), "docs", "graph_drawing.jl")) #hide
 
 const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
@@ -22,9 +22,9 @@ nothing #hide
 # page.
 
 function build(n_nodes, edges)
-    graph = PCC.empty_graph(n_nodes)
+    graph = empty_graph(n_nodes)
     for (a, b, mode) in edges
-        PCC.add_edge!(graph, a, b, mode)
+        add_edge!(graph, a, b, mode)
     end
     return graph
 end
@@ -99,14 +99,14 @@ draw_graphs(GRAPHS, NAMES; node_label = node_name) #hide
 
 # Blue edges read mode 1, orange edges mode 2.
 
-# All five are path-complete; `G0`, `G3` and `G4` are also complete and
+# All five are path-complete. `G0`, `G3` and `G4` are also complete and
 # co-complete, `G1` and `G2` neither:
 
 satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g, 1:2)]
 (
-    path_complete = satisfying(PCC.is_path_complete),
-    complete = satisfying(PCC.is_complete),
-    co_complete = satisfying(PCC.is_co_complete),
+    path_complete = satisfying(is_path_complete),
+    complete = satisfying(is_complete),
+    co_complete = satisfying(is_co_complete),
 )
 
 # ## One comparison
@@ -114,18 +114,18 @@ satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g
 # [`compare`](@ref)`(G1, G2)` asks whether `G2` is at least as good as `G1`.
 # Given templates and the system they will be read on, it also says for which
 # of them the order holds. The system is the paper's, positive, so that the
-# copositive templates apply; divided by 10 and rounded, it is the running
+# copositive templates apply. Divided by 10 and rounded, it is the running
 # example of the manual.
 
 A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
-system = PCC.switched_system(A)
-problem = PCC.StabilityProblem(system)
+system = switched_system(A)
+problem = StabilityProblem(system)
 
-QUADRATIC = PCC.QuadraticTemplate()
+QUADRATIC = QuadraticTemplate()
 TEMPLATES = [
     "quadratic" => QUADRATIC,
-    "copositive" => PCC.LinearCopositiveTemplate(),
-    "dual copositive" => PCC.DualCopositiveTemplate(),
+    "copositive" => LinearCopositiveTemplate(),
+    "dual copositive" => DualCopositiveTemplate(),
 ]
 nothing #hide
 
@@ -133,63 +133,60 @@ nothing #hide
 # second, and the templates for which the order is proved. The max lift is the
 # dual of the min lift.
 
-compared(G, H) =
-    PCC.compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
+compared(G, H) = compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
 lift_name(lift) =
-    lift isa PCC.MinLift ? "min" :
-    lift isa PCC.MaxLift ? "max" :
-    lift isa PCC.SumLift ? "sum" : string(nameof(typeof(lift)))
+    lift isa MinLift ? "min" :
+    lift isa MaxLift ? "max" : lift isa SumLift ? "sum" : string(nameof(typeof(lift)))
 outcome(c) = (
-    simulating = lift_name.(first.(PCC.simulations(c))),
+    simulating = lift_name.(first.(simulations(c))),
     proved_for = [
-        name for (name, template) in TEMPLATES if any(t -> t === template, PCC.templates(c))
+        name for (name, template) in TEMPLATES if any(t -> t === template, templates(c))
     ],
 )
 
 c12 = compared(G1, G2)
 outcome(c12)
 
-# No plain simulation exists, since `G2` has a self-loop and `G1` has none, the
-# paper's Example 1. But the min, max and sum lifts of `G1` simulate `G2`, so
+# No plain simulation exists, since `G2` has a self-loop and `G1` has none
+# [debauche2023ordering; Ex. 1](@cite). But the min, max and sum lifts of `G1` simulate `G2`, so
 # `G2` is at least as good for the three templates.
 #
 # The sum lift's simulation is also a recipe: a nonnegative integer matrix
 # ``C`` such that ``W = C\,V`` is a certificate on `G2` whenever ``V`` is one on
-# `G1` ([debauche2023ordering](@cite), Thm. 2). Read row by row:
+# `G1` [debauche2023ordering; Thm. 2](@cite). Read row by row:
 
-C = Dict(PCC.simulations(c12))[PCC.SumLift()]
+C = Dict(simulations(c12))[SumLift()]
 combination(row) = join(
     [(c == 1 ? "" : "$c·") * "V_" * node_name(g) for (g, c) in enumerate(row) if c > 0],
     " + ",
 )
-["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:PCC.n_nodes(G2)]
+["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:n_nodes(G2)]
 
 # Following the recipe on a certificate solved on `G1`, every edge inequality
 # of `G2` holds at the same rate:
 
 bound(template, graph) =
-    PCC.certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
+    certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
 
 on_G1 = bound(QUADRATIC, G1)
-V = PCC.functions(on_G1)
+V = functions(on_G1)
 W = [
-    PCC.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for
-    h in 1:PCC.n_nodes(G2)
+    PathCompleteCertificates.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for h in 1:n_nodes(G2)
 ]
-scale = on_G1.rate^PCC.homogeneity_degree(QUADRATIC)
-all(PCC.edges(G2)) do edge
-    return PCC.decrease_slack(
+scale = on_G1.rate^PathCompleteCertificates.homogeneity_degree(QUADRATIC)
+all(PathCompleteCertificates.edges(G2)) do edge
+    return PathCompleteCertificates.decrease_slack(
         QUADRATIC,
-        W[PCC.source(edge)],
-        W[PCC.dest(edge)],
-        A[PCC.label(G2, edge)];
+        W[PathCompleteCertificates.source(edge)],
+        W[PathCompleteCertificates.dest(edge)],
+        A[PathCompleteCertificates.label(G2, edge)];
         scale,
     ) >= -1e-6
 end
 
 # ## The template decides
 #
-# `G4` against the one-node graph: its min and max lifts simulate `G0`, its sum
+# `G4` against the common graph: its min and max lifts simulate `G0`, its sum
 # lift does not. So `G4` gives no better certificate than `G0` for the
 # templates for which the min or the max lift is valid, here the two copositive
 # ones, but may for the quadratic template:
@@ -199,18 +196,18 @@ outcome(c40)
 
 # `G3`, with as many nodes and edges, is no better than `G0` for any template
 # for which the sum lift is valid: its sum lift simulates `G0`, with a single
-# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``, a common function of any certificate
-# on `G3`.
+# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``: a certificate on `G0` built from any
+# certificate on `G3`.
 
 c30 = compared(G3, G0)
-Dict(PCC.simulations(c30))[PCC.SumLift()]
+Dict(simulations(c30))[SumLift()]
 
 # ## The rates agree
 #
-# The orders hold for every system; on the paper's system, the certified rates
-# follow them. The quadratic rate drops from `G1` to `G2`, is the same on `G3`
-# as on `G0`, and is lower on `G4`; the copositive rates are the same on `G0`,
-# `G3` and `G4`.
+# The orders hold for every system, and on the paper's system the certified
+# rates follow them. The quadratic rate drops from `G1` to `G2`, is the same on
+# `G3` as on `G0`, and is lower on `G4`. The copositive rates are the same on
+# `G0`, `G3` and `G4`.
 
 rates = Dict(
     name => [bound(template, g).rate for g in GRAPHS] for (name, template) in TEMPLATES

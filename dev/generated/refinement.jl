@@ -1,28 +1,29 @@
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import LinearAlgebra
 using Plots
-include(joinpath(pkgdir(PCC), "docs", "graph_drawing.jl")) #hide
+include(joinpath(pkgdir(PathCompleteCertificates), "docs", "graph_drawing.jl")) #hide
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = Clarabel.Optimizer
 nothing #hide
 
 A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
-problem = PCC.StabilityProblem(PCC.switched_system(A))
+problem = StabilityProblem(switched_system(A))
 nothing #hide
 
-trace = PCC.refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 10)
+trace = refine(TEMPLATE, problem; optimizer = OPTIMIZER, depth_max = 10)
 
 steps = [
-    (PCC.n_nodes(graph), certificate.rate, PCC.jsr_lower_bound(certificate)) for
-    (graph, certificate) in zip(PCC.graphs(trace), PCC.certificates(trace))
+    (n_nodes(graph), certificate.rate, jsr_lower_bound(certificate)) for
+    (graph, certificate) in zip(graphs(trace), certificates(trace))
 ]
 
-PCC.status(trace)
+status(trace)
 
-de_bruijn = [
-    (2^k, PCC.certify(TEMPLATE, PCC.de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for k in 0:3
+hierarchy = [
+    (2^k, certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate) for
+    k in 0:3
 ]
 
 left = plot(;
@@ -53,8 +54,8 @@ plot!(
 )
 plot!(
     left,
-    first.(de_bruijn),
-    last.(de_bruijn);
+    first.(hierarchy),
+    last.(hierarchy);
     marker = :square,
     lw = 2,
     color = :steelblue,
@@ -62,12 +63,12 @@ plot!(
 )
 hline!(left, [1.0]; color = :red, ls = :dot, label = "stability threshold")
 
-final = last(PCC.certificates(trace))
+final = last(certificates(trace))
 right = draw_tight_edges(final) #hide
 
 plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 slowest = maximum(abs, LinearAlgebra.eigvals(A[1] * A[2]^4))^(1 / 5)
-PCC.is_jsr_exact(final), final.rate, slowest
+is_jsr_exact(final), final.rate, slowest
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

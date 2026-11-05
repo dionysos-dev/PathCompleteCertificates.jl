@@ -1,10 +1,10 @@
-import PathCompleteCertificates as PCC
+using PathCompleteCertificates
 import Clarabel
 import JuMP
 import Random
 using Plots
 
-const TEMPLATE = PCC.QuadraticTemplate()
+const TEMPLATE = QuadraticTemplate()
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,
@@ -16,20 +16,18 @@ B = [[1.0; 0.0;;], [1.0; 0.0;;]]
 Q = [1.0 0.0; 0.0 1.0]
 R = [1.0;;]
 
-system = PCC.switched_system(A, B)
-problem = PCC.OptimalControlProblem(system, Q, R)
+system = switched_system(A, B)
+problem = OptimalControlProblem(system, Q, R)
 x0 = [3.0, -2.0]
 nothing #hide
 
-PCC.certify(TEMPLATE, PCC.common_graph(system), problem; optimizer = OPTIMIZER)(x0)
+certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 
-bounds = [
-    PCC.certify(TEMPLATE, PCC.de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for
-    k in 0:2
-]
+bounds =
+    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for k in 0:2]
 
-graph = PCC.de_bruijn(1, 2)
-certificate = PCC.certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
+graph = de_bruijn(1, 2)
+certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
 certificate.gains
 
 directions = [[cos(t), sin(t)] for t in range(0, 2pi; length = 400)]
@@ -41,8 +39,8 @@ left = plot(;
     legend = :outerbottom,
     title = "the sets V ≤ V(x₀)",
 )
-for (a, V) in enumerate(PCC.functions(certificate))
-    points = level_set(x -> PCC.node_value(problem, V, x), certificate(x0))
+for (a, V) in enumerate(functions(certificate))
+    points = level_set(x -> node_value(problem, V, x), certificate(x0))
     plot!(
         left,
         first.(points),
@@ -59,8 +57,8 @@ plot!(left, first.(points), last.(points); color = :black, lw = 3, label = "comm
 rng = Random.MersenneTwister(1)
 costs = Vector{Float64}[]
 for run in 1:100
-    trajectory = PCC.simulate(certificate, x0, 30; rng)
-    visited, applied = PCC.states(trajectory), PCC.inputs(trajectory)
+    trajectory = simulate(certificate, x0, 30; rng)
+    visited, applied = states(trajectory), inputs(trajectory)
     stage = [x' * Q * x + u' * R * u for (x, u) in zip(visited, applied)]
     push!(costs, cumsum(stage))
     run <= 20 && plot!(
@@ -103,58 +101,24 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 maximum(last.(costs)), certificate(x0)
 
-import SetProg
-using SumOfSquares
+import HiGHS, SetProg, SumOfSquares
 
-quartic_problem = PCC.OptimalControlProblem(system, Q, R; p = 4)
-quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
-quartic_certificate = PCC.certify(
-    quartic_family,
-    graph,
-    quartic_problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
+library = SetProg.Polyhedra.DefaultLibrary{Float64}(
+    JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
-PCC.is_feasible(quartic_certificate)
-quartic_certificate(x0)
+fixed(template, problem) =
+    certify(template, graph, problem; optimizer = OPTIMIZER, gains = certificate.gains)
 
-import LinearAlgebra
-P = SetProg.Polyhedra
+piecewise_quadratic =
+    fixed(PiecewiseQuadraticTemplate(fill(planar_conic_partition(1; library), 2)), problem)
+piecewise_linear =
+    fixed(PiecewiseLinearTemplate(fill(planar_conic_partition(3), 2)), problem)
+piecewise_quadratic(x0), piecewise_linear(x0)
 
-directions = [f(2pi * i / 32) for i in 0:31, f in (cos, sin)]
-polyhedral_families = [
-    SetProg.Polytope(;
-        symmetric = true,
-        piecewise = P.polyhedron(
-            P.hrep(
-                directions * LinearAlgebra.cholesky(LinearAlgebra.Symmetric(Matrix(V))).U,
-                ones(32),
-            ),
-        ),
-    ) for V in PCC.functions(certificate)
-]
-polyhedral_certificate = PCC.certify(
-    polyhedral_families,
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
+quartic = fixed(
+    SumOfSquaresTemplate(2; convex = true),
+    OptimalControlProblem(system, Q, R; p = 4),
 )
-PCC.is_feasible(polyhedral_certificate)
-polyhedral_certificate(x0)
-
-piecewise_quadratic_family = SetProg.Ellipsoid(;
-    symmetric = true,
-    piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
-)
-piecewise_quadratic_certificate = PCC.certify(
-    piecewise_quadratic_family,
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
-)
-PCC.is_feasible(piecewise_quadratic_certificate)
-piecewise_quadratic_certificate(x0)
+quartic(x0)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
