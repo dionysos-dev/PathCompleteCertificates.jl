@@ -96,7 +96,7 @@ problem = StabilityProblem(system)
 QUADRATIC = QuadraticTemplate()
 TEMPLATES = [
     "quadratic" => QUADRATIC,
-    "copositive" => LinearCopositiveTemplate(),
+    "linear copositive" => LinearCopositiveTemplate(),
     "dual copositive" => DualCopositiveTemplate(),
 ]
 nothing #hide
