@@ -48,5 +48,8 @@ Pages   = ["problems/catalogue/safety.jl"]
 
 ```@autodocs
 Modules = [PathCompleteCertificates]
-Pages   = ["problems/catalogue/optimal_control.jl"]
+Pages   = [
+    "problems/catalogue/optimal_control.jl",
+    "problems/catalogue/polynomial_optimal_control.jl",
+]
 ```

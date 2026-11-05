@@ -41,8 +41,8 @@ tells, before any system is given, whether a larger graph can pay off, and it
 orders the graphs of the literature into hierarchies. Two tools prove it:
 
 - **a simulation**, which proves it for every template.
-- **a simulation after a lift**, which proves it for the templates closed
-  under the lift's operation.
+- **a simulation after a lift**, which proves it for the templates for which
+  the lift is valid.
 
 ## Simulation
 
@@ -82,8 +82,8 @@ a common Lyapunov function.
 ## Simulation after a lift
 
 Without a simulation, ``H`` may still be at least as good as ``G`` for the
-templates closed under some operation. A lift valid for these templates never
-makes ``G`` worse (see [Lifts](@ref)), so when the lifted ``G`` simulates
+templates for which some lift is valid. Such a lift never makes ``G`` worse
+(see [Lifts](@ref)), so when the lifted ``G`` simulates
 ``H``, ``G \le_{\mathcal V} H`` for every such template:
 
 | Lift | For templates closed under | Decided by | Without a simulation |

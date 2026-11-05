@@ -22,7 +22,8 @@ fall into two categories, below, and come in dual pairs (see
 
 [`lift`](@ref)`(L, graph)` applies the lift `L` to the whole graph,
 `lift(L, graph, edges)` at the given edges, and `lift(L, graph, node)` at one
-node. Each lift has the forms its definition allows. The result is a
+node. The splits take all three forms, the forward and backward products the
+first two, and the other lifts the whole graph only. The result is a
 [`Lifted`](@ref): the new graph, [`get_graph`](@ref), and the
 [`origins`](@ref) of its nodes, what each stands for in the old graph.
 

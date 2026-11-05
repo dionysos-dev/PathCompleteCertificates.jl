@@ -38,9 +38,13 @@ family new to the package also needs its methods, in two files:
   `is_closed_under` (the lifts valid for it), `reindex` (per-node data), and
   `has_dual` and `dual` when it has a dual.
 
-Stability then accepts the new family without change. Safety and optimal
-control accept it when SetProg.jl supports their inclusions for it (see
-[Conditions as set inclusions](@ref)).
+Stability then accepts the new family without change. Safety needs its
+methods of `_safety_family`, `_safety_multiplier` and `_safety_normalization!`,
+in `src/problems/catalogue/safety.jl`. Optimal control with fixed gains needs
+the family in `_FixedGainControlFamily` and a method of
+`_fixed_gain_control_case`, in
+`src/problems/catalogue/polynomial_optimal_control.jl`. Both write their
+conditions as SetProg inclusions (see [Conditions as set inclusions](@ref)).
 
 ## A problem
 
@@ -58,8 +62,8 @@ relative tolerance on the objective.
 A subtype of `AbstractLift` with the `lift` methods its definition gives it: on
 the whole graph, at edges, or at a node. Declare its `requirements`, the
 operations a template must be closed under for the lift to be valid. For
-[`BestOfTightEdgeLifts`](@ref) to use it, define `_changes`, which says whether
-the lift at an edge changes the graph.
+[`BestOfTightEdgeLifts`](@ref) to use it, give it the method at edges, and
+define `_changes` to skip the edges where it changes nothing.
 
 ## A refinement strategy
 

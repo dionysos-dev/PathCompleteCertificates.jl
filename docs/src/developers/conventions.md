@@ -58,14 +58,13 @@ The package adds what a certificate needs:
 
 - what the package needs to know about a family, in `src/problems/sets.jl`:
   `is_applicable`, `is_closed_under`, `reindex`, `has_dual` and `dual`.
-- the constructors, one file per template pair in `src/templates/catalogue/`:
-  the quadratic, piecewise quadratic, sum-of-squares, piecewise linear and
-  dual piecewise linear templates, and the two copositive ones.
+- the constructors, one file per template in `src/templates/catalogue/`, the
+  two copositive ones sharing `copositive.jl`.
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge
 inequality is one call with `scale = γ^δ`. A fitted node function is evaluated
-with `node_value(problem, V, x)`, so that each problem chooses its
-coordinates. Every problem writes its conditions as SetProg inclusions (see
+with `node_value(problem, V, x)`, so that each problem reads the value off the
+set. Every problem writes its conditions as SetProg inclusions (see
 [Conditions as set inclusions](@ref)). Safety models the initial-set
 inclusion and the unsafe-set disjointness, without positivity constraints on
 the barriers. Optimal control computes the gains jointly with the quadratic
@@ -78,7 +77,8 @@ lifts.** A lift maps a path-complete graph to a path-complete graph at least
 as good for every template the lift is valid for: closed under its
 `requirements`, or with a dual closed under the dual operations. The same
 lift can be a step of a refinement strategy and a test of `compare`, where a
-simulation of ``H`` by the lifted ``G`` proves ``G \le_V H``.
+simulation of ``H`` by the lifted ``G`` proves that ``H`` is at least as good
+as ``G``.
 
 ```julia
 # src/lifts/operations.jl: what a template is closed under and a lift requires.

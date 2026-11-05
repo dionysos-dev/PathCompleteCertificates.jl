@@ -88,8 +88,9 @@ Some features need another package, installed with `Pkg.add` and loaded:
 | SetProg families passed directly, or polytopes of your own | `SetProg` |
 | plots of a [`Trajectory`](@ref) | `Plots` |
 
-For example, `Pkg.add("SumOfSquares")`, then
-`using SumOfSquares`.
+For example, `Pkg.add("SumOfSquares")`, then `import SumOfSquares`. Load it
+with `import` rather than `using`: SumOfSquares exports JuMP's `dual` and
+`is_valid`, which would then hide those of the package.
 
 ## Common installation issues
 

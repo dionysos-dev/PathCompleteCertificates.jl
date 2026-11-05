@@ -21,7 +21,7 @@ paper, what the package takes from each.
 
 | Paper | What the package takes from it |
 | :-- | :-- |
-| [athanasopoulos2019polyhedral](@citet) | the two polyhedral parameterizations, by pairs of opposite vertices and by pairs of parallel faces, which [`PiecewiseLinearTemplate`](@ref) and its polar [`DualPiecewiseLinearTemplate`](@ref) extend to any partition into cones |
+| [athanasopoulos2019polyhedral](@citet) | the two polyhedral parameterizations, by pairs of opposite vertices and by pairs of parallel faces, which [`PiecewiseLinearTemplate`](@ref) and its dual [`DualPiecewiseLinearTemplate`](@ref) extend to any partition into cones |
 | [parrilo2008approximation](@citet) | [`SumOfSquaresTemplate`](@ref) |
 | [debauche2021comparison](@citet) | the primal and dual linear copositive norms: [`LinearCopositiveTemplate`](@ref) and [`DualCopositiveTemplate`](@ref) |
 
@@ -79,8 +79,8 @@ Not implemented here:
 - [anand2025completeness](@citet) orders barrier certificates.
 - [wintenberg2026complete](@citet) orders graphs for templates closed under
   composition.
-- [abate2026succinct](@citet) designs the graph and its certificate together
-  with an SMT solver.
+- [abate2026succinct](@citet) also designs the graph and its certificate
+  together, with an SMT solver.
 - [legat2020certifying](@citet) certifies the instability of switched systems
   with sums of squares, in SwitchOnSafety.jl.
 - [rakovic2021minkowski](@citet) and [rakovic2025robust](@citet) write the

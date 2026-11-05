@@ -2,7 +2,7 @@
 #
 # A switched system whose stability no single quadratic Lyapunov function can
 # prove, and a path-complete graph that proves it. [How a certificate works](@ref)
-# explains the certificate; this page runs it from start to end.
+# explains the certificate, and this page runs it from start to end.
 
 using PathCompleteCertificates
 import Clarabel
@@ -16,8 +16,8 @@ nothing #hide
 
 # ## The system
 #
-# A rotation and a shear, both scaled by ``0.75``. Each mode alone is stable;
-# switching between them is the question.
+# A rotation and a shear, both scaled by ``0.75``. Each mode alone is stable,
+# and switching between them is the question.
 
 A = [0.75 * [0.0 1.0; -1.0 0.0], 0.75 * [1.0 1.0; 0.0 1.0]]
 system = switched_system(A)
@@ -131,5 +131,5 @@ lower = maximum(abs, LinearAlgebra.eigvals(A[1] * A[2]^4))^(1 / 5)
 lower, certificate.rate
 
 # The joint spectral radius lies between the two: the certificate is within 1%
-# of it. The De Bruijn hierarchy found this graph by adding nodes everywhere;
+# of it. The De Bruijn hierarchy found this graph by adding nodes everywhere.
 # [Improve my bound](@ref) lets the package choose where to add them.

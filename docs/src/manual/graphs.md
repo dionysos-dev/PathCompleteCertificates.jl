@@ -54,9 +54,8 @@ reads.
     [abate2026succinct](@cite): the subset construction can visit
     exponentially many sets, so on a large graph that is neither complete nor
     co-complete, the check before solving can take long.
-    The keyword `check_path_complete = false` of `certify`, for stability
-    and safety, and of `refine` skips it, for a graph you know to be
-    path-complete.
+    For a graph you know to be path-complete, `check_path_complete = false`
+    skips the check, in `certify` for stability and safety, and in `refine`.
 
 ## Classical graphs
 

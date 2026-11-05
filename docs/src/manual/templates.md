@@ -45,7 +45,7 @@ find on the running example shows their shapes:
 
 ```@setup running
 using Plots
-using SumOfSquares
+import SumOfSquares
 
 function shapes_figure(system, problem, graph)
     templates = [
@@ -62,10 +62,10 @@ function shapes_figure(system, problem, graph)
         certificate = certify(template, graph, problem; optimizer)
         fitted = only(functions(certificate))
         V(x) = node_value(problem, fitted, x)
-        p = PathCompleteCertificates.homogeneity_degree(template)
-        # V is homogeneous of degree p: scaling each direction d by V(d)^(-1/p)
+        δ = PathCompleteCertificates.homogeneity_degree(template)
+        # V is homogeneous of degree δ: scaling each direction d by V(d)^(-1/δ)
         # lands on the level set V = 1.
-        points = [d ./ V(d)^(1 / p)
+        points = [d ./ V(d)^(1 / δ)
                   for d in ([cos(t), sin(t)] for t in range(0, 2pi; length = 400))]
         plot!(figure, first.(points), last.(points); lw = 2, label = name)
     end
@@ -107,14 +107,16 @@ make the node functions symmetric, and normalize them to exclude
 ``V_s \equiv 0``, which the table does not show.
 [What works with what](@ref) gives the systems and problems each template
 supports, the program it gives for each, and where [`refine`](@ref) applies.
-The templates fall into four groups.
+The sum-of-squares and piecewise quadratic templates need the SumOfSquares
+package loaded (see [Installation](@ref)). The templates fall into four
+groups.
 
 **Quadratic and polynomial.** The quadratic template gives ellipsoids. For
 `SumOfSquaresTemplate(r)`, ``b_r(x)`` is the vector of the monomials of degree
 ``r``, and ``Q_s \succeq 0`` makes ``V_s`` a sum of squares
 [parrilo2008approximation](@cite): ``r = 1`` gives the quadratic forms, and
 each higher ``r`` adds variables. `convex = true` also makes each node
-function convex, which optimal control requires.
+function convex, for optimal control (see [What works with what](@ref)).
 
 **Piecewise.** A polytope ``\mathcal{P}_s`` containing the origin in its
 interior defines a cone on each of its facets ``\mathcal{F}_{s,k}``, and a
@@ -150,19 +152,19 @@ and the copositive templates restrict the node functions to it
 unit set ``\mathcal{H}(c_s) \cap \mathbb{R}^n_+``. The dual copositive
 template takes its polar within the orthant, the box ``\prod_j [0, v_{s,j}]``.
 
-The sum-of-squares and piecewise quadratic templates need the SumOfSquares
-package loaded (see [Installation](@ref)).
+## Templates are SetProg families
 
-**Templates are SetProg families.** Each constructor returns a
-[SetProg](https://github.com/blegat/SetProg.jl) family of sets, or, for the
-templates with data per node, a vector of families, one per node:
-`QuadraticTemplate()` is `Ellipsoid(symmetric = true)`, and
-`PiecewiseLinearTemplate([P])` is `[Polytope(symmetric = true, piecewise = P)]`.
-A SetProg family can also be passed directly, without a constructor (see
-[Try a richer template](@ref)). To write one, run
-`Pkg.add("SetProg")` and `using SetProg`: the package depends on SetProg, so
-nothing new is downloaded, but your environment must list it for Julia to
-load it by name.
+Each constructor returns a [SetProg](https://github.com/blegat/SetProg.jl)
+family of sets, or, for the templates with data per node, a vector of
+families, one per node: `QuadraticTemplate()` is
+`SetProg.Ellipsoid(symmetric = true)`, and `PiecewiseLinearTemplate([P])` is
+`[SetProg.Polytope(symmetric = true, piecewise = P)]`. A SetProg family can
+also be passed directly, without a constructor (see
+[Try a richer template](@ref)). To write one, run `Pkg.add("SetProg")` and
+`import SetProg`. The package depends on SetProg, so nothing new is
+downloaded, but your environment must list it for Julia to load it by name.
+Load it with `import` rather than `using`, which would hide the package's
+`dual`, `is_valid` and `lift` behind SetProg's.
 
 ## How to choose
 

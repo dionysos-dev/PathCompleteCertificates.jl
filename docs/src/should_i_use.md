@@ -25,7 +25,7 @@ It fits best when, in addition:
   it.
 - You want node functions beyond quadratic forms: sums of squares, piecewise
   quadratic functions, polyhedral norms, or copositive functions for positive
-  systems. Most of them also certify safety and optimal control, where
+  systems. Several of them also certify safety and optimal control, where
   path-complete certificates have so far used quadratic functions only.
 - You want to choose the solver: any JuMP solver for the program that the
   template and the problem set, linear, second-order cone or semidefinite.

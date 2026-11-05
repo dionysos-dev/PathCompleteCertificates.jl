@@ -121,7 +121,9 @@ Edges with slack at most `atol` are tight. The next graph comes as a pair.
 The first element is the [`Lifted`](@ref) graph. The second is its
 certificate, if the strategy already solved it with `solve`, as
 `BestOfTightEdgeLifts` does, or `nothing`, in which case `refine` solves it.
-[Extending the package](@ref) says where the file goes.
+A strategy starts from the common graph, unless it defines
+[`initial_graph`](@ref)`(strategy, system)`. [Extending the package](@ref)
+says where the file goes.
 
 ## When it stops
 
@@ -130,7 +132,7 @@ certificate, if the strategy already solved it with `solve`, as
 | Status | The run stopped because |
 | :-- | :-- |
 | [`OPTIMAL`](@ref) | the rate is proved to be the joint spectral radius, within `gap_tol` |
-| [`STALLED`](@ref) | `stall_max` steps in a row did not lower the rate by `rtol` |
+| [`STALLED`](@ref) | `stall_max` steps in a row did not lower the rate by a fraction `rtol` |
 | [`DEPTH_REACHED`](@ref) | `depth_max` graphs were visited |
 | [`STOPPED`](@ref) | the `stop` predicate held, for example `c -> c.rate < 1` |
 | [`EXHAUSTED`](@ref) | the strategy found no next graph |
@@ -152,4 +154,5 @@ The [`RefinementTrace`](@ref) keeps every step: [`certificates`](@ref),
 !!! note "Tolerances"
     Three tolerances drive the run: `rtol` and `atol`, as for a single
     certificate (see [Reading a certificate](@ref)), and `gap_tol`, the gap
-    between the rate and its lower bound at which the run stops.
+    between the rate and its lower bound at which the run stops. `refine`
+    throws unless `atol` is at least ten times `rtol`.

@@ -34,8 +34,9 @@ ellipsoid.
 
 § With fixed gains, by default those of the quadratic certificate. Polynomial
 node functions must be convex, with `SumOfSquaresTemplate(r; convex = true)`.
-The piecewise linear template solves a linear program for a piecewise linear
-cost, and a second-order cone program for a quadratic one.
+The piecewise linear template solves a linear program for `p = 1` and a
+second-order cone program for `p = 2`, whether `Q` and `R` are matrices or
+polytopes.
 
 × Not supported: see [The gaps](@ref).
 
@@ -64,7 +65,7 @@ conditions are on the graph:
 | [`PiecewiseQuadraticTemplate`](@ref) | sum if every node has the same partition. |
 | [`SumOfSquaresTemplate`](@ref) | sum. Composition and backward composition if the matrices are invertible. |
 | [`PiecewiseLinearTemplate`](@ref) | sum if every node has the same partition. Through its dual: min, if that partition is a cross-polytope. |
-| [`DualPiecewiseLinearTemplate`](@ref) | max if every node has the same faces, on a cross-polytope. Through its dual: sum if every node has the same partition. |
+| [`DualPiecewiseLinearTemplate`](@ref) | max if every node has the same partition, a cross-polytope. Through its dual: sum if every node has the same partition. |
 | [`LinearCopositiveTemplate`](@ref) | sum. Composition if the matrices are nonnegative with no zero column. Backward composition if they are invertible with nonnegative inverses. Through its dual: min. |
 | [`DualCopositiveTemplate`](@ref) | max. Through its dual: sum, composition if the matrices are invertible with nonnegative inverses, and backward composition if they are nonnegative with no zero row. |
 
@@ -76,6 +77,14 @@ template. [`is_valid`](@ref) answers for a given template and system.
 [`refine`](@ref) runs on [`StabilityProblem`](@ref) only, with the templates
 without † in the table above. [`compare`](@ref) reads graphs with one mode per
 edge.
+
+## Duals
+
+[`dual`](@ref) applies to graphs, lifts, systems without input, stability
+problems and stability certificates. Among the templates, the quadratic one is
+its own dual, and the piecewise linear and copositive pairs are each other's.
+The sum-of-squares and piecewise quadratic templates have no dual, and
+neither do safety and optimal control.
 
 ## The gaps
 

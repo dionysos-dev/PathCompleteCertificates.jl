@@ -4,8 +4,8 @@ CurrentModule = PathCompleteCertificates
 
 # Refinement reference
 
-[`refine`](@ref) is an algorithm that applies lifts where a certificate is
-tight; see [Refining the graph](@ref).
+[`refine`](@ref) applies lifts where a certificate is tight, following a
+refinement strategy. See [Refining the graph](@ref).
 
 ## The interface
 

@@ -5,7 +5,7 @@
 # answer depends on the template: on the five graphs of
 # [debauche2023ordering](@cite), a five-node graph can beat the common graph
 # for quadratic forms, and never for the copositive templates.
-# [Comparing graphs](@ref) explains the method; this page runs it.
+# [Comparing graphs](@ref) explains the method, and this page runs it.
 
 using PathCompleteCertificates
 import Clarabel
@@ -99,7 +99,7 @@ draw_graphs(GRAPHS, NAMES; node_label = node_name) #hide
 
 # Blue edges read mode 1, orange edges mode 2.
 
-# All five are path-complete; `G0`, `G3` and `G4` are also complete and
+# All five are path-complete. `G0`, `G3` and `G4` are also complete and
 # co-complete, `G1` and `G2` neither:
 
 satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g, 1:2)]
@@ -114,7 +114,7 @@ satisfying(predicate) = [name for (name, g) in zip(NAMES, GRAPHS) if predicate(g
 # [`compare`](@ref)`(G1, G2)` asks whether `G2` is at least as good as `G1`.
 # Given templates and the system they will be read on, it also says for which
 # of them the order holds. The system is the paper's, positive, so that the
-# copositive templates apply; divided by 10 and rounded, it is the running
+# copositive templates apply. Divided by 10 and rounded, it is the running
 # example of the manual.
 
 A = [[1.5519 0.44737; 7.6412 7.4716], [0.47501 9.1755; 1.8955 0.18502]]
@@ -147,13 +147,13 @@ outcome(c) = (
 c12 = compared(G1, G2)
 outcome(c12)
 
-# No plain simulation exists, since `G2` has a self-loop and `G1` has none, the
-# paper's Example 1. But the min, max and sum lifts of `G1` simulate `G2`, so
+# No plain simulation exists, since `G2` has a self-loop and `G1` has none
+# [debauche2023ordering; Ex. 1](@cite). But the min, max and sum lifts of `G1` simulate `G2`, so
 # `G2` is at least as good for the three templates.
 #
 # The sum lift's simulation is also a recipe: a nonnegative integer matrix
 # ``C`` such that ``W = C\,V`` is a certificate on `G2` whenever ``V`` is one on
-# `G1` ([debauche2023ordering](@cite), Thm. 2). Read row by row:
+# `G1` [debauche2023ordering; Thm. 2](@cite). Read row by row:
 
 C = Dict(simulations(c12))[SumLift()]
 combination(row) = join(
@@ -196,18 +196,18 @@ outcome(c40)
 
 # `G3`, with as many nodes and edges, is no better than `G0` for any template
 # for which the sum lift is valid: its sum lift simulates `G0`, with a single
-# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``, a common function of any certificate
-# on `G3`.
+# row, ``2V_a + V_b + V_c + 2V_d + 2V_e``: a certificate on `G0` built from any
+# certificate on `G3`.
 
 c30 = compared(G3, G0)
 Dict(simulations(c30))[SumLift()]
 
 # ## The rates agree
 #
-# The orders hold for every system; on the paper's system, the certified rates
-# follow them. The quadratic rate drops from `G1` to `G2`, is the same on `G3`
-# as on `G0`, and is lower on `G4`; the copositive rates are the same on `G0`,
-# `G3` and `G4`.
+# The orders hold for every system, and on the paper's system the certified
+# rates follow them. The quadratic rate drops from `G1` to `G2`, is the same on
+# `G3` as on `G0`, and is lower on `G4`. The copositive rates are the same on
+# `G0`, `G3` and `G4`.
 
 rates = Dict(
     name => [bound(template, g).rate for g in GRAPHS] for (name, template) in TEMPLATES
