@@ -81,7 +81,7 @@ c_ctrl = PCC.certify(TEMPLATE, graph, control; optimizer = OPTIMIZER)
 println("stability rate      = ", c_stab.rate)
 println("safety margin       = ", c_safe.margin)
 
-# (a) Stability: the sublevel set of the common function and its images.
+# (a) Stability: the sublevel set of the common certificate and its images.
 V = c_stab
 xs, ys = level_curve(V, 2)
 scale = maximum(hypot.(xs, ys))
