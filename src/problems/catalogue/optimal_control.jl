@@ -89,7 +89,7 @@ function _polyhedral_control_cost(polytope)
     _check_control_cost_partition(polytope)
     return SetProg.Sets.Piecewise(
         [
-            SetProg.Sets.PolarPoint(h.a / h.β) for
+            SetProg.Sets.PolarPoint(Vector(h.a) / h.β) for
             h in SetProg.Polyhedra.halfspaces(polytope)
         ],
         polytope,
