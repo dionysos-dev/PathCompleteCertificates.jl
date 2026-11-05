@@ -53,26 +53,27 @@ is_closed_under(f::SetProg.Domain, ::InverseComposition, system) =
     _is_linear_copositive(f) &&
     _is_invertible(system) &&
     all(A -> all(>=(0), inv(A)), state_matrices(system))
-function is_closed_under(
+is_closed_under(
     families::AbstractVector{<:SetProg.AbstractVariable},
     operation::Operation,
     system,
-)
-    if operation isa Maximum && all(_is_dual_piecewise_linear, families)
-        all(f -> _has_parallel_faces(f.set), families) || return false
-        return allequal([
-            Set(Tuple(SetProg.Polyhedra.coord(p)) for p in SetProg.points(f.set.piecewise))
-            for f in families
-        ])
-    end
-    return allequal(families) && is_closed_under(first(families), operation, system)
-end
+) = allequal(_compared.(families)) && is_closed_under(first(families), operation, system)
+
+# Families compared by value. SetProg compares the partitions of its families
+# as objects, so two equal partitions built separately would make them differ.
+_compared(value) = value
+_compared(f::Union{SetProg.Polytope, SetProg.Ellipsoid}) =
+    map(name -> _compared(getfield(f, name)), fieldnames(typeof(f)))
+_compared(f::_NormalizedFamily) =
+    (_compared(f.set), _compared_reference(f), f.contains_reference, f.symmetric)
+_compared(partition::SetProg.Polyhedra.Rep) =
+    Set(Tuple(SetProg.Polyhedra.coord(p)) for p in SetProg.points(partition))
 
 # A shared family is unchanged; a vector, one family per node, follows the
 # origins and cannot merge unequal families.
 reindex(family::SetProg.AbstractVariable, ::AbstractVector) = family
 reindex(families::AbstractVector{<:SetProg.AbstractVariable}, origins::AbstractVector) =
-    _reindexed_data(families, origins, "set families")
+    _reindexed_data(families, origins, "set families"; by = _compared)
 
 has_dual(family::SetProg.AbstractVariable) = _supports_dual(family)
 has_dual(families::AbstractVector{<:SetProg.AbstractVariable}) = all(has_dual, families)

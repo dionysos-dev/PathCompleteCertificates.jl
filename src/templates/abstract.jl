@@ -88,17 +88,18 @@ _origin_nodes(origin::Integer) = (origin,)
 _origin_nodes(origin::AbstractVector{<:Integer}) = origin
 _origin_nodes(origin::Tuple{<:Integer, <:Any}) = (first(origin),)
 
-# One datum per new node, when its origins agree on it.
+# One datum per new node, when its origins agree on it, compared through `by`.
 function _reindexed_data(
     data::AbstractVector,
     origins::AbstractVector,
-    what::AbstractString,
+    what::AbstractString;
+    by = identity,
 )
     return map(origins) do origin
         members = _origin_nodes(origin)
         value = data[first(members)]
 
-        all(member -> data[member] == value, members) || throw(
+        all(member -> by(data[member]) == by(value), members) || throw(
             ArgumentError(
                 "the lift merges nodes $(collect(members)) whose $what differ; the " *
                 "template carries one per node and cannot follow it",
@@ -113,8 +114,6 @@ end
     has_dual(template) -> Bool
 
 Whether `dual(template)` and `dual(template, V)` are defined, `false` by
-default. The quadratic template is its own dual. The piecewise linear and dual
-piecewise linear templates are each other's, and so are the two copositive
-templates.
+default.
 """
 function has_dual end

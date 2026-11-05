@@ -202,6 +202,33 @@ end
     @test !PCC.is_closed_under(shared, PCC.Maximum(), system)
 end
 
+@testset "equal partitions built separately are the same" begin
+    system = PROBLEM.system
+    octagons = [PCC.planar_conic_partition(1) for _ in 1:2]
+    @test PCC.is_closed_under(
+        PCC.PiecewiseQuadraticTemplate(octagons),
+        PCC.Addition(),
+        system,
+    )
+    linear = PCC.PiecewiseLinearTemplate(octagons)
+    @test PCC.is_valid(PCC.SumLift(2), linear, system)
+    @test only(PCC.reindex(linear, [[1, 2]])) === first(linear)
+    @test PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.PiecewiseLinearTemplate(octagons; min_scale = 2),
+        system,
+    )
+    # Through its dual for the sum, directly for the max.
+    boxes = PCC.DualPiecewiseLinearTemplate(2, 2)
+    @test PCC.is_valid(PCC.SumLift(2), boxes, system)
+    @test PCC.is_valid(PCC.MaxLift(), boxes, system)
+    @test !PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.PiecewiseLinearTemplate([SQUARE, OCTAGON]),
+        system,
+    )
+end
+
 @testset "family validation and zero rate" begin
     @test_throws ArgumentError rate(Ellipsoid(dimension = 2))
     @test_throws ArgumentError rate(Polytope(symmetric = true, dimension = 2))
