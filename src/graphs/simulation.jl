@@ -3,6 +3,8 @@
 
 A map `R` from the nodes of `H` to those of `G` such that `(R(s), R(d), i)` is
 an edge of `G` for every edge `(s, d, i)` of `H`, or `nothing` if none exists.
+Such a simulation proves that `H` is at least as good as `G` for every
+template (see [Comparing graphs](@ref)).
 """
 simulation(G::CertificateGraph, H::CertificateGraph) =
     simulation(_letter_graph(G, "simulation"), _letter_graph(H, "simulation"))

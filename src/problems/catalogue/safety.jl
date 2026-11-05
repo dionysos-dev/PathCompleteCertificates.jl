@@ -248,7 +248,8 @@ end
 """
     certify(template, graph, problem; optimizer, check_path_complete = true)
 
-Solve the barrier program and return a [`SafetyCertificate`](@ref).
+Solve the barrier program, which maximizes the margin, and return a
+[`SafetyCertificate`](@ref).
 """
 function certify(
     template::_SetFamily,

@@ -153,7 +153,7 @@ _is_positive(system::_HS.HybridSystem) = all(A -> all(>=(0), A), state_matrices(
 """
     dual(system)
 
-The system with every mode matrix transposed. Throws on a system with input.
+The system with every mode matrix transposed. Throws on a system with an input.
 """
 function dual(system::_HS.HybridSystem)
     has_input(system) &&

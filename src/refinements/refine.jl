@@ -23,7 +23,7 @@ EXHAUSTED
 """
     STALLED
 
-`stall_max` steps in a row did not improve the objective.
+`stall_max` steps in a row did not lower the objective by a fraction `rtol`.
 """
 STALLED
 
