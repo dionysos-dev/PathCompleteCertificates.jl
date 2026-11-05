@@ -5,8 +5,10 @@
 
 | **Documentation** | **Build Status** |
 |:-----------------:|:----------------:|
-| [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] [![Codecov][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] |
+| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] [![Codecov][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] [![PkgEval][pkgeval-img]][pkgeval-url] |
 
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://dionysos-dev.github.io/PathCompleteCertificates.jl/stable
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-latest-url]: https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev
 
@@ -16,10 +18,8 @@
 [codecov-url]: https://app.codecov.io/github/dionysos-dev/PathCompleteCertificates.jl
 [aqua-img]: https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
-
-<!-- Deliberately absent until they would mean something: a `docs-stable` badge,
-     since there is no released version, and PkgEval, whose report only exists
-     once the package is in the General registry. Add both at registration. -->
+[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/P/PathCompleteCertificates.svg
+[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/P/PathCompleteCertificates.html
 
 PathCompleteCertificates.jl is a [Julia](https://julialang.org/) package that computes
 certificates for **discrete-time switched linear systems** under arbitrary switching: proofs
@@ -57,13 +57,16 @@ certificate.rate                     # 0.9587: below one, the system is stable
 
 ## Installation
 
-The package is not registered yet. Install it, and a solver, from the Julia REPL:
+Install the package, and a solver, from the Julia REPL:
 
 ```julia
 import Pkg
-Pkg.add(url = "https://github.com/dionysos-dev/PathCompleteCertificates.jl")
+Pkg.add("PathCompleteCertificates")
 Pkg.add("Clarabel")
 ```
+
+For the development version, use
+`Pkg.add(url = "https://github.com/dionysos-dev/PathCompleteCertificates.jl")` instead.
 
 ## Documentation
 

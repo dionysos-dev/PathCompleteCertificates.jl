@@ -57,6 +57,18 @@ request. For a wide rename, port the tests first, untouched, then rename the
 code against them: renamed on both sides at once, a mistake can pass every
 test.
 
+## Releasing
+
+The version in `Project.toml` follows semantic versioning. Below 1.0, a
+breaking change bumps the minor version, from 0.1 to 0.2, and any other change
+the patch version.
+
+1. Bump `version` in `Project.toml` through a pull request.
+2. Once it is merged, comment `@JuliaRegistrator register` on the merge
+   commit, with the release notes under a `Release notes:` line.
+3. When the General registry merges the version, TagBot tags it and creates
+   the GitHub release, and the tag deploys the `stable` docs.
+
 ## Never committed
 
 `Manifest.toml`, any file over 5 MB, and experiment output. `.gitignore` lists
