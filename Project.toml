@@ -1,6 +1,6 @@
 name = "PathCompleteCertificates"
 uuid = "b391c707-6ba7-482f-97f4-86d517cfbcc9"
-version = "0.1.0-DEV"
+version = "0.1.0"
 authors = ["Léa Ninite <lea.ninite@uclouvain.be>", "Julien Calbert <julien.calbert@uclouvain.be>", "Raphaël M. Jungers <raphael.jungers@uclouvain.be>"]
 
 [deps]

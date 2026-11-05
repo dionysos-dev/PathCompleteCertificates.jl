@@ -32,7 +32,13 @@ import Pkg
 Pkg.activate("my_project")
 ```
 
-The package is not registered yet. Install it from its repository:
+Install the latest release from Julia's General registry:
+
+```julia
+Pkg.add("PathCompleteCertificates")
+```
+
+For the development version, install it from its repository instead:
 
 ```julia
 Pkg.add(url = "https://github.com/dionysos-dev/PathCompleteCertificates.jl")
