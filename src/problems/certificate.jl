@@ -91,7 +91,7 @@ get_graph(certificate::AbstractCertificate) = _data(certificate).graph
 """
     common(graph, problem, Vs, x)
 
-The common function of the node functions `Vs` on `graph`, evaluated at `x`: a
+The common certificate of the node functions `Vs` on `graph`, evaluated at `x`: a
 minimum of maxima of the `Vs` [philippe2019path](@cite). Depending on `problem`,
 a common Lyapunov function, a common barrier function or a bound on the value
 function.
@@ -110,12 +110,12 @@ end
 """
     (certificate::AbstractCertificate)(x)
 
-The [`common`](@ref) function of the certificate at `x`. Throws on an
+The common certificate at `x`, as [`common`](@ref) computes it. Throws on an
 infeasible certificate.
 """
 function (certificate::AbstractCertificate)(x::AbstractVector{<:Real})
     is_feasible(certificate) ||
-        throw(ArgumentError("an infeasible certificate has no common function"))
+        throw(ArgumentError("an infeasible certificate has no common certificate"))
 
     return common(
         get_graph(certificate),

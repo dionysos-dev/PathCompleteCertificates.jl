@@ -297,16 +297,15 @@ control = OptimalControlProblem(controlled, Q, R)
 nothing # hide
 ```
 
-Polytopes ``\mathcal Q`` and ``\mathcal R`` of
+For a piecewise linear cost, polytopes ``\mathcal Q`` and ``\mathcal R`` of
 [Polyhedra.jl](https://github.com/JuliaPolyhedra/Polyhedra.jl), bounded and
-with the origin in their interior, can replace the matrices. With the gauge of
-a set ``C``, ``g_C(x) = \inf\{\lambda > 0 : x \in \lambda C\}``, the stage
-cost is then ``\ell(x, u) = g_{\mathcal Q}(x)^p + g_{\mathcal R}(u)^p``,
-piecewise linear for the default ``p = 1``. A matrix ``Q`` stands for the
-ellipsoid ``\{x : x^\top Q x \le 1\}``, whose gauge is ``\sqrt{x^\top Q x}``,
-so the default ``p = 2`` for matrices gives the quadratic cost.
+with the origin in their interior, replace the matrices. The stage cost is
+then ``\ell(x, u) = g_{\mathcal Q}(x)^p + g_{\mathcal R}(u)^p``, with
+``p = 1`` by default, where the **gauge**
+``g_C(x) = \inf\{\lambda > 0 : x \in \lambda C\}`` of a set ``C`` is the
+function equal to 1 on its boundary.
 
-The keyword `p` must match the template (see [What works with what](@ref)).
+The exponent `p` must match the template (see [What works with what](@ref)).
 For instance, `OptimalControlProblem(controlled, Q, R; p = 4)` gives the cost
 ``(x^\top Q x)^2 + (u^\top R u)^2``, for `SumOfSquaresTemplate(2; convex = true)`.
 

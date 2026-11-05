@@ -83,10 +83,10 @@ The keyword `strategy` chooses where to lift.
 So the strategy splits the node with the most tight outgoing edges, among
 those with at least two, into one copy per outgoing edge, with
 [`OutSplitLift`](@ref). Among nodes with as many tight edges, it splits the
-one with the fewest outgoing edges, which adds the fewest nodes. The split is
-finer than in the paper, which makes one copy per out-neighbour, and
-Prop. 3 still holds for it. From the common graph, the first step gives the
-dual De Bruijn graph of order 1. When no node has two tight outgoing edges,
+one with the fewest outgoing edges, which adds the fewest nodes. This split,
+one copy per outgoing edge, is finer than the paper's, and Prop. 3 still
+holds for it. From the common graph, the first step gives the dual De Bruijn
+graph of order 1. When no node has two tight outgoing edges,
 the rate is the joint spectral radius [ninite2026lifting; Thm. 4](@cite), and
 the run stops.
 

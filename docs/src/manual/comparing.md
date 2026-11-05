@@ -86,16 +86,19 @@ templates for which some lift is valid. Such a lift never makes ``G`` worse
 (see [Lifts](@ref)), so when the lifted ``G`` simulates
 ``H``, ``G \le_{\mathcal V} H`` for every such template:
 
-| Lift | For templates closed under | Decided by | Without a simulation |
-| :-- | :-- | :-- | :-- |
-| [`MinLift`](@ref) | minimum | a relation between the nodes, without building the lift | the order fails for some such template |
-| [`MaxLift`](@ref) | maximum | the same relation on the dual graphs | the order fails for some such template |
-| [`SumLift`](@ref)`()` | addition | a linear program, which needs an `optimizer` | the order fails for some such template |
-| [`CompositionLift`](@ref)`(T)`, [`BackwardCompositionLift`](@ref)`(T)` | composition with the matrices of a system, or with their inverses | building the lift and searching it | nothing is proved |
+| Lift | For templates closed under | Decided by |
+| :-- | :-- | :-- |
+| [`MinLift`](@ref) | minimum | a relation between the nodes, without building the lift |
+| [`MaxLift`](@ref) | maximum | the same relation on the dual graphs |
+| [`SumLift`](@ref)`()` | addition | a linear program, which needs an `optimizer` |
+| [`CompositionLift`](@ref)`(T)`, [`BackwardCompositionLift`](@ref)`(T)` | composition with the matrices of a system, or with their inverses | building the lift and searching it |
 
-The rows come from [debauche2024thesis](@citet): Theorems 8.1 and 8.5 for
-the min and max lifts, Corollary 8.11 for the sum lift, and Theorems 7.65 and
-7.66 for the composition lifts.
+For the min, max and sum lifts, the test is also necessary: when the lifted
+``G`` does not simulate ``H``, the order fails for some template closed under
+the operation. For the composition lifts, a failed search proves nothing. The
+rows come from [debauche2024thesis](@citet): Theorems 8.1 and 8.5 for the min
+and max lifts, Corollary 8.11 for the sum lift, and Theorems 7.65 and 7.66
+for the composition lifts.
 
 [Lifts](@ref) says when a lift is valid for a template, and
 [What works with what](@ref) lists the lifts valid for each one.

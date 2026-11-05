@@ -28,7 +28,7 @@ R = [1.0;;]
 The problem is given. The template and the graph are your two choices, and
 they influence both how good the certificate can be and how much it costs to
 compute. This page defines a path-complete certificate and its common
-function, which shows why the certificate holds for every switching sequence.
+certificate, which shows why the certificate holds for every switching sequence.
 It then certifies the three problems of the running example with the same
 template and graph, and ends with how the package writes their conditions as
 set inclusions.
@@ -68,24 +68,20 @@ functions of the template, one node function per node, such that:
 Every sequence of modes is read along a path of the graph, so the edge
 inequalities chain along every trajectory, whatever the switching.
 
-## The common function
+## The common certificate
 
 The node functions combine into one function of the state, built in the same
-way for the three problems, the **common function**
-
-```math
-V(x) = \min_{\Pi \in \mathcal{O}} \, \max_{s \in \Pi} V_s(x),
-```
-
-where ``\mathcal{O}`` is the set of nodes of the [`observer_graph`](@ref),
-each a set of nodes of ``G`` [philippe2019path; Thm. III.8](@cite). On two
-kinds of graphs, it simplifies [philippe2019path; Cor. III.3](@cite):
+way for the three problems, the **common certificate** ``V``. On two kinds of
+graphs, it is simple [philippe2019path; Cor. III.3](@cite):
 
 - **on a complete graph,** ``V = \min_s V_s``.
 - **on a co-complete graph,** ``V = \max_s V_s``.
 
 [Choosing a graph](@ref "Path-complete, complete and co-complete graphs")
-defines complete and co-complete graphs. `certificate(x)` evaluates ``V``.
+defines complete and co-complete graphs. On any path-complete graph, ``V`` is
+a minimum of maxima of node functions, over the sets of nodes that the
+[`observer_graph`](@ref) gives [philippe2019path; Thm. III.8](@cite).
+`certificate(x)` evaluates ``V``.
 
 Path-completeness turns the edge inequalities into one inequality on ``V``,
 for every mode: ``V`` is a classical certificate, one function for the whole
@@ -130,7 +126,7 @@ functions (see [Conditions as set inclusions](@ref)), which SetProg.jl turns
 into finitely many convex constraints on the parameters of the template. For
 quadratic forms, for instance, ``V_d(A_i x) \le \gamma^2 V_s(x)`` for every
 ``x`` is the matrix inequality ``A_i^\top P_d A_i \preceq \gamma^2 P_s``.
-These constraints decide the kind of program, linear, second-order cone or
+These constraints set the kind of program, linear, second-order cone or
 semidefinite (see [What works with what](@ref)).
 
 So the template and the graph influence:
@@ -249,7 +245,7 @@ certificate.rate
 The rate is an upper bound on the joint spectral radius
 [ahmadi2014joint; Thm. 2.4](@cite), below one, so the system is stable.
 
-**Why it holds.** The common function satisfies
+**Why it holds.** The common certificate satisfies
 ``V(A_i x) \le \gamma^\delta \, V(x)`` for every mode ``i``: it is a common
 Lyapunov function, so the state shrinks at least like ``\gamma^k``, up to a
 constant factor, for every switching sequence. On a complete graph, for
@@ -293,17 +289,14 @@ degree at most ``2r``. With the piecewise quadratic template, it is
 
 The margin ``\varepsilon`` measures how well the barriers separate ``X_0``
 from ``X_u``. Scaling the barriers would scale the margin, so the last
-condition normalizes them, with the weight ``w(x) = (1 + \|x\|^2)^r``. This
-program is that of the quadratic and sum-of-squares templates, with ``r = 1``
-for quadratic forms, where the last condition is ``-I \preceq P_s \preceq I``.
-The other templates normalize the barriers in their own way, so their margins
-are not comparable with these.
+condition bounds them. The weight ``w(x) = (1 + \|x\|^2)^r`` is that of the
+quadratic and sum-of-squares templates, with ``r = 1`` for quadratic forms.
+The other templates bound their barriers in their own way, so a margin
+compares graphs for one template, not templates with each other.
 
-The package writes the node conditions as inclusions of the zero sublevel
-sets of the node functions (see [Conditions as set inclusions](@ref)). The
-S-procedure imposes them, which is sufficient, not necessary, and the
-polyhedral templates impose them with second-order cone constraints instead.
-On the running example:
+The node conditions are imposed with the S-procedure, which is sufficient but
+not necessary, or with second-order cone constraints for the polyhedral
+templates. On the running example:
 
 ```@example running
 problem = SafetyProblem(system, S0, Su)
@@ -313,7 +306,7 @@ certificate.margin
 
 The margin is positive, so the system is safe.
 
-**Why it holds.** The common function is negative on ``X_0``, positive on
+**Why it holds.** The common certificate is negative on ``X_0``, positive on
 ``X_u``, and satisfies ``V(A_i x) \le V(x)`` for every mode ``i``: it is a
 common barrier function. Along a trajectory that starts in ``X_0``, ``V``
 stays negative, so the trajectory never reaches ``X_u``.
@@ -340,10 +333,8 @@ gain ``K_s`` [ninite2026path](@cite). The program:
 \end{aligned}
 ```
 
-where ``\mu(V_s)`` measures the size of ``V_s``, which keeps the bound small:
-``\log\det P_s`` for a quadratic form ``V_s(x) = x^\top P_s x``, and an
-integral of ``V_s`` over a bounded region for the other templates, or of its
-gauge for the piecewise linear template.
+where ``\mu(V_s)`` measures the size of ``V_s``, which keeps the bound small,
+such as ``\log\det P_s`` for a quadratic form ``V_s(x) = x^\top P_s x``.
 
 The edge inequality is not convex in ``V_s`` and ``K_s`` together. With the
 quadratic template, the change of variables to ``P_s^{-1}`` and
@@ -377,7 +368,7 @@ From ``(1, 1)``, the policy costs at most this bound, whatever the switching.
 
 **Why it holds.** Here the graph must be **complete**, with an edge for every
 mode out of every node, which is stronger than path-complete. The common
-graph is complete, with its loop for every mode. The common function is then
+graph is complete, with its loop for every mode. The common certificate is then
 the minimum ``V = \min_s V_s``, and at ``x_k`` the policy applies
 ``u_k = K_s x_k``, with ``s = \kappa(x_k)`` attaining it. Whatever mode
 occurs, an edge leaves ``s`` with it, and its inequality bounds the stage cost
@@ -439,9 +430,11 @@ Each problem then reads:
   conditions, and the edge inequality implies the third. Together they prove
   safety: along a path of the graph, a trajectory from ``X_0`` stays in the
   sets ``\Omega_s``, which do not meet ``X_u``.
-- **Optimal control.** With the cost
-  ``\ell(x, u) = g_{\mathcal Q}(x)^p + g_{\mathcal R}(u)^p`` of
-  [Systems and problems](@ref) and node functions of the same degree
+- **Optimal control.** A matrix ``Q`` stands for the ellipsoid
+  ``\{x : x^\top Q x \le 1\}``, whose gauge is ``\sqrt{x^\top Q x}``, so every
+  cost of [Systems and problems](@ref) reads
+  ``\ell(x, u) = g_{\mathcal Q}(x)^p + g_{\mathcal R}(u)^p``, with ``p = 2``
+  for the quadratic cost. With node functions of the same degree
   ``\delta = p``, the right side of the edge inequality is a sum of
   ``\delta``-th powers of gauges: of ``\mathcal Q``, of
   ``K_s^{-1} \mathcal R`` and of ``(A_i + B_i K_s)^{-1} \Omega_d``, all at

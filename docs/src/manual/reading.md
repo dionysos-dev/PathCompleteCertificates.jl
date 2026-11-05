@@ -54,12 +54,12 @@ this graph, not that the property fails: another template or another graph
 may still certify it. [`status`](@ref) gives the solver's termination status,
 for diagnosis.
 
-### The node functions and the common function
+### The node functions and the common certificate
 
 | Accessor | Returns |
 | :-- | :-- |
 | [`functions`](@ref)`(c)` | the node functions ``V_s``, one per node |
-| `c(x)` | the common function ``V`` at the state `x` |
+| `c(x)` | the common certificate ``V`` at the state `x` |
 | [`get_graph`](@ref)`(c)` | the graph of the certificate |
 | [`get_template`](@ref)`(c)` | the template of its node functions |
 | [`get_problem`](@ref)`(c)` | the problem it certifies |
@@ -67,7 +67,7 @@ for diagnosis.
 
 [`node_value`](@ref)`(get_problem(c), V, x)` evaluates a node function `V` at
 the state `x`, whatever the problem: a node function may be a SetProg set
-rather than a callable. Calling the certificate at a state evaluates its common function (see
+rather than a callable. Calling the certificate at a state evaluates its common certificate (see
 [How a certificate works](@ref)):
 
 | Certificate | ``V(x)`` |
