@@ -179,7 +179,7 @@ end
         SHEARED;
         optimizer = OPTIMIZER,
         depth_max = 3,
-        algorithm = PCC.TightestNodeSplitting(; rng = MersenneTwister(1)),
+        strategy = PCC.TightestNodeSplitting(; rng = MersenneTwister(1)),
     )
 
     @test all(<(0), diff(PCC.rates(random)))
@@ -292,7 +292,7 @@ end
             SHEARED;
             optimizer = OPTIMIZER,
             depth_max = 2,
-            algorithm = PCC.TightestNodeSplitting(),
+            strategy = PCC.TightestNodeSplitting(),
         ),
     ) == PCC.DEPTH_REACHED
 
@@ -306,7 +306,7 @@ end
 
 @testset "check_path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings =
-        (optimizer = OPTIMIZER, depth_max = 3, algorithm = PCC.TightestNodeSplitting())
+        (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.TightestNodeSplitting())
     start = PCC.dual(PCC.de_bruijn(1, 2))
 
     # Waiving the check cannot change the answer on a graph that has the
@@ -358,19 +358,19 @@ end
     @test PCC.n_nodes.(PCC.graphs(decade)) == [1, 2, 3]
 end
 
-@testset "every local lift at every tight edge, best candidate, parallel-faces template" begin
+@testset "every local lift at every tight edge, best candidate, dual piecewise linear template" begin
     # Athanasopoulos & Jungers, Example 2, on the plane: the four partial lifts
     # at every tight edge, each candidate solved, the best kept. The products
     # write words on the edges, so the graph gains edges rather than nodes.
     problem = SHEARED
-    template = PCC.ParallelFacesPolyhedralTemplate(1, 2)
+    template = PCC.DualPiecewiseLinearTemplate(1, 2)
 
     trace = PCC.refine(
         template,
         MEMORYLESS,
         problem;
         optimizer = OPTIMIZER,
-        algorithm = PCC.BestOfTightEdgeLifts(),
+        strategy = PCC.BestOfTightEdgeLifts(),
         depth_max = 4,
         atol = 1e-4,
     )

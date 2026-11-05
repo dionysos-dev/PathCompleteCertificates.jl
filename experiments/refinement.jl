@@ -1,13 +1,13 @@
 # Figure "Automatic refinement" of the HSCC'27 tool paper (Section 5.2): the two
-# refinement algorithms and the De Bruijn hierarchy on the same pair, with the
+# refinement strategies and the De Bruijn hierarchy on the same pair, with the
 # quadratic template.
 #
 # Run from the repository root:
 #
-#     julia --project=numerical_experiments numerical_experiments/refinement.jl
+#     julia --project=experiments experiments/refinement.jl
 #
 # Prints, for each run, the time, size and bound of every graph visited, and the
-# edges of the last refined graph; writes numerical_experiments/results/refinement.pdf.
+# edges of the last refined graph; writes experiments/results/refinement.pdf.
 
 import PathCompleteCertificates as PCC
 import Clarabel, JuMP
@@ -65,14 +65,14 @@ atol = 1e-3
 # Wall-clock time at which each certificate of a run is reached: `stop` is
 # called on every certificate, after the solves that produced it, the candidate
 # solves of BestOfTightEdgeLifts included.
-function timed_refine(algorithm; kwargs...)
+function timed_refine(strategy; kwargs...)
     times = Float64[]
     t0 = time()
     trace = PCC.refine(
         TEMPLATE,
         problem;
         optimizer = OPTIMIZER,
-        algorithm,
+        strategy,
         atol,
         stop = c -> (push!(times, time() - t0); false),
         kwargs...,

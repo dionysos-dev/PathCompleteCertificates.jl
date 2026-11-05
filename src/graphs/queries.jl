@@ -182,7 +182,7 @@ end
     outgoing_edges(graph, node, mode)
 
 The edges leaving `node`, optionally only those whose label is the single mode
-`mode`; an edge reading a word of several modes is never among them.
+`mode`. An edge reading a word of several modes is never among the latter.
 """
 function outgoing_edges(graph::CertificateGraph, node::Integer)
     _check_node(graph, node)
@@ -198,7 +198,7 @@ end
     incoming_edges(graph, node, mode)
 
 The edges entering `node`, optionally only those whose label is the single mode
-`mode`; an edge reading a word of several modes is never among them.
+`mode`. An edge reading a word of several modes is never among the latter.
 """
 function incoming_edges(graph::CertificateGraph, node::Integer)
     _check_node(graph, node)

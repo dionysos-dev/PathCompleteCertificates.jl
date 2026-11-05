@@ -5,9 +5,8 @@ CurrentModule = PathCompleteCertificates
 # Template reference
 
 A template is a SetProg family. The constructors below build the families that
-[Choosing a template](@ref) presents, and stability also accepts SetProg
-families directly; [What works with what](@ref) says which problems each
-supports.
+[Choosing a template](@ref) presents, and a SetProg family can also be passed
+directly. [What works with what](@ref) says which problems each supports.
 
 ## Constructors
 
@@ -15,9 +14,12 @@ supports.
 Modules = [PathCompleteCertificates]
 Pages = [
     "templates/catalogue/quadratic.jl",
-    "templates/catalogue/sum_of_squares.jl",
     "templates/catalogue/piecewise_quadratic.jl",
-    "problems/polytope_compat.jl",
+    "templates/catalogue/sum_of_squares.jl",
+    "templates/catalogue/piecewise_linear.jl",
+    "templates/catalogue/dual_piecewise_linear.jl",
+    "templates/catalogue/linear_copositive.jl",
+    "templates/catalogue/dual_copositive.jl",
 ]
 ```
 
@@ -35,8 +37,7 @@ Pages = ["templates/abstract.jl", "problems/gauges.jl", "problems/sets.jl"]
 ## SetProg families
 
 The families of [SetProg](https://github.com/blegat/SetProg.jl), which the
-constructors return and stability accepts directly. Safety accepts quadratic
-and polynomial families.
+constructors return and the problems accept directly.
 
 ```@autodocs
 Modules = [SetProg]

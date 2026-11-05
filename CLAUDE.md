@@ -43,7 +43,7 @@ reindex(family, origins)                                   # per-node data follo
 has_dual(family), dual(family), dual(family, set)          # the dual norms, when they exist
 
 # Problem axis: one file per problem in problems/catalogue/.
-node_value(problem, V, x)                                  # V(x), or V([x; 1]) for safety
+node_value(problem, V, x)                                  # V(x), read off the SetProg set
 optimization_model(template, graph, problem; optimizer, ...) # build, do not solve
 certify(template, graph, problem; optimizer, ...)          # the best certificate on graph
 objective, optimality_gap, edge_slacks                     # what refine reads
@@ -64,13 +64,14 @@ Stability and safety use the families directly, as SetProg inclusions. Optimal c
 synthesizes the gains jointly with the quadratic template only, in `S = P⁻¹`, `Y = KS`, where it
 is convex, and says so in place. With the other templates it keeps the gains fixed and imposes
 the Bellman inequality as a SetProg inclusion through the polar `L_δ` sum, in
-`problems/catalogue/polynomial_optimal_control.jl`.
+`problems/catalogue/fixed_gain_optimal_control.jl`.
 
-**A new problem, lift or refinement algorithm is one file in the `catalogue/` of its
+**A new problem, lift or refinement strategy is one file in the `catalogue/` of its
 directory, and changes no other code**; its wiring (the include, a test, a reference page,
 What works with what) is listed in `docs/src/developers/extending.md`. A new template is a
 SetProg family: its constructor goes in `templates/catalogue/`, and a family new to the
-package needs its methods in `problems/gauges.jl` and `problems/sets.jl`.
+package needs its methods in `problems/gauges.jl` and `problems/sets.jl`, and for safety and
+optimal control in their catalogue files.
 
 ## 3. Repository map
 
@@ -85,12 +86,13 @@ src/
 │                 dual (declares `dual` for everything), de_bruijn (common_graph is order 0),
 │                 observer (and the combination rule of `common`), cycles, simulation
 ├── templates/    abstract.jl (the primitives) + catalogue/ (QuadraticTemplate, SumOfSquaresTemplate,
-│                 PiecewiseQuadraticTemplate)
+│                 PiecewiseQuadraticTemplate, PiecewiseLinearTemplate,
+│                 DualPiecewiseLinearTemplate, LinearCopositiveTemplate,
+│                 DualCopositiveTemplate)
 ├── problems/     abstract.jl (the interface), certificate.jl (accessors, `common`),
 │                 tight_edges.jl, gauges.jl (the primitives for SetProg families), sets.jl
-│                 (applicability, closures, reindexing, duals), polytope_compat.jl (the
-│                 copositive and polyhedral constructors) + catalogue/ (stability, safety,
-│                 optimal_control)
+│                 (applicability, closures, reindexing, duals) + catalogue/ (stability,
+│                 safety, optimal_control, fixed_gain_optimal_control)
 ├── lifts/        operations.jl (Addition, Maximum, Minimum, Composition, InverseComposition:
 │                 what a lift requires of a template), abstract.jl, dual.jl, compare.jl
 │                 + catalogue/ (twelve lifts)
@@ -98,8 +100,8 @@ src/
                   BestOfTightEdgeLifts)
 ```
 
-`ext/` holds one extension per weak dependency: SumOfSquares, for the polynomial template, and
-RecipesBase, for plots of a `Trajectory`. `test/` mirrors `src/`, with the template tests in
+`ext/` holds one extension, for RecipesBase: plots of a `Trajectory`. The sum-of-squares and
+piecewise quadratic templates need SumOfSquares loaded, through SetProg's own extension. `test/` mirrors `src/`, with the template tests in
 `test/problems/`; every file is standalone-runnable and listed in `TEST_FILES`. `docs/` holds
 `make.jl`, `graph_drawing.jl` (the drawings of graphs shared by the pages) and `src/`. No
 `utils.jl`.

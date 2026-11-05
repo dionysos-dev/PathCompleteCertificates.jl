@@ -308,6 +308,6 @@ so the default ``p = 2`` for matrices gives the quadratic cost.
 
 The keyword `p` must match the template (see [What works with what](@ref)).
 For instance, `OptimalControlProblem(controlled, Q, R; p = 4)` gives the cost
-``(x^\top Q x)^2 + (u^\top R u)^2``, for the sums of squares of degree 4.
+``(x^\top Q x)^2 + (u^\top R u)^2``, for `SumOfSquaresTemplate(2; convex = true)`.
 
 A complete example: [Design a controller robust to switching](@ref).

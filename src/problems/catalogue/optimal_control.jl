@@ -1,15 +1,16 @@
 """
     OptimalControlProblem(system, Q, R; p = 2)
 
-Optimal-control problem for a switched linear system with an input
-[ninite2026path](@cite). The stage cost is `(x'Q*x)^(p/2) + (u'R*u)^(p/2)`,
-with `Q` and `R` symmetric positive definite. The default `p = 2` gives the
-quadratic cost; `p = 4` gives a homogeneous quartic cost.
+The optimal-control problem of a switched linear system with an input
+[ninite2026path](@cite), with the stage cost
+``\\ell(x, u) = (x^\\top Q x)^{p/2} + (u^\\top R u)^{p/2}``, for `Q` and `R`
+symmetric positive definite. The default `p = 2` gives the quadratic cost, and
+`p = 4` a quartic one.
 
-Alternatively, supply fixed polytopes as `Q` and `R`, or fixed convex
-`SetProg.Sets.Piecewise` sets with linear pieces. The cost is the sum of
-their gauges raised to `p` (default one for this constructor). Polyhedral
-value families support exponents one and two.
+`Q` and `R` may instead be polytopes ``\\mathcal Q`` and ``\\mathcal R``, or
+convex `SetProg.Sets.Piecewise` sets with linear pieces. The stage cost is then
+``\\ell(x, u) = g_{\\mathcal Q}(x)^p + g_{\\mathcal R}(u)^p``, with `p = 1` by
+default. [What works with what](@ref) says which templates each cost accepts.
 """
 struct OptimalControlProblem{S, MQ, MR, P <: Real} <: AbstractProblem
     system::S
@@ -88,7 +89,7 @@ function _polyhedral_control_cost(polytope)
     _check_control_cost_partition(polytope)
     return SetProg.Sets.Piecewise(
         [
-            SetProg.Sets.PolarPoint(h.a / h.β) for
+            SetProg.Sets.PolarPoint(Vector(h.a) / h.β) for
             h in SetProg.Polyhedra.halfspaces(polytope)
         ],
         polytope,
@@ -119,16 +120,15 @@ _initialization_cost(set::_LinearPolytope) = Matrix{Float64}(
 """
     OptimalControlCertificate
 
-A value function `V_s` and a gain `K_s` at each node `s`. Joint quadratic
-synthesis optimizes both. Polynomial and polyhedral synthesis optimize the
-value functions for supplied or quadratically initialized gains. Its
-`edge_certificates` field contains fitted SOS Gram matrices in physical cost
-units, or LP/SOC proof matrices in gauge units for polyhedral values.
+A node function ``V_s`` and a gain ``K_s`` at each node ``s``. With
+`QuadraticTemplate()`, [`certify`](@ref) computes both. With the other
+templates, the gains are fixed.
 
-- The policy is `u = K_s x`, where `s` minimizes `V_s(x)`; [`simulate`](@ref)
-  runs it.
-- Its worst-case cost from `x` is at most `min_s V_s(x)`, which calling the
-  certificate at `x` returns.
+- The policy applies ``u = K_s x``, where ``s`` minimizes ``V_s(x)``.
+  [`simulate`](@ref) runs it.
+- Its worst-case cost ``J_\\phi(x)``, and so the robust value function
+  ``J^\\star(x)``, is at most ``\\min_s V_s(x)``, which calling the certificate
+  at `x` returns.
 """
 struct OptimalControlCertificate{D <: CertificateData, K, E} <: AbstractCertificate
     data::D
@@ -140,22 +140,22 @@ OptimalControlCertificate(data, gains) = OptimalControlCertificate(data, gains, 
 """
     optimization_model(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Build the joint quadratic synthesis program in `S = P⁻¹`, `Y = KS`.
-This method uses complete graphs, `QuadraticTemplate`, and `p = 2`.
-Bellman inequalities
-use SetProg `PolarLpSum` inclusions with exponent two, producing block PSD
-certificates.
+Build, without solving, the program that computes the node functions and the
+gains together, for `QuadraticTemplate()` and `p = 2`. The edge inequality is
+convex in the variables `S = P⁻¹` and `Y = KS`, and is imposed as a SetProg
+inclusion through the polar ``L_2`` sum.
 """
 function optimization_model(
     template::_SetFamily,
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
+    gains = nothing,
+    margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
-    template == QuadraticTemplate() && problem.p == 2 || throw(
-        ArgumentError("joint synthesis currently requires QuadraticTemplate() and p = 2"),
-    )
+    _check_joint_control_case(template, problem)
+    _check_joint_control_inputs(gains, margin)
     psd_margin > 0 || throw(ArgumentError("psd_margin must be positive"))
 
     _check_optimal_control_data(graph, problem)
@@ -223,19 +223,22 @@ end
 """
     certify(template, graph, problem; optimizer, psd_margin = 1e-4)
 
-Synthesize a state-feedback policy and an upper bound on its worst-case cost,
-returned as an [`OptimalControlCertificate`](@ref). This joint synthesis
-method uses complete graphs, `QuadraticTemplate`, and `p = 2`; the solver
-maximizes `Σₐ log det Pₐ⁻¹`.
+A state-feedback policy and an upper bound on its worst-case cost, as an
+[`OptimalControlCertificate`](@ref). With `QuadraticTemplate()` and `p = 2`,
+the node functions ``V_s(x) = x^\\top P_s x`` and the gains are computed
+together, and the program maximizes ``\\sum_s \\log\\det P_s^{-1}``.
 """
 function certify(
     template::_SetFamily,
     graph::CertificateGraph,
     problem::OptimalControlProblem;
     optimizer,
+    gains = nothing,
+    margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
-    model = optimization_model(template, graph, problem; optimizer, psd_margin)
+    model =
+        optimization_model(template, graph, problem; optimizer, gains, margin, psd_margin)
 
     JuMP.optimize!(model)
     termination = JuMP.termination_status(model)
@@ -312,6 +315,56 @@ function _check_optimal_control_data(graph, problem)
     is_complete(graph, 1:n_modes(problem.system)) ||
         throw(ArgumentError("optimal control requires a complete graph"))
 
+    return nothing
+end
+
+# The joint synthesis is the method for every template without a fixed-gain
+# method, so it names the templates that optimal control accepts.
+function _check_joint_control_case(template, problem)
+    template == QuadraticTemplate() || throw(
+        ArgumentError(
+            "optimal control supports QuadraticTemplate(), PiecewiseQuadraticTemplate, " *
+            "SumOfSquaresTemplate(r; convex = true) and PiecewiseLinearTemplate, see " *
+            "What works with what in the manual",
+        ),
+    )
+    _check_control_cost(template, problem)
+    problem.p == 2 || throw(
+        ArgumentError(
+            "QuadraticTemplate() needs p = 2, and SumOfSquaresTemplate(r; convex = true) " *
+            "takes p = 2r",
+        ),
+    )
+    return nothing
+end
+
+# The quadratic template computes the gains with the node functions.
+function _check_joint_control_inputs(gains, margin)
+    gains === nothing && iszero(margin) || throw(
+        ArgumentError(
+            "QuadraticTemplate() computes the gains, and takes neither gains nor a " *
+            "margin. SumOfSquaresTemplate(1; convex = true) has the same node " *
+            "functions and takes both",
+        ),
+    )
+    return nothing
+end
+
+# A cost given by polytopes is a sum of gauges, which only the node functions
+# of the piecewise linear template match.
+function _check_control_cost(
+    ::Union{SetProg.Polytope, AbstractVector{<:SetProg.Polytope}},
+    _,
+)
+    return nothing
+end
+function _check_control_cost(_, problem)
+    problem.Q isa AbstractMatrix || throw(
+        ArgumentError(
+            "a cost given by polytopes needs PiecewiseLinearTemplate, and the other " *
+            "templates need the matrices Q and R",
+        ),
+    )
     return nothing
 end
 

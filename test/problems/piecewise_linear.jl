@@ -1,4 +1,4 @@
-module TestConicPolyhedral
+module TestPiecewiseLinear
 
 using Test
 using LinearAlgebra
@@ -33,7 +33,7 @@ end
 
 @testset "Conic template compatibility constructor" begin
     partition = PCC.planar_conic_partition(1; library = LIB)
-    families = PCC.ConicPolyhedralTemplate([partition, partition])
+    families = PCC.PiecewiseLinearTemplate([partition, partition])
     @test length(families) == 2
     @test all(f -> f isa Polytope && f.piecewise === partition, families)
     @test all(f -> f.symmetric && f.dimension == 2, families)
@@ -43,12 +43,12 @@ end
     @test !PCC.is_closed_under(first(families), PCC.Composition(), system)
     @test !PCC.is_closed_under(first(families), PCC.InverseComposition(), system)
     @test !PCC.is_closed_under(families, PCC.Maximum(), system)
-    scaled = only(PCC.ConicPolyhedralTemplate([partition]; min_scale = 2))
+    scaled = only(PCC.PiecewiseLinearTemplate([partition]; min_scale = 2))
     @test all(v -> 2v in partition, points(scaled.piecewise))
-    @test_throws ArgumentError PCC.ConicPolyhedralTemplate([])
-    @test_throws ArgumentError PCC.ConicPolyhedralTemplate([[Matrix{Float64}(I, 2, 2)]])
-    @test_throws ArgumentError PCC.ConicPolyhedralTemplate([partition]; min_scale = 0)
-    @test_throws ArgumentError PCC.ConicPolyhedralTemplate([partition]; min_scale = Inf)
+    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([])
+    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([[Matrix{Float64}(I, 2, 2)]])
+    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([partition]; min_scale = 0)
+    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([partition]; min_scale = Inf)
 end
 
 @testset "Conic certificates use the native piecewise polytope" begin
@@ -56,7 +56,7 @@ end
     problem = PCC.StabilityProblem(PCC.switched_system(A))
     graph = PCC.common_graph(2)
     partition = PCC.planar_conic_partition(1; library = LIB)
-    families = PCC.ConicPolyhedralTemplate([partition])
+    families = PCC.PiecewiseLinearTemplate([partition])
     # The original octagon has the same facet cones, with different vertex radii.
     octagon = polyhedron(
         hrep([
@@ -94,7 +94,7 @@ end
     end
     # Higher-order partitions also return meaningful edge slacks.
     diagonal = PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.25]]))
-    refined = PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(2; library = LIB)])
+    refined = PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(2; library = LIB)])
     certificate = PCC.certify(
         refined,
         PCC.de_bruijn(1, 1),

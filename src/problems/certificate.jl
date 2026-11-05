@@ -15,11 +15,11 @@ abstract type AbstractCertificate end
     CertificateData(problem, template, graph, functions, status, feasible)
 
 The fields shared by every certificate:
-- `problem`, the problem certified;
-- `template`, the template the node functions are drawn from;
-- `graph`, the path-complete graph they sit on;
-- `functions`, the node function at each node, empty after a failed solve;
-- `status`, the solver's termination status;
+- `problem`, the problem certified.
+- `template`, the template the node functions are drawn from.
+- `graph`, the path-complete graph they sit on.
+- `functions`, the node function at each node, empty after a failed solve.
+- `status`, the solver's termination status.
 - `feasible`, whether the solve produced a certificate, read by
   [`is_feasible`](@ref).
 """
@@ -45,7 +45,8 @@ _data(certificate::AbstractCertificate) = certificate.data
 """
     functions(certificate)
 
-The node function at each node, indexed by node; empty after a failed solve.
+The node function at each node, indexed by node, and empty after a failed
+solve.
 """
 functions(certificate::AbstractCertificate) = _data(certificate).functions
 
@@ -152,9 +153,9 @@ optimality_gap(::AbstractCertificate; kwargs...) = Inf
 """
     edge_slacks(certificate)
 
-The slack of every edge inequality, in `edges(get_graph(certificate))` order; zero
-means tight. For stability, slacks are relative to the scale of the node
-functions, so they do not depend on its normalization, and a tight edge has a
+The slack of every edge inequality, in `edges(get_graph(certificate))` order.
+Zero means tight. For stability, slacks are relative to the scale of the node
+functions, so they do not depend on their normalization, and a tight edge has a
 slack of the order of `rtol`. Throws on an infeasible certificate.
 """
 function edge_slacks end

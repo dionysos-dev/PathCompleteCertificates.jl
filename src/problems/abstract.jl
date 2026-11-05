@@ -13,10 +13,9 @@ _refinable(::AbstractProblem) = false
 """
     node_value(problem, V, x)
 
-The value of the node function `V` at the state `x`: `V(x)` by default. A
-problem whose node functions take coordinates other than `x` defines its own
-method, such as `V([x; 1])` for [`SafetyProblem`](@ref), in homogeneous
-coordinates.
+The value ``V(x)`` of the node function `V` at the state `x`. A problem whose
+node functions are SetProg sets, rather than callables, defines its own method
+to read the value off the set.
 """
 node_value(::AbstractProblem, V, x::AbstractVector{<:Real}) = V(x)
 

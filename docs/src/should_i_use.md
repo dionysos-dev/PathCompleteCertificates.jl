@@ -25,13 +25,13 @@ It fits best when, in addition:
   it.
 - You want node functions beyond quadratic forms: sums of squares, piecewise
   quadratic functions, polyhedral norms, or copositive functions for positive
-  systems. Most of them also certify safety and optimal control, where
+  systems. Several of them also certify safety and optimal control, where
   path-complete certificates have so far used quadratic functions only.
 - You want to choose the solver: any JuMP solver for the program that the
   template and the problem set, linear, second-order cone or semidefinite.
 - You study the path-complete framework itself, and want to compare graphs,
   use duality, benchmark methods from different papers, or add a template, a
-  problem or an algorithm.
+  problem or a refinement strategy.
 
 Not every combination of problem, template and method is supported yet:
 [What works with what](@ref) lists them.

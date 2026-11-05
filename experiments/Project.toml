@@ -12,8 +12,6 @@ SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 
 [sources]
 PathCompleteCertificates = {path = ".."}
-# The polyhedral safety templates need SetProg changes not yet released.
-SetProg = {url = "https://github.com/blegat/SetProg.jl", rev = "main"}
 
 [compat]
 Clarabel = "0.11"

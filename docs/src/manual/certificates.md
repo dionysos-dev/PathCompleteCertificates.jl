@@ -100,7 +100,7 @@ another:
 | :-- | :-- | :-- | :-- |
 | stability | ``V_s`` positive definite | ``V_d(A_i x) \le \gamma^\delta \, V_s(x)`` | ``\rho(\mathcal{A}) \le \gamma`` |
 | safety | ``V_s \le 0`` on ``X_0``, ``V_s > 0`` on ``X_u`` | ``V_d(A_i x) \le V_s(x)`` | no trajectory from ``X_0`` reaches ``X_u`` |
-| optimal control | ``V_s`` positive definite | ``\ell(x, K_s x) + V_d\big((A_i + B_i K_s) x\big) \le V_s(x)`` | ``J_\phi(x) \le V(x)`` for every ``x`` |
+| optimal control | ``V_s`` positive definite | ``V_s(x) \ge \ell(x, K_s x) + V_d\big((A_i + B_i K_s) x\big)`` | ``J_\phi(x) \le V(x)`` for every ``x`` |
 
 [Systems and problems](@ref) defines the joint spectral radius
 ``\rho(\mathcal{A})``, the sets ``X_0`` and ``X_u``, the stage cost ``\ell``
@@ -149,7 +149,8 @@ certificate, but builds a larger program: more variables at each node, or
 more nodes and edges.
 
 For stability on the running example, the program has one quadratic form, so
-three parameters, and one ``2 \times 2`` linear matrix inequality per mode.
+three parameters, one ``2 \times 2`` linear matrix inequality per mode, and a
+third for the normalization ``P \succeq I``.
 [`optimization_model`](@ref) builds the program without solving it.
 
 ```@setup running
@@ -288,20 +289,21 @@ A barrier changes sign, so it is not homogeneous. With the quadratic
 template, it is ``V_s(x) = [x; 1]^\top P_s [x; 1]``, with ``P_s`` symmetric,
 possibly indefinite. With `SumOfSquaresTemplate(r)`, it is a polynomial of
 degree at most ``2r``. With the piecewise quadratic template, it is
-``x^\top Q_k x - 1`` on each cone, with ``Q_k`` positive semidefinite.
+``x^\top P_{s,k} x - 1`` on each cone, with ``P_{s,k}`` positive semidefinite.
 
 The margin ``\varepsilon`` measures how well the barriers separate ``X_0``
 from ``X_u``. Scaling the barriers would scale the margin, so the last
 condition normalizes them, with the weight ``w(x) = (1 + \|x\|^2)^r``. This
 program is that of the quadratic and sum-of-squares templates, with ``r = 1``
 for quadratic forms, where the last condition is ``-I \preceq P_s \preceq I``.
+The other templates normalize the barriers in their own way, so their margins
+are not comparable with these.
 
 The package writes the node conditions as inclusions of the zero sublevel
-sets of the node functions (see [Conditions as set inclusions](@ref)), which
-the S-procedure imposes. The S-procedure is sufficient, not necessary. The
-polyhedral templates use second-order cone constraints instead, with a
-normalization and a margin of their own, not comparable with those of the
-other templates (see [What works with what](@ref)). On the running example:
+sets of the node functions (see [Conditions as set inclusions](@ref)). The
+S-procedure imposes them, which is sufficient, not necessary, and the
+polyhedral templates impose them with second-order cone constraints instead.
+On the running example:
 
 ```@example running
 problem = SafetyProblem(system, S0, Su)
@@ -332,15 +334,16 @@ gain ``K_s`` [ninite2026path](@cite). The program:
 ```math
 \begin{aligned}
 \min_{V_s,\ K_s} \quad & \textstyle\sum_s \mu(V_s) \\
-\text{subject to} \quad & \ell(x, K_s x) + V_d\big((A_i + B_i K_s) x\big)
-  \le V_s(x) \quad \forall x && \text{for every edge } (s, d, i), \\
+\text{subject to} \quad & V_s(x) \ge \ell(x, K_s x)
+  + V_d\big((A_i + B_i K_s) x\big) \quad \forall x && \text{for every edge } (s, d, i), \\
 & V_s \text{ positive definite} && \text{for every node } s,
 \end{aligned}
 ```
 
 where ``\mu(V_s)`` measures the size of ``V_s``, which keeps the bound small:
 ``\log\det P_s`` for a quadratic form ``V_s(x) = x^\top P_s x``, and an
-integral of ``V_s`` over a bounded region for the other templates.
+integral of ``V_s`` over a bounded region for the other templates, or of its
+gauge for the piecewise linear template.
 
 The edge inequality is not convex in ``V_s`` and ``K_s`` together. With the
 quadratic template, the change of variables to ``P_s^{-1}`` and
@@ -408,7 +411,8 @@ Three notions turn inequalities into inclusions:
   of degree ``\delta``, is determined by its unit set
   ``\Omega = \{x : V(x) \le 1\}``: ``V(x) = g_\Omega(x)^\delta``, with
   ``g_\Omega`` the gauge of ``\Omega`` (see [Systems and problems](@ref)).
-  Two such functions satisfy ``V(x) \ge W(x)`` for every ``x`` exactly when
+  Two such functions of the same degree satisfy ``V(x) \ge W(x)`` for every
+  ``x`` exactly when
   the unit set of ``V`` is contained in that of ``W``.
 - **The preimage.** ``A^{-1} \Omega = \{x : A x \in \Omega\}`` is the unit set
   of ``V(A x)``, for any matrix ``A``.

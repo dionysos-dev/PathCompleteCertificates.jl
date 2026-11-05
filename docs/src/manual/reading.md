@@ -67,8 +67,7 @@ for diagnosis.
 
 [`node_value`](@ref)`(get_problem(c), V, x)` evaluates a node function `V` at
 the state `x`, whatever the problem: a node function may be a SetProg set
-rather than a callable, and the package evaluates a barrier at ``[x; 1]``.
-Calling the certificate at a state evaluates its common function (see
+rather than a callable. Calling the certificate at a state evaluates its common function (see
 [How a certificate works](@ref)):
 
 | Certificate | ``V(x)`` |
@@ -126,7 +125,8 @@ The tight edges also bound the joint spectral radius from below:
 - [`jsr_lower_bound`](@ref) is the largest ``\rho(A_w)^{1/|w|}`` over the
   words ``w`` read along the cycles of tight edges.
 - [`is_jsr_exact`](@ref) holds when every node has at most one tight outgoing
-  edge: the rate is then the joint spectral radius
+  edge and the tight edges contain a cycle: the rate is then the joint
+  spectral radius
   [ninite2026lifting; Thm. 4](@cite). `false` means unknown.
 - [`optimality_gap`](@ref) is `0` when `is_jsr_exact` holds, and the rate
   minus the lower bound otherwise.
@@ -156,8 +156,9 @@ barrier.margin
 ```
 
 `c.initial_multipliers` and `c.unsafe_multipliers` hold the multipliers of the
-S-procedure for the two sets, one per node. With the polyhedral templates,
-which need none, each entry is `nothing`.
+S-procedure for the two sets, one entry per node. With the piecewise quadratic
+template, each entry holds one multiplier per cone. With the polyhedral
+templates, which need none, each entry is `nothing`.
 
 A complete example: [Prove my system safe](@ref).
 

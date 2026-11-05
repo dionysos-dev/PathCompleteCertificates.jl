@@ -4,7 +4,8 @@ const _SetFamily =
 """
     homogeneity_degree(template) -> Int
 
-The degree `p` such that `V(cx) = cᵖ V(x)` for every function of the template.
+The degree ``\\delta`` such that ``V(c x) = c^\\delta V(x)`` for every function
+of the template and every ``c > 0``.
 """
 function homogeneity_degree end
 
@@ -31,8 +32,8 @@ function add_normalization! end
 
 The decrease condition of an edge: `V_dst` after `map` is at most `scale`
 times `V_src`. Constrain, for every ``x``,
-``\\text{scale} \\cdot V_{src}(x) \\ge V_{dst}(\\text{map} \\cdot x)``; for a
-SetProg family, as a set inclusion.
+``\\text{scale} \\cdot V_{src}(x) \\ge V_{dst}(\\text{map} \\cdot x)``, as a set
+inclusion for a SetProg family.
 """
 function add_decrease! end
 
@@ -47,7 +48,7 @@ function solution_value end
 """
     is_applicable(template, system) -> Bool
 
-Whether `template` applies to the dynamics of `system`; `true` by default. The
+Whether `template` applies to the dynamics of `system`, `true` by default. The
 copositive templates apply to positive systems only. A problem refuses a
 template that does not apply, and no lift is valid for it.
 """
@@ -67,7 +68,7 @@ function decrease_slack end
 """
     is_closed_under(template, operation, system) -> Bool
 
-Whether combining members of the template by `operation` gives a member;
+Whether combining members of the template by `operation` gives a member,
 `false` by default. `system` matters only for [`Composition`](@ref) and
 [`InverseComposition`](@ref).
 """
@@ -77,7 +78,7 @@ function is_closed_under end
     reindex(template, origins)
 
 The template for a lifted graph whose nodes come from `origins`. A single
-template is unchanged; a vector, one template per node, follows `origins`, and
+template is unchanged. A vector, one template per node, follows `origins`, and
 throws if a node merges origins with different templates.
 """
 function reindex end
@@ -87,17 +88,18 @@ _origin_nodes(origin::Integer) = (origin,)
 _origin_nodes(origin::AbstractVector{<:Integer}) = origin
 _origin_nodes(origin::Tuple{<:Integer, <:Any}) = (first(origin),)
 
-# One datum per new node, when its origins agree on it.
+# One datum per new node, when its origins agree on it, compared through `by`.
 function _reindexed_data(
     data::AbstractVector,
     origins::AbstractVector,
-    what::AbstractString,
+    what::AbstractString;
+    by = identity,
 )
     return map(origins) do origin
         members = _origin_nodes(origin)
         value = data[first(members)]
 
-        all(member -> data[member] == value, members) || throw(
+        all(member -> by(data[member]) == by(value), members) || throw(
             ArgumentError(
                 "the lift merges nodes $(collect(members)) whose $what differ; the " *
                 "template carries one per node and cannot follow it",
@@ -111,8 +113,7 @@ end
 """
     has_dual(template) -> Bool
 
-Whether `dual(template)` and `dual(template, V)` are defined; `false` by
-default. The quadratic template is its own dual, and the two copositive
-templates are each other's.
+Whether `dual(template)` and `dual(template, V)` are defined, `false` by
+default.
 """
 function has_dual end

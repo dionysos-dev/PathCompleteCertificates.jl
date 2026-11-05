@@ -1,12 +1,12 @@
 """
     AbstractLift
 
-An operation on graphs: `lift(L, G)` is path-complete when `G` is, and no
-worse than `G` for every template closed under [`requirements`](@ref)`(L)`,
-since a certificate on `G` gives one on `L(G)`. Lifts are the steps of
-[`refine`](@ref), and decide the order between two graphs in
-[`compare`](@ref): when `L(G)` simulates `H`, `G ≤_V H` for the same
-templates.
+An operation on graphs: `lift(L, G)` is path-complete when `G` is, and at
+least as good as `G` for every template closed under
+[`requirements`](@ref)`(L)`, since a certificate on `G` gives one on `L(G)`.
+Lifts are the steps of [`refine`](@ref), and order two graphs in
+[`compare`](@ref): when `L(G)` simulates `H`, `H` is at least as good as `G`
+for the same templates.
 """
 abstract type AbstractLift end
 
@@ -42,8 +42,8 @@ origins(lifted::Lifted) = lifted.origins
     lift(L, graph, node) -> Lifted
 
 Apply `L` to the whole graph, at each of the given edges, or at a node. A lift
-applied at edges is applied at every edge when none are given; the splits are
-also applied at a node. A lift without the form asked for throws a
+applied at edges is applied at every edge when none are given, and the splits
+are also applied at a node. A lift without the form asked for throws a
 `MethodError`.
 """
 function lift end
@@ -56,16 +56,17 @@ lift(L::AbstractLift, g::CertificateGraph, edge::_Edge) = lift(L, g, [edge])
     requirements(L) -> Tuple
 
 The [`Operation`](@ref)s a template must be closed under for `L` to be valid
-on it; none for a lift that copies node functions or chains edge
-inequalities.
+on it. A lift that copies node functions or chains edge inequalities requires
+none.
 """
 requirements(::AbstractLift) = ()
 
 """
     simulation(L, G, H; optimizer = nothing)
 
-The simulation of `H` by `lift(L, G)`, or `nothing` when there is none; it
-proves `G ≤_V H` for every template closed under `requirements(L)`
+The simulation of `H` by `lift(L, G)`, or `nothing` when there is none. It
+proves that `H` is at least as good as `G` for every template closed under
+`requirements(L)`
 [philippe2019complete; Thm. 3.5](@cite),
 [debauche2024thesis; Thms. 7.18, 7.55, 7.56, 7.65 and 7.66](@cite).
 `optimizer` is used by [`SumLift`](@ref)`()` only.
@@ -85,8 +86,8 @@ end
 """
     is_valid(L, template, system) -> Bool
 
-Whether ``G ≤_V L(G)`` for every path-complete ``G``, for `template` on
-`system`. True when the template is closed under `requirements(L)`, or its
+Whether `L(G)` is at least as good as `G` for every path-complete `G`, for
+`template` on `system`. True when the template is closed under `requirements(L)`, or its
 dual under `requirements(dual(L))` on the dual system
 [debauche2024thesis; Prop. 7.5](@cite).
 """

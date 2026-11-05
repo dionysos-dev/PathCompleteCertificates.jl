@@ -4,8 +4,8 @@
 
 Run `system` from `x0` along `modes`, or along `horizon` modes drawn uniformly
 at random, and return a [`Trajectory`](@ref). `u`, a vector of inputs or a
-feedback law `u(x)`, is required exactly when [`has_input`](@ref)`(system)`;
-otherwise it throws.
+feedback law `u(x)`, is required exactly when [`has_input`](@ref)`(system)`,
+and `simulate` throws otherwise.
 """
 function simulate(
     system::_HS.HybridSystem,

@@ -31,13 +31,11 @@ type: the shared fields
 live once in `CertificateData`, and what the problem certifies is a typed
 field of its own, `rate`, `margin` or `gains`.
 
-**A new problem, lift or refinement algorithm is one file in the `catalogue/`
+**A new problem, lift or refinement strategy is one file in the `catalogue/`
 of its directory, and changes no other code**: the rest is wiring, listed in
 [Extending the package](@ref). Every directory with an interface has that
 shape: the interface at the top, one file per inhabitant under `catalogue/`,
-named after the type without the directory's suffix. The exception is the
-templates, whose copositive and polyhedral constructors live in
-`src/problems/polytope_compat.jl`.
+named after the type without the directory's suffix.
 
 ## Templates are SetProg families
 
@@ -60,27 +58,26 @@ The package adds what a certificate needs:
 
 - what the package needs to know about a family, in `src/problems/sets.jl`:
   `is_applicable`, `is_closed_under`, `reindex`, `has_dual` and `dual`.
-- the constructors: `QuadraticTemplate`, `SumOfSquaresTemplate` and
-  `PiecewiseQuadraticTemplate` in `src/templates/catalogue/`, the copositive
-  and polyhedral ones in `src/problems/polytope_compat.jl`.
+- the constructors, one file per template in `src/templates/catalogue/`.
 
 `add_decrease!` is the load-bearing primitive: stability's whole edge
 inequality is one call with `scale = γ^δ`. A fitted node function is evaluated
-with `node_value(problem, V, x)`, so that each problem chooses its
-coordinates. Every problem writes its conditions as SetProg inclusions (see
+with `node_value(problem, V, x)`, so that each problem reads the value off the
+set. Every problem writes its conditions as SetProg inclusions (see
 [Conditions as set inclusions](@ref)). Safety models the initial-set
 inclusion and the unsafe-set disjointness, without positivity constraints on
 the barriers. Optimal control computes the gains jointly with the quadratic
 template only, and keeps them fixed with the other templates.
 
-## Lifts and refinement algorithms
+## Lifts and refinement strategies
 
 **A lift is an operation on a graph, and `refine` an algorithm that applies
 lifts.** A lift maps a path-complete graph to a path-complete graph at least
 as good for every template the lift is valid for: closed under its
 `requirements`, or with a dual closed under the dual operations. The same
-lift can be a step of a refinement algorithm and a test of `compare`, where a
-simulation of ``H`` by the lifted ``G`` proves ``G \le_V H``.
+lift can be a step of a refinement strategy and a test of `compare`, where a
+simulation of ``H`` by the lifted ``G`` proves that ``H`` is at least as good
+as ``G``.
 
 ```julia
 # src/lifts/operations.jl: what a template is closed under and a lift requires.
@@ -96,10 +93,10 @@ is_valid(L, template, system)                    # written once against the two
 dual(L)                                          # a DualLift, applied on the dual graph
 compare(G, H; templates, system, optimizer)      # the entry point of comparison
 
-# A refinement algorithm, src/refinements/catalogue/: one method to write.
-next_graph(algorithm, certificate; atol, solve)  # (lifted, its certificate or nothing), or nothing
-initial_graph(algorithm, system)                 # where it starts; common_graph by default
-refine(template, graph, problem; algorithm)      # the entry point: the loop
+# A refinement strategy, src/refinements/catalogue/: one method to write.
+next_graph(strategy, certificate; atol, solve)   # (lifted, its certificate or nothing), or nothing
+initial_graph(strategy, system)                  # where it starts; common_graph by default
+refine(template, graph, problem; strategy)       # the entry point: the loop
 ```
 
 - What a lift supports is the methods it has, never a flag.
@@ -111,7 +108,7 @@ refine(template, graph, problem; algorithm)      # the entry point: the loop
   never override `is_valid`.
 - The min, max and sum lifts are never built to decide an order: a relation
   decides the first two, and a linear program the third.
-- An algorithm chooses its candidates and how to select among them. The loop
+- A strategy chooses its candidates and how to select among them. The loop
   owns the solves, the stopping rules and the trace.
 
 ## The graph layer

@@ -4,7 +4,7 @@
 # with four nodes proved stability, and left the joint spectral radius between
 # ``0.976`` and ``0.984``. Here the package designs the graph: it proves
 # stability with three nodes, and finds the exact joint spectral radius with
-# ten. [Refining the graph](@ref) explains the algorithm; this page runs it.
+# ten. [Refining the graph](@ref) explains refinement, and this page runs it.
 
 using PathCompleteCertificates
 import Clarabel
@@ -46,7 +46,7 @@ status(trace)
 # ## The bounds, drawn
 #
 # On the left, the two bounds of each step against the number of nodes, and
-# the rates of the De Bruijn graphs, whose nodes double with the order; the
+# the rates of the De Bruijn graphs, whose nodes double with the order. The
 # first lower bounds, ``0.75``, fall below the chart. On the right, the last
 # graph, its tight edges in bold: every node keeps at most one tight outgoing
 # edge, which proves the rate exact, and the tight edges form one cycle, which

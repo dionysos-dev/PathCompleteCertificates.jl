@@ -122,7 +122,7 @@ To keep the implementation and the survey current, the package is built to
 receive new methods:
 [What works with what](@ref) shows the combinations not yet covered, and
 [Extending the package](@ref) how to add a template, a problem, a lift or a
-refinement algorithm.
+refinement strategy.
 
 ## Getting help
 

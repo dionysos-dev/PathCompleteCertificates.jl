@@ -119,8 +119,8 @@ end
     test_edges(polyset, template, MEMORYLESS)
 end
 
-@testset "a piecewise polytope reproduces the conic polyhedral template" begin
-    conic = rate(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)]))
+@testset "a piecewise polytope reproduces the piecewise linear template" begin
+    conic = rate(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)]))
     template = Polytope(symmetric = true, piecewise = OCTAGON)
     polytope = rate(template)
 
@@ -202,6 +202,33 @@ end
     @test !PCC.is_closed_under(shared, PCC.Maximum(), system)
 end
 
+@testset "equal partitions built separately are the same" begin
+    system = PROBLEM.system
+    octagons = [PCC.planar_conic_partition(1) for _ in 1:2]
+    @test PCC.is_closed_under(
+        PCC.PiecewiseQuadraticTemplate(octagons),
+        PCC.Addition(),
+        system,
+    )
+    linear = PCC.PiecewiseLinearTemplate(octagons)
+    @test PCC.is_valid(PCC.SumLift(2), linear, system)
+    @test only(PCC.reindex(linear, [[1, 2]])) === first(linear)
+    @test PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.PiecewiseLinearTemplate(octagons; min_scale = 2),
+        system,
+    )
+    # Through its dual for the sum, directly for the max.
+    boxes = PCC.DualPiecewiseLinearTemplate(2, 2)
+    @test PCC.is_valid(PCC.SumLift(2), boxes, system)
+    @test PCC.is_valid(PCC.MaxLift(), boxes, system)
+    @test !PCC.is_valid(
+        PCC.SumLift(2),
+        PCC.PiecewiseLinearTemplate([SQUARE, OCTAGON]),
+        system,
+    )
+end
+
 @testset "family validation and zero rate" begin
     @test_throws ArgumentError rate(Ellipsoid(dimension = 2))
     @test_throws ArgumentError rate(Polytope(symmetric = true, dimension = 2))
@@ -247,7 +274,7 @@ end
     system = PCC.switched_system([[0.5 0.0; 0.0 0.25], [0.25 0.0; 0.0 0.5]])
     problem = PCC.StabilityProblem(system)
     graph = PCC.de_bruijn(1, 2)
-    families = PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 1.0]])
+    families = PCC.DualPiecewiseLinearTemplate([[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 1.0]])
     certificate =
         PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
     @test PCC.is_feasible(certificate)
@@ -263,7 +290,11 @@ end
     @test PCC.has_dual(boxes)
     @test PCC.dual(PCC.dual(boxes)) == boxes
     @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(certificate)))
-    @test_throws ArgumentError PCC.dual(families)
+    polyhedral =
+        PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
+    @test PCC.has_dual(families)
+    @test PCC.dual(PCC.dual(families)) == families
+    @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(polyhedral)))
     @test !PCC.is_closed_under(
         Ellipsoid(symmetric = true, piecewise = SQUARE),
         PCC.Composition(),
@@ -301,14 +332,14 @@ end
 @testset "compatibility constructors use native families" begin
     @test PCC.DualCopositiveTemplate().set isa SetProg.Domain
     @test PCC.LinearCopositiveTemplate() isa SetProg.Domain
-    @test only(PCC.ParallelFacesPolyhedralTemplate(1, 2)).set isa SetProg.Polytope
-    @test only(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])) isa
+    @test only(PCC.DualPiecewiseLinearTemplate(1, 2)).set isa SetProg.Polytope
+    @test only(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)])) isa
           SetProg.Polytope
-    @test length(PCC.ParallelFacesPolyhedralTemplate(2, 2)) == 2
-    @test length(PCC.ParallelFacesPolyhedralTemplate([[1.0 0.0; 0.0 1.0]])) == 1
-    @test length(PCC.ConicPolyhedralTemplate([PCC.planar_conic_partition(1)])) == 1
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(0, 2)
-    @test_throws ArgumentError PCC.ParallelFacesPolyhedralTemplate(Matrix{Float64}[])
+    @test length(PCC.DualPiecewiseLinearTemplate(2, 2)) == 2
+    @test length(PCC.DualPiecewiseLinearTemplate([[1.0 0.0; 0.0 1.0]])) == 1
+    @test length(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)])) == 1
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(0, 2)
+    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(Matrix{Float64}[])
     @test_throws ArgumentError PCC.planar_conic_partition(0)
     @test PCC.node_value(PROBLEM, PCC.DualCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 0.5
     @test PCC.node_value(PROBLEM, PCC.LinearCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 5

@@ -82,7 +82,7 @@ The package aims to implement the state of the art on path-complete certificates
 [What works with what](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/manual/support/)
 lists the gaps, and
 [Extending the package](https://dionysos-dev.github.io/PathCompleteCertificates.jl/dev/developers/extending/)
-says how to close one, with a new template, problem, lift or refinement algorithm.
+says how to close one, with a new template, problem, lift or refinement strategy.
 
 ## Citing
 

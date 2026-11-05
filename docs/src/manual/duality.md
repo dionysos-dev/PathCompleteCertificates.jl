@@ -30,17 +30,17 @@ The numbers in parentheses refer to [debauche2024thesis](@citet).
 | `dual` of | gives |
 | :-- | :-- |
 | a graph | the same nodes with every edge reversed, path-complete exactly when the graph is (Prop. 6.6) |
-| a system | the same modes with every matrix transposed |
+| a system without input | the same modes with every matrix transposed |
 | a stability problem | the stability problem of the dual system |
 | a template | the template of the dual functions, when [`has_dual`](@ref) holds |
 | a stability certificate | the dual functions on the dual graph, for the dual system, at the same rate |
 | a lift ``L`` | the lift that applies ``L`` to the dual graph and reverses the result: ``\operatorname{dual}(L)(G) = \operatorname{dual}(L(\operatorname{dual}(G)))`` |
 
-Quadratic forms are their own duals, and the linear copositive and dual
-copositive templates are each other's. The parallel-faces template is the
-polar of the conic polyhedral one (see [Choosing a template](@ref)), but
-`dual` does not map one to the other yet. The other templates have no dual
-here.
+Quadratic forms are their own duals. The linear copositive and dual copositive
+templates are each other's, and so are the piecewise linear and dual
+piecewise linear templates, on the same partition (see
+[Choosing a template](@ref)). [What works with what](@ref) lists the objects
+without a dual.
 
 **Why a dual certificate is a certificate.** For a template of norms, node
 functions form a certificate on a graph for a system exactly when their dual

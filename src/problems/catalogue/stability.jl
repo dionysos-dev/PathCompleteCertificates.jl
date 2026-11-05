@@ -52,8 +52,7 @@ end
 
 Build, without solving, the SetProg model of the feasibility problem
 `V_d(A_w x) <= rate^(δ |w|) * V_s(x)` for every edge `(s, d, w)`, with `δ` the
-template's degree and `|w|` the length of the word; its set variables are
-expanded when it is optimized.
+template's degree and `|w|` the length of the word.
 """
 function optimization_model(
     template::_SetFamily,
@@ -338,8 +337,8 @@ Whether every node has at most one outgoing edge in the
 [`tight_subgraph`](@ref), which proves the rate is the joint spectral radius
 [ninite2026lifting; Thm. 4](@cite). `false` means unknown. At the optimal rate
 the tight subgraph keeps the rate [ninite2026lifting; Prop. 1](@cite), so it
-contains a cycle; without one, `atol` was too small to see the active edges and
-the answer is `false`. Throws on a graph with words; use `expanded_form`.
+contains a cycle. Without one, `atol` was too small to see the active edges,
+and the answer is `false`. Throws on a graph with words: use `expanded_form`.
 """
 function is_jsr_exact(certificate::StabilityCertificate; atol::Real = _TIGHT_ATOL)
     _require_one_mode_per_edge(get_graph(certificate), "is_jsr_exact")
@@ -356,7 +355,7 @@ end
 
 A lower bound on the joint spectral radius, valid for any `atol`: the largest
 `ρ(A_w)^{1/|w|}` over the words `w` read along the simple cycles of at most
-`max_length` edges of the [`tight_subgraph`](@ref); `0` if there are none.
+`max_length` edges of the [`tight_subgraph`](@ref), or `0` if there are none.
 """
 function jsr_lower_bound(
     certificate::StabilityCertificate;

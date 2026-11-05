@@ -2,7 +2,7 @@
     dual(x)
     dual(template, V)
 
-The dual of a graph, lift, operation, template, system, problem or certificate;
+The dual of a graph, lift, operation, template, system, problem or certificate.
 `dual(template, V)` is the dual norm of a fitted node function `V`, as a member
 of `dual(template)`.
 """

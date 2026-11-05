@@ -4,8 +4,8 @@
 #
 # Run from the repository root:
 #
-#     julia --project=numerical_experiments -e 'using Pkg; Pkg.instantiate()'
-#     julia --project=numerical_experiments numerical_experiments/templates_jsr.jl
+#     julia --project=experiments -e 'using Pkg; Pkg.instantiate()'
+#     julia --project=experiments experiments/templates_jsr.jl
 #
 # Stability: the upper bound on the JSR. The lower bound rho(A_1) is the JSR on
 # this pair; a bound below it signals a solver tolerance too loose.
@@ -15,10 +15,9 @@
 # that safety is certified for the unsafe set Xu = {x : ||x|| >= R}: every
 # trajectory from X0 stays in the ball of radius R. The lower bound is R0 times
 # the largest norm of a product of mode matrices: no certificate can do better.
-# The polyhedral templates need SetProg.jl at its main branch, see the README.
 #
 # Prints both tables, with the time of each solve, and writes them to
-# numerical_experiments/results/templates_jsr.csv and templates_safety.csv.
+# experiments/results/templates_jsr.csv and templates_safety.csv.
 
 import PathCompleteCertificates as PCC
 import Clarabel, HiGHS, JuMP, SetProg
@@ -77,29 +76,22 @@ const CONES_32 = PCC.planar_conic_partition(3; library = LIBRARY)
 
 # The polyhedral and piecewise templates carry data per node, hence are built
 # for each graph. Each template comes with the optimizer of its stability
-# solves, and the last field says whether it supports safety.
+# solves.
 const TEMPLATES = [
-    ("Quadratic", n -> PCC.QuadraticTemplate(), OPTIMIZER, true),
+    ("Quadratic", n -> PCC.QuadraticTemplate(), OPTIMIZER),
     (
         "Piecewise quadratic, 16 cones",
         n -> PCC.PiecewiseQuadraticTemplate(fill(CONES_16, n)),
         PIECEWISE_QUADRATIC_OPTIMIZER,
-        false,
     ),
-    ("Sum of squares, r = 2", n -> PCC.SumOfSquaresTemplate(2), OPTIMIZER, true),
-    ("Sum of squares, r = 3", n -> PCC.SumOfSquaresTemplate(3), OPTIMIZER, true),
+    ("Sum of squares, r = 2", n -> PCC.SumOfSquaresTemplate(2), OPTIMIZER),
+    ("Sum of squares, r = 3", n -> PCC.SumOfSquaresTemplate(3), OPTIMIZER),
     (
         "Piecewise linear, 32 cones",
-        n -> PCC.ConicPolyhedralTemplate(fill(CONES_32, n)),
+        n -> PCC.PiecewiseLinearTemplate(fill(CONES_32, n)),
         OPTIMIZER,
-        true,
     ),
-    (
-        "Parallel faces, F_s = I",
-        n -> PCC.ParallelFacesPolyhedralTemplate(n, 2),
-        OPTIMIZER,
-        true,
-    ),
+    ("Dual piecewise linear, boxes", n -> PCC.DualPiecewiseLinearTemplate(n, 2), OPTIMIZER),
 ]
 
 function bound(template, graph, optimizer)
@@ -166,11 +158,11 @@ function write_csv(file, quantity, results)
 end
 
 # Warm-up, so that compilation does not count in the times.
-for (_, make, optimizer, has_safety) in TEMPLATES
+for (_, make, optimizer) in TEMPLATES
     template = make(1)
     graph = first(GRAPHS)[2]
     bound(template, graph, optimizer)
-    has_safety && certified(template, graph, R_MAX)
+    certified(template, graph, R_MAX)
 end
 
 # Stability.
@@ -181,15 +173,11 @@ stability = [
 print_table(stability, v -> @sprintf("%.4f", v))
 write_csv("templates_jsr.csv", "bound", stability)
 
-# Safety, NaN for a template that does not support it.
+# Safety.
 @printf("Safety: %.4f, a lower bound on the radius\n\n", radius_lower_bound(16))
 safety = [
-    (
-        name,
-        label,
-        PCC.n_nodes(graph),
-        (has_safety ? radius(make(PCC.n_nodes(graph)), graph) : (NaN, NaN))...,
-    ) for (name, make, _, has_safety) in TEMPLATES for (label, graph) in GRAPHS
+    (name, label, PCC.n_nodes(graph), radius(make(PCC.n_nodes(graph)), graph)...) for
+    (name, make) in TEMPLATES for (label, graph) in GRAPHS
 ]
 print_table(safety, v -> @sprintf("%.4f", v))
 write_csv("templates_safety.csv", "radius", safety)

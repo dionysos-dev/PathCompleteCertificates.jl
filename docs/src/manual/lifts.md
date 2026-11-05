@@ -22,7 +22,8 @@ fall into two categories, below, and come in dual pairs (see
 
 [`lift`](@ref)`(L, graph)` applies the lift `L` to the whole graph,
 `lift(L, graph, edges)` at the given edges, and `lift(L, graph, node)` at one
-node. Each lift has the forms its definition allows. The result is a
+node. The splits take all three forms, the forward and backward products the
+first two, and the other lifts the whole graph only. The result is a
 [`Lifted`](@ref): the new graph, [`get_graph`](@ref), and the
 [`origins`](@ref) of its nodes, what each stands for in the old graph.
 
@@ -60,7 +61,7 @@ stability supports (see [What works with what](@ref)).
 
 | Lift | What it does | Used by |
 | :-- | :-- | :-- |
-| [`OutSplitLift`](@ref) | out-splits a node at each of its outgoing edges, or at the given edges | both refinement algorithms |
+| [`OutSplitLift`](@ref) | out-splits a node at each of its outgoing edges, or at the given edges | both refinement strategies |
 | [`InSplitLift`](@ref) | in-splits a node at each of its incoming edges, or at the given edges | [`BestOfTightEdgeLifts`](@ref) |
 | [`ForwardProductLift`](@ref) | the forward product at the given edges | [`BestOfTightEdgeLifts`](@ref) |
 | [`BackwardProductLift`](@ref) | the backward product at the given edges | [`BestOfTightEdgeLifts`](@ref) |

@@ -7,14 +7,14 @@ its outgoing edges, one copy per given edge.
 - `lift(OutSplitLift(), graph, node)` refines the forward lift of
   [ninite2026lifting; Def. 3](@cite), which makes one copy per out-neighbour:
   one copy of `node` per outgoing edge, owning that edge, and `node` replaced
-  by its copies; a self-loop leaves the copy that owns it for every copy. On
+  by its copies. A self-loop leaves the copy that owns it for every copy. On
   [`common_graph`](@ref) it gives the dual of [`de_bruijn`](@ref)`(1, M)`,
   where the forward lift leaves the graph unchanged.
 - `lift(OutSplitLift(), graph, edges)` is the partial P\\*-lift of
   [athanasopoulos2019polyhedral; Def. 7](@cite) at each edge: one copy of its
   source owning that edge. A node whose outgoing edges are all given is
   replaced by its copies, so the lift at a node is the lift at its outgoing
-  edges; otherwise a given self-loop goes from its copy to the node.
+  edges. Otherwise a given self-loop goes from its copy to the node.
 
 Copies are numbered last. No requirement: each copy takes the function of the
 node it came from.

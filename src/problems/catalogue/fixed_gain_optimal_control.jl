@@ -43,41 +43,34 @@ function _check_fixed_gain_control_case(::Val{false})
     return throw(
         ArgumentError(
             "fixed-gain optimal control needs symmetric, convex node functions whose " *
-            "degree is the exponent p of the cost, such as " *
-            "SumOfSquaresTemplate(r; convex = true) with p = 2r, or a nonempty " *
-            "polytope family with p = 1 or p = 2, or symmetric PSD piecewise " *
-            "ellipsoids with p = 2",
+            "degree is the exponent p of the cost: " *
+            "SumOfSquaresTemplate(r; convex = true) with p = 2r, " *
+            "PiecewiseQuadraticTemplate with p = 2, or PiecewiseLinearTemplate " *
+            "with p = 1 or p = 2",
         ),
     )
 end
 
 """
     optimization_model(template, graph, problem::OptimalControlProblem;
-                       optimizer, gains, margin = 0)
+                       optimizer, gains, margin = 0, psd_margin = 1e-4)
 
-Optimize value bounds for fixed node feedback gains. Piecewise
-`Ellipsoid(symmetric = true, piecewise = partition)` families support quadratic
-costs (`p = 2`). Their squared gauges are piecewise quadratic, and Bellman
-inequalities use SDP positivity certificates on the common cone refinement.
-A vector of families may give a different partition at each node. The
-objective integrates their quadratic pieces over bounded cone sections.
+Build, without solving, the program of the node functions for fixed `gains`,
+one matrix ``K_s`` per node. The degree ``\\delta`` of the node functions must
+be the exponent `p` of the cost:
 
-For polyhedral bounds, `Polytope` families
-with fixed `piecewise` partitions support `p = 1` (LP) and `p = 2` (SOCP).
-Their values are the p-th powers of their gauges. A vector of such families
-can supply a different partition at each node. The objective minimizes
-integrals of their linear gauges over bounded cone sections.
+- `SumOfSquaresTemplate(r; convex = true)` with `p = 2r`, a semidefinite
+  program.
+- [`PiecewiseQuadraticTemplate`](@ref) with `p = 2`, a semidefinite program.
+- [`PiecewiseLinearTemplate`](@ref) with `p = 1`, a linear program, or
+  `p = 2`, a second-order cone program. The node functions are then
+  ``g_{\\Omega_s}^p``.
 
-For polynomial bounds, the family must be symmetric and convex, with its
-homogeneous degree equal to `problem.p`. For example, use
-`PolySet(symmetric = true, convex = true, degree = 4)`
-and `OptimalControlProblem(system, Q, R; p = 4)`.
-
-Bellman inequalities are `PolarLpSum` inclusions with exponent `problem.p`.
-The objective minimizes the sum of the value polynomials' integrals over
-`[-1, 1]^n`, using SetProg's volume heuristic. `margin` adds a multiple of
-`‖x‖^p` to each normalized stage cost. The gain matrices are fixed data.
-For polyhedral values, ray certificates impose the same margin.
+A vector of templates gives a different partition at each node. The edge
+inequality is imposed as a SetProg inclusion through the polar ``L_p`` sum.
+The objective minimizes the integrals of the node functions, or of their
+gauges for the piecewise linear template, over a bounded region. `margin` adds
+a multiple of ``\\|x\\|^p`` to the stage cost.
 """
 function optimization_model(
     template::_FixedGainControlFamily,
@@ -88,10 +81,7 @@ function optimization_model(
     margin::Real = 0,
     psd_margin::Real = 1e-4,
 )
-    if template isa SetProg.Ellipsoid &&
-       template.piecewise === nothing &&
-       gains === nothing &&
-       iszero(margin)
+    if template isa SetProg.Ellipsoid && template.piecewise === nothing
         return invoke(
             optimization_model,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -99,9 +89,12 @@ function optimization_model(
             graph,
             problem;
             optimizer,
+            gains,
+            margin,
             psd_margin,
         )
     end
+    _check_control_cost(template, problem)
     return _fixed_gain_control_model(
         _fixed_gain_control_case(template, problem),
         template,
@@ -180,22 +173,20 @@ end
 """
     certify(template, graph, problem::OptimalControlProblem;
             optimizer, gains = nothing, margin = 0,
-            initialization_psd_margin = 1e-4)
+            initialization_optimizer = optimizer,
+            initialization_psd_margin = 1e-4, psd_margin = 1e-4)
 
-Optimize polynomial, piecewise quadratic, or polyhedral value bounds for
-supplied node gains.
-If `gains` is omitted, initialize them with the quadratic solver using the same `Q` and `R`
-and exponent two. This initialization must succeed; gains can instead be
-supplied explicitly. The value optimization then keeps these matrices fixed.
-For fixed polyhedral costs, initialization uses identity quadratic costs.
-`initialization_optimizer` defaults to `optimizer`; set it to an SDP solver
-when using an LP solver for the polyhedral problem.
+The best node functions for fixed `gains`, with the templates of the
+fixed-gain [`optimization_model`](@ref), as an
+[`OptimalControlCertificate`](@ref). Without `gains`, they are the gains of
+the quadratic certificate for the same `Q` and `R` and `p = 2`, or for
+identity costs when `Q` and `R` are polytopes. `initialization_optimizer`
+computes them, so it must solve semidefinite programs, and `certify` throws if
+that certificate is infeasible.
 
-The returned certificate uses the node with smallest powered-gauge value to
-select its gain. Polynomial `edge_slacks` are the minimum eigenvalues of the
-fitted SOS Gram certificates in physical cost units. Piecewise quadratic
-proofs are block-diagonal PSD remainders of the cone certificates. Polyhedral
-edge proofs are LP slacks or SOC arrow matrices in gauge units.
+[`edge_slacks`](@ref) reads the smallest eigenvalue of the certificate of each
+edge, or its linear or second-order cone slack for the piecewise linear
+template.
 """
 function certify(
     template::_FixedGainControlFamily,
@@ -208,10 +199,7 @@ function certify(
     initialization_optimizer = optimizer,
     psd_margin::Real = 1e-4,
 )
-    if template isa SetProg.Ellipsoid &&
-       template.piecewise === nothing &&
-       gains === nothing &&
-       iszero(margin)
+    if template isa SetProg.Ellipsoid && template.piecewise === nothing
         return invoke(
             certify,
             Tuple{_SetFamily, CertificateGraph, OptimalControlProblem},
@@ -219,9 +207,12 @@ function certify(
             graph,
             problem;
             optimizer,
+            gains,
+            margin,
             psd_margin,
         )
     end
+    _check_control_cost(template, problem)
     _check_fixed_gain_control_case(_fixed_gain_control_case(template, problem))
     if gains === nothing
         seed = certify(

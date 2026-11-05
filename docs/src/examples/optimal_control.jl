@@ -3,8 +3,8 @@
 # A switched system with an input, whose mode is chosen by an adversary. A
 # path-complete certificate gives a state-feedback policy and an upper bound on
 # its worst-case cost, as in [ninite2026path](@cite), and a larger graph lowers
-# the bound. [How a certificate works](@ref) explains the certificate; this page
-# runs it from start to end.
+# the bound. [How a certificate works](@ref) explains the certificate, and this
+# page runs it from start to end.
 
 using PathCompleteCertificates
 import Clarabel
@@ -22,7 +22,7 @@ nothing #hide
 # ## The system
 #
 # A rotation and a contraction, with the same input matrix, and the stage cost
-# ``x^\top Q x + u^\top R u``. The rotation alone never decays: the input has to
+# ``\ell(x, u) = x^\top Q x + u^\top R u``. The rotation alone never decays: the input has to
 # bring the state to the origin, whatever the switching. The runs below start
 # from ``x_0 = (3, -2)``.
 
@@ -45,9 +45,9 @@ certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 
 # ## A path-complete graph
 #
-# Optimal control needs a complete graph, and the primal De Bruijn graphs are.
-# They give one function and one gain per node, and the bound drops with each
-# order:
+# The primal De Bruijn graphs are complete, as optimal control requires (see
+# [What works with what](@ref)). They give one function and one gain per node,
+# and the bound drops with each order:
 
 bounds =
     [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for k in 0:2]
@@ -138,97 +138,48 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 # ## What it proves
 #
-# Whatever the switching, the policy of the certificate costs at most
-# ``V(x_0)`` from ``x_0``, and so does the best policy (see
-# [How a certificate works](@ref)). The random runs above stay well below it:
-# the bound covers the worst switching sequence, which random runs rarely meet.
+# Whatever the switching, the policy of the certificate has a worst-case cost
+# ``J_\phi(x_0) \le V(x_0)``, and so the robust value function satisfies
+# ``J^\star(x_0) \le V(x_0)`` (see [How a certificate works](@ref)). The random
+# runs above stay below the bound, as every switching sequence must:
 
 maximum(last.(costs)), certificate(x0)
 
-# ## Quartic value bounds for fixed gains
+# ## Other templates
 #
-# With `p = 4`, the stage cost is `(x'Qx)^2 + (u'Ru)^2`. A homogeneous
-# quartic PolySet can represent the corresponding value bound. Here the gain
-# matrices come from the quadratic certificate above, and the polynomial SDP
-# optimizes its values by minimizing their integrals over the unit box.
-# Convexity and homogeneity ensure nonnegativity, so `psd = false` omits a
-# separate SOS constraint on the value polynomial.
-
-import SetProg
-using SumOfSquares
-
-quartic_problem = OptimalControlProblem(system, Q, R; p = 4)
-quartic_family = SetProg.PolySet(; symmetric = true, convex = true, psd = false, degree = 4)
-quartic_certificate = certify(
-    quartic_family,
-    graph,
-    quartic_problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
-)
-is_feasible(quartic_certificate)
-quartic_certificate(x0)
-
-# Omitting `gains` asks the package to initialize them with its quadratic solver.
-# In both cases, the quartic optimization keeps the gain matrices fixed, and
-# the smallest fitted value at each state selects which gain is applied.
-
-# ## Polyhedral values and squared gauges
+# The other templates keep the gains fixed, here those of the quadratic
+# certificate above, and fit the node functions to them. Each certificate then
+# bounds the worst-case cost of its own policy.
 #
-# A polytope family gives a piecewise-linear gauge. With `p = 2`, the package
-# squares it to bound the same quadratic cost as above. The fixed-gain
-# problem is an SOCP, and keeps the normal fan of the supplied partition.
+# For the quadratic cost, a piecewise quadratic and a piecewise linear
+# template, on partitions of the plane from [`planar_conic_partition`](@ref).
+# The piecewise quadratic one needs SumOfSquares, and its partition a Polyhedra
+# library with a linear programming solver. The piecewise linear node
+# functions are the squared gauges ``g_{\Omega_s}^2``, since `p = 2`:
 
-import LinearAlgebra
-P = SetProg.Polyhedra
-# Sample each quadratic gauge to obtain a partition fine enough for these
-# nearly rotational dynamics. A coarse square partition can be infeasible.
-directions = [f(2pi * i / 32) for i in 0:31, f in (cos, sin)]
-polyhedral_families = [
-    SetProg.Polytope(;
-        symmetric = true,
-        piecewise = P.polyhedron(
-            P.hrep(
-                directions * LinearAlgebra.cholesky(LinearAlgebra.Symmetric(Matrix(V))).U,
-                ones(32),
-            ),
-        ),
-    ) for V in functions(certificate)
-]
-polyhedral_certificate = certify(
-    polyhedral_families,
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
+import HiGHS, SetProg, SumOfSquares
+
+library = SetProg.Polyhedra.DefaultLibrary{Float64}(
+    JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
-is_feasible(polyhedral_certificate)
-polyhedral_certificate(x0)
+fixed(template, problem) =
+    certify(template, graph, problem; optimizer = OPTIMIZER, gains = certificate.gains)
 
-# For `p = 1`, the same family produces an LP for unsquared gauge costs.
-# Fixed polytopes may also be supplied as cost unit balls:
-# `OptimalControlProblem(system, state_cost_polytope, input_cost_polytope; p = 1)`.
-# The objective minimizes the linear gauge integral, also when the control
-# value is its square. Gains remain fixed throughout this optimization.
+piecewise_quadratic =
+    fixed(PiecewiseQuadraticTemplate(fill(planar_conic_partition(1; library), 2)), problem)
+piecewise_linear =
+    fixed(PiecewiseLinearTemplate(fill(planar_conic_partition(3), 2)), problem)
+piecewise_quadratic(x0), piecewise_linear(x0)
 
-# ## Piecewise quadratic value bounds
-#
-# Piecewise ellipsoids keep a quadratic form on every cone of a fixed
-# partition. The Bellman inequalities are SDPs on the common refinement of
-# source cones and preimages of destination cones. The feedback gains remain
-# fixed. Each piece is optimized, with SetProg enforcing continuity and
-# convexity across neighboring cones.
+# With `p = 4`, the stage cost is
+# ``\ell(x, u) = (x^\top Q x)^2 + (u^\top R u)^2``, and the node functions of
+# `SumOfSquaresTemplate(2; convex = true)` are quartic polynomials:
 
-piecewise_quadratic_family = SetProg.Ellipsoid(;
-    symmetric = true,
-    piecewise = P.polyhedron(P.hrep([1.0 0.0; 0.0 1.0; -1.0 0.0; 0.0 -1.0], ones(4))),
+quartic = fixed(
+    SumOfSquaresTemplate(2; convex = true),
+    OptimalControlProblem(system, Q, R; p = 4),
 )
-piecewise_quadratic_certificate = certify(
-    piecewise_quadratic_family,
-    graph,
-    problem;
-    optimizer = OPTIMIZER,
-    gains = certificate.gains,
-)
-is_feasible(piecewise_quadratic_certificate)
-piecewise_quadratic_certificate(x0)
+quartic(x0)
+
+# Polytopes can also replace `Q` and `R`, for a piecewise linear stage cost
+# (see [Systems and problems](@ref)).

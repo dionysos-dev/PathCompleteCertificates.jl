@@ -35,10 +35,16 @@ const POSITIVE = PCC.switched_system([
 ])
 const GENERAL = PCC.switched_system([[0.8 0.3; -0.2 0.5], [0.4 -0.6; 0.5 0.3]])
 
+# The piecewise linear pair shares one family over the octagon, so it applies
+# to the graphs of every lift.
+const OCTAGON = PCC.planar_conic_partition(1)
+
 const CASES = [
     (PCC.QuadraticTemplate(), GENERAL),
     (PCC.LinearCopositiveTemplate(), POSITIVE),
     (PCC.DualCopositiveTemplate(), POSITIVE),
+    (only(PCC.PiecewiseLinearTemplate([OCTAGON])), GENERAL),
+    (only(PCC.DualPiecewiseLinearTemplate([OCTAGON])), GENERAL),
 ]
 
 const ONE = PCC.common_graph(2)
@@ -146,16 +152,38 @@ end
     @test !PCC.is_valid(PCC.MaxLift(), PCC.LinearCopositiveTemplate(), POSITIVE)
     @test !PCC.is_valid(PCC.MinLift(), PCC.DualCopositiveTemplate(), POSITIVE)
 
+    # The piecewise linear pair crosses over in the same way, on the
+    # cross-polytopes, where the dual functions have parallel faces.
+    boxes = PCC.DualPiecewiseLinearTemplate(1, 2)
+    diamonds = PCC.dual(boxes)
+    @test PCC.is_valid(PCC.MaxLift(), boxes, GENERAL)
+    @test PCC.is_valid(PCC.MinLift(), diamonds, GENERAL)
+    @test !PCC.is_closed_under(diamonds, PCC.Minimum(), GENERAL)
+
     # A template without a dual is decided by its own closures only.
-    @test PCC.is_valid(
-        PCC.SumLift(2),
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
-        GENERAL,
-    ) == PCC.is_closed_under(
-        PCC.ParallelFacesPolyhedralTemplate(1, 2),
-        PCC.Addition(),
-        GENERAL,
+    piecewise = PCC.PiecewiseQuadraticTemplate([OCTAGON])
+    @test PCC.is_valid(PCC.SumLift(2), piecewise, GENERAL) ==
+          PCC.is_closed_under(piecewise, PCC.Addition(), GENERAL)
+end
+
+@testset "the piecewise linear template and its dual share the partition" begin
+    @test PCC.has_dual(PCC.PiecewiseLinearTemplate([OCTAGON]))
+    @test PCC.has_dual(PCC.DualPiecewiseLinearTemplate([OCTAGON]))
+    @test PCC.dual(PCC.PiecewiseLinearTemplate([OCTAGON])) ==
+          PCC.DualPiecewiseLinearTemplate([OCTAGON])
+    @test PCC.dual(PCC.DualPiecewiseLinearTemplate([OCTAGON])) ==
+          PCC.PiecewiseLinearTemplate([OCTAGON])
+
+    # The boxes are the dual piecewise linear functions on the cross-polytope.
+    # Adding zero turns the -0.0 of the opposite vertices into 0.0.
+    vertices(templates) = Set(
+        Tuple(SetProg.Polyhedra.coord(p) .+ 0.0) for
+        p in SetProg.points(only(templates).set.piecewise)
     )
+    identity = [1.0 0.0; 0.0 1.0]
+    @test vertices(PCC.DualPiecewiseLinearTemplate(1, 2)) ==
+          vertices(PCC.DualPiecewiseLinearTemplate([identity])) ==
+          Set([(1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)])
 end
 
 @testset "an infeasible certificate dualises to an infeasible one" begin
@@ -181,14 +209,10 @@ end
     @test PCC.has_dual(PCC.QuadraticTemplate())
     @test PCC.has_dual(PCC.LinearCopositiveTemplate())
     @test PCC.has_dual(PCC.DualCopositiveTemplate())
-    @test !PCC.has_dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
 
-    @test_throws ArgumentError PCC.dual(PCC.ParallelFacesPolyhedralTemplate(1, 2))
-
-    polyhedral =
-        bound(PCC.ParallelFacesPolyhedralTemplate(1, 2), ONE, PCC.StabilityProblem(GENERAL))
-    @test PCC.is_feasible(polyhedral)
-    @test_throws ArgumentError PCC.dual(polyhedral)
+    piecewise = PCC.PiecewiseQuadraticTemplate([OCTAGON])
+    @test !PCC.has_dual(piecewise)
+    @test_throws ArgumentError PCC.dual(piecewise)
 end
 
 end # module

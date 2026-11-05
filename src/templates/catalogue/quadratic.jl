@@ -8,8 +8,9 @@ and gives semidefinite programs.
 For stability, a fitted node function `V` is a SetProg ellipsoid: evaluate it
 with [`node_value`](@ref), and read ``P`` as `V.Q`. The `conditioning_bound`
 keyword of [`certify`](@ref) bounds ``P`` between ``I`` and
-`conditioning_bound` times ``I``. Safety returns affine SetProg quadratics;
-optimal control returns a [`QuadraticFunction`](@ref) per node.
+`conditioning_bound` times ``I``. Safety returns one SetProg shifted ellipsoid
+per node, for the barrier ``[x; 1]^\\top P [x; 1]``, and optimal control a
+[`QuadraticFunction`](@ref) per node.
 See [Choosing a template](@ref).
 """
 function QuadraticTemplate()
