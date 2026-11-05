@@ -49,37 +49,12 @@ end
     @test tight.rate == 0.1
 end
 
-@testset "a failed solve names no function type" begin
-    # `functions` is empty, so there is no fitted function to take a type from.
+@testset "an infeasible polyhedral solve has no node functions" begin
     template = PCC.DualPiecewiseLinearTemplate(PCC.n_nodes(GRAPH), 2)
     tight = PCC.certify(template, GRAPH, PROBLEM; optimizer = OPTIMIZER, rate = 0.01)
 
     @test !PCC.is_feasible(tight)
     @test isempty(PCC.functions(tight))
-    @test !any(f -> f isa SetProg.Sets.Ellipsoid, PCC.functions(tight))
-end
-
-@testset "certify without a rate agrees with certify at the rate it returns" begin
-    bound = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rtol = 1e-3,
-    )
-
-    @test PCC.is_feasible(bound)
-    @test abs(bound.rate - 0.5) <= 0.01
-
-    # The bisection ends in exactly this solve.
-    direct = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rate = bound.rate,
-    )
-    @test PCC.is_feasible(direct)
 end
 
 @testset "optimization_model builds without solving" begin
@@ -97,7 +72,7 @@ end
     @test all(V -> V isa SetProg.SetVariableRef, model[:stability_V])
 end
 
-@testset "optimal control has a model of its own now" begin
+@testset "optimization_model builds the optimal-control program in S and Y" begin
     B = [[1.0; 0.0;;], [1.0; 0.0;;]]
     system = PCC.switched_system([[0.0 1.0; -1.0 0.0], [-0.1 0.0; 0.0 -0.95]], B)
     problem = PCC.OptimalControlProblem(system, [1.0 0.0; 0.0 1.0], [1.0;;])

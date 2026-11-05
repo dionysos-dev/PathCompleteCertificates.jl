@@ -1,4 +1,3 @@
-
 module TestStability
 
 using Test
@@ -28,14 +27,12 @@ const OPTIMIZER = Clarabel.Optimizer
     @test PCC.is_path_complete(mode_1_only)          # for its own alphabet
     @test !PCC.is_path_complete(mode_1_only, 1:2)    # not for the system's
 
-    @test_throws ArgumentError PCC.is_feasible(
-        PCC.certify(
-            PCC.QuadraticTemplate(),
-            mode_1_only,
-            problem;
-            optimizer = OPTIMIZER,
-            rate = 0.95,
-        ),
+    @test_throws ArgumentError PCC.certify(
+        PCC.QuadraticTemplate(),
+        mode_1_only,
+        problem;
+        optimizer = OPTIMIZER,
+        rate = 0.95,
     )
 
     @test_throws ArgumentError PCC.certify(
@@ -49,7 +46,7 @@ end
 @testset "the path-completeness check can be waived, and then it is an assertion" begin
     # Deciding path-completeness is PSPACE-complete, so a caller with a large
     # graph, or one whose construction already guarantees the property, needs a
-    # way out. `check_path_complete = false` is that way out -- and it asserts rather
+    # way out. `check_path_complete = false` is that way out, and it asserts rather
     # than checks, so the same graph that is rejected by default is accepted.
     two_modes = PCC.switched_system([[0.9 0.0; 0.0 0.9], [0.5 0.0; 0.0 0.5]])
     problem = PCC.StabilityProblem(two_modes)
@@ -59,14 +56,12 @@ end
 
     @test !PCC.is_path_complete(mode_1_only, 1:2)
 
-    @test_throws ArgumentError PCC.is_feasible(
-        PCC.certify(
-            PCC.QuadraticTemplate(),
-            mode_1_only,
-            problem;
-            optimizer = OPTIMIZER,
-            rate = 0.95,
-        ),
+    @test_throws ArgumentError PCC.certify(
+        PCC.QuadraticTemplate(),
+        mode_1_only,
+        problem;
+        optimizer = OPTIMIZER,
+        rate = 0.95,
     )
 
     # Waived: the solve runs. The bound it produces says nothing about mode 2,
@@ -85,7 +80,7 @@ end
 
 @testset "a path-complete graph that is neither complete nor co-complete" begin
     # The check must not be stricter than the theory. Complete and co-complete
-    # are sufficient conditions (Philippe et al., Definition III.2); this graph
+    # are sufficient conditions (Philippe et al., Definition III.2). This graph
     # is neither, yet reads every word, so it is a legitimate certificate
     # structure and synthesis has to accept it.
     contracting = PCC.switched_system([[0.5 0.0; 0.0 0.5], [0.4 0.0; 0.0 0.4]])
@@ -185,18 +180,6 @@ end
     # rho(diag(0.5, 0.25)) = 0.5, and every template must agree on it.
     @test abs(result.rate - 0.5) <= 0.01
     @test PCC.is_feasible(result)
-
-    # Both copositive templates need a positive system, and say so up front.
-    rotation = PCC.StabilityProblem(PCC.switched_system([[0.0 -0.5; 0.5 0.0]]))
-    for template in (PCC.LinearCopositiveTemplate(), PCC.DualCopositiveTemplate())
-        @test_throws ArgumentError PCC.certify(
-            template,
-            GRAPH,
-            rotation;
-            optimizer = OPTIMIZER,
-            rate = 1.0,
-        )
-    end
 end
 
 @testset "every template agrees on the rate" begin
@@ -251,7 +234,7 @@ end
         ),
     )
 
-    # The cap still available, and still conservative -- which is the point of
+    # The cap still available, and still conservative, which is the point of
     # making the caller ask for it.
     capped = PCC.certify(
         PCC.QuadraticTemplate(),

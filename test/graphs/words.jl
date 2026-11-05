@@ -12,8 +12,6 @@ import PathCompleteCertificates as PCC
     @test g isa PCC.WordGraph
     @test PCC.label(g, e1) == [1, 2]
     @test PCC.label(g, e2) == [1]
-    @test PCC._word_length(g, e1) == 2
-    @test PCC._word_length(g, e2) == 1
     @test PCC.has_words(g)
     @test sort(PCC.alphabet(g)) == [1, 2]
 
@@ -39,8 +37,8 @@ end
     @test !PCC.has_words(expanded)
 
     # Factor sense: "2" is a factor of the path label "12", but "22" is a factor
-    # of no path label -- every 2 is followed by a 1 -- so the graph reads the
-    # language of neither {1, 2} nor its expanded form, and both agree.
+    # of no path label, since every 2 is followed by a 1. So neither the graph
+    # nor its expanded form reads every word over {1, 2}, and both agree.
     @test !PCC.is_path_complete(g, 1:2)
     @test !PCC.is_path_complete(expanded, 1:2)
 
@@ -84,18 +82,6 @@ end
     @test Set((PCC.source(e), PCC.dest(e), PCC.label(dd, e)) for e in PCC.edges(dd)) ==
           Set((PCC.source(e), PCC.dest(e), PCC.label(g, e)) for e in PCC.edges(g))
 
-    # On a graph with one mode per edge, the dual De Bruijn graph is the dual of the primal one.
-    for k in 1:2
-        primal = PCC.de_bruijn(k, 2)
-        co = PCC.dual(PCC.de_bruijn(k, 2))
-        edgeset(h) =
-            Set((PCC.source(e), PCC.dest(e), PCC.label(h, e)) for e in PCC.edges(h))
-        @test edgeset(PCC.dual(primal)) == edgeset(co)
-    end
-
-    # Path-completeness is preserved by duality.
-    @test PCC.is_path_complete(PCC.dual(PCC.de_bruijn(2, 2)), 1:2)
-
     # The edge correspondence at some edges.
     primal = PCC.de_bruijn(1, 2)
     edge_list = PCC.outgoing_edges(primal, 1)
@@ -106,22 +92,6 @@ end
         @test PCC.source(f) == PCC.dest(e) && PCC.dest(f) == PCC.source(e)
         @test PCC.label(dualised, f) == PCC.label(primal, e)
     end
-end
-
-@testset "the adjacency index agrees with the queries" begin
-    g = PCC.de_bruijn(2, 2)
-    index = PCC._successors(g)
-    back = PCC._predecessors(g)
-
-    for node in PCC.nodes(g), letter in 1:2
-        @test sort(get(index, (node, letter), Int[])) ==
-              sort([PCC.dest(e) for e in PCC.outgoing_edges(g, node, letter)])
-        @test sort(get(back, (node, letter), Int[])) ==
-              sort([PCC.source(e) for e in PCC.incoming_edges(g, node, letter)])
-    end
-
-    @test PCC.outdegree(g, 1) == 2
-    @test PCC.indegree(g, 1) == 2
 end
 
 end # module

@@ -4,7 +4,7 @@ using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
 
-@testset "Graph" begin
+@testset "the queries read the nodes, edges and labels" begin
     graph = GraphAutomaton(3)
     add_transition!(graph, 1, 2, 1)
     add_transition!(graph, 2, 3, 2)
@@ -38,10 +38,7 @@ import PathCompleteCertificates as PCC
     @test !PCC.has_edge(graph, PCC.add_edge!(other, 2, 1, 1))
 end
 
-@testset "Graph validation" begin
-
-    # Number of nodes
-    # Invalid node in graph queries
+@testset "a query on a node that does not exist throws" begin
     graph = GraphAutomaton(3)
     add_transition!(graph, 1, 2, 1)
 
@@ -50,6 +47,19 @@ end
 
     @test_throws ArgumentError PCC.incoming_edges(graph, 0)
     @test_throws ArgumentError PCC.incoming_edges(graph, 4)
+end
+
+@testset "the adjacency index agrees with the queries" begin
+    g = PCC.de_bruijn(2, 2)
+    index = PCC._successors(g)
+    back = PCC._predecessors(g)
+
+    for node in PCC.nodes(g), letter in 1:2
+        @test sort(get(index, (node, letter), Int[])) ==
+              sort([PCC.dest(e) for e in PCC.outgoing_edges(g, node, letter)])
+        @test sort(get(back, (node, letter), Int[])) ==
+              sort([PCC.source(e) for e in PCC.incoming_edges(g, node, letter)])
+    end
 end
 
 end

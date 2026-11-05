@@ -26,7 +26,7 @@ import PathCompleteCertificates as PCC
     @test_throws ArgumentError PCC.de_bruijn(2, 0)
 end
 
-@testset "order zero is the common graph: one node with a loop per mode" begin
+@testset "order zero is the common graph, which refuses constrained switching" begin
     one = PCC.de_bruijn(0, 3)
     @test PCC.n_nodes(one) == 1
     @test PCC.n_edges(one) == 3

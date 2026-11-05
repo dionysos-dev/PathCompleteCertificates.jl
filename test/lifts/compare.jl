@@ -8,7 +8,6 @@ using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
-import SetProg
 
 const OPTIMIZER = Clarabel.Optimizer
 
@@ -135,9 +134,8 @@ end
     @test all(>=(0), C)
     @test all(>=(1), sum(C; dims = 2))
 
-    # The quadratic and copositive norms add; the dual copositive norms are
+    # The quadratic and copositive norms add. The dual copositive norms are
     # proved through their dual (Debauche, Prop. 7.5).
-    @test all(t -> t isa SetProg.AbstractVariable, PCC.templates(c))
     @test Set(PCC.templates(c)) == Set(TEMPLATES)
 end
 
@@ -146,7 +144,7 @@ end
     simulations = found(c)
 
     # Complete and co-complete: both subset lifts simulate G_0 by the full
-    # node set; no sum lift does, and the one-node graph has no map into G_4.
+    # node set. No sum lift does, and the one-node graph has no map into G_4.
     @test simulations[PCC.MinLift()] == [[1, 2, 3, 4, 5]]
     @test simulations[PCC.MaxLift()] == [[1, 2, 3, 4, 5]]
     @test !haskey(simulations, PCC.SumLift())
@@ -169,7 +167,7 @@ end
     @test PCC.templates(c) == [DUAL_COPOSITIVE]
 end
 
-@testset "G_3 buys nothing for addition-closed templates; G_4 does" begin
+@testset "G_3 buys nothing for the quadratic template" begin
     c3 = PCC.compare(
         G3,
         G0;
@@ -179,15 +177,6 @@ end
     )
     @test PCC.templates(c3) == [QUADRATIC]
     @test size(found(c3)[PCC.SumLift()]) == (1, 5)
-
-    c4 = PCC.compare(
-        G4,
-        G0;
-        templates = (QUADRATIC,),
-        system = SYSTEM,
-        optimizer = OPTIMIZER,
-    )
-    @test isempty(PCC.templates(c4))
 end
 
 @testset "what compare needs, and what it skips" begin

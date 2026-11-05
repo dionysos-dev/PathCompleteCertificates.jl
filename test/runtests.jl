@@ -1,8 +1,8 @@
 # Test driver.
 #
-# Fast dev loop: `Pkg.test(; test_args = ["--fast"])` skips suites tagged `:slow` — the
-# SDP- and LP-heavy synthesis suites, whose coverage is not worth the wall-clock while
-# iterating. A plain `Pkg.test()` and CI run everything. Each file's run time is printed,
+# Fast dev loop: `Pkg.test(; test_args = ["--fast"])` skips suites tagged `:slow`, the
+# suites that solve many programs and Aqua, whose coverage is not worth the wall-clock
+# while iterating. A plain `Pkg.test()` and CI run everything. Each file's run time is printed,
 # with a slowest-first summary, so a suite that has grown expensive is easy to spot and tag.
 const FAST_TESTS = "--fast" in ARGS
 
@@ -23,11 +23,13 @@ const TEST_FILES = [
     ("./lifts/min.jl",),
     ("./lifts/sum.jl", :slow),
     ("./lifts/composition.jl",),
+    ("./lifts/dual.jl",),
     ("./systems/switched.jl",),
     ("./systems/trajectory.jl",),
     ("./systems/simulate.jl",),
     ("./problems/sets.jl", :slow),
     ("./problems/piecewise_linear.jl", :slow),
+    ("./problems/dual_piecewise_linear.jl", :slow),
     ("./problems/piecewise_quadratic.jl", :slow),
     ("./problems/copositive.jl", :slow),
     ("./problems/gauges.jl", :slow),

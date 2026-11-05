@@ -303,16 +303,6 @@ const _SAFETY_MARGIN_TOLERANCE = 1e-8
 # error.
 const _SAFETY_CHECK_TOLERANCE = 1e-7
 
-# The map x⁺ = A x in homogeneous coordinates.
-function _homogeneous_dynamics(A::AbstractMatrix)
-    n = size(A, 1)
-
-    return [
-        A zeros(n, 1)
-        zeros(1, n) 1.0
-    ]
-end
-
 # The containment certificates of the polyhedral families need a bounded
 # ellipsoidal initial set and an unsafe set outside a bounded ellipsoid.
 function _check_polyhedral_safety_sets(problem::SafetyProblem)

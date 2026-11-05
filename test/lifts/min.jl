@@ -81,10 +81,10 @@ const GRAPHS = (G0, G1, G2, G4)
 
     # Max lift written out against the definition: ∀ b ∈ B ∃ a ∈ A (a, b, i).
     x = PCC.get_graph(PCC.lift(PCC.MaxLift(), g))
-    index = PCC._successors(g)
     subsets = PCC.origins(lifted)
+    reaches(aa, bb, i) = bb in PCC.dest.(PCC.outgoing_edges(g, aa, i))
     for (a, A) in enumerate(subsets), (b, B) in enumerate(subsets), i in 1:2
-        expected = all(bb -> any(bb in get(index, (aa, i), Int[]) for aa in A), B)
+        expected = all(bb -> any(aa -> reaches(aa, bb, i), A), B)
         @test ((a, b, i) in edgeset(x)) == expected
     end
 
@@ -92,10 +92,7 @@ const GRAPHS = (G0, G1, G2, G4)
 end
 
 @testset "the relation decides what the explicit lift exhibits (Debauche, Thms. 8.1, 8.5)" begin
-    for G in GRAPHS,
-        H in GRAPHS,
-        (L, dualise) in ((PCC.MinLift(), false), (PCC.MaxLift(), true))
-
+    for G in GRAPHS, H in GRAPHS, L in (PCC.MinLift(), PCC.MaxLift())
         relation = PCC.simulation(L, G, H)
         lifted = PCC.lift(L, G)
         map = PCC.simulation(PCC.get_graph(lifted), H)
@@ -116,31 +113,12 @@ end
     end
 
     # G4 is complete and co-complete, so both lifts of it simulate G0 by the
-    # full node set; G1 and G2 are neither simulated by G0 nor simulate it.
+    # full node set. G1 and G2 are neither simulated by G0 nor simulate it.
     @test PCC.simulation(PCC.MinLift(), G4, G0) == [[1, 2, 3, 4, 5]]
     @test PCC.simulation(PCC.MaxLift(), G4, G0) == [[1, 2, 3, 4, 5]]
     @test PCC.simulation(PCC.MinLift(), G1, G0) === nothing
     @test PCC.simulation(PCC.MinLift(), G2, G0) === nothing
     @test PCC.simulation(PCC.MaxLift(), G1, G0) === nothing
-end
-
-@testset "duality is an involution on lifts and operations" begin
-    for L in (PCC.IdentityLift(), PCC.MinLift(), PCC.SumLift(2), PCC.CompositionLift(1))
-        @test PCC.dual(PCC.dual(L)) == L
-    end
-    @test PCC.dual(PCC.MinLift()) == PCC.MaxLift()
-    @test PCC.dual(PCC.SumLift(2)) == PCC.SumLift(2)
-    for op in (
-        PCC.Addition(),
-        PCC.Maximum(),
-        PCC.Minimum(),
-        PCC.Composition(),
-        PCC.InverseComposition(),
-    )
-        @test PCC.dual(PCC.dual(op)) == op
-    end
-    @test PCC.dual(PCC.Minimum()) == PCC.Maximum()
-    @test PCC.dual(PCC.Addition()) == PCC.Addition()
 end
 
 @testset "the min lift is valid on the linear copositive template for positive systems only" begin

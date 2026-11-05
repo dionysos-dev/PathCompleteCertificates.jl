@@ -31,7 +31,7 @@ const LIB = Polyhedra.DefaultLibrary{Float64}(
     @test_throws ArgumentError PCC.planar_conic_partition(0)
 end
 
-@testset "Conic template compatibility constructor" begin
+@testset "the piecewise linear constructor" begin
     partition = PCC.planar_conic_partition(1; library = LIB)
     families = PCC.PiecewiseLinearTemplate([partition, partition])
     @test length(families) == 2
@@ -51,13 +51,13 @@ end
     @test_throws ArgumentError PCC.PiecewiseLinearTemplate([partition]; min_scale = Inf)
 end
 
-@testset "Conic certificates use the native piecewise polytope" begin
+@testset "a piecewise linear certificate matches the SetProg polytope family" begin
     A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
     problem = PCC.StabilityProblem(PCC.switched_system(A))
     graph = PCC.common_graph(2)
     partition = PCC.planar_conic_partition(1; library = LIB)
     families = PCC.PiecewiseLinearTemplate([partition])
-    # The original octagon has the same facet cones, with different vertex radii.
+    # This octagon has the facet cones of `planar_conic_partition(1)`, with other vertex radii.
     octagon = polyhedron(
         hrep([
             HalfSpace(a, 6.0) for a in (
@@ -73,24 +73,24 @@ end
         ]),
         LIB,
     )
-    native = Polytope(symmetric = true, piecewise = octagon)
-    conic =
+    polytope = Polytope(symmetric = true, piecewise = octagon)
+    linear =
         PCC.certify(families, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
     baseline =
-        PCC.certify(native, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
-    @test PCC.is_feasible(conic)
+        PCC.certify(polytope, graph, problem; optimizer = Clarabel.Optimizer, rtol = 1e-3)
+    @test PCC.is_feasible(linear)
     @test PCC.is_feasible(baseline)
-    @test abs(conic.rate - baseline.rate) <= 2e-3
-    @test all(>=(-1e-6), PCC.edge_slacks(conic))
-    V = only(PCC.functions(conic))
+    @test abs(linear.rate - baseline.rate) <= 2e-3
+    @test all(>=(-1e-6), PCC.edge_slacks(linear))
+    V = only(PCC.functions(linear))
     @test V isa SetProg.Sets.Piecewise
     @test V.polytope === partition
-    @test conic([1.0, 1.0]) > 0
+    @test linear([1.0, 1.0]) > 0
     for map in A, θ in range(0, 2π; length = 97)
         x = [cos(θ), sin(θ)]
         value = PCC.node_value(problem, V, x)
         @test value > 0
-        @test conic.rate * value - PCC.node_value(problem, V, map * x) >= -1e-5
+        @test linear.rate * value - PCC.node_value(problem, V, map * x) >= -1e-5
     end
     # Higher-order partitions also return meaningful edge slacks.
     diagonal = PCC.StabilityProblem(PCC.switched_system([[0.5 0.0; 0.0 0.25]]))

@@ -33,8 +33,8 @@ end
 @testset "path-completeness is relative to an alphabet" begin
     # A graph that never mentions mode 2 reads every word over its own labels,
     # and reads nothing containing mode 2. The one-argument form cannot see the
-    # difference, which is why the problem constructors pass the system's
-    # alphabet.
+    # difference, which is why `certify` checks the graph against the modes of
+    # the system, `1:n_modes(system)`.
     graph = GraphAutomaton(1)
     add_transition!(graph, 1, 1, 1)
 
@@ -79,7 +79,7 @@ end
     # Philippe et al., Definitions II.1 and III.2: complete and co-complete are
     # *sufficient* conditions for path-completeness, not equivalent ones. Node 3
     # has no outgoing mode-2 edge and node 2 no incoming mode-1 edge, so the
-    # graph is neither -- yet the subset construction from {1,2,3} visits only
+    # graph is neither. Yet the subset construction from {1,2,3} visits only
     # {1} and {2} and never empties, so every word is readable.
     graph = GraphAutomaton(3)
     for edge in [(1, 1, 1), (1, 2, 2), (2, 1, 1), (2, 2, 2), (3, 1, 1)]

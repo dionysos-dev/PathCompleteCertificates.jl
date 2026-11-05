@@ -94,8 +94,8 @@ const G4 = graph(
     @test PCC.requirements(PCC.SumLift(2)) == (PCC.Addition(),)
     @test PCC.requirements(PCC.SumLift()) == (PCC.Addition(),)
 
-    # {1,1} → {1,1} under 1 uses the loop (1,1,1) twice (Prop. 7.10); {1,2} →
-    # {1,2} under 1 has no matching; {1,1} → {2,2} under 2 uses (1,2,2) twice.
+    # {1,1} → {1,1} under 1 uses the loop (1,1,1) twice (Prop. 7.10). {1,2} →
+    # {1,2} under 1 has no matching. {1,1} → {2,2} under 2 uses (1,2,2) twice.
     @test (1, 1, 1) in edgeset(s)
     @test !((2, 2, 1) in edgeset(s))
     @test (1, 3, 2) in edgeset(s)
@@ -159,8 +159,8 @@ end
 end
 
 @testset "an interior-point solver still yields an integer matrix" begin
-    # From G_3 the solution sets are not rays: a feasibility program ends inside
-    # them, at entries no small denominator reads, and the rounding failed.
+    # From G_3 the solution sets are not rays: a feasibility program would end
+    # inside them, at entries no small denominator reads.
     for H in (G0, G1, G2, G3, G4)
         C = PCC.simulation(PCC.SumLift(), G3, H; optimizer = OPTIMIZER)
         @test C isa Matrix{Int}

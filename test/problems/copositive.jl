@@ -1,4 +1,4 @@
-module TestLinearCopositive
+module TestCopositive
 
 using Test
 using LinearAlgebra
@@ -13,7 +13,7 @@ const PROBLEM = PCC.StabilityProblem(SYSTEM)
 const GRAPH = PCC.common_graph(2)
 const FAMILY = PCC.LinearCopositiveTemplate()
 
-@testset "Copositive compatibility constructors" begin
+@testset "the linear copositive template and its functions" begin
     @test FAMILY isa SetProg.Domain{<:SetProg.Polytope}
     @test FAMILY.domain === MOI.Nonnegatives
     @test FAMILY.dimension === nothing
@@ -39,13 +39,6 @@ const FAMILY = PCC.LinearCopositiveTemplate()
     @test !PCC.is_closed_under(FAMILY, PCC.InverseComposition(), SYSTEM)
     diagonal = PCC.switched_system([[0.5 0.0; 0.0 0.25]])
     @test PCC.is_closed_under(FAMILY, PCC.InverseComposition(), diagonal)
-    @test_throws ArgumentError PCC.certify(
-        FAMILY,
-        PCC.common_graph(1),
-        PCC.StabilityProblem(negative);
-        optimizer = OPTIMIZER,
-        rate = 0.6,
-    )
 end
 
 @testset "Copositive normalization and edge inequalities" begin
@@ -82,7 +75,7 @@ end
     @test certificate([1.0, 1.0]) >= 2 - 1e-7
 end
 
-@testset "Copositive native variable helpers" begin
+@testset "the template primitives on the linear copositive template" begin
     for (map, feasible) in ((zeros(2, 2), true), (Matrix{Float64}(I, 2, 2), false))
         model = Model(OPTIMIZER)
         S = PCC.add_function_variables!(model, FAMILY, 2, 1)
@@ -158,49 +151,6 @@ end
         @test PCC.get_template(back) == family
         @test back([1.0, 1.0]) ≈ c([1.0, 1.0])
     end
-end
-
-@testset "Parallel faces retain orientations, symmetry, and minimum weights" begin
-    for n in (2, 3)
-        G = Matrix{Float64}(I, n, n)
-        G[1, 2] = 0.5
-        family = only(PCC.DualPiecewiseLinearTemplate([G]; min_weight = 2))
-        problem =
-            PCC.StabilityProblem(PCC.switched_system([0.5 * Matrix{Float64}(I, n, n)]))
-        graph = PCC.common_graph(1)
-        @test family.set isa SetProg.Polytope
-        @test family.set.piecewise isa Polyhedra.Polyhedron
-        @test PCC.has_dual(family)
-        @test PCC.dual(family) === family.set
-        for (rate, feasible) in ((0.6, true), (0.4, false))
-            c = PCC.certify(family, graph, problem; optimizer = OPTIMIZER, rate)
-            @test PCC.is_feasible(c) == feasible
-            feasible || continue
-            V = only(PCC.functions(c))
-            @test V isa SetProg.Sets.PolarOf{<:PCC._LinearPolytope}
-            inner = polar(V)
-            w = [PCC._polytope_value(inner, G[i, :]) for i in 1:n]
-            @test all(>=(2 - 1e-7), w)
-            for x in (ones(n), collect(1.0:n), -ones(n))
-                v = PCC.node_value(problem, V, x)
-                @test v ≈ maximum(abs.(G * x) ./ w)
-                @test v ≈ PCC.node_value(problem, V, -x)
-            end
-            @test all(>=(-1e-7), PCC.edge_slacks(c))
-        end
-    end
-    matrices = [[1.0 0.5; 0.0 1.0], [2.0 0.0; 0.0 1.0]]
-    families = PCC.DualPiecewiseLinearTemplate(matrices)
-    graph = PCC.de_bruijn(1, 2)
-    c = PCC.certify(families, graph, PROBLEM; optimizer = OPTIMIZER, rate = 0.9)
-    @test PCC.is_feasible(c)
-    @test all(>=(-1e-7), PCC.edge_slacks(c))
-    @test !PCC.is_closed_under(families, PCC.Maximum(), SYSTEM)
-    @test PCC.is_closed_under(fill(first(families), 2), PCC.Maximum(), SYSTEM)
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate([zeros(2, 2)])
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 0)
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 2; min_weight = 0)
-    @test_throws DimensionMismatch PCC.DualPiecewiseLinearTemplate([ones(2, 2), ones(3, 3)])
 end
 
 @testset "Copositive templates say what they need" begin

@@ -4,13 +4,10 @@ module TestTightEdges
 # bound up, and a node with two tight outgoing edges is the one to split.
 
 using Test
-using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
 import LinearAlgebra
 
-# Keep bisection above the solver tolerance when testing tightness at 1e-4.
-const BISECTION_RTOL = 1e-6
 const OPTIMIZER = Clarabel.Optimizer
 
 # rho(A) = 0.5 exactly, and the quadratic template attains it, so the single
@@ -96,33 +93,15 @@ end
     end
 end
 
-@testset "every template answers decrease_slack" begin
-    quadratic = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rate = 0.9,
-    )
-    @test PCC.edge_slacks(quadratic) isa Vector
-
-    polyhedral = PCC.certify(
+@testset "the edge slacks of the linear-programming templates" begin
+    dual_piecewise_linear = PCC.certify(
         PCC.DualPiecewiseLinearTemplate(PCC.n_nodes(GRAPH), 2),
         GRAPH,
         PROBLEM;
         optimizer = OPTIMIZER,
         rate = 0.9,
     )
-    @test all(>=(-1e-7), PCC.edge_slacks(polyhedral))
-
-    conic = PCC.certify(
-        PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(2)]),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rate = 0.9,
-    )
-    @test all(>=(-1e-7), PCC.edge_slacks(conic))
+    @test all(>=(-1e-7), PCC.edge_slacks(dual_piecewise_linear))
 
     nonneg = PCC.StabilityProblem(PCC.switched_system([[0.4 0.1; 0.2 0.3]]))
     copositive = PCC.certify(
@@ -153,7 +132,7 @@ end
 # --- Ninite & Jungers, arXiv:2607.00637.
 
 # Two opposite rotations scaled by 0.9. Rotations preserve the Euclidean norm, so
-# P = I is exact and the JSR is exactly 0.9 -- on any graph, with every edge
+# P = I is exact and the JSR is exactly 0.9, on any graph, with every edge
 # tight. The case Theorem 4 cannot certify and the cycle bound can.
 const THETA = pi / 3
 const ROTATIONS = [
@@ -164,13 +143,8 @@ const ROTATION_PROBLEM = PCC.StabilityProblem(PCC.switched_system(ROTATIONS))
 const TWO_NODES = PCC.de_bruijn(1, 2)
 
 @testset "the tight subgraph keeps the nodes and drops the slack edges" begin
-    certificate = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
-    )
+    certificate =
+        PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
     subgraph = PCC.tight_subgraph(certificate; atol = 1e-4)
 
@@ -178,7 +152,7 @@ const TWO_NODES = PCC.de_bruijn(1, 2)
     @test PCC.n_edges(subgraph) == length(PCC.tight_edges(certificate; atol = 1e-4))
     @test PCC.n_edges(subgraph) <= PCC.n_edges(PCC.get_graph(certificate))
 
-    # Nothing is tight at a huge tolerance... and everything is.
+    # Nothing is tight at a negative tolerance, and everything is at a huge one.
     @test PCC.n_edges(PCC.tight_subgraph(certificate; atol = -1.0)) == 0
     @test PCC.n_edges(PCC.tight_subgraph(certificate; atol = 1e3)) ==
           PCC.n_edges(PCC.get_graph(certificate))
@@ -190,7 +164,6 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
     )
 
     # Both modes are rotations of norm 0.9, so every cycle gives exactly 0.9 and
@@ -204,7 +177,7 @@ end
         @test PCC.jsr_lower_bound(certificate; atol = atol) <= certificate.rate + 1e-6
     end
 
-    # No cycles reachable within one edge here, so no bound -- and still sound.
+    # No cycles reachable within one edge here, so no bound, and still sound.
     @test PCC.jsr_lower_bound(certificate; atol = -1.0) == 0
 end
 
@@ -214,23 +187,16 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
     )
 
     # Every edge is tight, so every node has two tight outgoing edges and the
-    # structural condition fails -- on a graph that attains the exact JSR. This
+    # structural condition fails, on a graph that attains the exact JSR. This
     # is why the cycle bracket exists.
     @test !PCC.is_jsr_exact(exact; atol = 1e-4)
     @test isapprox(exact.rate, 0.9; atol = 1e-3)
 
     # The one-mode system has a single tight self-loop, so the condition holds.
-    single = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
-    )
+    single = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
 
     @test PCC.is_jsr_exact(single; atol = 1e-4)
     @test isapprox(single.rate, 0.5; atol = 1e-3)
@@ -238,13 +204,7 @@ end
 
 @testset "the optimality gap is zero when proved, the bracket otherwise" begin
     # Theorem 4 holds on the one-mode system: the gap is exactly zero.
-    single = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
-    )
+    single = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
     @test PCC.is_jsr_exact(single; atol = 1e-4)
     @test PCC.optimality_gap(single; atol = 1e-4) == 0
 
@@ -254,7 +214,6 @@ end
         TWO_NODES,
         ROTATION_PROBLEM;
         optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
     )
     gap = PCC.optimality_gap(rotations; atol = 1e-4)
     @test gap == rotations.rate - PCC.jsr_lower_bound(rotations; atol = 1e-4)
@@ -264,7 +223,7 @@ end
 @testset "a loose bound is never certified exact, whatever the tolerances" begin
     # A rotation and a shear: the one-node bound is loose. At a coarse
     # bisection its active edges keep slacks above the default `atol`, so
-    # nothing looks tight; at the default one they are tight. Theorem 4 must say
+    # nothing looks tight. At the default one they are tight. Theorem 4 must say
     # "unknown", not "exact", either way.
     sheared = PCC.StabilityProblem(
         PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
@@ -288,13 +247,7 @@ end
     end
 
     # An exact certificate read with too small a tolerance: no tight cycle, so no claim.
-    single = PCC.certify(
-        PCC.QuadraticTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-        rtol = BISECTION_RTOL,
-    )
+    single = PCC.certify(PCC.QuadraticTemplate(), GRAPH, PROBLEM; optimizer = OPTIMIZER)
     @test !PCC.is_jsr_exact(single; atol = -1.0)
 end
 

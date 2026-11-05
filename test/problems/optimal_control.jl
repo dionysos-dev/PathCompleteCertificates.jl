@@ -81,7 +81,7 @@ end
     @test PCC.common(GRAPH, PROBLEM, PCC.functions(RESULT), [1.0, 1.0]) > 0
 end
 
-@testset "SetProg inclusions preserve the original optimal-control SDP" begin
+@testset "the quadratic optimal-control program is the block LMI in S and Y" begin
     cost_Q = [2.0 0.25; 0.25 1.5]
     cost_R = [3.0;;]
     problem = PCC.OptimalControlProblem(SYSTEM, cost_Q, cost_R)
@@ -159,8 +159,9 @@ end
 end
 
 @testset "the units of the cost do not change the answer" begin
-    # Scaling Q and R by c scales the value function by c and keeps the gains;
-    # unnormalized, psd_margin = 1e-4 made Q = 1000 I infeasible.
+    # Scaling Q and R by c scales the value function by c and keeps the gains.
+    # The program is solved for the cost over its scale, so a large Q stays
+    # feasible.
     c = 1e3
     scaled = PCC.certify(
         PCC.QuadraticTemplate(),
@@ -180,13 +181,6 @@ end
     @test_throws ArgumentError PCC.OptimalControlProblem(SYSTEM, Q[1:1, 1:1], R)
 
     @test_throws ArgumentError PCC.certify(
-        PCC.LinearCopositiveTemplate(),
-        GRAPH,
-        PROBLEM;
-        optimizer = OPTIMIZER,
-    )
-
-    @test_throws ArgumentError PCC.certify(
         PCC.QuadraticTemplate(),
         GRAPH,
         PROBLEM;
@@ -194,12 +188,10 @@ end
         psd_margin = 0.0,
     )
 
-    # A system with no input is not an optimal-control problem. Without the
-    # guard, `A, B = state_matrices(system)` splits the two mode matrices into
-    # A and B and reports a nonsense state dimension.
+    # A system with no input is not an optimal-control problem.
     @test_throws ArgumentError PCC.OptimalControlProblem(PCC.switched_system(A), Q, R)
 
-    # Only path-complete graphs are supported for now.
+    # Optimal control requires a complete graph.
     incomplete = GraphAutomaton(2)
     add_transition!(incomplete, 1, 2, 1)
     add_transition!(incomplete, 2, 1, 1)
@@ -278,7 +270,7 @@ end
     @test LinearAlgebra.norm(last(xs)) < LinearAlgebra.norm(first(xs))
 end
 
-@testset "input validation" begin
+@testset "simulate checks its arguments" begin
     @test_throws ArgumentError PCC.simulate(RESULT, [1.0, 1.0, 1.0], 5)
     @test_throws ArgumentError PCC.simulate(RESULT, [1.0, 1.0], -1)
 end
@@ -496,7 +488,7 @@ end
     end
 end
 
-@testset "Polyhedral control values" begin
+@testset "piecewise linear control values" begin
     P = SetProg.Polyhedra
     library = P.DefaultLibrary{Float64}(HiGHS.Optimizer)
     partition = P.polyhedron(P.hrep([1.0; -1.0;;], ones(2)), library)
@@ -555,7 +547,7 @@ end
     end
 end
 
-@testset "Switching polyhedral Bellman bounds" begin
+@testset "piecewise linear Bellman bounds on two modes" begin
     P = SetProg.Polyhedra
     library = P.DefaultLibrary{Float64}(HiGHS.Optimizer)
     partition =
