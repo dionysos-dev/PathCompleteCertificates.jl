@@ -101,10 +101,10 @@ end
     # Replaying the drawn sequence reproduces the run exactly.
     @test PCC.states(PCC.simulate(s, x0, modes)) == PCC.states(trajectory)
 
-    # With an input, the same draw.
+    # With an input, the same seed draws the same modes.
     controlled = PCC.switched_system(A, B)
-    run = PCC.simulate(controlled, x0, 20; u = x -> [0.0], rng = Random.MersenneTwister(1))
-    @test length(PCC.switching(run)) == 20
+    run = PCC.simulate(controlled, x0, 5; u = x -> [0.0], rng = Random.MersenneTwister(1))
+    @test PCC.switching(run) == modes
 
     @test_throws ArgumentError PCC.simulate(s, x0, -1)
 end

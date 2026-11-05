@@ -32,8 +32,8 @@ end
 
 @testset "any other graph combines over the observer construction" begin
     # Node 2 has no label-2 edge, so this graph is neither complete nor
-    # co-complete and `common` must fall back to the observer construction --
-    # a max within each observer state and a min across them.
+    # co-complete, and `common` must fall back to the observer construction: a
+    # max within each observer state and a min across them.
     graph = GraphAutomaton(2)
     add_transition!(graph, 1, 1, 1)
     add_transition!(graph, 1, 2, 2)
@@ -50,7 +50,7 @@ end
     @test PCC.common(graph, PROBLEM, VS, X) ≈ expected
 end
 
-@testset "the common function is generic in the template" begin
+@testset "the common certificate is generic in the template" begin
     graph = PCC.de_bruijn(1, 2)
     linear = PCC.LinearCopositiveFunction.([[1.0, 1.0], [2.0, 2.0]])
 

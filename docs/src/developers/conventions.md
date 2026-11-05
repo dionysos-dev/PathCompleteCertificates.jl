@@ -129,7 +129,7 @@ refine(template, graph, problem; strategy)       # the entry point: the loop
   concrete type.
 - Three predicates. `is_path_complete` is the soundness question, decided by
   the subset construction. `is_complete` and `is_co_complete` are sufficient
-  only, and decide the form of the common function. Ask about the system's
+  only, and decide the form of the common certificate. Ask about the system's
   modes, `1:n_modes(system)`: `is_path_complete(graph)` alone asks about the
   modes the graph happens to use.
 - Path-completeness is PSPACE-complete, so it is checked once per solve.
@@ -172,7 +172,7 @@ refine(template, graph, problem; strategy)       # the entry point: the loop
   [Systems and problems](@ref). A page keeps its data in a hidden setup block
   and says which names its code uses.
 - The prose uses the code's words, one per concept: node function, edge
-  inequality, common function, tight edge, lift, valid, simulation.
+  inequality, common certificate, tight edge, lift, valid, simulation.
 - The math uses the notation of the tool paper: a graph ``G = (S, E)`` with
   edges ``(s, d, i)`` from ``s`` to ``d`` labelled by mode ``i``, node functions
   ``V_s``, the rate ``\gamma``, the degree ``\delta`` of the node functions

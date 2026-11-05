@@ -17,7 +17,7 @@ const LIB = Polyhedra.DefaultLibrary{Float64}(
 const A = [0.69 * [0.0 1.0; -1.0 0.0], 0.69 * [1.0 1.0; 0.0 1.0]]
 const PROBLEM = PCC.StabilityProblem(PCC.switched_system(A))
 
-@testset "Piecewise quadratic template constructor" begin
+@testset "the piecewise quadratic constructor" begin
     partition = PCC.planar_conic_partition(1; library = LIB)
     families = PCC.PiecewiseQuadraticTemplate([partition, partition])
     @test length(families) == 2
@@ -31,7 +31,7 @@ const PROBLEM = PCC.StabilityProblem(PCC.switched_system(A))
     @test_throws ArgumentError PCC.PiecewiseQuadraticTemplate([[Matrix{Float64}(I, 2, 2)]])
 end
 
-@testset "Piecewise quadratic certificates are native piecewise ellipsoids" begin
+@testset "a piecewise quadratic certificate is piecewise, below the quadratic bound" begin
     partition = PCC.planar_conic_partition(1; library = LIB)
     template = PCC.PiecewiseQuadraticTemplate([partition])
     graph = PCC.common_graph(2)
@@ -47,7 +47,7 @@ end
 
     @test PCC.is_feasible(certificate)
     @test only(PCC.functions(certificate)) isa SetProg.Sets.Piecewise
-    # A quadratic form is quadratic on each cone, with more cones the bound drops.
+    # A quadratic form is quadratic on each cone, so the cones lower the bound.
     @test certificate.rate < quadratic.rate - 1e-2
 end
 

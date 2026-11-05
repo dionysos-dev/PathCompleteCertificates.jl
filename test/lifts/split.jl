@@ -26,8 +26,8 @@ edgeset(g) = Set(
     @test PCC.origins(lifted)[1:(end - length(out))] ==
           [n for n in PCC.nodes(graph) if n != node]
 
-    # Edges away from `node` untouched; edges into `node` duplicated onto every
-    # copy; edges out of `node` kept one-for-one on their copy.
+    # Edges away from `node` are untouched, edges into `node` are duplicated onto every
+    # copy, and edges out of `node` are kept one for one on their copy.
     e0 = count(e -> PCC.source(e) != node && PCC.dest(e) != node, PCC.edges(graph))
     ein = count(e -> PCC.source(e) != node && PCC.dest(e) == node, PCC.edges(graph))
     eself = count(e -> PCC.source(e) == node && PCC.dest(e) == node, PCC.edges(graph))
@@ -35,7 +35,7 @@ edgeset(g) = Set(
     k = length(out)
     @test PCC.n_edges(g) == e0 + eout + k * (ein + eself)
 
-    # Each copy owns one outgoing edge; a copy owning a self-loop leaves towards
+    # Each copy owns one outgoing edge. A copy owning a self-loop leaves towards
     # every copy, so it has k, and the others one.
     copies = (PCC.n_nodes(g) - k + 1):PCC.n_nodes(g)
     @test sort([PCC.outdegree(g, c) for c in copies]) == sort([fill(1, eout); fill(k, eself)])
@@ -66,8 +66,8 @@ end
     lifted = PCC.lift(PCC.OutSplitLift(), graph, edge)
     g = PCC.get_graph(lifted)
 
-    # Node 2 survives with its other edge; the copy, numbered last, owns this
-    # one; both receive every edge into 2.
+    # Node 2 survives with its other edge, the copy, numbered last, owns this
+    # one, and both receive every edge into 2.
     @test PCC.n_nodes(g) == 4
     @test PCC.origins(lifted) == [1, 2, 3, 2]
     @test PCC.outdegree(g, 2) == 1
@@ -206,7 +206,7 @@ end
     lifted = PCC.lift(PCC.OutSplitLift(), g, 1)
     h = PCC.get_graph(lifted)
 
-    # Node 2 survives as 1; node 1 is replaced by its three copies.
+    # Node 2 survives as 1, and node 1 is replaced by its three copies.
     @test PCC.origins(lifted) == [2, 1, 1, 1]
     @test PCC.is_path_complete(h, 1:2)
 

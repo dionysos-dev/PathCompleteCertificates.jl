@@ -3,6 +3,7 @@ module TestLiftProduct
 using Test
 using HybridSystems
 import PathCompleteCertificates as PCC
+import Clarabel
 
 edgeset(g) = Set(
     (PCC.source(e), PCC.dest(e), collect(PCC.letters(PCC.label(g, e)))) for
@@ -58,7 +59,7 @@ const G4 = graph(
     @test PCC.n_nodes(w) == 2
     @test PCC.origins(lifted) == [1, 2]
 
-    # (1,1,1) becomes (1,1,[1,1]) and (1,2,[1,2]); the three other edges stay.
+    # (1,1,1) becomes (1,1,[1,1]) and (1,2,[1,2]). The three other edges stay.
     @test edgeset(w) ==
           Set([(1, 1, [1, 1]), (1, 2, [1, 2]), (1, 2, [2]), (2, 1, [1]), (2, 2, [2])])
     @test PCC.is_path_complete(w, 1:2)
@@ -73,7 +74,7 @@ end
         product = PCC.get_graph(PCC.lift(PCC.ProductLift(2), g))
 
         @test edgeset(forward) == edgeset(backward) == edgeset(product)
-        @test all(e -> PCC._word_length(product, e) == 2, PCC.edges(product))
+        @test all(e -> length(PCC.label(product, e)) == 2, PCC.edges(product))
         @test PCC.is_path_complete(product, 1:2)
 
         # Self-dual.
@@ -92,7 +93,7 @@ end
         w = PCC.get_graph(lifted)
         @test PCC.n_nodes(w) == 1
         @test PCC.n_edges(w) == 2^T
-        @test all(e -> PCC._word_length(w, e) == T, PCC.edges(w))
+        @test all(e -> length(PCC.label(w, e)) == T, PCC.edges(w))
         @test PCC.is_path_complete(w, 1:2)
     end
 
@@ -108,8 +109,6 @@ end
 end
 
 @testset "a product graph certifies the same rate as its expanded form" begin
-    import Clarabel
-
     A = [0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]
     problem = PCC.StabilityProblem(PCC.switched_system(A))
     one = PCC.common_graph(2)
@@ -146,7 +145,7 @@ end
     # The structural test is not proved with words, and says so.
     @test_throws ArgumentError PCC.is_jsr_exact(on_words)
 
-    # Safety and the common function need a graph with one mode per edge, and say so.
+    # The common certificate needs a graph with one mode per edge, and says so.
     @test_throws ArgumentError on_words([1.0, 0.0])
 end
 

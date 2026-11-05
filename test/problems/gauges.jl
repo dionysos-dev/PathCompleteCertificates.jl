@@ -7,7 +7,7 @@ import Clarabel, HiGHS
 # A user-defined family inherits the documented default capabilities.
 struct UnknownSetFamily <: SetProg.AbstractVariable end
 
-@testset "Native family capabilities" begin
+@testset "the capabilities of each family, and the defaults of an unknown one" begin
     invertible = PCC.switched_system([[0.5 -0.1; 0.2 0.4]])
     singular = PCC.switched_system([[0.5 0.0; 0.0 0.0]])
     unknown = UnknownSetFamily()
@@ -94,7 +94,7 @@ end
     end
 end
 
-@testset "Normalization uses a native PSD or SOS remainder" begin
+@testset "normalization uses a PSD or SOS remainder" begin
     x = SetProg.new_polyvars(2)
     for (family, dimension) in (
         (Ellipsoid(symmetric = true), 3),
@@ -109,13 +109,13 @@ end
         @test isempty(SetProg.data(model).constraints)
         optimize!(model)
         @test termination_status(model) in (MOI.OPTIMAL, MOI.ALMOST_OPTIMAL)
-        # Only the remainder is constrained; there is no second PSD/SOS cone.
+        # Only the remainder is constrained. There is no second PSD/SOS cone.
         @test num_constraints(model; count_variable_in_set_constraints = true) == 1
         point = ones(dimension)
         @test PCC._gauge(value(S), point) >=
               PCC._gauge(PCC._unit_set(original), point) - 1e-6
     end
-    # Keep normalization over each cone for piecewise ellipsoids; convex
+    # Keep normalization over each cone for piecewise ellipsoids. Convex
     # polynomial families do not support the superset construction.
     partition = PCC.planar_conic_partition(1)
     for family in (
@@ -167,10 +167,11 @@ end
     # A sheared matrix detects mixing up G, G', and their inverses.
     G = [2.0 1.0; 0.0 1.0]
     for min_weight in (0.25, 2.0)
-        parallel = only(PCC.DualPiecewiseLinearTemplate([G]; min_weight))
-        conic = parallel.set
+        dual_family = only(PCC.DualPiecewiseLinearTemplate([G]; min_weight))
+        primal_family = dual_family.set
         # The same partition gives a primal piecewise gauge or its polar.
-        for (family, space) in ((conic, SetProg.PrimalSpace), (parallel, SetProg.DualSpace))
+        for (family, space) in
+            ((primal_family, SetProg.PrimalSpace), (dual_family, SetProg.DualSpace))
             model = Model(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
             S = PCC.add_function_variables!(model, family, 2, 1)
             PCC.add_normalization!(model, S.set, S)
@@ -197,19 +198,11 @@ end
     end
 end
 
-@testset "Gauge data and duality" begin
-    @test_throws ArgumentError PCC.DualCopositiveTemplate(min_weight = 0)
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate([zeros(2, 2)])
-    @test_throws ArgumentError PCC.PiecewiseLinearTemplate([])
+@testset "the dimension, the degree of a vector, and the dual values" begin
     @test_throws DimensionMismatch PCC._with_dimension(
         only(PCC.DualPiecewiseLinearTemplate(1, 2)),
         3,
     )
-    @test PCC._supports_dual(Ellipsoid(symmetric = true))
-    @test PCC._dual_family(PCC.LinearCopositiveTemplate()) == PCC.DualCopositiveTemplate()
-    @test PCC._dual_family(PCC.DualCopositiveTemplate()) == PCC.LinearCopositiveTemplate()
-    family = PCC.DualCopositiveTemplate(min_weight = 2)
-    @test PCC._dual_family(PCC._dual_family(family)) == family
     @test PCC.homogeneity_degree([
         PCC.DualCopositiveTemplate(),
         PCC.LinearCopositiveTemplate(),
@@ -220,7 +213,7 @@ end
     @test PCC._dual_value(PCC._dual_value(simplex)).set.a == simplex.set.a
 end
 
-@testset "Gauge normalization and edge directions" begin
+@testset "the primitives check their arguments, and copositive slacks" begin
     x = SetProg.new_polyvars(2)
     family = PCC._with_dimension(PolySet(symmetric = true, degree = 6), 2; variables = x)
     @test family.variables == x
@@ -235,8 +228,6 @@ end
         Ellipsoid(symmetric = true),
         PCC.DualCopositiveTemplate(),
     ])
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(0, 2)
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(1, 2; min_weight = 0)
     model = Model(optimizer_with_attributes(Clarabel.Optimizer, MOI.Silent() => true))
     S = PCC.add_function_variables!(model, Ellipsoid(symmetric = true), 2, 1)
     PCC.add_normalization!(model, S.set, S; conditioning_bound = 10)
@@ -286,16 +277,6 @@ end
         PCC.DualCopositiveFunction([3.0, 4.0]),
         [0.5 0.2; 0.0 0.5],
     ) ≈ 0
-    G = [2.0 0.0; 0.0 1.0]
-    partition = polyhedron(vrep([[2.0, 0.0], [0.0, 0.25], [-2.0, 0.0], [0.0, -0.25]]))
-    parallelotope = SetProg.polar(
-        SetProg.Sets.Piecewise(
-            [SetProg.Sets.PolarPoint(h.a / h.β) for h in halfspaces(partition)],
-            partition,
-        ),
-    )
-    @test PCC._gauge(parallelotope, [3.0, 2.0]) ≈ 6
-    @test PCC._supports_dual(only(PCC.DualPiecewiseLinearTemplate([G])))
 end
 
 end

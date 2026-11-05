@@ -48,7 +48,7 @@ optimization_model(template, graph, problem; optimizer, ...) # build, do not sol
 certify(template, graph, problem; optimizer, ...)          # the best certificate on graph
 objective, optimality_gap, edge_slacks                     # what refine reads
 
-# The common function: each node value from the problem, their combination from the graph
+# The common certificate: each node value from the problem, their combination from the graph
 # alone (graphs/observer.jl); the public method is in problems/certificate.jl.
 common(graph, problem, Vs, x)
 ```
@@ -130,7 +130,7 @@ The documentation is part of the package; write it with the same care as the cod
   where it is used.
 - **One running example**, defined in Systems and problems. A page keeps its data in a hidden
   `@setup` block and says which names its code uses.
-- **One word per concept, the code's word**: node function, edge inequality, common function,
+- **One word per concept, the code's word**: node function, edge inequality, common certificate,
   tight edge, lift, valid, simulation, "at least as good". "Certificate" in general; "bound"
   and "rate" for stability only.
 - **The paper's notation**: a graph `G = (S, E)` with edges `(s, d, i)` from `s` to `d`
@@ -193,7 +193,7 @@ The documentation is part of the package; write it with the same care as the cod
   `rtol`, and `atol = 1e-4`, at least ten times it, sees it. Absolute slacks once hid the tight
   edges of the running example, and `refine` stopped `EXHAUSTED` instead of `OPTIMAL`.
 - **A fitted node function is a SetProg set, not a callable.** Evaluate it with
-  `node_value(problem, V, x)`; `certificate(x)` evaluates the common function.
+  `node_value(problem, V, x)`; `certificate(x)` evaluates the common certificate.
 - **Clarabel's chordal decomposition crashes on optimal-control programs.** Pass
   `JuMP.optimizer_with_attributes(Clarabel.Optimizer, "chordal_decomposition_enable" => false)`.
 

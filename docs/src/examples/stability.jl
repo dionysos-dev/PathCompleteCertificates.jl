@@ -33,11 +33,10 @@ certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER).rate
 
 # ## A path-complete graph
 #
-# The De Bruijn graphs give one quadratic function per node. The rate drops
-# with the order, and goes below one at order 2:
+# The De Bruijn graphs give one node function per node. The rate drops with the
+# order, and goes below one at order 2:
 
-rates =
-    [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for k in 0:2]
+[certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER).rate for k in 0:2]
 
 # The certificate on the De Bruijn graph of order 2 proves that the system is
 # stable under arbitrary switching.
@@ -49,7 +48,7 @@ certificate.rate
 # ## The certificate, drawn
 #
 # On the left, the set ``\{x : V_s(x) \le 1\}`` of each of the four node
-# functions, and the set ``\{x : V(x) \le 1\}`` of their common function, here
+# functions, and the set ``\{x : V(x) \le 1\}`` of their common certificate, here
 # their minimum: a union of ellipses, which no single quadratic function
 # describes. On the right, ``V`` along 100 random switching sequences and along
 # the sequence ``2, 2, 2, 2, 1`` repeated, all below the decay
@@ -123,12 +122,13 @@ plot(left, right; layout = (1, 2), size = (900, 500), margin = 5Plots.mm)
 
 jsr_lower_bound(certificate)
 
-# The slowest sequence above repeats five modes, more than any simple cycle of
-# a four-node graph has. Its product gives the lower bound directly: the
-# spectral radius of a product of ``k`` matrices, to the power ``1/k``.
+# The repeated sequence above has five modes, more than any simple cycle of a
+# four-node graph has. Its product gives a better lower bound directly: the
+# spectral radius of a product of ``k`` matrices, to the power ``1/k``. Next to
+# it, the rate and their ratio:
 
 lower = maximum(abs, LinearAlgebra.eigvals(A[1] * A[2]^4))^(1 / 5)
-lower, certificate.rate
+lower, certificate.rate, certificate.rate / lower
 
 # The joint spectral radius lies between the two: the certificate is within 1%
 # of it. The De Bruijn hierarchy found this graph by adding nodes everywhere.

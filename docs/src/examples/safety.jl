@@ -49,7 +49,7 @@ is_feasible(certificate), certificate.margin
 # ## The certificate, drawn
 #
 # On the left, the zero set of each node function, and that of their common
-# function ``V``, here their minimum: the set where ``V \le 0`` contains
+# certificate ``V``, here their minimum: the set where ``V \le 0`` contains
 # ``X_0`` and does not meet ``X_u``. On the right, ``V`` along 100 random
 # switching sequences from the boundary of ``X_0``: it never increases, so it
 # stays negative and no run reaches ``X_u``.

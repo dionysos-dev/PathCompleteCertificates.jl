@@ -9,7 +9,7 @@ module TestLiftReference
 # node its degree assumptions would leave without edges is deleted, and several
 # given edges are the lift applied edge by edge, with the self-loop last. At a
 # self-loop outside those assumptions the reference unrolls the loop into a
-# two-cycle and ours returns the same graph up to numbering; both are lifts, and
+# two-cycle and ours returns the same graph up to numbering. Both are lifts, and
 # that case is not compared.
 
 using Test
@@ -163,12 +163,12 @@ const WORDS = PCC.get_graph(PCC.lift(PCC.ProductLift(2), G2))
 const GRAPHS = [("G1", G1), ("G2", G2), ("G4", G4), ("loops", LOOPS), ("one", ONE)]
 
 @testset "every partial lift agrees with the reference where the paper defines it" begin
-    for (name, g) in GRAPHS, kind in KINDS, e in PCC.edges(g)
+    for (_, g) in GRAPHS, kind in KINDS, e in PCC.edges(g)
         in_domain(kind, g, e) || continue
         @test ours(kind, g, e) == reference(kind, g, e)
     end
 
-    # Self-loops are among the edges above; make sure of it.
+    # Self-loops are among the edges above. Make sure of it.
     @test any(e -> PCC.source(e) == PCC.dest(e), PCC.edges(LOOPS))
     @test all(e -> in_domain("P*", LOOPS, e), PCC.edges(LOOPS))
 end
@@ -187,7 +187,7 @@ function without(edges, node)
     )
 end
 
-@testset "outside the paper's assumption the reference leaves a dead node; we delete it" begin
+@testset "outside the paper's assumption, the reference leaves a dead node, and ours deletes it" begin
     # Nodes 2 to 5 of G1 have one incoming and one outgoing edge.
     outside = [
         (kind, e) for kind in ("P", "P*") for e in PCC.edges(G1) if !in_domain(kind, G1, e)
@@ -221,7 +221,7 @@ function sequential(kind, g, edge_list)
 end
 
 @testset "edges at a surviving node are the reference edge by edge, loop last" begin
-    # Node 2 of LOOPS keeps (2, 3, 1); the given edges are its other edge and its loop.
+    # Node 2 of LOOPS keeps (2, 3, 1). The given edges are its other edge and its loop.
     across = only(filter(e -> PCC.dest(e) == 1, PCC.outgoing_edges(LOOPS, 2, 1)))
     loop = only(PCC.outgoing_edges(LOOPS, 2, 2))
     @test PCC.source(across) == 2 && PCC.dest(across) == 1
@@ -234,8 +234,8 @@ end
     # The reference is order dependent at a loop: the other order differs.
     @test sequential("P*", LOOPS, [loop, across]) != sequential("P*", LOOPS, loop_last)
 
-    # Without a loop the order only renumbers the copies, and ours -- which
-    # numbers them in the given order -- agrees with the reference in either.
+    # Without a loop the order only renumbers the copies, and ours, which
+    # numbers them in the given order, agrees with the reference in either.
     out = PCC.outgoing_edges(G4, 1)
     @test length(out) == 3
     for order in (out[1:2], reverse(out[1:2]))

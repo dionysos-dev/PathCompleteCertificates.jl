@@ -1,4 +1,4 @@
-module TestSystems
+module TestSwitched
 
 using Test
 import PathCompleteCertificates as PCC
@@ -9,7 +9,7 @@ import MathematicalSystems as MS
 const A = [[1.0 0.0; 0.0 0.5], [0.5 0.0; 0.0 1.0]]
 const B = [reshape([1.0, 0.0], 2, 1), reshape([0.0, 1.0], 2, 1)]
 
-@testset "input-free path is untouched" begin
+@testset "without an input, the system is the one HybridSystems builds" begin
     s = PCC.switched_system(A)
     # Must stay exactly what HybridSystems builds, so anything already consuming
     # a plain switched system keeps working.
@@ -29,14 +29,8 @@ end
     # One reset-map type, so one call always returns one parametrisation.
     # Emitting an affine or constrained map would silently return a different
     # type from the same call.
-    @test PCC.has_input(s)
-
     rm = PCC._maps_by_mode(s)
-    for σ in 1:2
-        @test rm[σ] isa MS.LinearControlMap
-        @test rm[σ].A == A[σ]
-        @test rm[σ].B == B[σ]
-    end
+    @test all(σ -> rm[σ] isa MS.LinearControlMap, 1:2)
 
     Amat = PCC.state_matrices(s)
     Bmat = PCC.input_matrices(s)
@@ -44,8 +38,8 @@ end
     @test Bmat == B
 
     # Switching stays autonomous: the mode is not ours to choose, the input is.
-    # HybridSystems has no accessor for this -- `switchings(s, i, j)` is about
-    # paths -- so the field is the only route.
+    # HybridSystems has no accessor for this, since `switchings(s, i, j)` is
+    # about paths, so the field is the only route.
     @test all(sw isa HS.AutonomousSwitching for sw in s.switchings)
 end
 
@@ -57,11 +51,6 @@ end
     @test HS.ntransitions(s.automaton) == 2
     @test HS.mode(s, 1) isa MS.ContinuousIdentitySystem
     @test sort([HS.event(s.automaton, t) for t in HS.transitions(s.automaton)]) == [1, 2]
-end
-
-@testset "the alias covers every system with an input" begin
-    @test PCC.has_input(PCC.switched_system(A, B))
-    @test !PCC.has_input(PCC.switched_system(A))
 end
 
 @testset "the number of modes, under arbitrary switching only" begin

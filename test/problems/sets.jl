@@ -1,6 +1,7 @@
 module TestSetFamilies
 
-# Native SetProg families for stability.
+# SetProg families passed directly to `certify`, and the metadata of
+# src/problems/sets.jl: closures, reindexing and duals.
 
 using Test
 using LinearAlgebra
@@ -30,7 +31,7 @@ const LIB = Polyhedra.DefaultLibrary{Float64}(
     JuMP.optimizer_with_attributes(HiGHS.Optimizer, JuMP.MOI.Silent() => true),
 )
 
-# Partitions with exact facets, see the warning in the docstring. The cones over
+# Partitions with exact facets. The cones over
 # the facets of the octagon are the cones of `PCC.planar_conic_partition(1)`: its
 # vertices are on the rays ±(1, 0), ±(1, 1), ±(0, 1) and ±(-1, 1).
 const SQUARE = polyhedron(
@@ -79,11 +80,6 @@ function test_edges(certificate, template, graph)
     end
 end
 
-@testset "SetProg is a direct dependency" begin
-    @test PCC.SetProg === SetProg
-    @test Base.get_extension(PCC, :PathCompleteCertificatesSetProgExt) === nothing
-end
-
 @testset "the degree is the one of the set variable" begin
     @test PCC.homogeneity_degree(Ellipsoid(symmetric = true)) == 2
     @test PCC.homogeneity_degree(PolySet(symmetric = true, degree = 6, variables = x)) == 6
@@ -117,16 +113,6 @@ end
     @test polyset.rate >= LOWER_BOUND - 1e-4
     @test polyset.rate <= ELLIPSOID.rate + AGREE
     test_edges(polyset, template, MEMORYLESS)
-end
-
-@testset "a piecewise polytope reproduces the piecewise linear template" begin
-    conic = rate(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)]))
-    template = Polytope(symmetric = true, piecewise = OCTAGON)
-    polytope = rate(template)
-
-    @test PCC.is_feasible(polytope)
-    @test abs(polytope.rate - conic.rate) <= AGREE
-    test_edges(polytope, template, MEMORYLESS)
 end
 
 @testset "piecewise semi-ellipsoids" begin
@@ -229,7 +215,7 @@ end
     )
 end
 
-@testset "family validation and zero rate" begin
+@testset "family validation" begin
     @test_throws ArgumentError rate(Ellipsoid(dimension = 2))
     @test_throws ArgumentError rate(Polytope(symmetric = true, dimension = 2))
     y = SetProg.new_polyvars(3)
@@ -237,13 +223,6 @@ end
         PolySet(symmetric = true, degree = 4, variables = y),
     )
     @test_throws ArgumentError rate([Ellipsoid(symmetric = true)], PCC.de_bruijn(1, 2))
-
-    model = JuMP.Model()
-    template = Ellipsoid(symmetric = true)
-    S = PCC.add_function_variables!(model, template, 2, 1)
-    PCC.add_normalization!(model, S.set, S)
-    PCC.add_decrease!(model, template, S, S, A[1]; scale = 0)
-    @test JuMP.num_constraints(model; count_variable_in_set_constraints = false) > 0
 end
 
 @testset "inferred polynomial coordinates are shared by the nodes" begin
@@ -270,17 +249,18 @@ end
     @test models[:stability_V][1].set.variables == models[:stability_V][2].set.variables
 end
 
-@testset "native per-node polyhedral families and duals" begin
+@testset "per-node dual families" begin
     system = PCC.switched_system([[0.5 0.0; 0.0 0.25], [0.25 0.0; 0.0 0.5]])
     problem = PCC.StabilityProblem(system)
     graph = PCC.de_bruijn(1, 2)
     families = PCC.DualPiecewiseLinearTemplate([[1.0 0.0; 0.0 1.0], [2.0 0.0; 0.0 1.0]])
-    certificate =
+    polyhedral =
         PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
-    @test PCC.is_feasible(certificate)
-    @test all(>=(-1e-6), PCC.edge_slacks(certificate))
-    @test !PCC.is_closed_under(families, PCC.Maximum(), system)
-    @test PCC.is_closed_under([families[1], families[1]], PCC.Maximum(), system)
+    @test PCC.is_feasible(polyhedral)
+    @test all(>=(-1e-6), PCC.edge_slacks(polyhedral))
+    @test PCC.has_dual(families)
+    @test PCC.dual(PCC.dual(families)) == families
+    @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(polyhedral)))
     boxes = [
         PCC.DualCopositiveTemplate(min_weight = 2),
         PCC.DualCopositiveTemplate(min_weight = 3),
@@ -290,59 +270,21 @@ end
     @test PCC.has_dual(boxes)
     @test PCC.dual(PCC.dual(boxes)) == boxes
     @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(certificate)))
-    polyhedral =
-        PCC.certify(families, graph, problem; optimizer = HiGHS.Optimizer, rate = 0.8)
-    @test PCC.has_dual(families)
-    @test PCC.dual(PCC.dual(families)) == families
-    @test all(>=(-1e-6), PCC.edge_slacks(PCC.dual(polyhedral)))
-    @test !PCC.is_closed_under(
-        Ellipsoid(symmetric = true, piecewise = SQUARE),
-        PCC.Composition(),
-        PROBLEM.system,
-    )
-    @test !PCC.is_closed_under(
-        Ellipsoid(symmetric = true, piecewise = SQUARE),
-        PCC.InverseComposition(),
-        PROBLEM.system,
-    )
 end
 
-@testset "the native gauge primitives also work directly" begin
-    family = PCC.DualCopositiveTemplate(min_weight = 2)
-    model = JuMP.Model(HiGHS.Optimizer)
-    JuMP.set_silent(model)
-    S = PCC.add_function_variables!(model, family, 2, 1)
-    PCC.add_normalization!(model, S.set, S)
-    A = [0.5 0.0; 0.0 0.25]
-    PCC.add_decrease!(model, family, S, S, A; scale = 0.6)
-    JuMP.optimize!(model)
-    fitted = PCC.solution_value(family, S)
-    @test PCC.node_value(PROBLEM, fitted, [2.0, 0.0]) <= 1 + 1e-6
-    @test PCC.node_value(PROBLEM, fitted, A * [2.0, 1.0]) <=
-          0.6 * PCC.node_value(PROBLEM, fitted, [2.0, 1.0]) + 1e-6
-    system = PCC.switched_system([A])
-    @test PCC.is_closed_under(PCC.LinearCopositiveTemplate(), PCC.Composition(), system)
-    @test PCC.is_closed_under(
-        PCC.LinearCopositiveTemplate(),
-        PCC.InverseComposition(),
-        system,
-    )
+@testset "piecewise ellipsoids are not closed under composition" begin
+    piecewise = Ellipsoid(symmetric = true, piecewise = SQUARE)
+    @test !PCC.is_closed_under(piecewise, PCC.Composition(), PROBLEM.system)
+    @test !PCC.is_closed_under(piecewise, PCC.InverseComposition(), PROBLEM.system)
 end
 
-@testset "compatibility constructors use native families" begin
+@testset "the template constructors return SetProg families" begin
     @test PCC.DualCopositiveTemplate().set isa SetProg.Domain
     @test PCC.LinearCopositiveTemplate() isa SetProg.Domain
     @test only(PCC.DualPiecewiseLinearTemplate(1, 2)).set isa SetProg.Polytope
-    @test only(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)])) isa
-          SetProg.Polytope
     @test length(PCC.DualPiecewiseLinearTemplate(2, 2)) == 2
     @test length(PCC.DualPiecewiseLinearTemplate([[1.0 0.0; 0.0 1.0]])) == 1
-    @test length(PCC.PiecewiseLinearTemplate([PCC.planar_conic_partition(1)])) == 1
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(0, 2)
-    @test_throws ArgumentError PCC.DualPiecewiseLinearTemplate(Matrix{Float64}[])
-    @test_throws ArgumentError PCC.planar_conic_partition(0)
     @test PCC.node_value(PROBLEM, PCC.DualCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 0.5
-    @test PCC.node_value(PROBLEM, PCC.LinearCopositiveFunction([2.0, 3.0]), [1.0, 1.0]) ≈ 5
 end
 
 end

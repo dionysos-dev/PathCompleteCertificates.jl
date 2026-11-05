@@ -6,7 +6,7 @@ import PathCompleteCertificates as PCC
 
 # Write a cycle as the nodes it visits, so the tests read as graph facts rather
 # than as transition objects.
-nodes_of(graph, cycle) = [PCC.source(edge) for edge in cycle]
+nodes_of(cycle) = [PCC.source(edge) for edge in cycle]
 labels_of(graph, cycle) = [PCC.label(graph, edge) for edge in cycle]
 
 @testset "a self-loop is a cycle of length one" begin
@@ -17,7 +17,7 @@ labels_of(graph, cycle) = [PCC.label(graph, edge) for edge in cycle]
     cycles = PCC.simple_cycles(graph)
 
     @test length(cycles) == 2
-    @test all(cycle -> nodes_of(graph, cycle) == [1], cycles)
+    @test all(cycle -> nodes_of(cycle) == [1], cycles)
     @test sort(reduce(vcat, labels_of.(Ref(graph), cycles))) == [1, 2]
 end
 
@@ -29,9 +29,9 @@ end
 
     cycles = PCC.simple_cycles(graph)
 
-    # One triangle, written from its lowest node -- not three rotations of it.
+    # One triangle, written from its lowest node, not three rotations of it.
     @test length(cycles) == 1
-    @test nodes_of(graph, only(cycles)) == [1, 2, 3]
+    @test nodes_of(only(cycles)) == [1, 2, 3]
 end
 
 @testset "parallel edges make distinct cycles" begin
@@ -71,10 +71,10 @@ end
     graph = PCC.de_bruijn(2, 2)
     cycles = PCC.simple_cycles(graph)
 
-    covered = unique(reduce(vcat, nodes_of.(Ref(graph), cycles)))
+    covered = unique(reduce(vcat, nodes_of.(cycles)))
 
     @test sort(covered) == collect(PCC.nodes(graph))
-    @test all(cycle -> allunique(nodes_of(graph, cycle)), cycles)
+    @test all(cycle -> allunique(nodes_of(cycle)), cycles)
 end
 
 end # module

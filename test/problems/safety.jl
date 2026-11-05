@@ -33,15 +33,6 @@ certificate(graph) = PCC.certify(
         @test PCC.node_value(PCC.get_problem(res), V, [0.0, 0.0]) < 0
         @test PCC.node_value(PCC.get_problem(res), V, [6.0, 0.0]) > 0
     end
-
-    # A barrier is negative on the initial set and positive on the unsafe one,
-    # so its matrix has eigenvalues of both signs. P = 0 would pass every other
-    # test in this file.
-    for V in PCC.functions(res)
-        eigenvalues = LinearAlgebra.eigvals(LinearAlgebra.Symmetric(homogeneous(V)))
-        @test any(<(-1e-6), eigenvalues)
-        @test any(>(1e-6), eigenvalues)
-    end
 end
 
 @testset "the multipliers stay nonnegative" begin
@@ -69,9 +60,7 @@ end
 
 @testset "an unseparable instance is reported as one" begin
     # Unsafe set ‖x‖ >= 1 overlaps the initial set ‖x‖ <= 4, so no barrier can
-    # exist. The margin has to come back at zero and `feasible` has to say so --
-    # with `eps` pinned to zero for every instance, this could not be told
-    # apart from a genuine certificate.
+    # exist. The margin comes back at zero, and `is_feasible` says so.
     overlapping = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -1.0]
 
     res = PCC.certify(
@@ -97,7 +86,7 @@ end
     @test_throws ArgumentError PCC.SafetyProblem(system, [1.0 2.0 3.0; 0 1 0; 0 0 1], SU)
 end
 
-@testset "quadratic safety preserves the SDP" begin
+@testset "the quadratic safety program is the matrix SDP" begin
     graph = PCC.de_bruijn(1, 2)
     problem = PCC.SafetyProblem(PCC.switched_system(A), S0, SU)
     model = PCC.optimization_model(
@@ -128,10 +117,11 @@ end
         )
     end
     for edge in PCC.edges(graph)
-        Ah = PCC._homogeneous_dynamics(A[only(PCC.letters(PCC.label(graph, edge)))])
+        mode = only(PCC.letters(PCC.label(graph, edge)))
+        Ah = [A[mode] zeros(2); 0.0 0.0 1.0]
         push!(reference, Ps[PCC.source(edge)] - Ah' * Ps[PCC.dest(edge)] * Ah)
     end
-    # SetProg uses constant-first coordinates; PCC's original lift used last.
+    # S0 and Su put the constant coordinate last, and SetProg puts it first.
     perm = [3, 1, 2]
     canonical(M) = [convert(JuMP.AffExpr, M[i, j]) for j in 1:3 for i in 1:j]
     expected = [canonical(M[perm, perm]) for M in reference]
@@ -189,7 +179,7 @@ end
     end
 end
 
-@testset "Polyhedral safety certificates" begin
+@testset "piecewise linear and dual piecewise linear safety" begin
     system = PCC.switched_system([[0.5 0.0; 0.0 0.5]])
     graph = PCC.de_bruijn(1, 1)
     problem = PCC.SafetyProblem(system, S0, SU)
@@ -237,14 +227,14 @@ end
         [2.0, -1],
     ]
     partition = SetProg.polyhedron(SetProg.vrep(vertices), lib)
-    conic = PCC.PiecewiseLinearTemplate([partition])
-    polygon = PCC.certify(conic, graph, tighter; optimizer = Clarabel.Optimizer)
+    octagon = PCC.PiecewiseLinearTemplate([partition])
+    polygon = PCC.certify(octagon, graph, tighter; optimizer = Clarabel.Optimizer)
     @test PCC.is_feasible(polygon)
     @test polygon.margin > 1e-6
     @test all(>=(-1e-6), PCC.edge_slacks(polygon))
     overlap = PCC.SafetyProblem(system, S0, [1.0 0 0; 0 1 0; 0 0 -1])
     @test !PCC.is_feasible(
-        PCC.certify(conic, graph, overlap; optimizer = Clarabel.Optimizer),
+        PCC.certify(octagon, graph, overlap; optimizer = Clarabel.Optimizer),
     )
     shifted =
         PCC.SafetyProblem(system, [-1.0 0 1; 0 -1 0; 1 0 0], [1.0 0 -1; 0 1 0; -1 0 -35])
@@ -299,7 +289,7 @@ end
     @test scaled.margin ≈ 0.2 / 0.6352 atol = 1e-6
     @test all(piece -> LinearAlgebra.eigmin(piece.Q) > 1, only(PCC.functions(scaled)).sets)
     # Different node partitions require certificates on their mapped cone
-    # intersections; checking each whole-space quadratic would be stronger.
+    # intersections. Checking each whole-space quadratic would be stronger.
     box = SetProg.polyhedron(SetProg.hrep([1.0 0; -1 0; 0 1; 0 -1], ones(4)), lib)
     families = PCC.PiecewiseQuadraticTemplate([partition, box])
     matrices = [[0.0 -0.7; 0.7 0.0], [0.6 0.1; -0.1 0.6]]

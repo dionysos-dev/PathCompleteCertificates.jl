@@ -25,7 +25,6 @@ docs/src/generated
 *.mkv
 *.bundle
 outputs/
-bench/results/
 experiments/results/
 
 # Claude Code: track shared commands, ignore personal/local config

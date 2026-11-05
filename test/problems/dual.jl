@@ -3,13 +3,12 @@ module TestDual
 # Lemma 6.25 of Debauche, made constructive and checked on every lift: the dual
 # norms of a certificate's node functions are a certificate on the dual graph
 # for the transposed system in the dual template, at the same rate. The test
-# also asserts Proposition 7.5 on the validity declarations -- a lift is valid
-# for a template exactly when its dual is valid for the dual template -- and,
+# also asserts Proposition 7.5 on the validity declarations (a lift is valid
+# for a template exactly when its dual is valid for the dual template) and,
 # wherever a lift is valid, that the rate it certifies is no worse.
 
 import SetProg
 using Test
-using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
 
@@ -28,7 +27,7 @@ coefficients(V::SetProg.Sets.Polar) = coefficients(SetProg.polar(V))
 coefficients(V::SetProg.Sets.Piecewise) = reduce(vcat, [s.a for s in V.sets])
 
 # A positive system for the copositive pair, a general one for the quadratic
-# template; both invertible, so the composition lifts are valid somewhere.
+# template. Both are invertible, so the composition lifts are valid somewhere.
 const POSITIVE = PCC.switched_system([
     [0.5 0.3 0.0; 0.1 0.4 0.2; 0.0 0.2 0.6],
     [0.3 0.0 0.4; 0.2 0.5 0.1; 0.3 0.1 0.2],
@@ -40,11 +39,11 @@ const GENERAL = PCC.switched_system([[0.8 0.3; -0.2 0.5], [0.4 -0.6; 0.5 0.3]])
 const OCTAGON = PCC.planar_conic_partition(1)
 
 const CASES = [
-    (PCC.QuadraticTemplate(), GENERAL),
-    (PCC.LinearCopositiveTemplate(), POSITIVE),
-    (PCC.DualCopositiveTemplate(), POSITIVE),
-    (only(PCC.PiecewiseLinearTemplate([OCTAGON])), GENERAL),
-    (only(PCC.DualPiecewiseLinearTemplate([OCTAGON])), GENERAL),
+    ("quadratic", PCC.QuadraticTemplate(), GENERAL),
+    ("linear copositive", PCC.LinearCopositiveTemplate(), POSITIVE),
+    ("dual copositive", PCC.DualCopositiveTemplate(), POSITIVE),
+    ("piecewise linear", only(PCC.PiecewiseLinearTemplate([OCTAGON])), GENERAL),
+    ("dual piecewise linear", only(PCC.DualPiecewiseLinearTemplate([OCTAGON])), GENERAL),
 ]
 
 const ONE = PCC.common_graph(2)
@@ -79,16 +78,16 @@ bound(template, g, problem) = PCC.certify(
 
 const BASE_RATES = Dict(
     (template, g) => bound(template, g, PCC.StabilityProblem(system)).rate for
-    (template, system) in CASES, g in (ONE, TWO)
+    (_, template, system) in CASES, g in (ONE, TWO)
 )
 
-@testset "the dual certificate on $name for $(nameof(typeof(template)))" for (
+@testset "the dual certificate on $name for the $template_name template" for (
         name,
         step,
         base,
         edge_list,
     ) in STEPS,
-    (template, system) in CASES
+    (template_name, template, system) in CASES
 
     g = apply(step, base, edge_list)
     problem = PCC.StabilityProblem(system)
@@ -123,20 +122,20 @@ const BASE_RATES = Dict(
     fresh = bound(PCC.dual(template), PCC.dual(g), PCC.dual(problem))
     @test isapprox(fresh.rate, primal.rate; rtol = 1e-3)
 
-    # The common function of the dual certificate is a function.
+    # The common certificate of the dual certificate is a function.
     if !PCC.has_words(g)
         @test dualised(ones(size(first(PCC.state_matrices(system)), 1))) > 0
     end
 
-    # A valid lift is no worse than the graph it was applied to -- on the
-    # backward ones, the guarantee that rests on the dual construction.
+    # A valid lift is no worse than the graph it was applied to. On the
+    # backward lifts, this guarantee rests on the dual construction.
     if PCC.is_valid(step, template, system)
         @test primal.rate <= BASE_RATES[(template, base)] * (1 + 1e-3)
     end
 end
 
 @testset "validity is the same question on the dual side (Debauche, Prop. 7.5)" begin
-    for (_, L, _, _) in STEPS, (template, _) in CASES, system in (POSITIVE, GENERAL)
+    for (_, L, _, _) in STEPS, (_, template, _) in CASES, system in (POSITIVE, GENERAL)
         @test PCC.is_valid(L, template, system) ==
               PCC.is_valid(PCC.dual(L), PCC.dual(template), PCC.dual(system))
     end

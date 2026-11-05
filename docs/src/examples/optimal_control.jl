@@ -13,6 +13,7 @@ import Random
 using Plots
 
 const TEMPLATE = QuadraticTemplate()
+## Clarabel's chordal decomposition fails on optimal-control programs.
 const OPTIMIZER = JuMP.optimizer_with_attributes(
     Clarabel.Optimizer,
     "chordal_decomposition_enable" => false,
@@ -52,7 +53,7 @@ certify(TEMPLATE, common_graph(system), problem; optimizer = OPTIMIZER)(x0)
 bounds =
     [certify(TEMPLATE, de_bruijn(k, 2), problem; optimizer = OPTIMIZER)(x0) for k in 0:2]
 
-# Most of the gain comes at order 1, with two nodes and two gains:
+# Most of the improvement comes at order 1, with two nodes, so two gains:
 
 graph = de_bruijn(1, 2)
 certificate = certify(TEMPLATE, graph, problem; optimizer = OPTIMIZER)
@@ -61,7 +62,7 @@ certificate.gains
 # ## The certificate, drawn
 #
 # On the left, the set ``\{x : V_s(x) \le V(x_0)\}`` of each node function, and
-# the set ``\{x : V(x) \le V(x_0)\}`` of their common function, here their
+# the set ``\{x : V(x) \le V(x_0)\}`` of their common certificate, here their
 # minimum, with 20 closed-loop runs from ``x_0`` under random switching: ``V``
 # decreases along every run, so none leaves the set. On the right, the cost
 # accumulated along 100 runs, below the bound of the certificate, itself below
@@ -151,11 +152,10 @@ maximum(last.(costs)), certificate(x0)
 # certificate above, and fit the node functions to them. Each certificate then
 # bounds the worst-case cost of its own policy.
 #
-# For the quadratic cost, a piecewise quadratic and a piecewise linear
+# For the quadratic cost, here are a piecewise quadratic and a piecewise linear
 # template, on partitions of the plane from [`planar_conic_partition`](@ref).
 # The piecewise quadratic one needs SumOfSquares, and its partition a Polyhedra
-# library with a linear programming solver. The piecewise linear node
-# functions are the squared gauges ``g_{\Omega_s}^2``, since `p = 2`:
+# library with a linear programming solver:
 
 import HiGHS, SetProg, SumOfSquares
 
@@ -181,5 +181,6 @@ quartic = fixed(
 )
 quartic(x0)
 
-# Polytopes can also replace `Q` and `R`, for a piecewise linear stage cost
-# (see [Systems and problems](@ref)).
+# This bounds the quartic cost, so it does not compare with the bounds above.
+# With the piecewise linear template, polytopes can also replace `Q` and `R`,
+# for a piecewise linear stage cost (see [What works with what](@ref)).

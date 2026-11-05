@@ -14,7 +14,7 @@ graph = common_graph(system)
 ```
 
 The template is the family the node functions are drawn from. In the program
-that [`certify`](@ref) solves, it gives the variables and decides the kind of
+that [`certify`](@ref) solves, it gives the variables and sets the kind of
 program: semidefinite, linear or second-order cone. With the graph, it
 influences how good the certificate can be and how much it costs (see
 [How a certificate works](@ref)). This page shows what a template changes,
@@ -27,7 +27,7 @@ and `graph = common_graph(system)`, solved with Clarabel and HiGHS.
 ## What a template changes
 
 The template fixes the shape of the node functions. It changes the bound, and
-the kind of program, which decides the solver:
+the kind of program, so the solver:
 
 ```@example running
 quadratic = certify(QuadraticTemplate(), graph, problem; optimizer = Clarabel.Optimizer)
@@ -135,36 +135,20 @@ argument `P` gives the polytopes ``\mathcal{P}_s``, one per node, and
 ``8 \cdot 2^{q-1}`` facets.
 
 **Dual piecewise linear.** The dual piecewise linear template is the polar of
-the piecewise linear one, on the same partition, and [`dual`](@ref) maps each
+the piecewise linear one, on the same polytopes, and [`dual`](@ref) maps each
 to the other (see [Duality](@ref)). Fixing the directions of the vertices of
 one fixes the normals of the faces of the other: these are the two polyhedral
-parameterizations of [athanasopoulos2019polyhedral](@citet). Given one
-invertible matrix ``G_s`` per node, the partition is the polytope whose
-vertices are the rows of ``G_s`` and their opposites, and the node functions
-are ``\max_k \lvert (G_s x)_k \rvert / w_{s,k}``. Their unit sets are
-parallelotopes, whose faces come in parallel pairs, normal to the rows of
-``G_s``. `DualPiecewiseLinearTemplate(n_nodes, n)` takes the identity, which
-gives boxes.
+parameterizations of [athanasopoulos2019polyhedral](@citet). Two other
+constructors build the polytopes. `DualPiecewiseLinearTemplate(matrices)`,
+with one invertible matrix ``G_s`` per node, gives parallelotopes with faces
+normal to the rows of ``G_s``, and `DualPiecewiseLinearTemplate(n_nodes, n)`
+sets ``G_s = I`` and gives boxes.
 
 **Copositive.** For positive systems, the nonnegative orthant is invariant,
 and the copositive templates restrict the node functions to it
 [debauche2021comparison; Def. 11](@cite). The linear copositive template has
 unit set ``\mathcal{H}(c_s) \cap \mathbb{R}^n_+``. The dual copositive
 template takes its polar within the orthant, the box ``\prod_j [0, v_{s,j}]``.
-
-## Templates are SetProg families
-
-Each constructor returns a [SetProg](https://github.com/blegat/SetProg.jl)
-family of sets, or, for the templates with data per node, a vector of
-families, one per node: `QuadraticTemplate()` is
-`SetProg.Ellipsoid(symmetric = true)`, and `PiecewiseLinearTemplate([P])` is
-`[SetProg.Polytope(symmetric = true, piecewise = P)]`. A SetProg family can
-also be passed directly, without a constructor (see
-[Try a richer template](@ref)). To write one, run `Pkg.add("SetProg")` and
-`import SetProg`. The package depends on SetProg, so nothing new is
-downloaded, but your environment must list it for Julia to load it by name.
-Load it with `import` rather than `using`, which would hide the package's
-`dual`, `is_valid` and `lift` behind SetProg's.
 
 ## How to choose
 
@@ -179,6 +163,20 @@ Load it with `import` rather than `using`, which would hide the package's
 
 Which template gives the lowest bound depends on the system, and a template
 with more variables builds a larger program: try several.
+
+## Templates are SetProg families
+
+Each constructor returns a [SetProg](https://github.com/blegat/SetProg.jl)
+family of sets, or, for the templates with data per node, a vector of
+families, one per node: `QuadraticTemplate()` is
+`SetProg.Ellipsoid(symmetric = true)`, and `PiecewiseLinearTemplate([P])` is
+`[SetProg.Polytope(symmetric = true, piecewise = P)]`. A SetProg family can
+also be passed directly, without a constructor (see
+[Try a richer template](@ref)). To write one, run `Pkg.add("SetProg")` and
+`import SetProg`. The package depends on SetProg, so nothing new is
+downloaded, but your environment must list it for Julia to load it by name.
+Load it with `import` rather than `using`, which would hide the package's
+`dual`, `is_valid` and `lift` behind SetProg's.
 
 ## Adding a template
 

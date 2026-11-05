@@ -1,7 +1,7 @@
 module TestCertificate
 
 # One certificate type per problem, sharing an interface: the shared part is
-# accessed through methods and stored once in `CertificateData`; what a problem
+# accessed through methods and stored once in `CertificateData`. What a problem
 # certifies is a typed field on its own certificate type.
 
 using Test
@@ -9,7 +9,6 @@ using HybridSystems
 import PathCompleteCertificates as PCC
 import Clarabel
 import JuMP
-import LinearAlgebra
 
 const OPTIMIZER = Clarabel.Optimizer
 
@@ -34,12 +33,12 @@ const STABILITY =
     @test PCC.get_graph(STABILITY) === GRAPH
 end
 
-@testset "a certificate is callable, and is the common function" begin
+@testset "a certificate is callable, and is the common certificate" begin
     x = [1.0, 2.0]
 
     @test STABILITY(x) ≈ PCC.common(GRAPH, PROBLEM, PCC.functions(STABILITY), x)
 
-    # Positive away from the origin, zero at it -- it is a Lyapunov function.
+    # Positive away from the origin and zero at it: a Lyapunov function.
     @test STABILITY(x) > 0
     @test STABILITY([0.0, 0.0]) ≈ 0 atol = 1e-8
 end
@@ -81,8 +80,7 @@ end
         @test certificate([1.0, 1.0]) isa Real
     end
 
-    # What each problem certifies is a typed field on its own type, not an
-    # entry in a shared bag -- so it is discoverable and documented.
+    # What each problem certifies is a typed field on its own type.
     @test STABILITY isa PCC.StabilityCertificate
     @test safety isa PCC.SafetyCertificate
     @test control isa PCC.OptimalControlCertificate
@@ -93,7 +91,6 @@ end
 end
 
 @testset "an infeasible solve still returns a certificate" begin
-    # Rather than a differently-shaped tuple with `nothing` fields.
     overlapping = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 -1.0]
     S0 = [-1.0 0.0 0.0; 0.0 -1.0 0.0; 0.0 0.0 16.0]
     modes = [[0.7 0.77; -0.49 0.84], [0.7 0.77; -0.49 0.56]]

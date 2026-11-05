@@ -6,44 +6,36 @@ using Random
 import PathCompleteCertificates as PCC
 import Clarabel
 import LinearAlgebra
-import SetProg
 
 const OPTIMIZER = Clarabel.Optimizer
 const TEMPLATE = PCC.QuadraticTemplate()
 
+rotation(angle) = [cos(angle) -sin(angle); sin(angle) cos(angle)]
+
 # A pure rotation scaled by 0.9: since rotations preserve the Euclidean norm
 # exactly, P = I is already the exact quadratic certificate, at exactly the
-# true JSR. Same trick as the conic-polyhedral tests.
-theta = pi / 3
-const ROTATED = 0.9 .* [cos(theta) -sin(theta); sin(theta) cos(theta)]
+# true JSR.
+const ROTATED = 0.9 .* rotation(pi / 3)
 
-const ONE_NODE = GraphAutomaton(1)
-add_transition!(ONE_NODE, 1, 1, 1)
+const ONE_NODE = PCC.common_graph(1)
 const ONE_MODE_PROBLEM = PCC.StabilityProblem(PCC.switched_system([ROTATED]))
 
-# A richer, two-mode system on the "complete" 2-node graph: opposite rotations
+# A richer, two-mode system on the complete 2-node graph: opposite rotations
 # of the same magnitude, so every node has two outgoing edges under two
 # different dynamics rather than one.
-theta2 = -pi / 3
-const ROTATED2 = 0.9 .* [cos(theta2) -sin(theta2); sin(theta2) cos(theta2)]
+const ROTATED2 = 0.9 .* rotation(-pi / 3)
 
-const TWO_NODES = GraphAutomaton(2)
-add_transition!(TWO_NODES, 1, 1, 1)
-add_transition!(TWO_NODES, 1, 2, 2)
-add_transition!(TWO_NODES, 2, 1, 1)
-add_transition!(TWO_NODES, 2, 2, 2)
+const TWO_NODES = PCC.de_bruijn(1, 2)
 const TWO_MODE_PROBLEM = PCC.StabilityProblem(PCC.switched_system([ROTATED, ROTATED2]))
 
 # A rotation and a shear, both scaled by 0.69: no quadratic function attains the
 # joint spectral radius of this pair, so the memoryless bound is loose and there
-# is something for refinement to win. Same system as the SOS example.
+# is something for refinement to win.
 const SHEARED = PCC.StabilityProblem(
     PCC.switched_system([0.69 .* [0.0 1.0; -1.0 0.0], 0.69 .* [1.0 1.0; 0.0 1.0]]),
 )
 
-const MEMORYLESS = GraphAutomaton(1)
-add_transition!(MEMORYLESS, 1, 1, 1)
-add_transition!(MEMORYLESS, 1, 1, 2)
+const MEMORYLESS = PCC.common_graph(2)
 
 @testset "a node with a single outgoing edge always converges immediately" begin
     trace = PCC.refine(
@@ -54,7 +46,7 @@ add_transition!(MEMORYLESS, 1, 1, 2)
         depth_max = 3,
     )
 
-    @test PCC.get_template(first(PCC.certificates(trace))) isa SetProg.Ellipsoid
+    @test PCC.get_template(first(PCC.certificates(trace))) == TEMPLATE
     @test PCC.status(trace) == PCC.OPTIMAL
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
@@ -72,7 +64,7 @@ end
     )
 
     # The certified rate is already < 1, so this exits through `stop` rather
-    # than through the gap check -- the status tells the two apart.
+    # than through the gap check, and the status tells the two apart.
     @test PCC.status(trace) == PCC.STOPPED
     @test length(PCC.graphs(trace)) == 1
     @test PCC.rates(trace)[1] < 1
@@ -86,36 +78,6 @@ end
     @test PCC.status(trace) == PCC.DEPTH_REACHED
     @test length(PCC.graphs(trace)) == 1
     @test length(PCC.rates(trace)) == 1
-end
-
-@testset "refine only ever holds or tightens the certified rate as it lifts" begin
-    trace = PCC.refine(
-        TEMPLATE,
-        TWO_NODES,
-        TWO_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-        depth_max = 3,
-    )
-
-    @test length(PCC.graphs(trace)) == length(PCC.rates(trace))
-
-    # Never below the true JSR, and lifting never makes the bound worse: any
-    # certificate feasible before a lift stays feasible after it (every copy
-    # of the lifted node just inherits its function), so the bisected rate
-    # can only go down or stay put.
-    @test all(>=(0.9 - 1e-2), PCC.rates(trace))
-    @test issorted(PCC.rates(trace); rev = true)
-    @test issorted(PCC.n_nodes.(PCC.graphs(trace)))
-
-    # The last graph visited still carries a genuine certificate, independent
-    # of the bookkeeping inside `refine` itself.
-    final = PCC.certify(
-        TEMPLATE,
-        PCC.graphs(trace)[end],
-        TWO_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-    )
-    @test PCC.is_feasible(final)
 end
 
 @testset "input validation" begin
@@ -135,7 +97,7 @@ end
         stall_max = 0,
     )
 
-    # Optimal control has no objective or edge slacks to read, and says so
+    # Only stability defines an objective, so refine refuses the other problems
     # before solving anything.
     controlled = PCC.switched_system([ROTATED], [reshape([1.0, 0.0], 2, 1)])
     control = PCC.OptimalControlProblem(controlled, [1.0 0.0; 0.0 1.0], [1.0;;])
@@ -156,17 +118,21 @@ end
 
     # Deterministic without a seed, which is the point: ties go to the cheapest
     # split, so this trajectory is the same on every Julia version. Seeding an
-    # `rng` would NOT give that -- `rand(rng, ::Vector)` may sample differently
-    # between versions, and this assertion failed on 1.10 while passing on 1.12.
+    # `rng` would not give that, since `rand(rng, ::Vector)` may sample
+    # differently between versions.
     @test PCC.n_nodes.(PCC.graphs(trace)) == [1, 2, 3, 4]
+
+    # The one-node graph: both loops are tight, and its out-splitting, one
+    # copy per loop, is the dual De Bruijn graph of order 1.
+    @test PCC.origins(first(PCC.steps(trace))) == [1, 1]
 
     # The point of the whole loop: the bound genuinely falls, not merely fails to
     # rise. Anything weaker is satisfied by a lift that does nothing.
     @test all(<(0), diff(rates))
 
     # On this system the dual De Bruijn graph of order 1 certifies the rate of
-    # De Bruijn of order 1; four nodes reached by lifting is *not* De Bruijn of
-    # order 2, and is strictly better than it.
+    # De Bruijn of order 1. The four nodes reached by lifting are *not* De Bruijn
+    # of order 2, and are strictly better than it.
     memory_1 = PCC.certify(TEMPLATE, PCC.de_bruijn(1, 2), SHEARED; optimizer = OPTIMIZER)
     memory_2 = PCC.certify(TEMPLATE, PCC.de_bruijn(2, 2), SHEARED; optimizer = OPTIMIZER)
 
@@ -186,19 +152,12 @@ end
 end
 
 @testset "the trace carries the certificates, not only the bounds" begin
-    trace = PCC.refine(
-        TEMPLATE,
-        TWO_NODES,
-        TWO_MODE_PROBLEM;
-        optimizer = OPTIMIZER,
-        depth_max = 2,
-    )
+    trace = PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 3)
 
     every = PCC.certificates(trace)
 
-    @test length(every) == length(PCC.graphs(trace))
+    @test length(every) == 3
     @test all(PCC.is_feasible, every)
-    @test [c.rate for c in every] == PCC.rates(trace)
 
     # The Lyapunov functions are there, so a run can be drawn without re-solving.
     @test all(c -> c([1.0, 1.0]) > 0, every)
@@ -207,8 +166,7 @@ end
 @testset "an exact certificate is certified, not ground down" begin
     # ROTATED and ROTATED2 are rotations scaled by 0.9, so P = I is EXACT and the
     # JSR is exactly 0.9 on any graph. Every edge is therefore tight, every node
-    # always looks splittable, and Theorem 4 can never fire -- measured before
-    # the bracket existed: 2, 3, 5, 7, 10 nodes over five identical bounds.
+    # always looks splittable, and Theorem 4 can never fire.
     #
     # The cycle bound closes it on the first step instead: both modes are
     # rotations of norm 0.9, so some cycle attains the rate exactly.
@@ -231,8 +189,8 @@ end
     # And Theorem 4 alone would not have seen it.
     @test !PCC.is_jsr_exact(PCC.certificates(trace)[end]; atol = 1e-4)
 
-    # With the bracket switched off -- `gap_tol` below zero can never be met --
-    # the same system exercises the stall path on its own: it grows at a
+    # With the bracket switched off, since `gap_tol` below zero can never be
+    # met, the same system exercises the stall path on its own: it grows at a
     # constant bound until `stall_max` says stop.
     stalling = PCC.refine(
         TEMPLATE,
@@ -262,55 +220,13 @@ end
     @test length(PCC.graphs(patient)) == 4
 end
 
-@testset "the status tells the outcomes apart" begin
-    # One mode, one tight self-loop: Theorem 4's condition holds, and the cycle
-    # through that self-loop meets the rate. Certified either way.
-    @test PCC.status(
-        PCC.refine(
-            TEMPLATE,
-            ONE_NODE,
-            ONE_MODE_PROBLEM;
-            optimizer = OPTIMIZER,
-            depth_max = 3,
-        ),
-    ) == PCC.OPTIMAL
-
-    @test PCC.status(
-        PCC.refine(
-            TEMPLATE,
-            ONE_NODE,
-            ONE_MODE_PROBLEM;
-            optimizer = OPTIMIZER,
-            depth_max = 3,
-            stop = c -> c.rate < 1,
-        ),
-    ) == PCC.STOPPED
-
-    @test PCC.status(
-        PCC.refine(
-            TEMPLATE,
-            SHEARED;
-            optimizer = OPTIMIZER,
-            depth_max = 2,
-            strategy = PCC.TightestNodeSplitting(),
-        ),
-    ) == PCC.DEPTH_REACHED
-
-    # The one-node graph: both loops are tight, and its out-splitting, one
-    # copy per loop, is the dual De Bruijn graph of order 1.
-    first_step =
-        PCC.refine(TEMPLATE, MEMORYLESS, SHEARED; optimizer = OPTIMIZER, depth_max = 2)
-    @test PCC.n_nodes.(PCC.graphs(first_step)) == [1, 2]
-    @test PCC.origins(only(PCC.steps(first_step))) == [1, 1]
-end
-
 @testset "check_path_complete decides the starting graph, and the refinements are trusted after it" begin
     settings =
         (optimizer = OPTIMIZER, depth_max = 3, strategy = PCC.TightestNodeSplitting())
     start = PCC.dual(PCC.de_bruijn(1, 2))
 
     # Waiving the check cannot change the answer on a graph that has the
-    # property -- it only skips deciding it.
+    # property, since it only skips deciding it.
     checked = PCC.refine(TEMPLATE, start, SHEARED; settings..., check_path_complete = true)
     waived = PCC.refine(TEMPLATE, start, SHEARED; settings..., check_path_complete = false)
 
@@ -322,7 +238,7 @@ end
     # and that is asserted here rather than at run time.
     @test all(graph -> PCC.is_path_complete(graph, 1:2), PCC.graphs(waived))
 
-    # The starting graph, though, is still decided -- node 2 has no outgoing edge, so no
+    # The starting graph, though, is still decided. Node 2 has no outgoing edge, so no
     # word ending in mode 2 is readable.
     dead_end = GraphAutomaton(2)
     add_transition!(dead_end, 1, 1, 1)

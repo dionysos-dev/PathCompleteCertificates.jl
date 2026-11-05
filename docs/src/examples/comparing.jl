@@ -130,8 +130,7 @@ TEMPLATES = [
 nothing #hide
 
 # A comparison, read by name: the lifts whose lifted first graph simulates the
-# second, and the templates for which the order is proved. The max lift is the
-# dual of the min lift.
+# second, and the templates for which the order is proved.
 
 compared(G, H) = compare(G, H; templates = last.(TEMPLATES), system, optimizer = OPTIMIZER)
 lift_name(lift) =
@@ -162,28 +161,6 @@ combination(row) = join(
 )
 ["W_" * node_name(h) * " = " * combination(C[h, :]) for h in 1:n_nodes(G2)]
 
-# Following the recipe on a certificate solved on `G1`, every edge inequality
-# of `G2` holds at the same rate:
-
-bound(template, graph) =
-    certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
-
-on_G1 = bound(QUADRATIC, G1)
-V = functions(on_G1)
-W = [
-    PathCompleteCertificates.QuadraticFunction(sum(C[h, g] * V[g].Q for g in eachindex(V))) for h in 1:n_nodes(G2)
-]
-scale = on_G1.rate^PathCompleteCertificates.homogeneity_degree(QUADRATIC)
-all(PathCompleteCertificates.edges(G2)) do edge
-    return PathCompleteCertificates.decrease_slack(
-        QUADRATIC,
-        W[PathCompleteCertificates.source(edge)],
-        W[PathCompleteCertificates.dest(edge)],
-        A[PathCompleteCertificates.label(G2, edge)];
-        scale,
-    ) >= -1e-6
-end
-
 # ## The template decides
 #
 # `G4` against the common graph: its min and max lifts simulate `G0`, its sum
@@ -209,9 +186,14 @@ Dict(simulations(c30))[SumLift()]
 # `G3` as on `G0`, and is lower on `G4`. The copositive rates are the same on
 # `G0`, `G3` and `G4`.
 
-rates = Dict(
+## The rates are near 9, so the bisection starts from 100 instead of doubling from 1.
+bound(template, graph) =
+    certify(template, graph, problem; optimizer = OPTIMIZER, initial_upper = 100.0)
+
+certified = Dict(
     name => [bound(template, g).rate for g in GRAPHS] for (name, template) in TEMPLATES
 )
+#-
 
 figure = plot(;
     xticks = (1:5, NAMES),
@@ -221,11 +203,18 @@ figure = plot(;
     title = "five graphs, three templates",
 )
 for (name, _) in TEMPLATES
-    plot!(figure, 1:5, rates[name]; marker = :circle, markersize = 6, lw = 2, label = name)
+    plot!(
+        figure,
+        1:5,
+        certified[name];
+        marker = :circle,
+        markersize = 6,
+        lw = 2,
+        label = name,
+    )
 end
 figure
 
-# The min, max and sum lifts were never built: a relation decides the first
-# two, and a linear program the third, while these lifted graphs grow
-# exponentially. Only the composition lifts, of length 1, are built.
-# [Improve my bound](@ref) builds a better graph instead of comparing given ones.
+# [`compare`](@ref) never builds the min, max and sum lifts, which grow
+# exponentially (see [Comparing graphs](@ref)). [Improve my bound](@ref) builds
+# a better graph instead of comparing given ones.

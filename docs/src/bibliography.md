@@ -12,7 +12,7 @@ paper, what the package takes from each.
 | Paper | What the package takes from it |
 | :-- | :-- |
 | [ahmadi2014joint](@citet) | path-complete graphs, and the bound on the joint spectral radius: [`StabilityProblem`](@ref), [`is_path_complete`](@ref), [`expanded_form`](@ref) |
-| [philippe2019path](@citet) | complete and co-complete graphs, and the common function: [`common`](@ref) |
+| [philippe2019path](@citet) | complete and co-complete graphs, and the common certificate: [`common`](@ref) |
 | [anand2024barrier](@citet) | path-complete barrier certificates: [`SafetyProblem`](@ref) |
 | [ninite2026path](@citet) | path-complete optimal control: [`OptimalControlProblem`](@ref) |
 | [abate2026succinct](@citet) | the characterization of path-completeness by the subset construction |
