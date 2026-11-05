@@ -17,9 +17,6 @@ julia --project=experiments experiments/refinement.jl
 | `templates_jsr.jl` | Section 5.1, table of templates and graphs: upper bounds on the JSR, and smallest certified unsafe radius for the pair scaled by 1/2, with six templates on the common graph and the De Bruijn graphs of order 1 and 3 |
 | `refinement.jl` | Section 5.2, figure "Automatic refinement": the two refinement strategies against the De Bruijn hierarchy, and the last refined graph |
 
-The environment takes `SetProg.jl` at its `main` branch, which the polyhedral safety templates
-need until its next release.
-
-Times depend on the machine and the solver version; the bounds should match the paper to the
+Times depend on the machine and the solver version. The bounds should match the paper to the
 digits shown. Results, figures included, go under `experiments/results/`, which is
 ignored by git.

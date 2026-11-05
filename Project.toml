@@ -18,7 +18,7 @@ LinearAlgebra = "1"
 MathematicalSystems = "0.14"
 Random = "1"
 RecipesBase = "1"
-SetProg = "0.4.6"
+SetProg = "0.4.7"
 julia = "1.10"
 
 [weakdeps]
