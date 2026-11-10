@@ -153,7 +153,7 @@ function _fixed_gain_control_model(
                 model,
                 sets[a] ⊆ SetProg.PolarLpSum(next, stage, problem.p),
                 margin = margin
-            )
+            ),
         )
     end
     objective = reduce(

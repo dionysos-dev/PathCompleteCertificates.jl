@@ -212,7 +212,7 @@ function optimization_model(
                 initial ⊆ sets[i],
                 S_procedure_scaling = gamma0[i],
                 margin = eps
-            )
+            ),
         )
         push!(
             separation,
@@ -221,7 +221,7 @@ function optimization_model(
                 [sets[i], unsafe] in SetProg.Disjoint(),
                 S_procedure_scaling = gammau[i],
                 margin = eps
-            )
+            ),
         )
         _safety_normalization!(model, families[i], sets[i])
         original = template isa AbstractVector ? template[i] : template
