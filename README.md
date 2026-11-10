@@ -5,7 +5,7 @@
 
 | **Documentation** | **Build Status** |
 |:-----------------:|:----------------:|
-| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] [![Codecov][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] [![PkgEval][pkgeval-img]][pkgeval-url] |
+| [![][docs-stable-img]][docs-stable-url] [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] [![Codecov][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] |
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://dionysos-dev.github.io/PathCompleteCertificates.jl/stable
@@ -18,8 +18,6 @@
 [codecov-url]: https://app.codecov.io/github/dionysos-dev/PathCompleteCertificates.jl
 [aqua-img]: https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
-[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/P/PathCompleteCertificates.svg
-[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/P/PathCompleteCertificates.html
 
 PathCompleteCertificates.jl is a [Julia](https://julialang.org/) package that computes
 certificates for **discrete-time switched linear systems** under arbitrary switching: proofs
